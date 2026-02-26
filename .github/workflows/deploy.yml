@@ -37,6 +37,27 @@ jobs:
         working-directory: apps/web
         run: npx @cloudflare/next-on-pages@1
 
+      # Set nodejs_compat compatibility flag on the Pages project
+      # This fixes the "no nodejs_compat compatibility flag set" error
+      - name: Set nodejs_compat compatibility flag
+        run: |
+          curl -s -X PATCH \
+            "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}/pages/projects/travel-cloth-recommend" \
+            -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "deployment_configs": {
+                "production": {
+                  "compatibility_flags": ["nodejs_compat"],
+                  "compatibility_date": "2024-09-23"
+                },
+                "preview": {
+                  "compatibility_flags": ["nodejs_compat"],
+                  "compatibility_date": "2024-09-23"
+                }
+              }
+            }' | jq '.success'
+
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:

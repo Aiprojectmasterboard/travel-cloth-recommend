@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
+import Script from 'next/script'
 import './globals.css'
 
 export const runtime = 'edge'
@@ -345,7 +346,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Google Search Console — add verification code when ready */}
         {/* <meta name="google-site-verification" content="YOUR_CODE_HERE" /> */}
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {/* Userback — user feedback widget */}
+        <Script
+          id="userback-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.Userback = window.Userback || {};
+              Userback.access_token = "A-4I76V4OTeft0kQmHdKsMhSZZT";
+              (function(d) {
+                var s = d.createElement('script');
+                s.async = true;
+                s.src = 'https://static.userback.io/widget/v1.js';
+                (d.head || d.body).appendChild(s);
+              })(document);
+            `,
+          }}
+        />
+      </body>
     </html>
   )
 }
