@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import ShareModal from '@/components/ShareModal'
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
 
@@ -186,27 +187,14 @@ function ProcessingView({ trip }: { trip: Trip }) {
 
 function GalleryView({ trip }: { trip: Trip }) {
   const completedJobs = trip.generation_jobs.filter(j => j.status === 'completed' && j.image_url)
+  const [shareOpen, setShareOpen] = useState(false)
+  const [sharePreviewUrl, setSharePreviewUrl] = useState<string | undefined>()
+  const cityNames = trip.cities.map(c => c.name)
+  const firstImage = completedJobs[0]?.image_url ?? undefined
 
-  async function handleShare() {
-    const url = window.location.href
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share({
-          title: 'Travel Capsule AI — 내 여행 스타일',
-          text: 'AI가 만들어준 여행 코디를 확인해보세요!',
-          url,
-        })
-      } catch {
-        // user cancelled
-      }
-    } else {
-      try {
-        await navigator.clipboard.writeText(url)
-        alert('링크가 클립보드에 복사됐습니다!')
-      } catch {
-        alert('링크를 복사해주세요: ' + url)
-      }
-    }
+  function openShare(imageUrl?: string | null) {
+    setSharePreviewUrl(imageUrl ?? firstImage)
+    setShareOpen(true)
   }
 
   return (
@@ -254,7 +242,7 @@ function GalleryView({ trip }: { trip: Trip }) {
           }}
         >
           <button
-            onClick={handleShare}
+            onClick={() => openShare()}
             style={{
               display: 'inline-flex',
               alignItems: 'center',
@@ -337,6 +325,31 @@ function GalleryView({ trip }: { trip: Trip }) {
                     >
                       {job.mood}
                     </div>
+                    <button
+                      onClick={() => openShare(job.image_url)}
+                      title="이 이미지 공유"
+                      style={{
+                        position: 'absolute',
+                        bottom: 10,
+                        right: 10,
+                        width: 34,
+                        height: 34,
+                        borderRadius: '50%',
+                        background: 'rgba(253,250,246,0.92)',
+                        border: 'none',
+                        cursor: 'pointer',
+                        fontSize: '0.95rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                        transition: 'transform 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.12)' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = '' }}
+                    >
+                      ↗
+                    </button>
                   </div>
                   <div style={{ padding: '0.9rem' }}>
                     <div
@@ -458,28 +471,117 @@ function GalleryView({ trip }: { trip: Trip }) {
           <p className="section-sub" style={{ margin: '0 auto 2rem' }}>
             이 갤러리 링크를 공유하면 누구나 볼 수 있어요.
           </p>
-          <button
-            onClick={handleShare}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'var(--terracotta)',
-              color: 'white',
-              border: 'none',
-              borderRadius: 50,
-              padding: '0.9rem 2rem',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '0.95rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'all 0.2s',
-            }}
-          >
-            갤러리 공유하기 →
-          </button>
+          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              onClick={() => openShare()}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'var(--terracotta)',
+                color: 'white',
+                border: 'none',
+                borderRadius: 50,
+                padding: '0.9rem 2rem',
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#b3582f' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--terracotta)' }}
+            >
+              📤 갤러리 공유하기
+            </button>
+            <button
+              onClick={() => {
+                const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`AI가 만들어준 내 ${cityNames.slice(0, 2).join(' + ')} 여행 코디 🤩\n짐 걱정 끝, 스타일은 완성 ✈️\n\n#TravelCapsuleAI #여행코디`)}&url=${encodeURIComponent(window.location.href)}`
+                window.open(url, '_blank', 'width=600,height=500')
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: '#000',
+                color: 'white',
+                border: 'none',
+                borderRadius: 50,
+                padding: '0.9rem 2rem',
+                fontFamily: 'DM Sans, sans-serif',
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'opacity 0.2s',
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.8' }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
+            >
+              𝕏 트위터 공유
+            </button>
+          </div>
         </div>
       </section>
+
+      {/* Sticky mobile share bar */}
+      <div
+        style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 150,
+          background: 'var(--ink)',
+          padding: '0.9rem 1.4rem calc(0.9rem + env(safe-area-inset-bottom))',
+          display: 'flex',
+          gap: '0.7rem',
+          alignItems: 'center',
+          boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
+        }}
+        className="sticky-share-bar"
+      >
+        <div style={{ flex: 1 }}>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', marginBottom: '0.1rem' }}>
+            내 여행 스타일
+          </p>
+          <p style={{ color: 'white', fontSize: '0.85rem', fontWeight: 500 }}>
+            {cityNames.slice(0, 2).join(' + ')} · {trip.month}
+          </p>
+        </div>
+        <button
+          onClick={() => openShare()}
+          style={{
+            background: 'var(--gold)',
+            color: 'var(--ink)',
+            border: 'none',
+            borderRadius: 50,
+            padding: '0.65rem 1.4rem',
+            fontFamily: 'DM Sans, sans-serif',
+            fontSize: '0.9rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+          }}
+        >
+          공유하기 ↗
+        </button>
+      </div>
+
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        tripId={trip.id}
+        cities={cityNames}
+        month={trip.month}
+        previewImageUrl={sharePreviewUrl}
+      />
+
+      <style>{`
+        @media (min-width: 768px) {
+          .sticky-share-bar { display: none !important; }
+        }
+      `}</style>
     </div>
   )
 }
@@ -646,7 +748,7 @@ export default function ResultClient({ tripId }: { tripId: string }) {
           fontSize: '0.82rem',
         }}
       >
-        <p>© 2025 Travel Capsule AI · Powered by NanoBanana · 결제: Polar</p>
+        <p>© 2026 Travel Capsule AI · Powered by NanoBanana · 결제: Polar</p>
       </footer>
     </>
   )

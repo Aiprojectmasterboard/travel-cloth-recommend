@@ -37,6 +37,10 @@ export default function HeroSection({ onScrollToForm, onScrollToSample }: HeroSe
           여행지별 날씨·분위기에 맞는 코디 이미지를 내 사진으로 미리 생성합니다.
           캡슐 워드로브 8~12개면 어디든 완벽하게.
         </p>
+        <div className="hero-social-proof">
+          <span className="social-proof-dot" />
+          🌍 1,200+ 여행 스타일이 공유됐어요
+        </div>
         <div className="hero-cta">
           <button className="btn-primary" onClick={onScrollToForm} aria-label="무료 미리보기 시작">
             무료 미리보기 시작 →
@@ -85,6 +89,26 @@ export default function HeroSection({ onScrollToForm, onScrollToSample }: HeroSe
         .hero-highlight {
           color: var(--terracotta);
           font-weight: 600;
+        }
+        .hero-social-proof {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-bottom: 1.2rem;
+          font-size: 0.85rem;
+          color: var(--muted);
+          font-family: 'DM Sans', sans-serif;
+        }
+        .social-proof-dot {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: #5B8C5A;
+          display: inline-block;
+          animation: blink 2s ease-in-out infinite;
+        }
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
         }
         .hero-trust {
           margin-top: 3rem;
