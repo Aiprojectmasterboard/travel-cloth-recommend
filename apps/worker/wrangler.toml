@@ -1,0 +1,29 @@
+name = "travel-capsule-worker"
+main = "src/index.ts"
+compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
+
+# ─── Plain Variables (non-secret) ────────────────────────────────────────────
+# Replace placeholder values before deploying.
+[vars]
+POLAR_PRODUCT_ID = "prod_xxxx"
+SUPABASE_URL     = "https://xxxx.supabase.co"
+R2_PUBLIC_URL    = "https://assets.yourdomain.ai"
+
+# ─── R2 Bucket Binding ───────────────────────────────────────────────────────
+# Native R2 binding — no S3 credentials needed.
+# Create bucket first: `wrangler r2 bucket create travel-capsule-assets`
+[[r2_buckets]]
+binding     = "R2_BUCKET"
+bucket_name = "travel-capsule-assets"
+
+# ─── Secrets (register via CLI) ──────────────────────────────────────────────
+# Run each command once, then secrets are stored in Cloudflare:
+#
+#   wrangler secret put ANTHROPIC_API_KEY
+#   wrangler secret put NANOBANANA_API_KEY
+#   wrangler secret put POLAR_ACCESS_TOKEN
+#   wrangler secret put POLAR_WEBHOOK_SECRET
+#   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+#   wrangler secret put RESEND_API_KEY
+#   wrangler secret put GOOGLE_PLACES_API_KEY
