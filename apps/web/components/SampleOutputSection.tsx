@@ -1,10 +1,12 @@
 'use client'
 
+import { useLanguage } from '@/components/LanguageContext'
+
 const sampleCards = [
   {
     img: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=500&q=75',
     alt: 'paris cafe look',
-    mood: 'Café Morning',
+    moodIdx: 0,
     city: 'Paris',
     flag: '🇫🇷',
     look: '리넨 셔츠 + 테일러드 트라우저\n베이지 트렌치',
@@ -13,7 +15,7 @@ const sampleCards = [
   {
     img: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=500&q=75',
     alt: 'rome evening',
-    mood: 'Evening Walk',
+    moodIdx: 1,
     city: 'Rome',
     flag: '🇮🇹',
     look: '슬립 드레스 + 스트랩 샌들\n린넨 재킷 레이어',
@@ -22,7 +24,7 @@ const sampleCards = [
   {
     img: 'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=500&q=75',
     alt: 'paris sightseeing',
-    mood: 'Sightseeing',
+    moodIdx: 2,
     city: 'Paris',
     flag: '🇫🇷',
     look: '화이트 티 + 와이드 진\n블록힐 뮬',
@@ -31,7 +33,7 @@ const sampleCards = [
   {
     img: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=500&q=75',
     alt: 'airport travel look',
-    mood: 'Airport Look',
+    moodIdx: 3,
     city: 'In Transit',
     flag: '✈️',
     look: '조거 팬츠 + 오버사이즈 후드\n클린 스니커즈',
@@ -40,7 +42,7 @@ const sampleCards = [
   {
     img: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=500&q=75',
     alt: 'tokyo street style',
-    mood: 'Street Style',
+    moodIdx: 4,
     city: 'Tokyo',
     flag: '🇯🇵',
     look: '미니 스커트 + 오버사이즈 블레이저\n플랫폼 슈즈',
@@ -49,7 +51,7 @@ const sampleCards = [
   {
     img: 'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=500&q=75',
     alt: 'barcelona beach',
-    mood: 'Beach Day',
+    moodIdx: 5,
     city: 'Barcelona',
     flag: '🇪🇸',
     look: '스트라이프 원피스 + 에스파드리유\n라탄 토트백',
@@ -58,50 +60,55 @@ const sampleCards = [
 ]
 
 export default function SampleOutputSection() {
+  const { t } = useLanguage()
+
   return (
     <section className="sample-section" id="sampleSection">
       <div className="container">
-        <p className="section-label reveal">Sample Output</p>
-        <h2 className="section-title reveal">이런 결과물을 받게 됩니다</h2>
-        <p className="section-sub reveal">도시마다 3–4가지 무드로 생성 · 얼굴은 내 사진 유지</p>
+        <p className="section-label reveal">{t.sample.label}</p>
+        <h2 className="section-title reveal">{t.sample.title}</h2>
+        <p className="section-sub reveal">{t.sample.sub}</p>
 
         <div className="masonry-grid">
-          {sampleCards.map((card, i) => (
-            <div
-              key={i}
-              className={`masonry-card reveal ${card.tall ? 'card-tall' : 'card-normal'}`}
-              style={{ transitionDelay: `${i * 0.08}s` }}
-            >
-              <div className="card-img-wrap">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={card.img} alt={card.alt} loading="lazy" />
-                <div className="card-mood-badge">{card.mood}</div>
-                {/* Hover overlay */}
-                <div className="card-overlay" aria-hidden="true">
-                  <div className="overlay-city">
-                    <span>{card.flag}</span>
-                    <span>{card.city}</span>
+          {sampleCards.map((card, i) => {
+            const mood = t.sample.moods[card.moodIdx] ?? card.alt
+            return (
+              <div
+                key={i}
+                className={`masonry-card reveal ${card.tall ? 'card-tall' : 'card-normal'}`}
+                style={{ transitionDelay: `${i * 0.08}s` }}
+              >
+                <div className="card-img-wrap">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={card.img} alt={card.alt} loading="lazy" />
+                  <div className="card-mood-badge">{mood}</div>
+                  {/* Hover overlay */}
+                  <div className="card-overlay" aria-hidden="true">
+                    <div className="overlay-city">
+                      <span>{card.flag}</span>
+                      <span>{card.city}</span>
+                    </div>
+                    <div className="overlay-look">
+                      {card.look.split('\n').map((line, j) => (
+                        <span key={j}>{line}</span>
+                      ))}
+                    </div>
                   </div>
-                  <div className="overlay-look">
+                </div>
+                <div className="card-info">
+                  <div className="output-city">{card.flag} {card.city}</div>
+                  <div className="output-look">
                     {card.look.split('\n').map((line, j) => (
-                      <span key={j}>{line}</span>
+                      <span key={j}>
+                        {line}
+                        {j < card.look.split('\n').length - 1 && <br />}
+                      </span>
                     ))}
                   </div>
                 </div>
               </div>
-              <div className="card-info">
-                <div className="output-city">{card.flag} {card.city}</div>
-                <div className="output-look">
-                  {card.look.split('\n').map((line, j) => (
-                    <span key={j}>
-                      {line}
-                      {j < card.look.split('\n').length - 1 && <br />}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
 

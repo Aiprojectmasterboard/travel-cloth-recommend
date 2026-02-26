@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import ShareModal from '@/components/ShareModal'
+import { useLanguage } from '@/components/LanguageContext'
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
 
@@ -61,9 +62,12 @@ function Spinner() {
 }
 
 function ProcessingView({ trip }: { trip: Trip }) {
+  const { t } = useLanguage()
   const completedJobs = trip.generation_jobs.filter(j => j.status === 'completed').length
   const totalJobs = trip.generation_jobs.length
   const progress = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0
+
+  const titleLines = t.result.processing.title.split('\n')
 
   return (
     <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center', padding: '4rem 2rem' }}>
@@ -76,7 +80,7 @@ function ProcessingView({ trip }: { trip: Trip }) {
           marginBottom: '1rem',
         }}
       >
-        AI 스타일링 진행 중
+        {t.result.processing.label}
       </p>
       <h1
         style={{
@@ -87,11 +91,15 @@ function ProcessingView({ trip }: { trip: Trip }) {
           lineHeight: 1.2,
         }}
       >
-        여행 스타일을<br />
-        생성하고 있어요
+        {titleLines.map((line, i) => (
+          <span key={i}>
+            {line}
+            {i < titleLines.length - 1 && <br />}
+          </span>
+        ))}
       </h1>
       <p style={{ color: 'var(--muted)', marginBottom: '2.5rem', lineHeight: 1.6 }}>
-        도시별 날씨와 분위기를 분석해 코디 이미지를 만드는 중입니다. 보통 2–4분 소요됩니다.
+        {t.result.processing.sub}
       </p>
 
       <div
@@ -114,7 +122,7 @@ function ProcessingView({ trip }: { trip: Trip }) {
         />
       </div>
       <p style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
-        {completedJobs} / {totalJobs} 이미지 완성 ({progress}%)
+        {completedJobs} / {totalJobs} {t.result.processing.completed} ({progress}%)
       </p>
 
       <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
@@ -169,7 +177,11 @@ function ProcessingView({ trip }: { trip: Trip }) {
                     : 'var(--muted)',
               }}
             >
-              {job.status === 'completed' ? '완료' : job.status === 'processing' ? '생성 중' : '대기 중'}
+              {job.status === 'completed'
+                ? t.result.processing.status.completed
+                : job.status === 'processing'
+                ? t.result.processing.status.processing
+                : t.result.processing.status.waiting}
             </span>
           </div>
         ))}
@@ -186,6 +198,7 @@ function ProcessingView({ trip }: { trip: Trip }) {
 }
 
 function GalleryView({ trip }: { trip: Trip }) {
+  const { t } = useLanguage()
   const completedJobs = trip.generation_jobs.filter(j => j.status === 'completed' && j.image_url)
   const [shareOpen, setShareOpen] = useState(false)
   const [sharePreviewUrl, setSharePreviewUrl] = useState<string | undefined>()
@@ -217,7 +230,7 @@ function GalleryView({ trip }: { trip: Trip }) {
             marginBottom: '1rem',
           }}
         >
-          Travel Capsule AI
+          {t.result.gallery.label}
         </p>
         <h1
           style={{
@@ -227,7 +240,7 @@ function GalleryView({ trip }: { trip: Trip }) {
             marginBottom: '1rem',
           }}
         >
-          여행 스타일 갤러리
+          {t.result.gallery.title}
         </h1>
         <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '0.5rem' }}>
           {trip.cities.map(c => `${c.name} ${c.days}박`).join(' + ')} · {trip.month}
@@ -259,7 +272,7 @@ function GalleryView({ trip }: { trip: Trip }) {
               transition: 'opacity 0.2s',
             }}
           >
-            공유하기 →
+            {t.result.gallery.shareBtn}
           </button>
         </div>
       </div>
@@ -268,8 +281,8 @@ function GalleryView({ trip }: { trip: Trip }) {
       {completedJobs.length > 0 && (
         <section style={{ padding: '4rem 0', background: 'var(--cream)' }}>
           <div className="container">
-            <p className="section-label">AI 코디 이미지</p>
-            <h2 className="section-title">도시별 스타일 갤러리</h2>
+            <p className="section-label">{t.result.wardrobe.label}</p>
+            <h2 className="section-title">{t.result.gallery.title}</h2>
             <div
               style={{
                 display: 'grid',
@@ -327,7 +340,7 @@ function GalleryView({ trip }: { trip: Trip }) {
                     </div>
                     <button
                       onClick={() => openShare(job.image_url)}
-                      title="이 이미지 공유"
+                      title={t.result.gallery.shareBtn}
                       style={{
                         position: 'absolute',
                         bottom: 10,
@@ -374,8 +387,8 @@ function GalleryView({ trip }: { trip: Trip }) {
       {trip.wardrobe_items && trip.wardrobe_items.length > 0 && (
         <section style={{ padding: '4rem 0', background: 'var(--warm-white)' }}>
           <div className="container">
-            <p className="section-label">Capsule Wardrobe</p>
-            <h2 className="section-title">나의 여행 캡슐 워드로브</h2>
+            <p className="section-label">{t.result.wardrobe.label}</p>
+            <h2 className="section-title">{t.result.wardrobe.title}</h2>
             <div className="capsule-grid">
               {trip.wardrobe_items.map((item, i) => (
                 <div key={i} className="capsule-item">
@@ -393,8 +406,8 @@ function GalleryView({ trip }: { trip: Trip }) {
       {trip.daily_plan && trip.daily_plan.length > 0 && (
         <section style={{ padding: '4rem 0', background: 'var(--cream)' }}>
           <div className="container">
-            <p className="section-label">Daily Plan</p>
-            <h2 className="section-title">데일리 아웃핏 플랜</h2>
+            <p className="section-label">{t.result.dailyPlan.label}</p>
+            <h2 className="section-title">{t.result.dailyPlan.title}</h2>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
               {trip.daily_plan.map(plan => (
                 <div
@@ -421,7 +434,9 @@ function GalleryView({ trip }: { trip: Trip }) {
                     >
                       {plan.day}
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.3rem' }}>DAY</div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.3rem' }}>
+                      {t.result.dailyPlan.day}
+                    </div>
                     <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
                       {plan.city}
                     </div>
@@ -467,9 +482,9 @@ function GalleryView({ trip }: { trip: Trip }) {
       {/* Share CTA */}
       <section style={{ padding: '4rem 0', background: 'var(--sand)', textAlign: 'center' }}>
         <div className="container">
-          <h2 className="section-title">친구에게 공유해보세요</h2>
+          <h2 className="section-title">{t.result.shareCta.title}</h2>
           <p className="section-sub" style={{ margin: '0 auto 2rem' }}>
-            이 갤러리 링크를 공유하면 누구나 볼 수 있어요.
+            {t.result.shareCta.sub}
           </p>
           <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
@@ -492,11 +507,14 @@ function GalleryView({ trip }: { trip: Trip }) {
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#b3582f' }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--terracotta)' }}
             >
-              📤 갤러리 공유하기
+              📤 {t.result.gallery.shareBtn}
             </button>
             <button
               onClick={() => {
-                const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`AI가 만들어준 내 ${cityNames.slice(0, 2).join(' + ')} 여행 코디 🤩\n짐 걱정 끝, 스타일은 완성 ✈️\n\n#TravelCapsuleAI #여행코디`)}&url=${encodeURIComponent(window.location.href)}`
+                const citiesStr = cityNames.slice(0, 2).join(' + ')
+                const city0 = cityNames[0] ?? ''
+                // use a neutral tweet for this locale
+                const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`AI-styled outfits for ${citiesStr} — Travel Capsule AI\n#TravelCapsuleAI`)}&url=${encodeURIComponent(window.location.href)}`
                 window.open(url, '_blank', 'width=600,height=500')
               }}
               style={{
@@ -517,7 +535,7 @@ function GalleryView({ trip }: { trip: Trip }) {
               onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.8' }}
               onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
             >
-              𝕏 트위터 공유
+              {t.result.gallery.twitterBtn}
             </button>
           </div>
         </div>
@@ -542,7 +560,7 @@ function GalleryView({ trip }: { trip: Trip }) {
       >
         <div style={{ flex: 1 }}>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', marginBottom: '0.1rem' }}>
-            내 여행 스타일
+            {t.result.stickyBar.myStyle}
           </p>
           <p style={{ color: 'white', fontSize: '0.85rem', fontWeight: 500 }}>
             {cityNames.slice(0, 2).join(' + ')} · {trip.month}
@@ -564,7 +582,7 @@ function GalleryView({ trip }: { trip: Trip }) {
             flexShrink: 0,
           }}
         >
-          공유하기 ↗
+          {t.result.stickyBar.shareBtn}
         </button>
       </div>
 
@@ -587,6 +605,7 @@ function GalleryView({ trip }: { trip: Trip }) {
 }
 
 function ErrorView({ tripId }: { tripId: string }) {
+  const { t } = useLanguage()
   return (
     <div style={{ textAlign: 'center', padding: '8rem 2rem' }}>
       <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>😕</p>
@@ -598,12 +617,12 @@ function ErrorView({ tripId }: { tripId: string }) {
           marginBottom: '1rem',
         }}
       >
-        결과를 불러올 수 없어요
+        {t.result.error.title}
       </h1>
       <p style={{ color: 'var(--muted)', marginBottom: '2rem', lineHeight: 1.6 }}>
         Trip ID: {tripId}
         <br />
-        잠시 후 다시 시도하거나 지원팀에 문의해주세요.
+        {t.result.error.sub}
       </p>
       <a
         href="/"
@@ -618,7 +637,7 @@ function ErrorView({ tripId }: { tripId: string }) {
           fontWeight: 500,
         }}
       >
-        홈으로 돌아가기
+        {t.result.error.home}
       </a>
     </div>
   )
@@ -627,6 +646,7 @@ function ErrorView({ tripId }: { tripId: string }) {
 // ─── Main Client Component ────────────────────────────────────────────────────
 
 export default function ResultClient({ tripId }: { tripId: string }) {
+  const { t } = useLanguage()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -647,18 +667,18 @@ export default function ResultClient({ tripId }: { tripId: string }) {
           { id: '4', city: 'Rome', mood: 'Street Style', image_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=400&q=70', status: 'completed' },
         ],
         wardrobe_items: [
-          { emoji: '🧥', name: '리넨 트렌치', cities: '파리 · 로마 · 이동일' },
-          { emoji: '👕', name: '화이트 티 ×2', cities: '전 일정' },
-          { emoji: '👖', name: '테일러드 팬츠', cities: '파리 · 로마 · 저녁' },
-          { emoji: '👗', name: '미디 슬립 드레스', cities: '로마 · 카페 · 저녁' },
-          { emoji: '👟', name: '화이트 스니커즈', cities: '전 일정 · 관광' },
-          { emoji: '👡', name: '블록힐 뮬', cities: '저녁 · 카페' },
+          { emoji: '🧥', name: 'Linen Trench', cities: 'Paris · Rome · Travel Days' },
+          { emoji: '👕', name: 'White Tee ×2', cities: 'All Days' },
+          { emoji: '👖', name: 'Tailored Pants', cities: 'Paris · Rome · Evening' },
+          { emoji: '👗', name: 'Midi Slip Dress', cities: 'Rome · Café · Evening' },
+          { emoji: '👟', name: 'White Sneakers', cities: 'All Days · Sightseeing' },
+          { emoji: '👡', name: 'Block Heel Mules', cities: 'Evening · Café' },
         ],
         daily_plan: [
-          { day: 1, city: 'Paris', outfit: '리넨 트렌치 + 화이트 티 + 테일러드 팬츠', activities: ['샹젤리제 산책', '루브르 박물관'] },
-          { day: 2, city: 'Paris', outfit: '스트라이프 셔츠 + 와이드 진 + 화이트 스니커즈', activities: ['에펠탑', '마레 지구 카페'] },
-          { day: 3, city: 'Rome', outfit: '미디 슬립 드레스 + 블록힐 뮬', activities: ['콜로세움', '트레비 분수'] },
-          { day: 4, city: 'Rome', outfit: '화이트 티 + 테일러드 팬츠 + 크로스바디백', activities: ['바티칸 박물관', '판테온'] },
+          { day: 1, city: 'Paris', outfit: 'Linen Trench + White Tee + Tailored Pants', activities: ['Champs-Élysées', 'Louvre'] },
+          { day: 2, city: 'Paris', outfit: 'Stripe Shirt + Wide Jeans + White Sneakers', activities: ['Eiffel Tower', 'Le Marais'] },
+          { day: 3, city: 'Rome', outfit: 'Midi Slip Dress + Block Heel Mules', activities: ['Colosseum', 'Trevi Fountain'] },
+          { day: 4, city: 'Rome', outfit: 'White Tee + Tailored Pants + Crossbody Bag', activities: ['Vatican Museums', 'Pantheon'] },
         ],
         created_at: new Date().toISOString(),
       })
@@ -728,7 +748,7 @@ export default function ResultClient({ tripId }: { tripId: string }) {
           <span style={{ color: 'var(--terracotta)', fontStyle: 'italic' }}>Capsule</span> AI
         </a>
         <a href="/" style={{ fontSize: '0.85rem', color: 'var(--muted)', textDecoration: 'none' }}>
-          ← 홈으로
+          {t.result.homeLink}
         </a>
       </header>
 
@@ -748,7 +768,7 @@ export default function ResultClient({ tripId }: { tripId: string }) {
           fontSize: '0.82rem',
         }}
       >
-        <p>© 2026 Travel Capsule AI · Powered by NanoBanana · 결제: Polar</p>
+        <p>{t.footer.copyright}</p>
       </footer>
     </>
   )

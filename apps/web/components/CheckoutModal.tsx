@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '@/components/LanguageContext'
 
 interface CheckoutModalProps {
   isOpen: boolean
@@ -8,75 +9,81 @@ interface CheckoutModalProps {
   onToast: (msg: string) => void
 }
 
-const STEPS = [
-  { label: '결제 확인 중', icon: '💳' },
-  { label: '기후 · 바이브 분석', icon: '🌤️' },
-  { label: '코디 이미지 생성 (AI)', icon: '🎨' },
-  { label: '캡슐 워드로브 최적화', icon: '✨' },
-  { label: '갤러리 생성 완료', icon: '📸' },
-]
-
 const DELAYS = [0, 800, 2200, 3800, 5500]
 const PROGRESSES = [10, 30, 70, 90, 100]
 
 type StepState = 'pending' | 'active' | 'done'
 
 export default function CheckoutModal({ isOpen, onClose, onToast }: CheckoutModalProps) {
-  const [stepStates, setStepStates] = useState<StepState[]>(STEPS.map(() => 'pending'))
+  const { t } = useLanguage()
+  const stepCount = t.checkout.steps.length
+
+  const [stepStates, setStepStates] = useState<StepState[]>(Array(stepCount).fill('pending'))
   const [progress, setProgress] = useState(0)
   const [isDone, setIsDone] = useState(false)
-  const [title, setTitle] = useState('결제 처리 중…')
-  const [subtitle, setSubtitle] = useState('잠시 후 AI가 여행 스타일을 생성합니다.')
+  const [title, setTitle] = useState('')
+  const [subtitle, setSubtitle] = useState('')
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
+
+  // Sync title/subtitle when locale changes
+  useEffect(() => {
+    if (!isDone) {
+      setTitle(t.checkout.title)
+      setSubtitle(t.checkout.subtitle)
+    } else {
+      setTitle(t.checkout.doneTitle)
+      setSubtitle(t.checkout.doneSubtitle)
+    }
+  }, [t, isDone])
 
   useEffect(() => {
     if (!isOpen) return
 
-    setStepStates(STEPS.map(() => 'pending'))
+    setStepStates(Array(stepCount).fill('pending'))
     setProgress(0)
     setIsDone(false)
-    setTitle('결제 처리 중…')
-    setSubtitle('잠시 후 AI가 여행 스타일을 생성합니다.')
+    setTitle(t.checkout.title)
+    setSubtitle(t.checkout.subtitle)
     timersRef.current.forEach(clearTimeout)
     timersRef.current = []
 
-    STEPS.forEach((_, i) => {
-      const t = setTimeout(() => {
+    t.checkout.steps.forEach((_, i) => {
+      const t2 = setTimeout(() => {
         setStepStates(prev => {
           const next = [...prev]
           for (let j = 0; j < i; j++) next[j] = 'done'
           next[i] = 'active'
           return next
         })
-        setProgress(PROGRESSES[i])
-      }, DELAYS[i])
-      timersRef.current.push(t)
+        setProgress(PROGRESSES[i] ?? 100)
+      }, DELAYS[i] ?? i * 1200)
+      timersRef.current.push(t2)
     })
 
     const doneTimer = setTimeout(() => {
-      setStepStates(STEPS.map(() => 'done'))
+      setStepStates(Array(stepCount).fill('done'))
       setProgress(100)
       setIsDone(true)
-      setTitle('완성됐습니다!')
-      setSubtitle('여행 스타일 갤러리가 준비됐어요. 공유 링크도 함께 전달됩니다.')
+      setTitle(t.checkout.doneTitle)
+      setSubtitle(t.checkout.doneSubtitle)
     }, 7000)
     timersRef.current.push(doneTimer)
 
     return () => {
       timersRef.current.forEach(clearTimeout)
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen])
 
   function handleClose() {
     onClose()
-    onToast('갤러리 링크가 이메일로 발송됩니다 (데모)')
+    onToast(t.toast.galleryLink)
   }
 
   function handleOverlayClick(e: React.MouseEvent<HTMLDivElement>) {
     if (e.target === e.currentTarget) handleClose()
   }
 
-  const activeStep = stepStates.findIndex(s => s === 'active')
   const completedCount = stepStates.filter(s => s === 'done').length
 
   return (
@@ -89,20 +96,20 @@ export default function CheckoutModal({ isOpen, onClose, onToast }: CheckoutModa
     >
       <div className={`modal modal-slide${isOpen ? ' modal-slide-in' : ''}`}>
         {/* Step indicator: 1 → 2 → 3 phases */}
-        <div className="phase-indicator" aria-label="진행 단계">
+        <div className="phase-indicator" aria-label="Progress phases">
           <div className={`phase ${completedCount >= 0 ? 'phase-active' : ''} ${completedCount >= 2 ? 'phase-done' : ''}`}>
             <span className="phase-num">1</span>
-            <span className="phase-label">결제</span>
+            <span className="phase-label">{t.checkout.phases[0]}</span>
           </div>
           <div className="phase-line" />
           <div className={`phase ${completedCount >= 2 ? 'phase-active' : ''} ${completedCount >= 4 ? 'phase-done' : ''}`}>
             <span className="phase-num">2</span>
-            <span className="phase-label">생성 중</span>
+            <span className="phase-label">{t.checkout.phases[1]}</span>
           </div>
           <div className="phase-line" />
           <div className={`phase ${isDone ? 'phase-active phase-done' : ''}`}>
             <span className="phase-num">{isDone ? '✓' : '3'}</span>
-            <span className="phase-label">완료</span>
+            <span className="phase-label">{t.checkout.phases[2]}</span>
           </div>
         </div>
 
@@ -114,11 +121,12 @@ export default function CheckoutModal({ isOpen, onClose, onToast }: CheckoutModa
         <div className="progress-bar" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100}>
           <div className="progress-fill" style={{ width: `${progress}%` }} />
         </div>
-        <div className="progress-label">{progress}% 완료</div>
+        <div className="progress-label">{progress}{t.checkout.progressLabel}</div>
 
         <div className="modal-steps-list">
-          {STEPS.map((step, i) => {
-            const state = stepStates[i]
+          {t.checkout.steps.map((stepLabel, i) => {
+            const state = stepStates[i] ?? 'pending'
+            const icon = t.checkout.stepIcons[i] ?? ''
             return (
               <div
                 key={i}
@@ -128,10 +136,10 @@ export default function CheckoutModal({ isOpen, onClose, onToast }: CheckoutModa
                 <div className={`step-dot ${state}`} aria-hidden="true">
                   {state === 'done' ? '✓' : state === 'active' ? '→' : ''}
                 </div>
-                <span className="step-icon" aria-hidden="true">{step.icon}</span>
-                <span className="step-text">{step.label}</span>
+                <span className="step-icon" aria-hidden="true">{icon}</span>
+                <span className="step-text">{stepLabel}</span>
                 {state === 'active' && (
-                  <span className="step-spinner" aria-label="처리 중" />
+                  <span className="step-spinner" aria-label={t.checkout.processing} />
                 )}
               </div>
             )
@@ -140,16 +148,17 @@ export default function CheckoutModal({ isOpen, onClose, onToast }: CheckoutModa
 
         {/* Trust badges */}
         <div className="modal-trust">
-          <span className="modal-trust-badge">🔒 Polar 보안 결제</span>
-          <span className="modal-trust-badge">↩ 30일 환불 보장</span>
+          {t.checkout.trustBadges.map((badge, i) => (
+            <span key={i} className="modal-trust-badge">{badge}</span>
+          ))}
         </div>
 
         <button
           className={`modal-close${isDone ? '' : ' hidden'}`}
           onClick={handleClose}
-          aria-label="갤러리 보러 가기"
+          aria-label={t.checkout.galleryBtn}
         >
-          갤러리 보러 가기 →
+          {t.checkout.galleryBtn}
         </button>
       </div>
 

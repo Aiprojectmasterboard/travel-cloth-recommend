@@ -1,5 +1,7 @@
 'use client'
 
+import { useLanguage } from '@/components/LanguageContext'
+
 const heroImages = [
   'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=200&q=60',
   'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=200&q=60',
@@ -23,52 +25,53 @@ interface HeroSectionProps {
 }
 
 export default function HeroSection({ onScrollToForm, onScrollToSample }: HeroSectionProps) {
+  const { t } = useLanguage()
+
   return (
     <section className="hero">
       <div className="hero-left">
-        <div className="hero-tag">AI Travel Styling</div>
+        <div className="hero-tag">{t.hero.tag}</div>
         <h1>
-          짐은 줄이고<br />
-          <em>스타일은</em><br />
-          채우세요
+          {t.hero.headline1}<br />
+          <em>{t.hero.headline2}</em><br />
+          {t.hero.headline3}
         </h1>
         <p className="hero-sub">
-          <strong className="hero-highlight">파리 · 도쿄 · 로마 · 바르셀로나</strong> 등<br />
-          여행지별 날씨·분위기에 맞는 코디 이미지를 내 사진으로 미리 생성합니다.
-          캡슐 워드로브 8~12개면 어디든 완벽하게.
+          <strong className="hero-highlight">{t.hero.highlight}</strong> 등<br />
+          {t.hero.sub}
         </p>
         <div className="hero-social-proof">
           <span className="social-proof-dot" />
-          🌍 1,200+ 여행 스타일이 공유됐어요
+          {t.hero.socialProof}
         </div>
         <div className="hero-cta">
-          <button className="btn-primary" onClick={onScrollToForm} aria-label="무료 미리보기 시작">
-            무료 미리보기 시작 →
+          <button className="btn-primary" onClick={onScrollToForm} aria-label={t.hero.ctaPrimary}>
+            {t.hero.ctaPrimary}
           </button>
-          <button className="btn-ghost" onClick={onScrollToSample} aria-label="샘플 보기">
-            샘플 보기
+          <button className="btn-ghost" onClick={onScrollToSample} aria-label={t.hero.ctaSecondary}>
+            {t.hero.ctaSecondary}
           </button>
         </div>
         <div className="hero-trust">
           <div className="trust-item">
             <div className="trust-num">3–4장</div>
-            <div className="trust-label">도시별 코디 이미지</div>
+            <div className="trust-label">{t.hero.trust.outfitImages}</div>
           </div>
           <div className="trust-item">
             <div className="trust-num">8–12개</div>
-            <div className="trust-label">캡슐 워드로브</div>
+            <div className="trust-label">{t.hero.trust.capsuleWardrobe}</div>
           </div>
           <div className="trust-item">
             <div className="trust-num">2–4분</div>
-            <div className="trust-label">생성 완료 시간</div>
+            <div className="trust-label">{t.hero.trust.generationTime}</div>
           </div>
           <div className="trust-item">
             <div className="trust-num">5도시</div>
-            <div className="trust-label">까지 지원</div>
+            <div className="trust-label">{t.hero.trust.cities}</div>
           </div>
           <div className="trust-item">
             <div className="trust-num">$5</div>
-            <div className="trust-label">1회 여행 전체</div>
+            <div className="trust-label">{t.hero.trust.price}</div>
           </div>
         </div>
       </div>

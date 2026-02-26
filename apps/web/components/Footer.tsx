@@ -1,6 +1,9 @@
 'use client'
 
+import { useLanguage } from '@/components/LanguageContext'
+
 export default function Footer() {
+  const { t } = useLanguage()
   const currentYear = 2026
 
   return (
@@ -8,10 +11,10 @@ export default function Footer() {
       <div className="footer-inner">
         {/* Brand */}
         <div className="footer-brand">
-          <a href="#" className="footer-logo" aria-label="Travel Capsule AI 홈으로">
+          <a href="#" className="footer-logo" aria-label="Travel Capsule AI Home">
             Travel <span>Capsule</span> AI
           </a>
-          <p className="footer-tagline">AI가 설계하는 여행 스타일, 단 $5</p>
+          <p className="footer-tagline">{t.footer.tagline}</p>
 
           {/* Social links */}
           <div className="footer-social">
@@ -44,46 +47,46 @@ export default function Footer() {
 
         {/* Links */}
         <div className="footer-links-group">
-          <h4 className="footer-group-title">서비스</h4>
+          <h4 className="footer-group-title">{t.footer.serviceTitle}</h4>
           <a href="#howSection" className="footer-link" onClick={e => { e.preventDefault(); document.getElementById('howSection')?.scrollIntoView({ behavior: 'smooth' }) }}>
-            이용 방법
+            {t.footer.howItWorks}
           </a>
           <a href="#formSection" className="footer-link" onClick={e => { e.preventDefault(); document.getElementById('formSection')?.scrollIntoView({ behavior: 'smooth' }) }}>
-            지금 시작하기
+            {t.footer.startNow}
           </a>
           <a href="#sampleSection" className="footer-link" onClick={e => { e.preventDefault(); document.getElementById('sampleSection')?.scrollIntoView({ behavior: 'smooth' }) }}>
-            샘플 보기
+            {t.footer.sampleView}
           </a>
         </div>
 
         <div className="footer-links-group">
-          <h4 className="footer-group-title">지원</h4>
+          <h4 className="footer-group-title">{t.footer.supportTitle}</h4>
           <a href="#faqSection" className="footer-link" onClick={e => { e.preventDefault(); document.getElementById('faqSection')?.scrollIntoView({ behavior: 'smooth' }) }}>
-            자주 묻는 질문
+            {t.footer.faq}
           </a>
           <a href="#faq" className="footer-link" onClick={e => { e.preventDefault(); document.getElementById('faqSection')?.scrollIntoView({ behavior: 'smooth' }) }}>
-            환불정책
+            {t.footer.refund}
           </a>
           <a href="mailto:hello@travelcapsule.ai" className="footer-link">
-            문의하기
+            {t.footer.contact}
           </a>
         </div>
 
         <div className="footer-links-group">
-          <h4 className="footer-group-title">법적 고지</h4>
-          <a href="/legal/terms" className="footer-link">이용약관</a>
-          <a href="/legal/privacy" className="footer-link">개인정보처리방침</a>
+          <h4 className="footer-group-title">{t.footer.legalTitle}</h4>
+          <a href="/legal/terms" className="footer-link">{t.footer.terms}</a>
+          <a href="/legal/privacy" className="footer-link">{t.footer.privacy}</a>
         </div>
       </div>
 
       <div className="footer-bottom">
         <p className="footer-copy">
-          © {currentYear} Travel Capsule AI · Powered by NanoBanana · 결제: Polar
+          {t.footer.copyright.replace('2026', String(currentYear))}
         </p>
         <div className="footer-trust-badges">
-          <span className="trust-badge">🔒 Polar 안전결제</span>
-          <span className="trust-badge">⚡ Cloudflare 보안</span>
-          <span className="trust-badge">🌍 글로벌 서비스</span>
+          {t.footer.trustBadges.map((badge, i) => (
+            <span key={i} className="trust-badge">{badge}</span>
+          ))}
         </div>
       </div>
 

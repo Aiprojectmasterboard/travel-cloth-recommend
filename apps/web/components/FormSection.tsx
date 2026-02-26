@@ -1,21 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
-
-const MONTHS = [
-  { label: '1월', short: 'Jan' },
-  { label: '2월', short: 'Feb' },
-  { label: '3월', short: 'Mar' },
-  { label: '4월', short: 'Apr' },
-  { label: '5월', short: 'May' },
-  { label: '6월', short: 'Jun' },
-  { label: '7월', short: 'Jul' },
-  { label: '8월', short: 'Aug' },
-  { label: '9월', short: 'Sep' },
-  { label: '10월', short: 'Oct' },
-  { label: '11월', short: 'Nov' },
-  { label: '12월', short: 'Dec' },
-]
+import { useState, useRef, useCallback } from 'react'
+import { useLanguage } from '@/components/LanguageContext'
 
 const CITY_OPTIONS = [
   { name: 'Paris', flag: '🇫🇷', country: 'France' },
@@ -55,9 +41,11 @@ interface CityInputProps {
   onUpdate: (id: number, field: 'name' | 'days', value: string | number) => void
   onRemove: (id: number) => void
   canRemove: boolean
+  placeholder: string
+  nightsLabel: string
 }
 
-function CityInput({ city, onUpdate, onRemove, canRemove }: CityInputProps) {
+function CityInput({ city, onUpdate, onRemove, canRemove, placeholder, nightsLabel }: CityInputProps) {
   const [query, setQuery] = useState(city.name)
   const [showDropdown, setShowDropdown] = useState(false)
   const wrapRef = useRef<HTMLDivElement>(null)
@@ -69,20 +57,35 @@ function CityInput({ city, onUpdate, onRemove, canRemove }: CityInputProps) {
         c.country.toLowerCase().includes(query.toLowerCase())
       )
 
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (!wrapRef.current?.contains(e.target as Node)) {
-        setShowDropdown(false)
-      }
+  // Use useCallback to stabilize the handler
+  const handleDocClick = useCallback((e: MouseEvent) => {
+    if (!wrapRef.current?.contains(e.target as Node)) {
+      setShowDropdown(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
   }, [])
+
+  // We use a ref-based approach instead of useEffect to avoid stale deps
+  const listenerRef = useRef(handleDocClick)
+  listenerRef.current = handleDocClick
+
+  const addListener = useCallback(() => {
+    document.addEventListener('mousedown', listenerRef.current)
+  }, [])
+  const removeListener = useCallback(() => {
+    document.removeEventListener('mousedown', listenerRef.current)
+  }, [])
+
+  // On mount/unmount
+  const mountedRef = useRef(false)
+  if (!mountedRef.current) {
+    mountedRef.current = true
+  }
 
   function selectCity(name: string) {
     setQuery(name)
     onUpdate(city.id, 'name', name)
     setShowDropdown(false)
+    removeListener()
   }
 
   function handleInput(e: React.ChangeEvent<HTMLInputElement>) {
@@ -90,6 +93,12 @@ function CityInput({ city, onUpdate, onRemove, canRemove }: CityInputProps) {
     setQuery(val)
     onUpdate(city.id, 'name', val)
     setShowDropdown(true)
+    addListener()
+  }
+
+  function handleFocus() {
+    setShowDropdown(true)
+    addListener()
   }
 
   const flag = getCityFlag(query)
@@ -101,10 +110,10 @@ function CityInput({ city, onUpdate, onRemove, canRemove }: CityInputProps) {
         <input
           className="city-input"
           type="text"
-          placeholder="도시 이름 (예: Paris)"
+          placeholder={placeholder}
           value={query}
           onChange={handleInput}
-          onFocus={() => setShowDropdown(true)}
+          onFocus={handleFocus}
           aria-autocomplete="list"
           aria-expanded={showDropdown}
           autoComplete="off"
@@ -116,14 +125,14 @@ function CityInput({ city, onUpdate, onRemove, canRemove }: CityInputProps) {
           min={1}
           max={30}
           onChange={e => onUpdate(city.id, 'days', parseInt(e.target.value) || 1)}
-          aria-label="숙박 일수"
+          aria-label={nightsLabel}
         />
-        <span className="days-label">박</span>
+        <span className="days-label">{nightsLabel}</span>
         {canRemove && (
           <button
             className="city-remove"
             onClick={() => onRemove(city.id)}
-            aria-label="도시 삭제"
+            aria-label="Remove city"
           >
             ×
           </button>
@@ -177,11 +186,13 @@ interface FormSectionProps {
 }
 
 export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
+  const { t } = useLanguage()
+
   const [cities, setCities] = useState<City[]>([
     { id: 1, name: 'Paris', days: 4 },
     { id: 2, name: 'Rome', days: 3 },
   ])
-  const [selectedMonth, setSelectedMonth] = useState<string>('5월')
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(4) // May = index 4
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [isDragOver, setIsDragOver] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
@@ -190,21 +201,21 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
 
   const totalDays = cities.reduce((sum, c) => sum + (c.days || 0), 0)
   const cityCount = cities.filter(c => c.name.trim()).length
+  const selectedMonth = t.form.months[selectedMonthIndex] ?? t.form.months[4] ?? ''
 
   function addCity() {
     if (cities.length >= 5) {
-      onToast('최대 5개 도시까지 추가할 수 있어요')
+      onToast(t.toast.cityMax)
       return
     }
     const unused = CITY_OPTIONS.find(opt => !cities.some(c => c.name === opt.name))
     const name = unused?.name ?? 'London'
     setCities(prev => [...prev, { id: nextId.current++, name, days: 3 }])
-    onToast('도시가 추가됐습니다 ✓')
+    onToast(t.toast.cityAdded)
   }
 
   function removeCity(id: number) {
     if (cities.length <= 1) {
-      onToast('최소 1개 도시가 필요해요')
       return
     }
     setCities(prev => prev.filter(c => c.id !== id))
@@ -218,20 +229,20 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
 
   const processFile = useCallback((file: File) => {
     if (!file.type.startsWith('image/')) {
-      onToast('이미지 파일만 가능합니다')
+      onToast(t.toast.imageOnly)
       return
     }
     if (file.size > 10 * 1024 * 1024) {
-      onToast('10MB 이하 파일만 업로드 가능해요')
+      onToast(t.toast.imageTooLarge)
       return
     }
     const reader = new FileReader()
     reader.onload = ev => {
       setPhotoPreview(ev.target?.result as string)
-      onToast('사진 업로드 완료! 내 얼굴로 코디 이미지를 생성합니다 🎉')
+      onToast(t.toast.photoUploaded)
     }
     reader.readAsDataURL(file)
-  }, [onToast])
+  }, [onToast, t.toast])
 
   function handlePhotoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -256,12 +267,11 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
 
   async function handleCheckout() {
     if (!cities.some(c => c.name.trim())) {
-      onToast('먼저 여행 도시를 입력해주세요')
+      onToast(t.toast.cityRequired)
       document.getElementById('formSection')?.scrollIntoView({ behavior: 'smooth' })
       return
     }
     setIsLoading(true)
-    // Small delay to show spinner before navigation
     await new Promise(r => setTimeout(r, 300))
     onCheckout(cities, selectedMonth)
     setIsLoading(false)
@@ -270,19 +280,17 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
   return (
     <section className="form-section" id="formSection">
       <div className="container">
-        <p className="section-label">여행 정보 입력</p>
-        <h2 className="section-title">내 여행 스타일링 시작</h2>
-        <p className="section-sub">
-          도시와 기간을 입력하면 AI가 날씨·분위기·활동에 맞는 캡슐 워드로브를 설계합니다.
-        </p>
+        <p className="section-label">{t.form.label}</p>
+        <h2 className="section-title">{t.form.title}</h2>
+        <p className="section-sub">{t.form.sub}</p>
 
         {/* Summary badge */}
         {cityCount > 0 && (
           <div className="summary-badge">
             <span className="summary-icon">✈️</span>
-            총 <strong>{totalDays}박</strong> 여행 · <strong>{cityCount}개 도시</strong>
+            총 <strong>{totalDays}{t.form.totalDays}</strong> · <strong>{cityCount}{t.form.totalCities}</strong>
             {cityCount < 5 && (
-              <span className="summary-more"> · 최대 {5 - cityCount}개 도시 더 추가 가능</span>
+              <span className="summary-more"> · {t.form.moreCities} {5 - cityCount}{t.form.totalCities} 더 추가 가능</span>
             )}
           </div>
         )}
@@ -292,7 +300,7 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
           <div>
             {/* Cities */}
             <div className="form-card" style={{ marginBottom: '1.2rem' }}>
-              <h3>여행 도시</h3>
+              <h3>{t.form.cityLabel}</h3>
               <div className="city-list">
                 {cities.map(city => (
                   <CityInput
@@ -301,6 +309,8 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                     onUpdate={updateCity}
                     onRemove={removeCity}
                     canRemove={cities.length > 1}
+                    placeholder={t.form.cityPlaceholder}
+                    nightsLabel={t.form.cityNights}
                   />
                 ))}
               </div>
@@ -308,26 +318,25 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                 className="add-city-btn"
                 onClick={addCity}
                 disabled={cities.length >= 5}
-                aria-label="도시 추가"
+                aria-label={t.form.cityAdd}
               >
-                + 도시 추가 {cities.length >= 5 && <span style={{ opacity: 0.5, fontSize: '0.75rem' }}>(최대 5개)</span>}
+                {t.form.cityAdd} {cities.length >= 5 && <span style={{ opacity: 0.5, fontSize: '0.75rem' }}>{t.form.cityMax}</span>}
               </button>
             </div>
 
             {/* Month */}
             <div className="form-card" style={{ marginBottom: '1.2rem' }}>
-              <h3>여행 월</h3>
+              <h3>{t.form.monthLabel}</h3>
               <div className="month-grid">
-                {MONTHS.map(m => (
+                {t.form.months.map((m, idx) => (
                   <button
-                    key={m.label}
-                    className={`month-btn${selectedMonth === m.label ? ' active' : ''}`}
-                    onClick={() => setSelectedMonth(m.label)}
-                    aria-pressed={selectedMonth === m.label}
-                    aria-label={`${m.label} 선택`}
+                    key={idx}
+                    className={`month-btn${selectedMonthIndex === idx ? ' active' : ''}`}
+                    onClick={() => setSelectedMonthIndex(idx)}
+                    aria-pressed={selectedMonthIndex === idx}
+                    aria-label={`${m}`}
                   >
-                    <span className="month-label-ko">{m.label}</span>
-                    <span className="month-label-en">{m.short}</span>
+                    <span className="month-label-text">{m}</span>
                   </button>
                 ))}
               </div>
@@ -335,7 +344,7 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
 
             {/* Photo upload */}
             <div className="form-card">
-              <h3>내 사진 업로드 <span className="optional-tag">선택</span></h3>
+              <h3>{t.form.photoLabel} <span className="optional-tag">{t.form.photoOptional}</span></h3>
               <div
                 className={`upload-zone ${isDragOver ? 'drag-over' : ''} ${photoPreview ? 'has-preview' : ''}`}
                 onDrop={handleDrop}
@@ -344,7 +353,7 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                 onClick={() => fileInputRef.current?.click()}
                 role="button"
                 tabIndex={0}
-                aria-label="사진 업로드 영역, 클릭 또는 드래그"
+                aria-label={t.form.photoDrop}
                 onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') fileInputRef.current?.click() }}
               >
                 <input
@@ -361,27 +370,27 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                     <img
                       className="upload-preview"
                       src={photoPreview}
-                      alt="업로드된 사진 미리보기"
+                      alt="Uploaded photo preview"
                     />
                     <div className="upload-text">
-                      <strong>사진 업로드 완료 ✓</strong>
+                      <strong>{t.form.photoUploaded}</strong>
                       <br />
-                      <span className="upload-hint">클릭해서 다른 사진으로 변경</span>
+                      <span className="upload-hint">{t.form.photoChange}</span>
                       <br />
-                      <span className="upload-privacy">생성 후 즉시 삭제됩니다</span>
+                      <span className="upload-privacy">{t.form.photoPrivacy}</span>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="upload-icon">{isDragOver ? '⬇️' : '🤳'}</div>
                     <div className="upload-text">
-                      <strong>{isDragOver ? '여기에 놓으세요!' : '사진을 드래그하거나 클릭해서 업로드'}</strong>
+                      <strong>{isDragOver ? t.form.photoDragOver : t.form.photoDrop}</strong>
                       <br />
-                      얼굴이 잘 보이는 정면 사진을 권장합니다
+                      {t.form.photoSub}
                       <br />
-                      <span className="upload-hint">JPG, PNG, HEIC · 최대 10MB</span>
+                      <span className="upload-hint">{t.form.photoFormats}</span>
                       <br />
-                      <span className="upload-privacy">업로드 후 생성 즉시 삭제 · 외부 공유 없음</span>
+                      <span className="upload-privacy">{t.form.photoFaceRec}</span>
                     </div>
                   </>
                 )}
@@ -392,7 +401,7 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
           {/* RIGHT: preview card */}
           <div>
             <div className="preview-card">
-              <h3>미리보기 (무료)</h3>
+              <h3>{t.form.previewTitle}</h3>
               <div className="preview-images">
                 <div className="preview-img-wrap unlocked">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -433,29 +442,27 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                   </div>
                 </div>
               </div>
-              <p className="preview-caption">
-                1장은 무료 미리보기 · 나머지 3장 + 전 도시 잠금
-              </p>
+              <p className="preview-caption">{t.form.previewCaption}</p>
 
               <div className="price-breakdown">
                 <div className="price-row">
-                  <span>이미지 생성</span>
-                  <span>도시 {cityCount}개 × 3-4장</span>
+                  <span>{t.form.imageGen}</span>
+                  <span>{cityCount}{t.form.totalCities} × 3-4장</span>
                 </div>
                 <div className="price-row">
-                  <span>캡슐 워드로브</span>
+                  <span>{t.form.capsuleWardrobe}</span>
                   <span>8–12 아이템</span>
                 </div>
                 <div className="price-row">
-                  <span>데일리 플랜</span>
-                  <span>{totalDays}박 플랜</span>
+                  <span>{t.form.dailyPlan}</span>
+                  <span>{totalDays}{t.form.totalDays}</span>
                 </div>
                 <div className="price-row">
-                  <span>공유 갤러리 링크</span>
-                  <span>포함</span>
+                  <span>{t.form.shareGallery}</span>
+                  <span>{t.form.included}</span>
                 </div>
                 <div className="price-row total">
-                  <span>합계</span>
+                  <span>{t.form.totalLabel}</span>
                   <span>$5</span>
                 </div>
               </div>
@@ -464,21 +471,21 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                 className="checkout-btn"
                 onClick={handleCheckout}
                 disabled={isLoading}
-                aria-label="전체 스타일링 언락 $5"
+                aria-label={t.form.checkoutBtn}
               >
                 {isLoading ? (
                   <span className="spinner-wrap">
                     <span className="btn-spinner" />
-                    처리 중…
+                    {t.form.processing}
                   </span>
                 ) : (
-                  '🔓 전체 스타일링 언락 — $5'
+                  t.form.checkoutBtn
                 )}
               </button>
               <p className="checkout-note">
-                Polar로 안전하게 결제 · 자동 갱신 없음
+                {t.form.checkoutSub}
                 <br />
-                결제 후 약 2–4분 내 결과 전송
+                {t.form.priceNote}
               </p>
             </div>
           </div>
@@ -500,13 +507,7 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
         .summary-icon { font-size: 0.9rem; }
         .summary-more { opacity: 0.6; }
 
-        .month-btn {
-          display: flex; flex-direction: column; align-items: center;
-          gap: 2px;
-        }
-        .month-label-ko { font-size: 0.75rem; }
-        .month-label-en { font-size: 0.6rem; opacity: 0.6; }
-        .month-btn.active .month-label-en { opacity: 0.8; }
+        .month-label-text { font-size: 0.75rem; }
 
         .optional-tag {
           font-size: 0.65rem; letter-spacing: 0.06em;

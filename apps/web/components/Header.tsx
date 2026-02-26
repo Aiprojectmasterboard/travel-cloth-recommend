@@ -1,8 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useLanguage } from '@/components/LanguageContext'
+import LanguageSwitcher from '@/components/LanguageSwitcher'
 
 export default function Header() {
+  const { t } = useLanguage()
   const [menuOpen, setMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
@@ -44,19 +47,22 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="desktop-nav" aria-label="주요 메뉴">
-          <button onClick={() => scrollTo('howSection')} className="nav-link">How It Works</button>
-          <button onClick={() => scrollTo('formSection')} className="nav-link">Pricing</button>
-          <button onClick={() => scrollTo('faqSection')} className="nav-link">FAQ</button>
+          <button onClick={() => scrollTo('howSection')} className="nav-link">{t.nav.howItWorks}</button>
+          <button onClick={() => scrollTo('formSection')} className="nav-link">{t.nav.pricing}</button>
+          <button onClick={() => scrollTo('faqSection')} className="nav-link">{t.nav.faq}</button>
         </nav>
 
-        {/* Desktop CTA */}
-        <button
-          className="header-cta"
-          onClick={() => scrollTo('formSection')}
-          aria-label="지금 시작하기 $5"
-        >
-          지금 시작하기 <strong>$5</strong>
-        </button>
+        {/* Desktop right group: language switcher + CTA */}
+        <div className="header-right">
+          <LanguageSwitcher />
+          <button
+            className="header-cta"
+            onClick={() => scrollTo('formSection')}
+            aria-label={`${t.nav.cta} $5`}
+          >
+            {t.nav.cta} <strong>$5</strong>
+          </button>
+        </div>
 
         {/* Hamburger — mobile only */}
         <button
@@ -74,14 +80,17 @@ export default function Header() {
       {/* Mobile menu */}
       {menuOpen && (
         <nav className="mobile-menu" aria-label="모바일 메뉴">
-          <button onClick={() => scrollTo('howSection')} className="mobile-nav-link">How It Works</button>
-          <button onClick={() => scrollTo('formSection')} className="mobile-nav-link">Pricing</button>
-          <button onClick={() => scrollTo('faqSection')} className="mobile-nav-link">FAQ</button>
+          <button onClick={() => scrollTo('howSection')} className="mobile-nav-link">{t.nav.howItWorks}</button>
+          <button onClick={() => scrollTo('formSection')} className="mobile-nav-link">{t.nav.pricing}</button>
+          <button onClick={() => scrollTo('faqSection')} className="mobile-nav-link">{t.nav.faq}</button>
+          <div className="mobile-lang-wrap">
+            <LanguageSwitcher />
+          </div>
           <button
             className="mobile-cta-btn"
             onClick={() => scrollTo('formSection')}
           >
-            지금 시작하기 — $5
+            {t.nav.cta} — $5
           </button>
         </nav>
       )}
@@ -125,6 +134,11 @@ export default function Header() {
           outline: 2px solid var(--terracotta); outline-offset: 2px;
         }
 
+        .header-right {
+          display: flex; align-items: center; gap: 0.6rem;
+          flex-shrink: 0;
+        }
+
         .header-cta {
           display: flex; align-items: center; gap: 0.4rem;
           background: var(--terracotta); color: white;
@@ -133,7 +147,7 @@ export default function Header() {
           padding: 0.55rem 1.2rem; border-radius: 50px;
           border: none; cursor: pointer;
           transition: all 0.2s;
-          white-space: nowrap; flex-shrink: 0;
+          white-space: nowrap;
         }
         .header-cta :global(strong) { font-weight: 700; }
         .header-cta:hover { background: #b3582f; transform: translateY(-1px); }
@@ -185,6 +199,12 @@ export default function Header() {
         }
         .mobile-nav-link:hover { color: var(--terracotta); background: rgba(196,97,58,0.04); }
         .mobile-nav-link:last-of-type { border-bottom: none; }
+
+        .mobile-lang-wrap {
+          padding: 0.5rem 0;
+          border-bottom: 1px solid var(--border);
+        }
+
         .mobile-cta-btn {
           margin-top: 0.8rem;
           background: var(--terracotta); color: white;
@@ -200,7 +220,7 @@ export default function Header() {
         @media (max-width: 767px) {
           .site-header { padding: 0.9rem 1.2rem; }
           .desktop-nav { display: none; }
-          .header-cta { display: none; }
+          .header-right { display: none; }
           .hamburger-btn { display: flex; }
         }
         @media (min-width: 768px) {

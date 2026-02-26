@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useLanguage } from '@/components/LanguageContext'
 
 export default function PartnerSection() {
+  const { t } = useLanguage()
   const [status, setStatus] = useState<{ msg: string; ok: boolean } | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
@@ -18,13 +20,13 @@ export default function PartnerSection() {
         headers: { Accept: 'application/json' },
       })
       if (res.ok) {
-        setStatus({ msg: '문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.', ok: true })
+        setStatus({ msg: t.partner.successMsg, ok: true })
         form.reset()
       } else {
-        setStatus({ msg: '전송에 실패했습니다. 잠시 후 다시 시도해주세요.', ok: false })
+        setStatus({ msg: t.partner.errorMsg, ok: false })
       }
     } catch {
-      setStatus({ msg: '네트워크 오류가 발생했습니다. 다시 시도해주세요.', ok: false })
+      setStatus({ msg: t.partner.networkError, ok: false })
     }
     setSubmitting(false)
   }
@@ -32,15 +34,18 @@ export default function PartnerSection() {
   return (
     <section className="partner-section">
       <div className="container" style={{ maxWidth: '640px', textAlign: 'center' }}>
-        <p className="section-label reveal">Partnership</p>
-        <h2 className="section-title reveal">제휴 문의</h2>
+        <p className="section-label reveal">{t.partner.label}</p>
+        <h2 className="section-title reveal">{t.partner.title}</h2>
         <p
           className="section-sub reveal"
           style={{ margin: '0 auto 2.5rem' }}
         >
-          여행사 · 패션 브랜드 · 인플루언서 · B2B API 연동 등
-          <br />
-          다양한 협업을 환영합니다.
+          {t.partner.sub.split('\n').map((line, i) => (
+            <span key={i}>
+              {line}
+              {i < t.partner.sub.split('\n').length - 1 && <br />}
+            </span>
+          ))}
         </p>
 
         <form
@@ -52,58 +57,56 @@ export default function PartnerSection() {
         >
           <div className="form-row">
             <div className="form-group">
-              <label htmlFor="partnerName">이름 / 담당자</label>
+              <label htmlFor="partnerName">{t.partner.nameLabel}</label>
               <input
                 type="text"
                 id="partnerName"
                 name="name"
-                placeholder="홍길동"
+                placeholder={t.partner.namePlaceholder}
                 required
               />
             </div>
             <div className="form-group">
-              <label htmlFor="partnerCompany">회사 / 브랜드명</label>
+              <label htmlFor="partnerCompany">{t.partner.companyLabel}</label>
               <input
                 type="text"
                 id="partnerCompany"
                 name="company"
-                placeholder="(주)여행컴퍼니"
+                placeholder={t.partner.companyPlaceholder}
               />
             </div>
           </div>
           <div className="form-group">
-            <label htmlFor="partnerEmail">이메일</label>
+            <label htmlFor="partnerEmail">{t.partner.emailLabel}</label>
             <input
               type="email"
               id="partnerEmail"
               name="email"
-              placeholder="hello@company.com"
+              placeholder={t.partner.emailPlaceholder}
               required
             />
           </div>
           <div className="form-group">
-            <label htmlFor="partnerType">제휴 유형</label>
+            <label htmlFor="partnerType">{t.partner.typeLabel}</label>
             <select id="partnerType" name="partnership_type" required defaultValue="">
-              <option value="" disabled>선택해주세요</option>
-              <option value="여행사 협업">여행사 협업</option>
-              <option value="패션 브랜드 협업">패션 브랜드 협업</option>
-              <option value="인플루언서 / 콘텐츠">인플루언서 / 콘텐츠</option>
-              <option value="B2B API 연동">B2B API 연동</option>
-              <option value="기타">기타</option>
+              <option value="" disabled>{t.partner.typePlaceholder}</option>
+              {t.partner.typeOptions.map((opt, i) => (
+                <option key={i} value={opt}>{opt}</option>
+              ))}
             </select>
           </div>
           <div className="form-group">
-            <label htmlFor="partnerMsg">문의 내용</label>
+            <label htmlFor="partnerMsg">{t.partner.messageLabel}</label>
             <textarea
               id="partnerMsg"
               name="message"
               rows={4}
-              placeholder="협업하고 싶은 내용을 자유롭게 작성해주세요."
+              placeholder={t.partner.messagePlaceholder}
               required
             />
           </div>
           <button type="submit" className="form-submit-btn" disabled={submitting}>
-            {submitting ? '전송 중…' : '문의 보내기 →'}
+            {submitting ? t.partner.submitting : t.partner.submitBtn}
           </button>
           {status && (
             <p

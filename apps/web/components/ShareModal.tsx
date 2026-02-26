@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useLanguage } from '@/components/LanguageContext'
 
 interface ShareModalProps {
   isOpen: boolean
@@ -9,19 +10,6 @@ interface ShareModalProps {
   cities: string[]
   month: string
   previewImageUrl?: string
-}
-
-// ─── Viral copy templates ─────────────────────────────────────────────────────
-
-function getViralCopy(cities: string[], month: string): string {
-  const c = cities.slice(0, 2).join(' + ')
-  const templates = [
-    `AI가 만들어준 내 ${c} 여행 코디 🤩\n짐 걱정 끝, 스타일은 완성 ✈️\n\n#TravelCapsuleAI #여행코디 #${cities[0] ?? ''}여행`,
-    `${month} ${c} 여행 준비 완료 🧳\nAI가 코디부터 캡슐 워드로브까지 다 짜줬어 👗\n\n#AI패션 #TravelCapsuleAI #여행스타일`,
-    `Travel Capsule AI로 ${c} 여행 스타일링 완성 ✨\n$5로 이게 가능하다고? 진짜 써봤어\n\n#여행패션 #TravelCapsuleAI #캡슐워드로브`,
-  ]
-  const idx = Math.abs(cities.join('').length) % templates.length
-  return templates[idx] ?? templates[0] ?? ''
 }
 
 // ─── UTM link builder ─────────────────────────────────────────────────────────
@@ -66,16 +54,15 @@ function shareToWhatsApp(text: string, url: string) {
 }
 
 function shareToKakao(url: string, cities: string[]) {
-  // Try KakaoTalk app URL scheme first, fallback to KakaoStory web
   const cityText = cities.slice(0, 2).join(', ')
   const msg = encodeURIComponent(`AI가 만들어준 ${cityText} 여행 코디 👗`)
-  // KakaoStory web share
   window.open(`https://story.kakao.com/share?url=${encodeURIComponent(url)}&text=${msg}`, '_blank')
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ShareModal({ isOpen, onClose, tripId, cities, month, previewImageUrl }: ShareModalProps) {
+  const { t } = useLanguage()
   const [copied, setCopied] = useState(false)
   const [shareText, setShareText] = useState('')
   const [visible, setVisible] = useState(false)
@@ -83,13 +70,17 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
 
   useEffect(() => {
     if (isOpen) {
-      setShareText(getViralCopy(cities, month))
+      const citiesStr = cities.slice(0, 2).join(' + ')
+      const city0 = cities[0] ?? ''
+      const copies = t.share.viralCopies(citiesStr, month, city0)
+      const idx = Math.abs(cities.join('').length) % copies.length
+      setShareText(copies[idx] ?? copies[0] ?? '')
       setVisible(true)
     } else {
-      const t = setTimeout(() => setVisible(false), 300)
-      return () => clearTimeout(t)
+      const timer = setTimeout(() => setVisible(false), 300)
+      return () => clearTimeout(timer)
     }
-  }, [isOpen, cities, month])
+  }, [isOpen, cities, month, t.share])
 
   const shareUrl = buildShareUrl(tripId, 'direct')
   const referralUrl = buildReferralUrl(tripId, 'result')
@@ -101,15 +92,16 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      alert(`링크를 복사해주세요:\n${shareUrl}`)
+      alert(`${t.share.copyLink}:\n${shareUrl}`)
     }
-  }, [shareText, shareUrl])
+  }, [shareText, shareUrl, t.share.copyLink])
 
   const handleNativeShare = useCallback(async () => {
     if (navigator.share) {
       try {
+        const citiesStr = cities.slice(0, 2).join(' + ')
         await navigator.share({
-          title: `내 ${cities.slice(0, 2).join(' + ')} 여행 스타일 — Travel Capsule AI`,
+          title: t.share.nativeShareTitle(citiesStr),
           text: shareText,
           url: shareUrl,
         })
@@ -117,7 +109,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
         // cancelled
       }
     }
-  }, [shareText, shareUrl, cities])
+  }, [shareText, shareUrl, cities, t.share])
 
   const handleDownload = useCallback(async () => {
     if (!previewImageUrl) return
@@ -176,7 +168,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
       onClick: () => shareToWhatsApp(shareText, buildShareUrl(tripId, 'whatsapp')),
     },
     {
-      label: copied ? '복사됨 ✓' : '링크 복사',
+      label: copied ? t.share.copied : t.share.copyLink,
       icon: copied ? '✓' : '🔗',
       bg: copied ? '#5B8C5A' : 'var(--sand)',
       color: copied ? '#fff' : 'var(--ink)',
@@ -227,10 +219,10 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
             <div>
               <p style={{ fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--terracotta)', marginBottom: '0.2rem' }}>
-                Share
+                {t.share.sub}
               </p>
               <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', color: 'var(--ink)' }}>
-                내 여행 스타일 공유하기
+                {t.share.title}
               </h3>
             </div>
             <button
@@ -262,7 +254,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   {cities.slice(0, 3).join(' · ')} · {month}
                 </p>
                 <p style={{ fontSize: '0.88rem', color: 'var(--ink)', lineHeight: 1.5 }}>
-                  AI가 생성한 나만의 여행 코디를 친구들과 공유해보세요 ✨
+                  {t.share.previewText}
                 </p>
               </div>
             </div>
@@ -271,7 +263,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
           {/* Editable viral text */}
           <div style={{ marginBottom: '1.2rem' }}>
             <p style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>
-              공유 문구 (수정 가능)
+              {t.share.editableLabel}
             </p>
             <textarea
               value={shareText}
@@ -342,7 +334,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                 }}
               >
-                📲 더 많은 앱으로 공유
+                {t.share.nativeShare}
               </button>
             )}
             {previewImageUrl && (
@@ -362,7 +354,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   opacity: downloading ? 0.6 : 1,
                 }}
               >
-                {downloading ? '저장 중...' : '🖼 이미지 저장'}
+                {downloading ? t.share.saving : t.share.saveImage}
               </button>
             )}
           </div>
@@ -380,16 +372,19 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
           }}>
             <div>
               <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.2rem' }}>
-                친구도 여행 스타일링 받게 해주세요 ✈️
+                {t.share.referralTitle}
               </p>
               <p style={{ fontSize: '0.78rem', opacity: 0.85 }}>
-                이 링크로 가입하면 같은 가격에 더 많은 도시 지원
+                {t.share.referralSub}
               </p>
             </div>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(referralUrl).catch(() => {})
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`Travel Capsule AI 써봤는데 진짜 대박 🤩 $5로 AI 여행 코디 추천받아봐\n\n${referralUrl}`)}`, '_blank')
+                const citiesStr = cities.slice(0, 2).join(' + ')
+                const copies = t.share.viralCopies(citiesStr, month, cities[0] ?? '')
+                const tweetText = copies[0] ?? ''
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${tweetText}\n\n${referralUrl}`)}`, '_blank')
               }}
               style={{
                 background: 'rgba(255,255,255,0.2)',
@@ -404,7 +399,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                 fontFamily: 'DM Sans, sans-serif',
               }}
             >
-              공유하기
+              {t.share.referralBtn}
             </button>
           </div>
         </div>

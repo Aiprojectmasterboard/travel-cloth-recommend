@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
 import Script from 'next/script'
+import { LanguageProvider } from '@/components/LanguageContext'
 import './globals.css'
 
 export const runtime = 'edge'
@@ -347,7 +348,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* <meta name="google-site-verification" content="YOUR_CODE_HERE" /> */}
       </head>
       <body>
+        <LanguageProvider>
         {children}
+        </LanguageProvider>
         {/* Userback — user feedback widget */}
         <Script
           id="userback-init"
