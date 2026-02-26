@@ -84,7 +84,10 @@ export default function Header() {
           <button onClick={() => scrollTo('formSection')} className="mobile-nav-link">{t.nav.pricing}</button>
           <button onClick={() => scrollTo('faqSection')} className="mobile-nav-link">{t.nav.faq}</button>
           <div className="mobile-lang-wrap">
-            <LanguageSwitcher />
+            <span style={{ fontSize: '0.72rem', color: 'var(--muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              Language
+            </span>
+            <LanguageSwitcher variant="inline" />
           </div>
           <button
             className="mobile-cta-btn"
@@ -201,7 +204,10 @@ export default function Header() {
         .mobile-nav-link:last-of-type { border-bottom: none; }
 
         .mobile-lang-wrap {
-          padding: 0.5rem 0;
+          padding: 0.75rem 0.5rem;
+          display: flex;
+          flex-direction: column;
+          gap: 0.4rem;
           border-bottom: 1px solid var(--border);
         }
 

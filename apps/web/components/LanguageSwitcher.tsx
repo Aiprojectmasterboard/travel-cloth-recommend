@@ -4,7 +4,21 @@ import { useState, useEffect, useRef } from 'react'
 import { useLanguage } from '@/components/LanguageContext'
 import { LOCALES, LOCALE_LABELS, type Locale } from '@/lib/i18n'
 
-export default function LanguageSwitcher() {
+// Short display codes for inline variant
+const LOCALE_SHORT_CODES: Record<Locale, string> = {
+  ko: 'KO',
+  en: 'EN',
+  ja: 'JA',
+  zh: 'ZH',
+  fr: 'FR',
+  es: 'ES',
+}
+
+interface LanguageSwitcherProps {
+  variant?: 'dropdown' | 'inline'
+}
+
+export default function LanguageSwitcher({ variant = 'dropdown' }: LanguageSwitcherProps) {
   const { locale, setLocale } = useLanguage()
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -27,6 +41,79 @@ export default function LanguageSwitcher() {
 
   const current = LOCALE_LABELS[locale]
 
+  // ── Inline variant: horizontal flag+code button row ──
+  if (variant === 'inline') {
+    return (
+      <div className="lang-inline" role="group" aria-label="Language selection">
+        {LOCALES.map(l => {
+          const info = LOCALE_LABELS[l]
+          const isActive = l === locale
+          return (
+            <button
+              key={l}
+              onClick={() => handleSelect(l)}
+              aria-pressed={isActive}
+              aria-label={`Switch to ${info.label}`}
+              className={`lang-inline-btn${isActive ? ' lang-inline-btn-active' : ''}`}
+            >
+              <span className="lang-inline-flag" aria-hidden="true">{info.flag}</span>
+              <span className="lang-inline-code">{LOCALE_SHORT_CODES[l]}</span>
+            </button>
+          )
+        })}
+
+        <style jsx>{`
+          .lang-inline {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+          }
+          .lang-inline-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.3rem 0.5rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: none;
+            color: var(--muted);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 0.72rem;
+            font-weight: 500;
+            min-width: 44px;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s, color 0.15s;
+            letter-spacing: 0.04em;
+            justify-content: center;
+          }
+          .lang-inline-btn:hover {
+            border-color: var(--terracotta);
+            color: var(--terracotta);
+            background: rgba(196,97,58,0.06);
+          }
+          .lang-inline-btn:focus-visible {
+            outline: 2px solid var(--terracotta);
+            outline-offset: 2px;
+          }
+          .lang-inline-btn-active {
+            background: rgba(196,97,58,0.12);
+            border-color: var(--terracotta);
+            color: var(--terracotta);
+            font-weight: 600;
+          }
+          .lang-inline-flag {
+            font-size: 0.9rem;
+            line-height: 1;
+          }
+          .lang-inline-code {
+            line-height: 1;
+          }
+        `}</style>
+      </div>
+    )
+  }
+
+  // ── Dropdown variant (default) ──
   return (
     <div ref={containerRef} className="lang-switcher" style={{ position: 'relative' }}>
       <button
@@ -59,7 +146,12 @@ export default function LanguageSwitcher() {
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
-          style={{ flexShrink: 0, opacity: 0.6, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}
+          style={{
+            flexShrink: 0,
+            opacity: 0.6,
+            transform: open ? 'rotate(180deg)' : 'none',
+            transition: 'transform 0.2s',
+          }}
         >
           <path d="M7 10l5 5 5-5z" />
         </svg>

@@ -50,6 +50,33 @@
 - btn-primary: uses `box-shadow: 0 4px 20px rgba(196,97,58,0.35)` + `translateY(-2px)` on hover
 - checkout-btn: linear-gradient(135deg) terracotta upgrade
 
+## Page Section Order (page.tsx)
+Header → HeroSection → SocialProof → HowItWorksSection → PhotoComparison → PreviewExplainer → FormSection → SampleOutputSection → CapsuleSection → PricingSection → FaqSection → PartnerSection → Footer
+
+## Accordion Pattern (FaqSection)
+- `useState<number>(0)` for openIdx — first item open by default, -1 = all closed
+- Toggle: `setOpenIdx(prev => prev === i ? -1 : i)` (single-expand)
+- Animation: `max-height: 0` → `max-height: 600px` via CSS transition (0.32s ease) on `.faq-a-wrap`
+- Open class `.faq-item-acc.open` applied to wrapper div
+- Touch target: `min-height: 44px` on button, `padding: 1.1rem 0.5rem`
+- Accessibility: `aria-expanded`, `aria-controls`, `aria-labelledby`, `role="region"` on answer panel
+- `+` / `−` icon in `.faq-icon` (terracotta color, 1.3rem)
+- `focus-visible` outline: `2px solid var(--terracotta)` with `border-radius: 4px`
+
+## Two-Column Comparison Card Pattern
+- Used in `PhotoComparison` and `PreviewExplainer`
+- Grid: `grid-template-columns: 1fr 1fr` desktop, `1fr` mobile
+- Featured/recommended card: `border-color: var(--terracotta)`, `box-shadow: 0 4px 24px rgba(196,97,58,0.12)`
+- On mobile, featured card moved first via `order: -1`
+- Badge pills: `font-size: 0.65rem`, `letter-spacing: 0.1em`, `text-transform: uppercase`, `border-radius: 50px`
+- Primary badge: `background: rgba(196,97,58,0.1)`, `color: var(--terracotta)`
+- Secondary badge: `background: rgba(26,20,16,0.06)`, `color: var(--muted)`
+- Hover lift: `translateY(-2px)` + `box-shadow` increase (0.3s ease)
+
+## PreviewExplainer Arrow Pattern
+- Desktop: `→` arrow between two columns (`grid-template-columns: 1fr auto 1fr`)
+- Mobile: arrow rotated 90deg via `transform: rotate(90deg)` when grid collapses to 1-col
+
 ## Build Command
 `cd /home/user/travel-cloth-recom/apps/web && npx next build`
 Build is confirmed clean (no TypeScript errors, no lint errors) after all UI changes.

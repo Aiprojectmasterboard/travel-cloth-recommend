@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import Header from '@/components/Header'
 import HeroSection from '@/components/HeroSection'
 import HowItWorksSection from '@/components/HowItWorksSection'
+import PhotoComparison from '@/components/PhotoComparison'
+import PreviewExplainer from '@/components/PreviewExplainer'
 import FormSection from '@/components/FormSection'
 import SampleOutputSection from '@/components/SampleOutputSection'
 import CapsuleSection from '@/components/CapsuleSection'
@@ -13,6 +15,7 @@ import PartnerSection from '@/components/PartnerSection'
 import Footer from '@/components/Footer'
 import CheckoutModal from '@/components/CheckoutModal'
 import Toast from '@/components/Toast'
+import SocialProof from '@/components/SocialProof'
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
 const POLAR_CHECKOUT_URL = process.env.NEXT_PUBLIC_POLAR_CHECKOUT_URL ?? '#'
@@ -90,7 +93,10 @@ export default function HomePage() {
           onScrollToForm={scrollToForm}
           onScrollToSample={scrollToSample}
         />
+        <SocialProof />
         <HowItWorksSection />
+        <PhotoComparison />
+        <PreviewExplainer />
         <FormSection onCheckout={handleCheckout} onToast={showToast} />
         <SampleOutputSection />
         <CapsuleSection />
