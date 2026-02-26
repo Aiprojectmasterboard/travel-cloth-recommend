@@ -636,6 +636,93 @@
     transition: opacity 0.6s ease, transform 0.6s ease;
   }
   .reveal.in-view { opacity: 1; transform: translateY(0); }
+
+  /* ─── PARTNER FORM ─── */
+  .partner-section {
+    background: var(--sand);
+    padding: 5rem 1.5rem;
+  }
+
+  .partner-form {
+    background: var(--cream);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2.5rem;
+    text-align: left;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    margin-bottom: 1.2rem;
+  }
+
+  .form-group label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--warm-white);
+    color: var(--ink);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .form-group input:focus,
+  .form-group select:focus,
+  .form-group textarea:focus {
+    border-color: var(--terracotta);
+  }
+
+  .form-group textarea { resize: vertical; min-height: 110px; }
+
+  .form-submit-btn {
+    width: 100%;
+    padding: 0.9rem;
+    background: var(--terracotta);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .form-submit-btn:hover { background: #b0522e; }
+  .form-submit-btn:active { transform: scale(0.98); }
+
+  .form-note {
+    margin-top: 0.9rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-align: center;
+    min-height: 1.2em;
+  }
+
+  @media (max-width: 540px) {
+    .form-row { grid-template-columns: 1fr; }
+    .partner-form { padding: 1.5rem; }
+  }
 </style>
 </head>
 <body>
@@ -1018,6 +1105,49 @@
   </div>
 </section>
 
+<!-- PARTNERSHIP FORM -->
+<section class="partner-section">
+  <div class="container" style="max-width:640px;text-align:center">
+    <p class="section-label reveal">Partnership</p>
+    <h2 class="section-title reveal">제휴 문의</h2>
+    <p class="section-sub reveal" style="margin:0 auto 2.5rem">여행사 · 패션 브랜드 · 인플루언서 · B2B API 연동 등<br>다양한 협업을 환영합니다.</p>
+
+    <form id="partnerForm" action="https://formspree.io/f/mzdaogvq" method="POST" class="partner-form reveal">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="partnerName">이름 / 담당자</label>
+          <input type="text" id="partnerName" name="name" placeholder="홍길동" required>
+        </div>
+        <div class="form-group">
+          <label for="partnerCompany">회사 / 브랜드명</label>
+          <input type="text" id="partnerCompany" name="company" placeholder="(주)여행컴퍼니">
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="partnerEmail">이메일</label>
+        <input type="email" id="partnerEmail" name="email" placeholder="hello@company.com" required>
+      </div>
+      <div class="form-group">
+        <label for="partnerType">제휴 유형</label>
+        <select id="partnerType" name="partnership_type" required>
+          <option value="" disabled selected>선택해주세요</option>
+          <option value="여행사 협업">여행사 협업</option>
+          <option value="패션 브랜드 협업">패션 브랜드 협업</option>
+          <option value="인플루언서 / 콘텐츠">인플루언서 / 콘텐츠</option>
+          <option value="B2B API 연동">B2B API 연동</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="partnerMsg">문의 내용</label>
+        <textarea id="partnerMsg" name="message" rows="4" placeholder="협업하고 싶은 내용을 자유롭게 작성해주세요." required></textarea>
+      </div>
+      <button type="submit" class="form-submit-btn">문의 보내기 →</button>
+      <p class="form-note" id="formStatus"></p>
+    </form>
+  </div>
+</section>
+
 <!-- FOOTER -->
 <footer>
   <div class="footer-links">
@@ -1092,6 +1222,35 @@ heroImages.forEach((url, i) => {
   cell.className = 'mosaic-cell';
   cell.innerHTML = `<img src="${url}" alt="travel ${i}" loading="lazy"><div class="city-badge">${cities[i % cities.length]}</div>`;
   mosaic.appendChild(cell);
+});
+
+// ─── PARTNER FORM ───
+document.getElementById('partnerForm').addEventListener('submit', async function(e) {
+  e.preventDefault();
+  const btn = this.querySelector('.form-submit-btn');
+  const status = document.getElementById('formStatus');
+  btn.disabled = true;
+  btn.textContent = '전송 중…';
+  try {
+    const res = await fetch(this.action, {
+      method: 'POST',
+      body: new FormData(this),
+      headers: { 'Accept': 'application/json' }
+    });
+    if (res.ok) {
+      status.style.color = 'var(--terracotta)';
+      status.textContent = '문의가 접수되었습니다. 빠른 시일 내에 연락드리겠습니다.';
+      this.reset();
+    } else {
+      status.style.color = '#c0392b';
+      status.textContent = '전송에 실패했습니다. 잠시 후 다시 시도해주세요.';
+    }
+  } catch {
+    status.style.color = '#c0392b';
+    status.textContent = '네트워크 오류가 발생했습니다. 다시 시도해주세요.';
+  }
+  btn.disabled = false;
+  btn.textContent = '문의 보내기 →';
 });
 
 // ─── SCROLL REVEAL ───
