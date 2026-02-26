@@ -1,14 +1,1269 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hello World</title>
-  <link href='/style.css' rel='stylesheet'>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Travel Capsule AI — Pack less. Live more.</title>
+<meta name="description" content="AI가 당신의 여행 스타일을 설계합니다. 도시별 코디 이미지 + 캡슐 워드로브 + 데일리 플랜 — $5">
+<meta property="og:title" content="Travel Capsule AI">
+<meta property="og:description" content="$5로 당신의 여행 룩을 미리 경험하세요">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sand: #F5EFE6;
+    --ink: #1A1410;
+    --terracotta: #C4613A;
+    --muted: #8A7B6E;
+    --cream: #FDFAF6;
+    --warm-white: #FAF6F0;
+    --border: rgba(26,20,16,0.12);
+    --gold: #C8A96E;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--ink);
+    overflow-x: hidden;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 2.5rem;
+    background: rgba(253,250,246,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem; font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    text-decoration: none;
+  }
+  .logo span { color: var(--terracotta); font-style: italic; }
+  .nav-price {
+    font-size: 0.85rem; color: var(--muted);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .nav-price strong { color: var(--terracotta); font-size: 1rem; }
+
+  /* ─── HERO ─── */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    position: relative;
+    padding-top: 70px;
+  }
+
+  .hero-left {
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 5rem 4rem 5rem 6rem;
+    position: relative; z-index: 2;
+  }
+
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    font-size: 0.75rem; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--terracotta); font-weight: 500;
+    margin-bottom: 1.5rem;
+  }
+  .hero-tag::before {
+    content: ''; width: 20px; height: 1px; background: var(--terracotta);
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.8rem, 5vw, 4.5rem);
+    line-height: 1.08;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 1.5rem;
+  }
+  h1 em {
+    font-style: italic; color: var(--terracotta);
+  }
+
+  .hero-sub {
+    font-size: 1.05rem; color: var(--muted);
+    line-height: 1.65; max-width: 420px;
+    margin-bottom: 2.5rem;
+  }
+
+  .hero-cta {
+    display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+  }
+
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    background: var(--terracotta); color: white;
+    font-size: 0.95rem; font-weight: 500;
+    padding: 0.9rem 2rem; border-radius: 50px;
+    text-decoration: none; border: none; cursor: pointer;
+    transition: all 0.2s; font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+  }
+  .btn-primary:hover { background: #b3582f; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(196,97,58,0.3); }
+
+  .btn-ghost {
+    font-size: 0.9rem; color: var(--muted); text-decoration: underline;
+    background: none; border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .btn-ghost:hover { color: var(--ink); }
+
+  .hero-trust {
+    margin-top: 3rem;
+    display: flex; gap: 2rem;
+  }
+  .trust-item { text-align: left; }
+  .trust-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem; font-weight: 700;
+    color: var(--ink); line-height: 1;
+  }
+  .trust-label { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* hero right — mosaic */
+  .hero-right {
+    position: relative; overflow: hidden;
+  }
+  .hero-mosaic {
+    position: absolute; inset: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(4, 1fr);
+    gap: 3px;
+  }
+  .mosaic-cell {
+    position: relative; overflow: hidden;
+    background: var(--sand);
+  }
+  .mosaic-cell img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.6s ease;
+  }
+  .mosaic-cell:hover img { transform: scale(1.05); }
+
+  /* city label on mosaic */
+  .mosaic-cell .city-badge {
+    position: absolute; bottom: 6px; left: 6px;
+    background: rgba(26,20,16,0.7);
+    color: white; font-size: 0.62rem;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 7px; border-radius: 3px;
+    backdrop-filter: blur(4px);
+  }
+
+  /* gradient overlay on hero right */
+  .hero-right::after {
+    content: ''; position: absolute; inset: 0;
+    background: linear-gradient(to right, var(--cream) 0%, transparent 15%);
+    pointer-events: none; z-index: 1;
+  }
+
+  /* ─── SECTION GENERAL ─── */
+  section { padding: 5rem 0; }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem; }
+
+  .section-label {
+    font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase;
+    color: var(--terracotta); font-weight: 500;
+    margin-bottom: 0.8rem;
+  }
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 3.5vw, 3rem);
+    line-height: 1.15; letter-spacing: -0.025em;
+    color: var(--ink);
+    margin-bottom: 1rem;
+  }
+  .section-sub {
+    font-size: 1rem; color: var(--muted);
+    line-height: 1.6; max-width: 520px;
+  }
+
+  /* ─── HOW IT WORKS ─── */
+  .how-bg { background: var(--warm-white); }
+
+  .steps {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 2.5rem; margin-top: 3.5rem;
+    position: relative;
+  }
+  .steps::before {
+    content: '';
+    position: absolute; top: 2.2rem; left: 10%; right: 10%; height: 1px;
+    background: var(--border);
+  }
+
+  .step { text-align: center; position: relative; }
+  .step-num {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--sand); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Playfair Display', serif; font-size: 1.1rem;
+    color: var(--terracotta); margin: 0 auto 1.2rem;
+    position: relative; z-index: 1;
+    background: var(--cream);
+  }
+  .step h3 {
+    font-size: 0.95rem; font-weight: 500;
+    color: var(--ink); margin-bottom: 0.5rem;
+  }
+  .step p { font-size: 0.85rem; color: var(--muted); line-height: 1.55; }
+
+  /* ─── FORM SECTION ─── */
+  .form-section {
+    background: var(--ink);
+    color: white;
+    position: relative; overflow: hidden;
+  }
+  .form-section::before {
+    content: 'TRAVEL CAPSULE';
+    position: absolute; top: -1rem; right: -2rem;
+    font-family: 'Playfair Display', serif;
+    font-size: 9rem; font-weight: 700;
+    color: rgba(255,255,255,0.03);
+    white-space: nowrap; pointer-events: none;
+    letter-spacing: -0.05em;
+  }
+
+  .form-section .section-label { color: var(--gold); }
+  .form-section .section-title { color: white; }
+  .form-section .section-sub { color: rgba(255,255,255,0.55); }
+
+  .form-grid {
+    display: grid; grid-template-columns: 1fr 380px;
+    gap: 4rem; margin-top: 3rem;
+    align-items: start;
+  }
+
+  /* City input */
+  .form-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 2rem;
+  }
+  .form-card h3 {
+    font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.5); margin-bottom: 1.2rem;
+  }
+
+  .city-list { display: flex; flex-direction: column; gap: 0.8rem; margin-bottom: 1rem; }
+  .city-row {
+    display: flex; align-items: center; gap: 0.8rem;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px; padding: 0.7rem 1rem;
+    transition: border-color 0.2s;
+  }
+  .city-row:focus-within { border-color: var(--gold); }
+  .city-icon { font-size: 1.1rem; }
+  .city-input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: white; font-size: 0.95rem; font-family: 'DM Sans', sans-serif;
+  }
+  .city-input::placeholder { color: rgba(255,255,255,0.3); }
+  .days-input {
+    width: 60px; background: rgba(255,255,255,0.1);
+    border: none; outline: none; color: white;
+    font-size: 0.9rem; font-family: 'DM Sans', sans-serif;
+    text-align: center; border-radius: 6px; padding: 0.3rem;
+  }
+  .days-label { font-size: 0.78rem; color: rgba(255,255,255,0.4); }
+  .city-remove {
+    background: none; border: none; color: rgba(255,255,255,0.3);
+    cursor: pointer; font-size: 1.1rem; line-height: 1;
+    transition: color 0.2s;
+  }
+  .city-remove:hover { color: var(--terracotta); }
+
+  .add-city-btn {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: none; border: 1px dashed rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.5); font-size: 0.85rem;
+    font-family: 'DM Sans', sans-serif;
+    padding: 0.65rem 1rem; border-radius: 10px;
+    cursor: pointer; width: 100%;
+    transition: all 0.2s;
+  }
+  .add-city-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+  /* Month select */
+  .month-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 0.4rem; margin-top: 0.5rem;
+  }
+  .month-btn {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: rgba(255,255,255,0.6);
+    font-size: 0.72rem; font-family: 'DM Sans', sans-serif;
+    padding: 0.45rem 0; border-radius: 7px; cursor: pointer;
+    transition: all 0.15s; text-align: center;
+    letter-spacing: 0.03em;
+  }
+  .month-btn:hover, .month-btn.active {
+    background: var(--gold); border-color: var(--gold);
+    color: var(--ink); font-weight: 500;
+  }
+
+  /* Photo upload */
+  .upload-zone {
+    border: 1px dashed rgba(255,255,255,0.2);
+    border-radius: 12px; padding: 1.5rem;
+    text-align: center; cursor: pointer;
+    transition: all 0.2s; margin-top: 0.5rem;
+    position: relative; overflow: hidden;
+  }
+  .upload-zone:hover { border-color: var(--gold); background: rgba(200,169,110,0.05); }
+  .upload-zone input {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer;
+  }
+  .upload-icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .upload-text { font-size: 0.85rem; color: rgba(255,255,255,0.5); line-height: 1.5; }
+  .upload-text strong { color: rgba(255,255,255,0.8); }
+  .upload-preview {
+    width: 70px; height: 70px; border-radius: 50%;
+    object-fit: cover; margin: 0 auto 0.5rem;
+    border: 2px solid var(--gold);
+    display: none;
+  }
+
+  /* Preview card */
+  .preview-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 1.5rem;
+    position: sticky; top: 90px;
+  }
+  .preview-card h3 {
+    font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;
+    color: rgba(255,255,255,0.4); margin-bottom: 1rem;
+  }
+
+  .preview-images {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem; margin-bottom: 1.2rem;
+  }
+  .preview-img-wrap {
+    aspect-ratio: 3/4; border-radius: 8px; overflow: hidden;
+    position: relative; background: var(--ink);
+  }
+  .preview-img-wrap img {
+    width: 100%; height: 100%; object-fit: cover;
+    filter: blur(6px) brightness(0.7);
+  }
+  .preview-img-wrap .blur-label {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: white; font-size: 0.7rem; text-align: center;
+    gap: 0.3rem;
+  }
+  .preview-img-wrap .blur-label span { font-size: 1.4rem; }
+  .preview-img-wrap.unlocked img { filter: none; }
+  .preview-img-wrap.unlocked .blur-label { display: none; }
+
+  /* watermark badge */
+  .preview-img-wrap .wm {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,0.7));
+    padding: 0.8rem 0.5rem 0.4rem;
+    font-size: 0.6rem; color: rgba(255,255,255,0.5);
+    text-align: center; letter-spacing: 0.08em;
+  }
+
+  .price-breakdown {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 1rem; margin-top: 0.5rem;
+  }
+  .price-row {
+    display: flex; justify-content: space-between;
+    font-size: 0.82rem; color: rgba(255,255,255,0.5);
+    margin-bottom: 0.4rem;
+  }
+  .price-row.total {
+    color: white; font-weight: 500; font-size: 1rem;
+    margin-top: 0.6rem; padding-top: 0.6rem;
+    border-top: 1px solid rgba(255,255,255,0.15);
+  }
+  .price-row.total span:last-child { color: var(--gold); font-family: 'Playfair Display', serif; font-size: 1.2rem; }
+
+  .checkout-btn {
+    display: block; width: 100%;
+    background: var(--terracotta); color: white;
+    font-size: 1rem; font-weight: 500;
+    padding: 1rem; border-radius: 12px;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 1rem;
+    transition: all 0.2s;
+  }
+  .checkout-btn:hover { background: #b3582f; transform: translateY(-1px); }
+  .checkout-note {
+    text-align: center; font-size: 0.75rem;
+    color: rgba(255,255,255,0.35); margin-top: 0.7rem;
+    line-height: 1.5;
+  }
+
+  /* ─── SAMPLE OUTPUT ─── */
+  .sample-section { background: var(--sand); }
+
+  .output-demo {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 1.2rem; margin-top: 3rem;
+  }
+  .output-card {
+    border-radius: 12px; overflow: hidden;
+    background: var(--cream);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  .output-card:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.12); }
+  .output-img {
+    aspect-ratio: 3/4; background: #d4cbc0;
+    position: relative; overflow: hidden;
+  }
+  .output-img img { width: 100%; height: 100%; object-fit: cover; }
+  .output-mood {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(253,250,246,0.9);
+    font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 4px; color: var(--ink);
+    font-weight: 500;
+  }
+  .output-info { padding: 0.9rem; }
+  .output-city { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; letter-spacing: 0.05em; }
+  .output-look { font-size: 0.88rem; font-weight: 500; color: var(--ink); line-height: 1.3; }
+
+  /* capsule wardrobe */
+  .capsule-section { background: var(--cream); }
+
+  .capsule-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr);
+    gap: 1rem; margin-top: 3rem;
+  }
+  .capsule-item {
+    text-align: center;
+    padding: 1.2rem 0.8rem;
+    background: var(--sand);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    transition: all 0.2s;
+  }
+  .capsule-item:hover { border-color: var(--terracotta); background: var(--warm-white); }
+  .capsule-emoji { font-size: 2rem; margin-bottom: 0.5rem; }
+  .capsule-name { font-size: 0.78rem; font-weight: 500; color: var(--ink); margin-bottom: 0.2rem; }
+  .capsule-cities { font-size: 0.68rem; color: var(--muted); }
+
+  /* pricing */
+  .pricing-section { background: var(--warm-white); }
+
+  .pricing-card {
+    max-width: 420px; margin: 3rem auto 0;
+    background: var(--ink); border-radius: 20px;
+    padding: 2.5rem; text-align: center; color: white;
+    position: relative; overflow: hidden;
+  }
+  .pricing-card::before {
+    content: '';
+    position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at 70% 30%, rgba(200,169,110,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .pricing-badge {
+    display: inline-block;
+    background: var(--gold); color: var(--ink);
+    font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    font-weight: 700; padding: 4px 14px; border-radius: 50px;
+    margin-bottom: 1.5rem;
+  }
+  .pricing-price {
+    font-family: 'Playfair Display', serif;
+    font-size: 4rem; font-weight: 700; color: white;
+    line-height: 1; margin-bottom: 0.3rem;
+  }
+  .pricing-price sup { font-size: 1.8rem; vertical-align: top; margin-top: 0.5rem; }
+  .pricing-per { font-size: 0.9rem; color: rgba(255,255,255,0.5); margin-bottom: 2rem; }
+  .pricing-features {
+    text-align: left; margin-bottom: 2rem;
+    display: flex; flex-direction: column; gap: 0.7rem;
+  }
+  .pricing-feat {
+    display: flex; align-items: center; gap: 0.7rem;
+    font-size: 0.9rem; color: rgba(255,255,255,0.8);
+  }
+  .pricing-feat::before { content: '✓'; color: var(--gold); font-weight: 700; flex-shrink: 0; }
+  .pricing-guarantee {
+    font-size: 0.78rem; color: rgba(255,255,255,0.35);
+    margin-top: 1rem; line-height: 1.5;
+  }
+
+  /* ─── FAQ ─── */
+  .faq-section { background: var(--cream); }
+  .faq-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem 4rem; margin-top: 3rem; }
+  .faq-item {}
+  .faq-q {
+    font-size: 0.95rem; font-weight: 500; color: var(--ink);
+    margin-bottom: 0.5rem;
+  }
+  .faq-a { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    background: var(--ink); color: rgba(255,255,255,0.4);
+    padding: 2.5rem 0; text-align: center;
+    font-size: 0.82rem;
+  }
+  footer a { color: rgba(255,255,255,0.5); text-decoration: none; }
+  footer a:hover { color: var(--gold); }
+  .footer-links { display: flex; gap: 2rem; justify-content: center; margin-bottom: 1rem; }
+
+  /* ─── MODAL ─── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(26,20,16,0.8);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    padding: 1rem;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--cream); border-radius: 20px;
+    padding: 2.5rem; max-width: 480px; width: 100%;
+    transform: translateY(20px); transition: transform 0.3s;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem; margin-bottom: 0.5rem; color: var(--ink);
+  }
+  .modal-sub { font-size: 0.9rem; color: var(--muted); margin-bottom: 2rem; line-height: 1.5; }
+  .progress-bar {
+    height: 4px; background: var(--sand); border-radius: 2px;
+    margin-bottom: 2rem; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: var(--terracotta); border-radius: 2px;
+    transition: width 1s ease;
+    width: 0%;
+  }
+  .modal-steps-list { display: flex; flex-direction: column; gap: 0.7rem; margin-bottom: 1.5rem; }
+  .modal-step-row {
+    display: flex; align-items: center; gap: 0.8rem;
+    font-size: 0.9rem; color: var(--muted);
+  }
+  .modal-step-row.done { color: var(--ink); }
+  .modal-step-row.active { color: var(--terracotta); font-weight: 500; }
+  .step-dot {
+    width: 20px; height: 20px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+  }
+  .step-dot.done { background: #5B8C5A; border-color: #5B8C5A; color: white; }
+  .step-dot.active { border-color: var(--terracotta); background: var(--terracotta); color: white; animation: pulse 1.5s infinite; }
+  .step-dot.pending { background: var(--sand); }
+
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.15); }
+  }
+
+  .modal-close {
+    display: block; width: 100%;
+    background: var(--terracotta); color: white;
+    font-size: 0.95rem; font-weight: 500;
+    padding: 0.9rem; border-radius: 12px;
+    border: none; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 0.5rem;
+    display: none;
+  }
+  .modal-close.show { display: block; }
+
+  /* ─── TOAST ─── */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--ink); color: white;
+    padding: 0.8rem 1.4rem; border-radius: 10px;
+    font-size: 0.88rem; z-index: 2000;
+    transform: translateY(20px); opacity: 0;
+    transition: all 0.3s; pointer-events: none;
+    max-width: 280px; line-height: 1.4;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 1024px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero-left { padding: 4rem 2rem 2rem; }
+    .hero-right { height: 300px; }
+    .hero-right::after { background: linear-gradient(to bottom, var(--cream) 0%, transparent 20%); }
+    .steps { grid-template-columns: repeat(2, 1fr); }
+    .steps::before { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+    .preview-card { position: static; }
+    .output-demo { grid-template-columns: repeat(2, 1fr); }
+    .capsule-grid { grid-template-columns: repeat(3, 1fr); }
+    .faq-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 1rem 1.2rem; }
+    .hero-left { padding: 3rem 1.2rem 1.5rem; }
+    .container { padding: 0 1.2rem; }
+    section { padding: 3.5rem 0; }
+    .output-demo { grid-template-columns: 1fr 1fr; }
+    .capsule-grid { grid-template-columns: repeat(2, 1fr); }
+    .month-grid { grid-template-columns: repeat(4, 1fr); }
+    .form-card { padding: 1.2rem; }
+    .pricing-card { padding: 1.8rem; }
+  }
+
+  /* scroll reveal */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.in-view { opacity: 1; transform: translateY(0); }
+</style>
 </head>
 <body>
-  <h1>Hello, world!</h1>
-  <button onclick="console.log('hello');">Press me</button>
-  <script defer type="text/javascript" src="/main.js"></script>
+
+<!-- HEADER -->
+<header>
+  <a href="#" class="logo">Travel <span>Capsule</span> AI</a>
+  <div class="nav-price">
+    AI 여행 스타일링 &nbsp;|&nbsp; <strong>$5</strong> / 1회 여행
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">AI Travel Styling</div>
+    <h1>짐은 줄이고<br><em>스타일은</em><br>채우세요</h1>
+    <p class="hero-sub">
+      여행지별 날씨·분위기에 맞는 코디 이미지를 내 사진으로 미리 생성합니다.<br>
+      캡슐 워드로브 8~12개면 어디든 완벽하게.
+    </p>
+    <div class="hero-cta">
+      <button class="btn-primary" onclick="scrollToForm()">
+        무료 미리보기 시작 →
+      </button>
+      <button class="btn-ghost" onclick="scrollToSample()">샘플 보기</button>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-item">
+        <div class="trust-num">3–4장</div>
+        <div class="trust-label">도시별 코디 이미지</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-num">8–12개</div>
+        <div class="trust-label">캡슐 워드로브 아이템</div>
+      </div>
+      <div class="trust-item">
+        <div class="trust-num">$5</div>
+        <div class="trust-label">1회 여행 전체</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="hero-mosaic" id="heroMosaic">
+      <!-- filled by JS -->
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-bg" id="howItWorks">
+  <div class="container">
+    <p class="section-label reveal">How It Works</p>
+    <h2 class="section-title reveal">3분이면 충분해요</h2>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">1</div>
+        <h3>여행 일정 입력</h3>
+        <p>도시명과 체류 일수를 입력합니다. 멀티시티도 OK.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:0.1s">
+        <div class="step-num">2</div>
+        <h3>사진 업로드 (선택)</h3>
+        <p>내 얼굴 사진을 올리면 나처럼 보이는 코디 이미지를 생성합니다.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:0.2s">
+        <div class="step-num">3</div>
+        <h3>미리보기 확인 후 결제</h3>
+        <p>1장 무료 미리보기로 퀄리티를 먼저 확인하세요. $5에 전체 언락.</p>
+      </div>
+      <div class="step reveal" style="transition-delay:0.3s">
+        <div class="step-num">4</div>
+        <h3>갤러리 공유</h3>
+        <p>생성 완료 후 공유 가능한 갤러리 링크를 드립니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FORM SECTION -->
+<section class="form-section" id="formSection">
+  <div class="container">
+    <p class="section-label">여행 정보 입력</p>
+    <h2 class="section-title">내 여행 스타일링 시작</h2>
+    <p class="section-sub">도시와 기간을 입력하면 AI가 날씨·분위기·활동에 맞는 캡슐 워드로브를 설계합니다.</p>
+
+    <div class="form-grid">
+      <!-- LEFT: inputs -->
+      <div>
+        <!-- Cities -->
+        <div class="form-card" style="margin-bottom:1.2rem">
+          <h3>여행 도시</h3>
+          <div class="city-list" id="cityList">
+            <div class="city-row">
+              <span class="city-icon">📍</span>
+              <input class="city-input" type="text" placeholder="Paris" value="Paris" oninput="updatePreview()">
+              <input class="days-input" type="number" value="4" min="1" max="30" oninput="updatePreview()">
+              <span class="days-label">박</span>
+              <button class="city-remove" onclick="removeCity(this)">×</button>
+            </div>
+            <div class="city-row">
+              <span class="city-icon">📍</span>
+              <input class="city-input" type="text" placeholder="Rome" value="Rome" oninput="updatePreview()">
+              <input class="days-input" type="number" value="3" min="1" max="30" oninput="updatePreview()">
+              <span class="days-label">박</span>
+              <button class="city-remove" onclick="removeCity(this)">×</button>
+            </div>
+          </div>
+          <button class="add-city-btn" onclick="addCity()">+ 도시 추가</button>
+        </div>
+
+        <!-- Month -->
+        <div class="form-card" style="margin-bottom:1.2rem">
+          <h3>여행 월</h3>
+          <div class="month-grid">
+            <button class="month-btn" onclick="selectMonth(this)">1월</button>
+            <button class="month-btn" onclick="selectMonth(this)">2월</button>
+            <button class="month-btn" onclick="selectMonth(this)">3월</button>
+            <button class="month-btn" onclick="selectMonth(this)">4월</button>
+            <button class="month-btn active" onclick="selectMonth(this)">5월</button>
+            <button class="month-btn" onclick="selectMonth(this)">6월</button>
+            <button class="month-btn" onclick="selectMonth(this)">7월</button>
+            <button class="month-btn" onclick="selectMonth(this)">8월</button>
+            <button class="month-btn" onclick="selectMonth(this)">9월</button>
+            <button class="month-btn" onclick="selectMonth(this)">10월</button>
+            <button class="month-btn" onclick="selectMonth(this)">11월</button>
+            <button class="month-btn" onclick="selectMonth(this)">12월</button>
+          </div>
+        </div>
+
+        <!-- Photo upload -->
+        <div class="form-card">
+          <h3>내 사진 업로드 (선택)</h3>
+          <div class="upload-zone" id="uploadZone">
+            <input type="file" accept="image/*" onchange="handlePhotoUpload(this)" id="photoInput">
+            <img class="upload-preview" id="uploadPreview" src="" alt="preview">
+            <div class="upload-icon" id="uploadIcon">🤳</div>
+            <div class="upload-text" id="uploadText">
+              <strong>사진을 드래그하거나 클릭</strong>해서 업로드<br>
+              얼굴이 잘 보이는 정면 사진을 권장합니다<br>
+              <span style="font-size:0.72rem;opacity:0.6">업로드 후 생성 즉시 삭제 · 외부 공유 없음</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: preview card -->
+      <div>
+        <div class="preview-card" id="previewCard">
+          <h3>미리보기 (무료)</h3>
+          <div class="preview-images" id="previewImages">
+            <div class="preview-img-wrap unlocked">
+              <img src="https://images.unsplash.com/photo-1549144511-f099e773c147?w=300&q=60" alt="paris preview">
+              <div class="wm">TRAVEL CAPSULE AI · SAMPLE</div>
+            </div>
+            <div class="preview-img-wrap">
+              <img src="https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=300&q=60" alt="blur">
+              <div class="blur-label"><span>🔒</span>잠금됨</div>
+            </div>
+            <div class="preview-img-wrap">
+              <img src="https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=300&q=60" alt="blur">
+              <div class="blur-label"><span>🔒</span>잠금됨</div>
+            </div>
+            <div class="preview-img-wrap">
+              <img src="https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=300&q=60" alt="blur">
+              <div class="blur-label"><span>🔒</span>잠금됨</div>
+            </div>
+          </div>
+          <p style="font-size:0.75rem;color:rgba(255,255,255,0.4);text-align:center;margin-bottom:1rem">
+            1장은 무료 미리보기 · 나머지 3장 + 전 도시 잠금
+          </p>
+
+          <div class="price-breakdown">
+            <div class="price-row">
+              <span>이미지 생성</span>
+              <span id="priceImages">도시 2개 × 3장</span>
+            </div>
+            <div class="price-row">
+              <span>캡슐 워드로브</span>
+              <span>8–12 아이템</span>
+            </div>
+            <div class="price-row">
+              <span>데일리 플랜</span>
+              <span>7박 플랜</span>
+            </div>
+            <div class="price-row">
+              <span>공유 갤러리 링크</span>
+              <span>포함</span>
+            </div>
+            <div class="price-row total">
+              <span>합계</span>
+              <span>$5</span>
+            </div>
+          </div>
+
+          <button class="checkout-btn" onclick="openCheckout()">
+            🔓 전체 스타일링 언락 — $5
+          </button>
+          <p class="checkout-note">
+            Polar로 안전하게 결제 · 자동 갱신 없음<br>
+            결제 후 약 2–3분 내 결과 전송
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SAMPLE OUTPUT -->
+<section class="sample-section" id="sampleSection">
+  <div class="container">
+    <p class="section-label reveal">Sample Output</p>
+    <h2 class="section-title reveal">이런 결과물을 받게 됩니다</h2>
+    <p class="section-sub reveal">도시마다 3–4가지 무드로 생성 · 얼굴은 내 사진 유지</p>
+
+    <div class="output-demo">
+      <div class="output-card reveal">
+        <div class="output-img">
+          <img src="https://images.unsplash.com/photo-1543332164-6e82f355badc?w=400&q=70" alt="paris cafe">
+          <div class="output-mood">Café Morning</div>
+        </div>
+        <div class="output-info">
+          <div class="output-city">🇫🇷 Paris, France</div>
+          <div class="output-look">리넨 셔츠 + 테일러드 트라우저<br>베이지 트렌치</div>
+        </div>
+      </div>
+      <div class="output-card reveal" style="transition-delay:0.1s">
+        <div class="output-img">
+          <img src="https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=400&q=70" alt="venice">
+          <div class="output-mood">Evening Walk</div>
+        </div>
+        <div class="output-info">
+          <div class="output-city">🇮🇹 Rome, Italy</div>
+          <div class="output-look">슬립 드레스 + 스트랩 샌들<br>린넨 재킷 레이어</div>
+        </div>
+      </div>
+      <div class="output-card reveal" style="transition-delay:0.2s">
+        <div class="output-img">
+          <img src="https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=400&q=70" alt="explore">
+          <div class="output-mood">Sightseeing</div>
+        </div>
+        <div class="output-info">
+          <div class="output-city">🇫🇷 Paris, France</div>
+          <div class="output-look">화이트 티 + 와이드 진<br>블록힐 뮬</div>
+        </div>
+      </div>
+      <div class="output-card reveal" style="transition-delay:0.3s">
+        <div class="output-img">
+          <img src="https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=400&q=70" alt="travel">
+          <div class="output-mood">Airport Look</div>
+        </div>
+        <div class="output-info">
+          <div class="output-city">✈️ 이동일</div>
+          <div class="output-look">조거 팬츠 + 오버사이즈 후드<br>클린 스니커즈</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CAPSULE WARDROBE -->
+<section class="capsule-section">
+  <div class="container">
+    <p class="section-label reveal">Capsule Wardrobe</p>
+    <h2 class="section-title reveal">10개로 완성하는 여행 전체</h2>
+    <p class="section-sub reveal">파리 4일 + 로마 3일 기준 · 5월 · 캐리온 사이즈로 충분</p>
+
+    <div class="capsule-grid">
+      <div class="capsule-item reveal">
+        <div class="capsule-emoji">🧥</div>
+        <div class="capsule-name">리넨 트렌치</div>
+        <div class="capsule-cities">파리 · 로마 · 이동일</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.05s">
+        <div class="capsule-emoji">👕</div>
+        <div class="capsule-name">화이트 티 ×2</div>
+        <div class="capsule-cities">전 일정</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.1s">
+        <div class="capsule-emoji">👔</div>
+        <div class="capsule-name">스트라이프 셔츠</div>
+        <div class="capsule-cities">파리 · 저녁 식사</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.15s">
+        <div class="capsule-emoji">👖</div>
+        <div class="capsule-name">테일러드 팬츠</div>
+        <div class="capsule-cities">파리 · 로마 · 저녁</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.2s">
+        <div class="capsule-emoji">👗</div>
+        <div class="capsule-name">미디 슬립 드레스</div>
+        <div class="capsule-cities">로마 · 카페 · 저녁</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.25s">
+        <div class="capsule-emoji">👟</div>
+        <div class="capsule-name">화이트 스니커즈</div>
+        <div class="capsule-cities">전 일정 · 관광</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.3s">
+        <div class="capsule-emoji">👡</div>
+        <div class="capsule-name">블록힐 뮬</div>
+        <div class="capsule-cities">저녁 · 카페</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.35s">
+        <div class="capsule-emoji">👜</div>
+        <div class="capsule-name">크로스바디백</div>
+        <div class="capsule-cities">관광 · 데이타임</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.4s">
+        <div class="capsule-emoji">🧣</div>
+        <div class="capsule-name">실크 스카프</div>
+        <div class="capsule-cities">파리 · 저녁 · 악세</div>
+      </div>
+      <div class="capsule-item reveal" style="transition-delay:0.45s">
+        <div class="capsule-emoji">🕶️</div>
+        <div class="capsule-name">선글라스</div>
+        <div class="capsule-cities">전 일정</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section">
+  <div class="container" style="text-align:center">
+    <p class="section-label reveal">Pricing</p>
+    <h2 class="section-title reveal" style="max-width:none">딱 $5, 숨겨진 비용 없음</h2>
+    <p class="section-sub reveal" style="margin:0 auto">자동 갱신 없음 · 구독 없음 · 여행마다 필요할 때만</p>
+
+    <div class="pricing-card reveal" style="margin-top:2.5rem">
+      <div class="pricing-badge">One-time · Per Trip</div>
+      <div class="pricing-price"><sup>$</sup>5</div>
+      <div class="pricing-per">1회 여행 · 멀티시티 포함</div>
+      <div class="pricing-features">
+        <div class="pricing-feat">도시별 AI 코디 이미지 3–4장</div>
+        <div class="pricing-feat">캡슐 워드로브 8–12 아이템 리스트</div>
+        <div class="pricing-feat">데일리 아웃핏 플랜</div>
+        <div class="pricing-feat">공유 가능한 갤러리 링크</div>
+        <div class="pricing-feat">생성 후 원본 사진 즉시 삭제</div>
+      </div>
+      <button class="checkout-btn" onclick="openCheckout()" style="margin-top:0">
+        지금 시작하기 — $5
+      </button>
+      <p class="pricing-guarantee">Polar로 안전 결제 · 결과물 불만족 시 24시간 내 환불 가능</p>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="faq-section">
+  <div class="container">
+    <p class="section-label reveal">FAQ</p>
+    <h2 class="section-title reveal">자주 묻는 질문</h2>
+    <div class="faq-grid">
+      <div class="faq-item reveal">
+        <div class="faq-q">사진을 꼭 올려야 하나요?</div>
+        <div class="faq-a">아니요. 사진 없이도 AI 모델 기반으로 생성합니다. 단, 내 얼굴이 담긴 코디 이미지를 원하신다면 업로드를 추천해요.</div>
+      </div>
+      <div class="faq-item reveal" style="transition-delay:0.05s">
+        <div class="faq-q">사진은 어떻게 처리되나요?</div>
+        <div class="faq-a">이미지 생성에만 사용되며 생성 완료 후 서버에서 즉시 삭제됩니다. 외부 공유, 학습 활용 없습니다.</div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">얼마나 걸리나요?</div>
+        <div class="faq-a">결제 후 보통 2–4분 내에 완성됩니다. 도시 수가 많을수록 조금 더 걸릴 수 있어요.</div>
+      </div>
+      <div class="faq-item reveal" style="transition-delay:0.05s">
+        <div class="faq-q">도시 수에 제한이 있나요?</div>
+        <div class="faq-a">MVP 기준 최대 5개 도시까지 가능합니다. 이 이상은 곧 지원 예정이에요.</div>
+      </div>
+      <div class="faq-item reveal">
+        <div class="faq-q">환불이 되나요?</div>
+        <div class="faq-a">생성된 이미지가 명백히 잘못된 경우 24시간 내 100% 환불해드립니다.</div>
+      </div>
+      <div class="faq-item reveal" style="transition-delay:0.05s">
+        <div class="faq-q">어떤 여행에도 맞나요?</div>
+        <div class="faq-a">전 세계 도시 지원, 계절·기후·도시 바이브를 분석해 제안합니다. 비즈니스 트립, 허니문, 배낭여행 모두 OK.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="#">이용약관</a>
+    <a href="#">개인정보처리방침</a>
+    <a href="#">환불정책</a>
+    <a href="#">문의</a>
+  </div>
+  <p>© 2025 Travel Capsule AI · Powered by NanoBanana · 결제: Polar</p>
+</footer>
+
+<!-- CHECKOUT PROGRESS MODAL -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal">
+    <h2 class="modal-title" id="modalTitle">결제 처리 중…</h2>
+    <p class="modal-sub" id="modalSub">잠시 후 AI가 여행 스타일을 생성합니다.</p>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="modal-steps-list" id="modalSteps">
+      <div class="modal-step-row active">
+        <div class="step-dot active">→</div>
+        <span>결제 확인 중</span>
+      </div>
+      <div class="modal-step-row">
+        <div class="step-dot pending"></div>
+        <span>기후 · 바이브 분석</span>
+      </div>
+      <div class="modal-step-row">
+        <div class="step-dot pending"></div>
+        <span>코디 이미지 생성 (AI)</span>
+      </div>
+      <div class="modal-step-row">
+        <div class="step-dot pending"></div>
+        <span>캡슐 워드로브 최적화</span>
+      </div>
+      <div class="modal-step-row">
+        <div class="step-dot pending"></div>
+        <span>갤러리 생성 완료</span>
+      </div>
+    </div>
+    <button class="modal-close" id="modalCloseBtn" onclick="closeModal()">
+      갤러리 보러 가기 →
+    </button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── MOSAIC HERO ───
+const heroImages = [
+  'https://images.unsplash.com/photo-1499856871958-5b9627545d1a?w=200&q=60', // paris
+  'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=200&q=60',
+  'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=200&q=60', // rome
+  'https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=200&q=60',
+  'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=200&q=60', // tokyo
+  'https://images.unsplash.com/photo-1480796927426-f609979314bd?w=200&q=60',
+  'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=200&q=60', // london
+  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=200&q=60',
+  'https://images.unsplash.com/photo-1529655683826-aba9b3e77383?w=200&q=60',
+  'https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=200&q=60',
+  'https://images.unsplash.com/photo-1526129318478-62ed807ebdf9?w=200&q=60',
+  'https://images.unsplash.com/photo-1504701954957-2010ec3bcec1?w=200&q=60',
+];
+const cities = ['Paris','Rome','Tokyo','London','Barcelona','Prague','Amsterdam','Bali'];
+
+const mosaic = document.getElementById('heroMosaic');
+heroImages.forEach((url, i) => {
+  const cell = document.createElement('div');
+  cell.className = 'mosaic-cell';
+  cell.innerHTML = `<img src="${url}" alt="travel ${i}" loading="lazy"><div class="city-badge">${cities[i % cities.length]}</div>`;
+  mosaic.appendChild(cell);
+});
+
+// ─── SCROLL REVEAL ───
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('in-view'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// ─── CITY MANAGEMENT ───
+function addCity() {
+  const list = document.getElementById('cityList');
+  const cities_suggestions = ['London', 'Tokyo', 'Zurich', 'Barcelona', 'Amsterdam', 'Prague', 'Lisbon'];
+  const rand = cities_suggestions[Math.floor(Math.random() * cities_suggestions.length)];
+  const row = document.createElement('div');
+  row.className = 'city-row';
+  row.innerHTML = `
+    <span class="city-icon">📍</span>
+    <input class="city-input" type="text" placeholder="${rand}" oninput="updatePreview()">
+    <input class="days-input" type="number" value="3" min="1" max="30" oninput="updatePreview()">
+    <span class="days-label">박</span>
+    <button class="city-remove" onclick="removeCity(this)">×</button>
+  `;
+  list.appendChild(row);
+  row.querySelector('.city-input').focus();
+  updatePreview();
+  showToast('도시가 추가됐습니다 ✓');
+}
+
+function removeCity(btn) {
+  const rows = document.querySelectorAll('#cityList .city-row');
+  if (rows.length <= 1) { showToast('최소 1개 도시가 필요해요'); return; }
+  btn.closest('.city-row').remove();
+  updatePreview();
+}
+
+function selectMonth(btn) {
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  updatePreview();
+}
+
+// ─── PREVIEW UPDATE ───
+function updatePreview() {
+  const rows = document.querySelectorAll('#cityList .city-row');
+  let totalDays = 0;
+  let cityCount = 0;
+  rows.forEach(r => {
+    const city = r.querySelector('.city-input').value;
+    const days = parseInt(r.querySelector('.days-input').value) || 0;
+    if (city) { cityCount++; totalDays += days; }
+  });
+  const el = document.getElementById('priceImages');
+  if (el) el.textContent = `도시 ${cityCount}개 × 3-4장`;
+
+  // update days in price
+  const daysEl = document.querySelector('.price-row:nth-child(3) span:last-child');
+  if (daysEl) daysEl.textContent = `${totalDays}박 플랜`;
+}
+
+// ─── PHOTO UPLOAD ───
+function handlePhotoUpload(input) {
+  if (!input.files || !input.files[0]) return;
+  const file = input.files[0];
+  if (!file.type.startsWith('image/')) { showToast('이미지 파일만 가능합니다'); return; }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('uploadPreview');
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    document.getElementById('uploadIcon').style.display = 'none';
+    document.getElementById('uploadText').innerHTML = `<strong>사진 업로드 완료 ✓</strong><br><span style="font-size:0.72rem;opacity:0.6">생성 후 즉시 삭제됩니다</span>`;
+    showToast('사진 업로드 완료! 내 얼굴로 코디 이미지를 생성합니다 🎉');
+  };
+  reader.readAsDataURL(file);
+}
+
+// ─── SCROLL HELPERS ───
+function scrollToForm() {
+  document.getElementById('formSection').scrollIntoView({ behavior: 'smooth' });
+}
+function scrollToSample() {
+  document.getElementById('sampleSection').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ─── CHECKOUT FLOW (DEMO) ───
+function openCheckout() {
+  // Validate
+  const rows = document.querySelectorAll('#cityList .city-row');
+  let hasCity = false;
+  rows.forEach(r => { if (r.querySelector('.city-input').value.trim()) hasCity = true; });
+  if (!hasCity) { showToast('먼저 여행 도시를 입력해주세요'); scrollToForm(); return; }
+
+  // Show modal
+  document.getElementById('checkoutModal').classList.add('open');
+  runCheckoutAnimation();
+}
+
+function closeModal() {
+  document.getElementById('checkoutModal').classList.remove('open');
+  showToast('갤러리 링크가 이메일로 발송됩니다 (데모)');
+}
+
+function runCheckoutAnimation() {
+  const steps = document.querySelectorAll('#modalSteps .modal-step-row');
+  const fill = document.getElementById('progressFill');
+  const closeBtn = document.getElementById('modalCloseBtn');
+
+  // Reset
+  steps.forEach((s, i) => {
+    s.className = 'modal-step-row';
+    s.querySelector('.step-dot').className = 'step-dot pending';
+    s.querySelector('.step-dot').textContent = '';
+  });
+  fill.style.width = '0%';
+  closeBtn.classList.remove('show');
+  document.getElementById('modalTitle').textContent = '결제 처리 중…';
+  document.getElementById('modalSub').textContent = '잠시 후 AI가 여행 스타일을 생성합니다.';
+
+  const delays = [0, 800, 2200, 3800, 5500];
+  const labels = ['결제 확인 중', '기후 · 바이브 분석', '코디 이미지 생성 (AI)', '캡슐 워드로브 최적화', '갤러리 생성 완료'];
+  const progresses = [10, 30, 70, 90, 100];
+
+  steps.forEach((step, i) => {
+    const dot = step.querySelector('.step-dot');
+    // Activate
+    setTimeout(() => {
+      steps.forEach((s, j) => {
+        if (j < i) {
+          s.className = 'modal-step-row done';
+          s.querySelector('.step-dot').className = 'step-dot done';
+          s.querySelector('.step-dot').textContent = '✓';
+        }
+      });
+      step.className = 'modal-step-row active';
+      dot.className = 'step-dot active';
+      dot.textContent = '→';
+      fill.style.width = progresses[i] + '%';
+    }, delays[i] * (i === 2 ? 1 : 1));
+  });
+
+  // Complete
+  setTimeout(() => {
+    steps.forEach(s => {
+      s.className = 'modal-step-row done';
+      s.querySelector('.step-dot').className = 'step-dot done';
+      s.querySelector('.step-dot').textContent = '✓';
+    });
+    fill.style.width = '100%';
+    document.getElementById('modalTitle').textContent = '🎉 완성됐습니다!';
+    document.getElementById('modalSub').textContent = '여행 스타일 갤러리가 준비됐어요. 공유 링크도 함께 전달됩니다.';
+    closeBtn.classList.add('show');
+  }, 7000);
+}
+
+// ─── TOAST ───
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// Close modal on overlay click
+document.getElementById('checkoutModal').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Init
+updatePreview();
+</script>
 </body>
 </html>
