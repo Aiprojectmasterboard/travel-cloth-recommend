@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import ResultClient from './ResultClient'
 
+export const runtime = 'edge'
+
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 // Result pages are personalized galleries — exclude from search index.
 
