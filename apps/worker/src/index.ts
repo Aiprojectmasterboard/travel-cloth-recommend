@@ -71,6 +71,33 @@ async function verifyPolarSignature(
   return mismatch === 0;
 }
 
+// ─── Input Validation Helpers ─────────────────────────────────────────────────
+
+/** Accepts only RFC-4122 UUID v4 strings. Used to prevent query-string injection
+ *  in Supabase REST filter paths (e.g., /trips?id=eq.<tripId>). */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUUID(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
+/** Loose RFC-5322 email check — rejects obvious injections. */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
+function isValidEmail(value: string): boolean {
+  return EMAIL_RE.test(value) && value.length <= 254;
+}
+
+/** HTML-escape a string before embedding user-controlled text in HTML templates. */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 const app = new Hono<{ Bindings: Env }>();
@@ -102,12 +129,35 @@ app.post('/api/uploads/face', async (c) => {
   }
   const file = fileEntry as File;
 
+  // Enforce 10 MB size limit before reading into memory.
+  const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
+  if (file.size > MAX_FILE_BYTES) {
+    return c.json({ error: 'File too large. Maximum size is 10 MB.' }, 413);
+  }
+
   const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowedTypes.includes(file.type)) {
     return c.json({ error: 'Only JPEG, PNG, WEBP are allowed' }, 415);
   }
 
-  const ext = file.type.split('/')[1];
+  // Validate file extension matches the declared MIME type.
+  const mimeToExt: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+  };
+  const expectedExt = mimeToExt[file.type] ?? '';
+  const originalName = file.name ?? '';
+  const nameLower = originalName.toLowerCase();
+  const allowedExts = file.type === 'image/jpeg'
+    ? ['.jpg', '.jpeg']
+    : [`.${expectedExt}`];
+  const hasValidExt = allowedExts.some((e) => nameLower.endsWith(e));
+  if (originalName && !hasValidExt) {
+    return c.json({ error: 'File extension does not match declared content type' }, 415);
+  }
+
+  const ext = expectedExt;
   const key = `faces/tmp/${crypto.randomUUID()}.${ext}`;
   const arrayBuffer = await file.arrayBuffer();
 
@@ -134,11 +184,28 @@ app.post('/api/trips', async (c) => {
 
   const { session_id, cities, month, face_url } = body;
 
-  if (!session_id || !Array.isArray(cities) || cities.length === 0) {
-    return c.json({ error: 'session_id and non-empty cities array are required' }, 400);
+  if (!session_id || typeof session_id !== 'string') {
+    return c.json({ error: 'session_id is required' }, 400);
+  }
+  // Enforce a reasonable session_id length to prevent oversized DB writes.
+  if (session_id.length > 128) {
+    return c.json({ error: 'session_id must be 128 characters or fewer' }, 400);
+  }
+  if (!Array.isArray(cities) || cities.length === 0) {
+    return c.json({ error: 'cities must be a non-empty array' }, 400);
+  }
+  // Cap cities to prevent abnormally large JSONB payloads.
+  if (cities.length > 10) {
+    return c.json({ error: 'A maximum of 10 cities per trip is allowed' }, 400);
   }
   if (typeof month !== 'number' || month < 1 || month > 12) {
     return c.json({ error: 'month must be an integer 1-12' }, 400);
+  }
+  // Validate optional face_url: must be a URL pointing to our R2 domain.
+  if (face_url !== undefined) {
+    if (typeof face_url !== 'string' || face_url.length > 512) {
+      return c.json({ error: 'Invalid face_url' }, 400);
+    }
   }
 
   const payload = {
@@ -176,6 +243,10 @@ app.post('/api/checkout', async (c) => {
 
   const { trip_id, customer_email } = body;
   if (!trip_id) return c.json({ error: 'trip_id is required' }, 400);
+  if (!isValidUUID(trip_id)) return c.json({ error: 'trip_id must be a valid UUID' }, 400);
+  if (customer_email !== undefined && !isValidEmail(customer_email)) {
+    return c.json({ error: 'customer_email must be a valid email address' }, 400);
+  }
 
   // Verify trip exists
   const tripRes = await supabaseRequest(c.env, `/trips?id=eq.${trip_id}&limit=1`);
@@ -213,6 +284,7 @@ app.post('/api/checkout', async (c) => {
 
 app.get('/api/trips/:tripId', async (c) => {
   const tripId = c.req.param('tripId');
+  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
 
   const tripRes = await supabaseRequest(c.env, `/trips?id=eq.${tripId}&limit=1`);
   if (!tripRes.ok) return c.json({ error: 'Failed to fetch trip' }, 500);
@@ -246,6 +318,7 @@ app.get('/api/trips/:tripId', async (c) => {
 
 app.post('/api/trips/:tripId/process', async (c) => {
   const tripId = c.req.param('tripId');
+  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
 
   const orderRes = await supabaseRequest(
     c.env,
@@ -309,6 +382,7 @@ app.post('/api/webhooks/polar', async (c) => {
     const userEmail = event.data.user?.email ?? '';
 
     if (!tripId) return c.json({ error: 'Missing trip_id in order metadata' }, 400);
+    if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip_id in order metadata' }, 400);
 
     // Idempotency: polar_order_id is UNIQUE in DB
     const existingRes = await supabaseRequest(
@@ -355,10 +429,13 @@ app.post('/api/webhooks/polar', async (c) => {
 
 app.get('/api/cities/search', async (c) => {
   const input = c.req.query('input') ?? '';
-  if (input.trim().length < 2) return c.json({ predictions: [] });
+  const trimmed = input.trim();
+  if (trimmed.length < 2) return c.json({ predictions: [] });
+  // Enforce a maximum length to prevent excessively large requests to Google Places.
+  if (trimmed.length > 100) return c.json({ error: 'Search query too long' }, 400);
 
   const params = new URLSearchParams({
-    input: input.trim(),
+    input: trimmed,
     types: '(cities)',
     key: c.env.GOOGLE_PLACES_API_KEY,
   });

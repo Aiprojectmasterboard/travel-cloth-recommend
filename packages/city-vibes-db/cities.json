@@ -1,0 +1,242 @@
+[
+  {
+    "city": "Paris",
+    "country": "France",
+    "lat": 48.8566,
+    "lon": 2.3522,
+    "vibe_cluster": "romantic-chic",
+    "style_keywords": ["effortless", "neutral tones", "trench coat", "loafers", "scarf"]
+  },
+  {
+    "city": "Tokyo",
+    "country": "Japan",
+    "lat": 35.6762,
+    "lon": 139.6503,
+    "vibe_cluster": "avant-garde-minimal",
+    "style_keywords": ["layering", "monochrome", "oversized silhouette", "sneakers", "bucket hat"]
+  },
+  {
+    "city": "Rome",
+    "country": "Italy",
+    "lat": 41.9028,
+    "lon": 12.4964,
+    "vibe_cluster": "mediterranean-classic",
+    "style_keywords": ["linen", "earth tones", "leather sandals", "sundress", "straw hat"]
+  },
+  {
+    "city": "Barcelona",
+    "country": "Spain",
+    "lat": 41.3851,
+    "lon": 2.1734,
+    "vibe_cluster": "vibrant-mediterranean",
+    "style_keywords": ["bold colors", "espadrilles", "lightweight fabrics", "maxi dress", "woven bag"]
+  },
+  {
+    "city": "New York",
+    "country": "USA",
+    "lat": 40.7128,
+    "lon": -74.006,
+    "vibe_cluster": "urban-edge",
+    "style_keywords": ["streetwear", "denim", "bomber jacket", "white sneakers", "crossbody bag"]
+  },
+  {
+    "city": "London",
+    "country": "UK",
+    "lat": 51.5074,
+    "lon": -0.1278,
+    "vibe_cluster": "eclectic-british",
+    "style_keywords": ["plaid", "trench coat", "Chelsea boots", "tote bag", "layered knits"]
+  },
+  {
+    "city": "Amsterdam",
+    "country": "Netherlands",
+    "lat": 52.3676,
+    "lon": 4.9041,
+    "vibe_cluster": "cycle-casual",
+    "style_keywords": ["relaxed fit", "rain jacket", "ankle boots", "canvas tote", "striped top"]
+  },
+  {
+    "city": "Berlin",
+    "country": "Germany",
+    "lat": 52.52,
+    "lon": 13.405,
+    "vibe_cluster": "techno-minimalist",
+    "style_keywords": ["all-black", "combat boots", "structured jacket", "cargo pants", "minimal accessories"]
+  },
+  {
+    "city": "Prague",
+    "country": "Czech Republic",
+    "lat": 50.0755,
+    "lon": 14.4378,
+    "vibe_cluster": "bohemian-romantic",
+    "style_keywords": ["floral prints", "vintage-inspired", "midi skirt", "ankle boots", "layered necklaces"]
+  },
+  {
+    "city": "Lisbon",
+    "country": "Portugal",
+    "lat": 38.7169,
+    "lon": -9.1395,
+    "vibe_cluster": "coastal-relaxed",
+    "style_keywords": ["pastel tones", "linen shirt", "white sneakers", "woven bag", "light cardigan"]
+  },
+  {
+    "city": "Bangkok",
+    "country": "Thailand",
+    "lat": 13.7563,
+    "lon": 100.5018,
+    "vibe_cluster": "tropical-street",
+    "style_keywords": ["breathable fabrics", "loose trousers", "sandals", "lightweight shirt", "sun hat"]
+  },
+  {
+    "city": "Bali",
+    "country": "Indonesia",
+    "lat": -8.3405,
+    "lon": 115.092,
+    "vibe_cluster": "bohemian-tropical",
+    "style_keywords": ["flowy fabrics", "batik prints", "sandals", "sarong", "rattan bag"]
+  },
+  {
+    "city": "Sydney",
+    "country": "Australia",
+    "lat": -33.8688,
+    "lon": 151.2093,
+    "vibe_cluster": "beach-casual",
+    "style_keywords": ["boardshorts", "linen", "slip-on sneakers", "bucket hat", "lightweight hoodie"]
+  },
+  {
+    "city": "Melbourne",
+    "country": "Australia",
+    "lat": -37.8136,
+    "lon": 144.9631,
+    "vibe_cluster": "artsy-layers",
+    "style_keywords": ["layering", "bold prints", "leather jacket", "chunky sneakers", "wide-leg trousers"]
+  },
+  {
+    "city": "Dubai",
+    "country": "UAE",
+    "lat": 25.2048,
+    "lon": 55.2708,
+    "vibe_cluster": "luxury-modest",
+    "style_keywords": ["elegant fabrics", "modest coverage", "silk blouse", "tailored trousers", "statement accessories"]
+  },
+  {
+    "city": "Istanbul",
+    "country": "Turkey",
+    "lat": 41.0082,
+    "lon": 28.9784,
+    "vibe_cluster": "eastern-eclectic",
+    "style_keywords": ["rich textures", "jewel tones", "comfortable walking shoes", "light scarf", "structured bag"]
+  },
+  {
+    "city": "Seoul",
+    "country": "South Korea",
+    "lat": 37.5665,
+    "lon": 126.978,
+    "vibe_cluster": "k-fashion-cool",
+    "style_keywords": ["oversized layers", "pastel palette", "platform shoes", "mini bag", "coordinated sets"]
+  },
+  {
+    "city": "Singapore",
+    "country": "Singapore",
+    "lat": 1.3521,
+    "lon": 103.8198,
+    "vibe_cluster": "tropical-polished",
+    "style_keywords": ["smart-casual", "breathable cotton", "loafers", "structured tote", "light blazer"]
+  },
+  {
+    "city": "Hong Kong",
+    "country": "China",
+    "lat": 22.3193,
+    "lon": 114.1694,
+    "vibe_cluster": "urban-sophisticated",
+    "style_keywords": ["tailored pieces", "neutral palette", "comfortable flats", "structured bag", "light layers"]
+  },
+  {
+    "city": "Vienna",
+    "country": "Austria",
+    "lat": 48.2082,
+    "lon": 16.3738,
+    "vibe_cluster": "classical-elegant",
+    "style_keywords": ["classic cuts", "wool coat", "Oxford shoes", "leather gloves", "silk scarf"]
+  },
+  {
+    "city": "Budapest",
+    "country": "Hungary",
+    "lat": 47.4979,
+    "lon": 19.0402,
+    "vibe_cluster": "central-euro-charm",
+    "style_keywords": ["vintage-modern", "earthy tones", "leather boots", "knit sweater", "structured jacket"]
+  },
+  {
+    "city": "Copenhagen",
+    "country": "Denmark",
+    "lat": 55.6761,
+    "lon": 12.5683,
+    "vibe_cluster": "scandi-minimal",
+    "style_keywords": ["clean lines", "muted palette", "quality basics", "leather bag", "functional outerwear"]
+  },
+  {
+    "city": "Stockholm",
+    "country": "Sweden",
+    "lat": 59.3293,
+    "lon": 18.0686,
+    "vibe_cluster": "nordic-cool",
+    "style_keywords": ["Scandinavian minimalism", "natural fabrics", "turtleneck", "slim trousers", "ankle boots"]
+  },
+  {
+    "city": "Zurich",
+    "country": "Switzerland",
+    "lat": 47.3769,
+    "lon": 8.5417,
+    "vibe_cluster": "alpine-refined",
+    "style_keywords": ["high-quality fabrics", "understated luxury", "smart-casual", "hiking-inspired details", "functional elegance"]
+  },
+  {
+    "city": "Cape Town",
+    "country": "South Africa",
+    "lat": -33.9249,
+    "lon": 18.4241,
+    "vibe_cluster": "coastal-adventurous",
+    "style_keywords": ["relaxed safari", "earth tones", "utility jacket", "comfortable boots", "sun protection"]
+  },
+  {
+    "city": "Mexico City",
+    "country": "Mexico",
+    "lat": 19.4326,
+    "lon": -99.1332,
+    "vibe_cluster": "colorful-creative",
+    "style_keywords": ["vibrant colors", "artisan prints", "huarache sandals", "embroidered details", "lightweight layers"]
+  },
+  {
+    "city": "Buenos Aires",
+    "country": "Argentina",
+    "lat": -34.6037,
+    "lon": -58.3816,
+    "vibe_cluster": "latin-chic",
+    "style_keywords": ["tango-inspired elegance", "dark denim", "leather jacket", "heels", "bold accessories"]
+  },
+  {
+    "city": "Mumbai",
+    "country": "India",
+    "lat": 19.076,
+    "lon": 72.8777,
+    "vibe_cluster": "south-asian-fusion",
+    "style_keywords": ["breathable cotton", "kurta-inspired", "sandals", "minimal jewelry", "light dupatta"]
+  },
+  {
+    "city": "Marrakech",
+    "country": "Morocco",
+    "lat": 31.6295,
+    "lon": -7.9811,
+    "vibe_cluster": "bohemian-desert",
+    "style_keywords": ["flowing fabrics", "warm earthy tones", "babouche slippers", "kaftan", "statement jewelry"]
+  },
+  {
+    "city": "Santorini",
+    "country": "Greece",
+    "lat": 36.3932,
+    "lon": 25.4615,
+    "vibe_cluster": "island-dreamy",
+    "style_keywords": ["white and blue palette", "flowy dress", "strappy sandals", "straw hat", "light linen"]
+  }
+]

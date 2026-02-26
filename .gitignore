@@ -3,6 +3,9 @@
 .env.local
 .env*.local
 .env.production
+# Cloudflare Workers local secrets file — NEVER commit
+.dev.vars
+apps/worker/.dev.vars
 
 # Dependencies
 node_modules/

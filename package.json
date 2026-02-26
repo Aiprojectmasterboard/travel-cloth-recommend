@@ -1,0 +1,15 @@
+{
+  "name": "travel-capsule-ai",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "deploy:worker": "cd apps/worker && wrangler deploy",
+    "deploy:web": "cd apps/web && npm run build"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  }
+}

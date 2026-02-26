@@ -1,0 +1,5 @@
+{
+  "name": "@travel-capsule/city-vibes-db",
+  "version": "1.0.0",
+  "main": "./cities.json"
+}
