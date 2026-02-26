@@ -418,7 +418,8 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                     alt="locked preview"
                   />
                   <div className="blur-label">
-                    <span>🔒</span>잠금됨
+                    <span>🔒</span>
+                    <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>$5로 잠금 해제</span>
                   </div>
                 </div>
                 <div className="preview-img-wrap">
@@ -428,7 +429,8 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                     alt="locked preview"
                   />
                   <div className="blur-label">
-                    <span>🔒</span>잠금됨
+                    <span>🔒</span>
+                    <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>$5로 잠금 해제</span>
                   </div>
                 </div>
                 <div className="preview-img-wrap">
@@ -438,7 +440,8 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                     alt="locked preview"
                   />
                   <div className="blur-label">
-                    <span>🔒</span>잠금됨
+                    <span>🔒</span>
+                    <span style={{ fontSize: '0.7rem', marginTop: '2px' }}>$5로 잠금 해제</span>
                   </div>
                 </div>
               </div>
@@ -465,6 +468,15 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
                   <span>{t.form.totalLabel}</span>
                   <span>$5</span>
                 </div>
+                <div className="price-anchor">
+                  스타일리스트 평균 <del>$200/hr</del> vs Travel Capsule AI <strong>$5</strong>
+                </div>
+              </div>
+
+              <div className="checkout-social-proof">
+                <span>👥 이번 달 2,400+ 사용</span>
+                <span>·</span>
+                <span>⚡ 결제 후 4분 내 완성</span>
               </div>
 
               <button
@@ -561,6 +573,26 @@ export default function FormSection({ onCheckout, onToast }: FormSectionProps) {
           cursor: not-allowed;
           transform: none;
         }
+
+        .checkout-social-proof {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 0.5rem;
+          font-size: 0.75rem;
+          color: rgba(255, 255, 255, 0.5);
+          margin-bottom: 0.6rem;
+        }
+
+        .price-anchor {
+          text-align: center;
+          font-size: 0.72rem;
+          color: rgba(255, 255, 255, 0.3);
+          margin-top: 0.5rem;
+          padding-top: 0.5rem;
+        }
+        .price-anchor del { color: rgba(255, 255, 255, 0.2); }
+        .price-anchor strong { color: rgba(200, 169, 110, 0.8); }
       `}</style>
     </section>
   )

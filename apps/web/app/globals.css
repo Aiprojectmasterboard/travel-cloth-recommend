@@ -737,3 +737,113 @@ section { padding: 5rem 0; }
   .modal { padding: 1.5rem; border-radius: 16px; }
   .modal-title { font-size: 1.35rem; }
 }
+
+/* ─────────────────────────────────────────────────────────
+   DESIGN SYSTEM PATCH — Mobile UX + Premium Visual Upgrade
+   ───────────────────────────────────────────────────────── */
+
+/* ─── Hero: overflow guard ─── */
+.hero {
+  overflow-x: hidden;
+  width: 100%;
+  max-width: 100vw;
+}
+
+/* ─── Mobile trust numbers — larger, more readable ─── */
+@media (max-width: 640px) {
+  .trust-num { font-size: 1.4rem; font-weight: 700; }
+  .trust-item { min-width: 60px; text-align: center; }
+}
+
+/* ─── Mobile form inputs — prevent iOS zoom (font-size ≥ 16px) ─── */
+@media (max-width: 480px) {
+  .city-input  { font-size: 16px; }
+  .days-input  { font-size: 16px; width: 50px; }
+  input[type="number"] { font-size: 16px; }
+  .city-row    { gap: 0.4rem; }
+  .checkout-btn { font-size: 0.95rem; padding: 1rem; }
+  .month-grid  { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* ─── Sample section: single column on very small screens ─── */
+@media (max-width: 480px) {
+  .masonry-grid { column-count: 1 !important; }
+}
+
+/* ─── Section typography — extra-small screens ─── */
+@media (max-width: 380px) {
+  .section-title { font-size: 1.6rem; }
+  .hero h1       { font-size: 2rem; }
+}
+
+/* ─── Button upgrade — more tactile feel ─── */
+.btn-primary {
+  background: var(--terracotta);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  box-shadow: 0 4px 20px rgba(196, 97, 58, 0.35);
+  white-space: nowrap;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(196, 97, 58, 0.45);
+  background: #b8552f;
+}
+.btn-primary:active  { transform: translateY(0); box-shadow: 0 2px 10px rgba(196,97,58,0.3); }
+
+/* ─── Checkout button — gradient upgrade ─── */
+.checkout-btn {
+  background: linear-gradient(135deg, #C4613A 0%, #d97a52 100%);
+  box-shadow: 0 6px 25px rgba(196, 97, 58, 0.4);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+.checkout-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #b8552f 0%, #c46840 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 35px rgba(196, 97, 58, 0.5);
+}
+.checkout-btn:active { transform: translateY(0); }
+
+/* ─── How It Works section — border emphasis ─── */
+.how-bg {
+  background: var(--warm-white);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ─── Form card — smooth hover shadow ─── */
+.form-card {
+  transition: box-shadow 0.2s ease;
+}
+
+/* ─── Pricing card — premium dark gradient ─── */
+.pricing-card {
+  background: linear-gradient(145deg, #1e1a16 0%, #26201a 100%);
+  border: 1px solid rgba(200, 169, 110, 0.3);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+}
+
+/* ─── Section label — stronger terracotta brand ─── */
+.section-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--terracotta);
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+/* ─── Section sub — comfortable reading width ─── */
+.section-sub {
+  font-size: 1.05rem;
+  color: var(--muted);
+  max-width: 520px;
+  line-height: 1.7;
+}

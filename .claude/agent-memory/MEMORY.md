@@ -58,3 +58,17 @@ so each locale can produce properly localised social copy.
 Cloudflare Pages — every page needs `export const runtime = 'edge'`
 Build command: `cd apps/web && npx next build`
 Build succeeds cleanly as of 2026-02-26.
+
+## Conversion Copy Patterns (ko locale — 2026-02-26)
+Pain-first headline: "파리 3월, 뭐 입어야 할지 모르겠다면?"
+Primary CTA: low-commitment "무료 미리보기 — 지금 바로"
+Social proof badge with animated pulse dot: "이번 달 2,400+ 여행자가 사용 중"
+Pricing anchoring block: ~~$200/hr~~ vs $5 side-by-side in `.pricing-compare`
+Soft urgency nudge below guarantee: "여행 출발 전에 준비하세요 — 나중에 하면 잊어요"
+Checkout micro-copy row above button: "👥 이번 달 2,400+ 사용 · ⚡ 결제 후 4분 내 완성"
+Blur overlay label: "🔒 $5로 잠금 해제" (3 locked images)
+Price anchor below total row: strikethrough $200/hr vs bold $5
+
+### i18n Rule: new keys require types.ts + ALL locale files update
+`\n` in strings needs `whiteSpace: 'pre-line'` on the parent element to render as line break.
+FAQ items array is append-only — new items go at the end.
