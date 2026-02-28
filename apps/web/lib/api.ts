@@ -13,7 +13,7 @@ import type {
   GrowthResult,
 } from '../../../packages/types'
 
-const BASE_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
+const BASE_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? 'https://travel-capsule-worker.netson94.workers.dev'
 
 // ─── Generic helpers ──────────────────────────────────────────────────────────
 

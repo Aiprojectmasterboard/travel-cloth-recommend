@@ -4,7 +4,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 
 export const TURNSTILE_SITE_KEY =
-  process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ?? ''
+  process.env.NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY ?? '0x4AAAAAACj5TNMi2k0b77UT'
 
 // Augment the window type for Turnstile global
 declare global {
