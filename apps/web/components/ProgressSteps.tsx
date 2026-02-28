@@ -129,7 +129,7 @@ export default function ProgressSteps({ currentStep }: ProgressStepsProps) {
         /* ── Label ── */
         .step-label {
           margin-top: 0.45rem;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.72rem;
           font-weight: 500;
           text-align: center;

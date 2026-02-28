@@ -159,7 +159,7 @@ export default function SocialProof() {
         }
 
         .stat-label {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.78rem;
           color: var(--muted, #9c8c7e);
           font-weight: 500;
@@ -207,7 +207,7 @@ export default function SocialProof() {
         .review-text {
           margin: 0;
           padding: 0;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.9rem;
           color: var(--ink, #1a1410);
           line-height: 1.55;
@@ -223,14 +223,14 @@ export default function SocialProof() {
         }
 
         .review-author {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.82rem;
           font-weight: 600;
           color: var(--ink, #1a1410);
         }
 
         .review-trip {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.75rem;
           color: var(--muted, #9c8c7e);
         }

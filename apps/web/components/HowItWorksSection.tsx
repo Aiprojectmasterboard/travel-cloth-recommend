@@ -218,7 +218,7 @@ export default function HowItWorksSection() {
           font-weight: 500;
           color: var(--ink);
           white-space: nowrap;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
         }
         :global(.mini-badge--weather) {
           background: rgba(200, 169, 110, 0.15);
@@ -235,7 +235,7 @@ export default function HowItWorksSection() {
         :global(.mini-tag) {
           font-size: 0.65rem;
           color: var(--muted);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           margin-top: 0.2rem;
         }
 
@@ -299,7 +299,7 @@ export default function HowItWorksSection() {
           white-space: nowrap;
           font-size: 0.52rem;
           font-weight: 700;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           letter-spacing: 0.04em;
           border-radius: 4px;
           padding: 1px 5px;
@@ -316,7 +316,7 @@ export default function HowItWorksSection() {
         /* ─── Step text ─── */
         .step-body { width: 100%; }
         .step-title {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.92rem;
           font-weight: 600;
           color: var(--ink);

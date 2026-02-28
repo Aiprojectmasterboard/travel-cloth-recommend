@@ -238,7 +238,7 @@ export default function HeroSection({ onScrollToForm, onScrollToSample }: HeroSe
           margin-bottom: 1.6rem;
           font-size: 0.84rem;
           color: var(--muted);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
         }
         .social-proof-dot {
           width: 7px;
@@ -384,7 +384,7 @@ export default function HeroSection({ onScrollToForm, onScrollToSample }: HeroSe
           font-size: 0.72rem;
           font-weight: 500;
           color: var(--ink);
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           box-shadow: 0 2px 8px rgba(0,0,0,0.12);
           white-space: nowrap;
         }

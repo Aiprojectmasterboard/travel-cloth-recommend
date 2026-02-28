@@ -77,7 +77,7 @@ export default function LanguageSwitcher({ variant = 'dropdown' }: LanguageSwitc
             border: 1px solid var(--border);
             background: none;
             color: var(--muted);
-            font-family: 'DM Sans', sans-serif;
+            font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
             font-size: 0.72rem;
             font-weight: 500;
             min-width: 44px;
@@ -191,7 +191,7 @@ export default function LanguageSwitcher({ variant = 'dropdown' }: LanguageSwitc
           border-radius: 20px;
           padding: 0.35rem 0.75rem;
           cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.8rem;
           color: var(--ink);
           transition: border-color 0.2s, background 0.2s;
@@ -238,7 +238,7 @@ export default function LanguageSwitcher({ variant = 'dropdown' }: LanguageSwitc
           padding: 0.5rem 0.75rem;
           border-radius: 8px;
           cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.85rem;
           color: var(--ink);
           transition: background 0.15s;

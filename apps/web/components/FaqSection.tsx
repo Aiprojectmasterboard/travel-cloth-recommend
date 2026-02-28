@@ -66,7 +66,7 @@ export default function FaqSection() {
           cursor: pointer;
           padding: 1.1rem 0.5rem;
           text-align: left;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 1rem;
           font-weight: 600;
           color: var(--ink);

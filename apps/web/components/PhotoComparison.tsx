@@ -154,7 +154,7 @@ export default function PhotoComparison() {
           color: var(--muted);
         }
         .comp-title {
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 1.05rem;
           font-weight: 700;
           color: var(--ink);

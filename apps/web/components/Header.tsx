@@ -127,7 +127,7 @@ export default function Header() {
         }
         .nav-link {
           background: none; border: none; cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.88rem; color: var(--muted);
           padding: 0.4rem 0.75rem; border-radius: 6px;
           transition: color 0.2s, background 0.2s;
@@ -145,7 +145,7 @@ export default function Header() {
         .header-cta {
           display: flex; align-items: center; gap: 0.4rem;
           background: var(--terracotta); color: white;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 0.85rem; font-weight: 500;
           padding: 0.55rem 1.2rem; border-radius: 50px;
           border: none; cursor: pointer;
@@ -193,7 +193,7 @@ export default function Header() {
         }
         .mobile-nav-link {
           background: none; border: none; cursor: pointer;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 1rem; color: var(--ink); font-weight: 500;
           padding: 0.75rem 0.5rem;
           text-align: left; border-radius: 8px;
@@ -214,7 +214,7 @@ export default function Header() {
         .mobile-cta-btn {
           margin-top: 0.8rem;
           background: var(--terracotta); color: white;
-          font-family: 'DM Sans', sans-serif;
+          font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
           font-size: 1rem; font-weight: 500;
           padding: 0.85rem; border-radius: 12px;
           border: none; cursor: pointer;
