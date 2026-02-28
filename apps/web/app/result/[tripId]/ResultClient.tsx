@@ -517,13 +517,12 @@ export default function ResultClient({ tripId }: { tripId: string }) {
         </div>
         <div className="hidden md:flex flex-1 justify-end gap-8 items-center">
           <nav className="flex items-center gap-8">
-            <a href="/" className="text-secondary hover:text-primary transition-colors text-sm font-medium">My Trips</a>
-            <a href="#" className="text-primary text-sm font-medium">Lookbooks</a>
-            <a href="/" className="text-secondary hover:text-primary transition-colors text-sm font-medium">Profile</a>
+            <a href="/" className="text-secondary hover:text-primary transition-colors text-sm font-medium">Home</a>
+            <a href="/trip" className="text-secondary hover:text-primary transition-colors text-sm font-medium">New Trip</a>
           </nav>
-          <button className="flex items-center justify-center rounded-full h-10 px-6 bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-bold shadow-md shadow-primary/20">
-            Save Capsule
-          </button>
+          <a href="/auth/login" className="flex items-center justify-center rounded-full h-10 px-6 bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-bold shadow-md shadow-primary/20">
+            Sign In
+          </a>
         </div>
         <button className="md:hidden text-secondary">
           <span className="material-symbols-outlined">menu</span>
@@ -553,9 +552,9 @@ export default function ResultClient({ tripId }: { tripId: string }) {
             <span className="font-sans font-bold">Travel Capsule AI</span>
           </div>
           <div className="flex gap-6 text-sm text-muted">
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Terms</a>
-            <a href="#" className="hover:text-primary transition-colors">Support</a>
+            <a href="/legal/privacy" className="hover:text-primary transition-colors">Privacy</a>
+            <a href="/legal/terms" className="hover:text-primary transition-colors">Terms</a>
+            <a href="mailto:support@travelcapsule.ai" className="hover:text-primary transition-colors">Support</a>
           </div>
           <p className="text-xs text-muted">&copy; {new Date().getFullYear()} Travel Capsule AI</p>
         </div>

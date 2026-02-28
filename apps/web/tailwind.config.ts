@@ -21,8 +21,8 @@ const config: Config = {
         weatherBlue: '#E0F2FE',
       },
       fontFamily: {
-        playfair: ['Playfair Display', 'serif'],
-        sans: ['DM Sans', 'sans-serif'],
+        playfair: ['var(--font-playfair)', 'Playfair Display', 'serif'],
+        sans: ['var(--font-sans)', 'Plus Jakarta Sans', 'sans-serif'],
       },
     },
   },
