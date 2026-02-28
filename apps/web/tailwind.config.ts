@@ -9,13 +9,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        primary: '#b8552e',
+        secondary: '#1A1410',
         sand: '#F5EFE6',
         ink: '#1A1410',
         terracotta: '#C4613A',
         muted: '#8A7B6E',
-        cream: '#FDFAF6',
+        cream: '#FDF8F3',
         'warm-white': '#FAF6F0',
-        gold: '#C8A96E',
+        gold: '#D4AF37',
+        weatherBlue: '#E0F2FE',
       },
       fontFamily: {
         playfair: ['Playfair Display', 'serif'],
