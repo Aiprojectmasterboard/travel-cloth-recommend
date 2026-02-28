@@ -1,19 +1,20 @@
 {
-  "name": "@travel-capsule/worker",
-  "version": "1.0.0",
+  "name": "travel-capsule-worker",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "build": "tsc --noEmit"
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "^4.4.0",
-    "@anthropic-ai/sdk": "^0.24.0"
+    "hono": "^4.6.0",
+    "@anthropic-ai/sdk": "^0.32.0",
+    "@supabase/supabase-js": "^2.46.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20240620.0",
-    "typescript": "^5.4.0",
-    "wrangler": "^3.60.0"
+    "wrangler": "^3.90.0",
+    "typescript": "^5.7.0",
+    "@cloudflare/workers-types": "^4.20241218.0"
   }
 }
