@@ -1,12 +1,13 @@
 /**
  * teaserAgent.ts
  *
- * Generates ONE teaser fashion image via NanoBanana and stores it in R2.
+ * Generates ONE teaser fashion image via Nano Banana 2 (Gemini 3.1 Flash Image)
+ * and stores it in R2.
  * The remaining 3 images shown in the preview are CSS-blurred placeholders
  * rendered client-side — only this single image is actually generated.
  *
- * R2 path: temp/{tripId}/teaser.webp  (TTL: 48 h, deleted after paid fulfillment)
- * Public URL: {R2_PUBLIC_URL}/temp/{tripId}/teaser.webp
+ * R2 path: temp/{tripId}/teaser.png  (TTL: 48 h, deleted after paid fulfillment)
+ * Public URL: {R2_PUBLIC_URL}/temp/{tripId}/teaser.png
  */
 
 import type { Bindings } from '../index';
@@ -19,116 +20,105 @@ export interface TeaserResult {
   expires_at: string; // ISO 8601, 48 h from now
 }
 
-// NanoBanana API response shapes
-interface NanoBananaResponse {
-  image_url?: string;
-  url?: string;
-  id?: string;     // async job id
-  status?: string;
-  error?: string;
+// Gemini API response shapes
+interface GeminiInlineData {
+  mime_type: string;
+  data: string; // base64
 }
 
-interface NanoBananaJobResponse {
-  id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  image_url?: string;
-  url?: string;
-  error?: string;
+interface GeminiPart {
+  text?: string;
+  inline_data?: GeminiInlineData;
+}
+
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: GeminiPart[];
+    };
+  }>;
+  error?: { message: string; code: number };
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const NANOBANANA_BASE = 'https://api.nanobanana.ai/v1';
-const POLL_INTERVAL_MS = 5_000;
-const POLL_MAX_ATTEMPTS = 60; // 5 min max
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const MODEL = 'gemini-3.1-flash-image-preview';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 /**
- * Polls a NanoBanana async job until it completes, fails, or times out.
- */
-async function pollJob(jobId: string, apiKey: string): Promise<string> {
-  for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
-    await sleep(POLL_INTERVAL_MS);
-
-    const res = await fetch(`${NANOBANANA_BASE}/jobs/${jobId}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!res.ok) {
-      throw new Error(`[teaserAgent] NanoBanana job poll HTTP ${res.status}`);
-    }
-
-    const job = (await res.json()) as NanoBananaJobResponse;
-
-    if (job.status === 'completed') {
-      const url = job.image_url ?? job.url;
-      if (!url) throw new Error('[teaserAgent] NanoBanana job completed but no image_url');
-      return url;
-    }
-
-    if (job.status === 'failed') {
-      throw new Error(`[teaserAgent] NanoBanana job failed: ${job.error ?? 'unknown'}`);
-    }
-    // 'pending' or 'processing' → keep polling
-  }
-
-  throw new Error(`[teaserAgent] NanoBanana job ${jobId} timed out after ${POLL_MAX_ATTEMPTS * POLL_INTERVAL_MS / 1000}s`);
-}
-
-/**
- * Calls NanoBanana to generate a single image and returns its remote URL.
- * Handles both sync (image_url returned immediately) and async (job_id polling).
+ * Calls Gemini Nano Banana 2 to generate a single image.
+ * Returns the raw image buffer (PNG).
  */
 async function generateNanoBanana(
   prompt: string,
   apiKey: string,
   faceUrl?: string
-): Promise<string> {
-  const body: Record<string, unknown> = {
-    prompt,
-    negative_prompt:
-      'blurry, low quality, cartoon, anime, illustration, nsfw, nude, watermark, text, logo',
-    width: 768,
-    height: 1024,
-    num_inference_steps: 30,
-    guidance_scale: 7.5,
-  };
+): Promise<ArrayBuffer> {
+  const textParts: Array<{ text: string }> = [];
 
+  // If face image is provided, reference it in the prompt
   if (faceUrl) {
-    body.face_image_url = faceUrl;
-    body.face_strength = 0.82;
+    textParts.push({
+      text: `Reference face for the model (preserve likeness with subtle similarity): ${faceUrl}`,
+    });
   }
 
-  const res = await fetch(`${NANOBANANA_BASE}/generate`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
+  textParts.push({ text: prompt });
+
+  const body = {
+    contents: [{ parts: textParts }],
+    generationConfig: {
+      responseModalities: ['IMAGE', 'TEXT'],
+      imageConfig: {
+        aspectRatio: '3:4',
+        imageSize: '2K',
+      },
     },
-    body: JSON.stringify(body),
-  });
+  };
+
+  const res = await fetch(
+    `${GEMINI_BASE}/models/${MODEL}:generateContent`,
+    {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  );
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`[teaserAgent] NanoBanana API HTTP ${res.status}: ${text}`);
+    throw new Error(`[teaserAgent] Gemini API HTTP ${res.status}: ${text}`);
   }
 
-  const data = (await res.json()) as NanoBananaResponse;
+  const data = (await res.json()) as GeminiResponse;
 
-  if (data.image_url ?? data.url) {
-    return (data.image_url ?? data.url) as string;
+  if (data.error) {
+    throw new Error(`[teaserAgent] Gemini API error: ${data.error.message}`);
   }
 
-  if (data.id) {
-    return pollJob(data.id, apiKey);
+  // Extract base64 image from response
+  const parts = data.candidates?.[0]?.content?.parts;
+  if (!parts) {
+    throw new Error('[teaserAgent] Gemini returned no content parts');
   }
 
-  throw new Error('[teaserAgent] NanoBanana returned neither image_url nor job id');
+  const imagePart = parts.find((p) => p.inline_data?.data);
+  if (!imagePart?.inline_data) {
+    throw new Error('[teaserAgent] Gemini returned no image data');
+  }
+
+  // Decode base64 to ArrayBuffer
+  const binaryString = atob(imagePart.inline_data.data);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
 }
 
 // ─── Main Exported Function ───────────────────────────────────────────────────
@@ -138,9 +128,8 @@ async function generateNanoBanana(
  *
  * Steps:
  * 1. Build an editorial fashion prompt from the vibe
- * 2. Call NanoBanana (with optional face preservation)
- * 3. Download the image buffer
- * 4. Store in R2 at temp/{tripId}/teaser.webp
+ * 2. Call Nano Banana 2 (Gemini 3.1 Flash Image) with optional face reference
+ * 3. Store returned image buffer in R2 at temp/{tripId}/teaser.png
  * 5. Return the public CDN URL
  *
  * @param input - tripId, vibeResult, optional faceUrl
@@ -163,20 +152,13 @@ export async function teaserAgent(
 
   console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);
 
-  // Generate via NanoBanana
-  const remoteImageUrl = await generateNanoBanana(prompt, env.NANOBANANA_API_KEY, faceUrl);
-
-  // Download image buffer
-  const imgRes = await fetch(remoteImageUrl);
-  if (!imgRes.ok) {
-    throw new Error(`[teaserAgent] Failed to download generated image: HTTP ${imgRes.status}`);
-  }
-  const imageBuffer = await imgRes.arrayBuffer();
+  // Generate via Nano Banana 2 (returns raw image buffer directly)
+  const imageBuffer = await generateNanoBanana(prompt, env.NANOBANANA_API_KEY, faceUrl);
 
   // Store in R2
-  const r2Key = `temp/${tripId}/teaser.webp`;
+  const r2Key = `temp/${tripId}/teaser.png`;
   await env.R2.put(r2Key, imageBuffer, {
-    httpMetadata: { contentType: 'image/webp' },
+    httpMetadata: { contentType: 'image/png' },
     customMetadata: {
       trip_id: tripId,
       mood: vibeResult.mood_name,

@@ -1,11 +1,12 @@
 /**
  * imageGenAgent.ts  (Pro / Annual plan)
  *
- * Calls NanoBanana for each StylePrompts entry in parallel (Promise.allSettled),
- * downloads the resulting image, stores it in R2, and updates generation_jobs in Supabase.
+ * Calls Nano Banana 2 (Gemini 3.1 Flash Image) for each StylePrompts entry
+ * in parallel (Promise.allSettled), stores the resulting image in R2,
+ * and updates generation_jobs in Supabase.
  *
- * R2 key pattern: outputs/{tripId}/{city}/{index}.webp
- * Public URL:     {R2_PUBLIC_URL}/outputs/{tripId}/{city}/{index}.webp
+ * R2 key pattern: outputs/{tripId}/{city}/{index}.png
+ * Public URL:     {R2_PUBLIC_URL}/outputs/{tripId}/{city}/{index}.png
  *
  * Retry strategy: exponential backoff — 1 s, 2 s, 4 s (3 attempts per image)
  */
@@ -40,28 +41,30 @@ export interface GeneratedImages {
   failed: number;
 }
 
-// NanoBanana API shapes
-interface NanoBananaResponse {
-  image_url?: string;
-  url?: string;
-  id?: string;
-  status?: string;
-  error?: string;
+// Gemini API response shapes
+interface GeminiInlineData {
+  mime_type: string;
+  data: string; // base64
 }
 
-interface NanoBananaJobResponse {
-  id: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
-  image_url?: string;
-  url?: string;
-  error?: string;
+interface GeminiPart {
+  text?: string;
+  inline_data?: GeminiInlineData;
+}
+
+interface GeminiResponse {
+  candidates?: Array<{
+    content?: {
+      parts?: GeminiPart[];
+    };
+  }>;
+  error?: { message: string; code: number };
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const NANOBANANA_BASE = 'https://api.nanobanana.ai/v1';
-const POLL_INTERVAL_MS = 5_000;
-const POLL_MAX_ATTEMPTS = 60; // 5 min max
+const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+const MODEL = 'gemini-3.1-flash-image-preview';
 const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [1_000, 2_000, 4_000] as const;
 
@@ -76,45 +79,17 @@ function citySlug(city: string): string {
   return city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-// ─── NanoBanana Helpers ───────────────────────────────────────────────────────
-
-async function pollJob(jobId: string, apiKey: string): Promise<string> {
-  for (let i = 0; i < POLL_MAX_ATTEMPTS; i++) {
-    await sleep(POLL_INTERVAL_MS);
-
-    const res = await fetch(`${NANOBANANA_BASE}/jobs/${jobId}`, {
-      headers: { Authorization: `Bearer ${apiKey}` },
-    });
-
-    if (!res.ok) {
-      throw new Error(`[imageGenAgent] NanoBanana job poll HTTP ${res.status}`);
-    }
-
-    const job = (await res.json()) as NanoBananaJobResponse;
-
-    if (job.status === 'completed') {
-      const url = job.image_url ?? job.url;
-      if (!url) throw new Error('[imageGenAgent] NanoBanana job completed but no image_url');
-      return url;
-    }
-
-    if (job.status === 'failed') {
-      throw new Error(`[imageGenAgent] NanoBanana job failed: ${job.error ?? 'unknown'}`);
-    }
-  }
-
-  throw new Error(`[imageGenAgent] NanoBanana job ${jobId} timed out`);
-}
+// ─── Gemini Image Generation ─────────────────────────────────────────────────
 
 /**
- * Calls NanoBanana with exponential-backoff retry (3 attempts).
- * Returns the remote image URL.
+ * Calls Gemini Nano Banana 2 with exponential-backoff retry (3 attempts).
+ * Returns the raw image buffer (PNG).
  */
 async function generateWithRetry(
   sp: StylePrompts,
   apiKey: string,
   faceUrl?: string
-): Promise<string> {
+): Promise<ArrayBuffer> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -123,42 +98,70 @@ async function generateWithRetry(
     }
 
     try {
-      const body: Record<string, unknown> = {
-        prompt: sp.prompt,
-        negative_prompt: sp.negative_prompt,
-        width: 768,
-        height: 1024,
-        num_inference_steps: 30,
-        guidance_scale: 7.5,
-      };
+      const textParts: Array<{ text: string }> = [];
+
       if (faceUrl) {
-        body.face_image_url = faceUrl;
-        body.face_strength = 0.82;
+        textParts.push({
+          text: `Reference face for the model (preserve likeness with subtle similarity): ${faceUrl}`,
+        });
       }
 
-      const res = await fetch(`${NANOBANANA_BASE}/generate`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
+      // Combine prompt with negative prompt instruction
+      const fullPrompt = sp.negative_prompt
+        ? `${sp.prompt}\n\nAvoid: ${sp.negative_prompt}`
+        : sp.prompt;
+      textParts.push({ text: fullPrompt });
+
+      const body = {
+        contents: [{ parts: textParts }],
+        generationConfig: {
+          responseModalities: ['IMAGE', 'TEXT'],
+          imageConfig: {
+            aspectRatio: '3:4',
+            imageSize: '2K',
+          },
         },
-        body: JSON.stringify(body),
-      });
+      };
+
+      const res = await fetch(
+        `${GEMINI_BASE}/models/${MODEL}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'x-goog-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        }
+      );
 
       if (!res.ok) {
-        throw new Error(`NanoBanana HTTP ${res.status}: ${await res.text()}`);
+        throw new Error(`Gemini HTTP ${res.status}: ${await res.text()}`);
       }
 
-      const data = (await res.json()) as NanoBananaResponse;
+      const data = (await res.json()) as GeminiResponse;
 
-      if (data.image_url ?? data.url) {
-        return (data.image_url ?? data.url) as string;
-      }
-      if (data.id) {
-        return await pollJob(data.id, apiKey);
+      if (data.error) {
+        throw new Error(`Gemini API error: ${data.error.message}`);
       }
 
-      throw new Error('NanoBanana returned neither image_url nor job id');
+      const parts = data.candidates?.[0]?.content?.parts;
+      if (!parts) {
+        throw new Error('Gemini returned no content parts');
+      }
+
+      const imagePart = parts.find((p) => p.inline_data?.data);
+      if (!imagePart?.inline_data) {
+        throw new Error('Gemini returned no image data');
+      }
+
+      // Decode base64 to ArrayBuffer
+      const binaryString = atob(imagePart.inline_data.data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      return bytes.buffer;
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       console.warn(
@@ -230,20 +233,13 @@ export async function imageGenAgent(
       cityIndexCounter[slug] = (cityIndexCounter[slug] ?? 0) + 1;
       const idx = cityIndexCounter[slug];
 
-      // Generate image
-      const remoteUrl = await generateWithRetry(sp, env.NANOBANANA_API_KEY, faceUrl);
-
-      // Download buffer
-      const imgRes = await fetch(remoteUrl);
-      if (!imgRes.ok) {
-        throw new Error(`Failed to download generated image: HTTP ${imgRes.status}`);
-      }
-      const buffer = await imgRes.arrayBuffer();
+      // Generate image (returns raw buffer directly from Gemini)
+      const buffer = await generateWithRetry(sp, env.NANOBANANA_API_KEY, faceUrl);
 
       // Store in R2
-      const r2Key = `outputs/${tripId}/${slug}/${idx}.webp`;
+      const r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
       await env.R2.put(r2Key, buffer, {
-        httpMetadata: { contentType: 'image/webp' },
+        httpMetadata: { contentType: 'image/png' },
         customMetadata: {
           trip_id: tripId,
           city: sp.city,
