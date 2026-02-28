@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ShareModal from '@/components/ShareModal'
+import UpgradeModal from '@/components/funnel/UpgradeModal'
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
 
@@ -41,6 +42,7 @@ interface Trip {
   wardrobe_items?: WardrobeItem[]
   daily_plan?: DailyPlan[]
   created_at: string
+  upgrade_token?: string | null
 }
 
 // ─── Demo images (from design reference) ──────────────────────────────────────
@@ -144,7 +146,15 @@ function ProcessingView({ trip }: { trip: Trip }) {
 function GalleryView({ trip, tripId }: { trip: Trip; tripId: string }) {
   const [shareOpen, setShareOpen] = useState(false)
   const [sharePreviewUrl, setSharePreviewUrl] = useState<string | undefined>()
+  const [upgradeOpen, setUpgradeOpen] = useState(false)
   const carouselRef = useRef<HTMLDivElement>(null)
+
+  // Show upgrade modal after 2-second delay if an upgrade token is present
+  useEffect(() => {
+    if (!trip.upgrade_token) return
+    const timer = setTimeout(() => setUpgradeOpen(true), 2000)
+    return () => clearTimeout(timer)
+  }, [trip.upgrade_token])
 
   const cityNames = trip.cities.map(c => c.name)
   const primaryCity = cityNames[0] ?? 'Your City'
@@ -403,6 +413,15 @@ function GalleryView({ trip, tripId }: { trip: Trip; tripId: string }) {
         month={trip.month}
         previewImageUrl={sharePreviewUrl}
       />
+
+      {trip.upgrade_token && (
+        <UpgradeModal
+          isOpen={upgradeOpen}
+          onClose={() => setUpgradeOpen(false)}
+          tripId={tripId}
+          upgradeToken={trip.upgrade_token}
+        />
+      )}
     </div>
   )
 }

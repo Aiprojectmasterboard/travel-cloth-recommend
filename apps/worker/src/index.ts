@@ -572,7 +572,54 @@ app.post('/api/payment/upgrade', async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. GET /api/result/:tripId
+// 7. GET /api/trips/:tripId
+// ─────────────────────────────────────────────────────────────────────────────
+// Unified trip data for ResultClient. Requires paid order.
+// Returns trip + generation_jobs + capsule wardrobe + upgrade_token.
+
+app.get('/api/trips/:tripId', async (c) => {
+  const tripId = c.req.param('tripId');
+  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
+
+  // Require payment
+  const orderRes = await supabase(c.env, `/orders?trip_id=eq.${tripId}&status=eq.paid&limit=1`);
+  const orders = (await orderRes.json()) as Array<Record<string, unknown>>;
+  if (orders.length === 0) return c.json({ error: 'Payment required' }, 402);
+
+  const [tripRows, capsuleRows, jobRows] = await Promise.all([
+    supabase(c.env, `/trips?id=eq.${tripId}&limit=1`).then((r) =>
+      r.json() as Promise<Array<Record<string, unknown>>>
+    ),
+    supabase(c.env, `/capsule_results?trip_id=eq.${tripId}&limit=1`).then((r) =>
+      r.json() as Promise<Array<Record<string, unknown>>>
+    ),
+    supabase(
+      c.env,
+      `/generation_jobs?trip_id=eq.${tripId}&select=id,city,mood,status,image_url&order=created_at.asc`
+    ).then((r) => r.json() as Promise<Array<Record<string, unknown>>>),
+  ]);
+
+  if (tripRows.length === 0) return c.json({ error: 'Trip not found' }, 404);
+
+  const trip = tripRows[0];
+  const capsule = capsuleRows[0] ?? null;
+  const order = orders[0];
+
+  return c.json({
+    id: trip.id,
+    status: trip.status,
+    cities: trip.cities,
+    month: trip.month,
+    generation_jobs: jobRows,
+    wardrobe_items: (capsule?.items as unknown[]) ?? [],
+    daily_plan: (capsule?.daily_plan as unknown[]) ?? [],
+    created_at: trip.created_at,
+    upgrade_token: (order.upgrade_token as string | undefined) ?? null,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. GET /api/result/:tripId
 // ─────────────────────────────────────────────────────────────────────────────
 // Returns the full paid result for a trip (requires paid order).
 
@@ -617,7 +664,7 @@ app.get('/api/result/:tripId', async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 8. GET /api/share/:tripId
+// 9. GET /api/share/:tripId
 // ─────────────────────────────────────────────────────────────────────────────
 // Public share page data — teaser image + trip vibe (no auth required).
 
@@ -642,6 +689,73 @@ app.get('/api/share/:tripId', async (c) => {
     teaser: jobRows[0] ?? null,
     cta_url: `https://travelcapsule.com/result/${tripId}`,
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10. POST /api/account/delete
+// ─────────────────────────────────────────────────────────────────────────────
+// Deletes a user account and associated data. Requires a valid Supabase JWT.
+
+app.post('/api/account/delete', async (c) => {
+  // Verify the user's JWT via Supabase Auth
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return c.json({ error: 'Authorization required' }, 401);
+  }
+  const token = authHeader.slice(7);
+
+  // Validate JWT by fetching the user from Supabase Auth
+  const userRes = await fetch(`${c.env.SUPABASE_URL}/auth/v1/user`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: c.env.SUPABASE_SERVICE_ROLE_KEY,
+    },
+  });
+  if (!userRes.ok) {
+    return c.json({ error: 'Invalid or expired session' }, 401);
+  }
+  const authUser = (await userRes.json()) as { id: string; email?: string };
+  const userId = authUser.id;
+
+  // Clean up user data from our tables (best-effort)
+  // Delete in order: generation_jobs, capsule_results, orders, email_captures → trips
+  const tripRes = await supabase(c.env, `/trips?session_id=eq.${encodeURIComponent(userId)}&select=id`);
+  const trips = tripRes.ok ? ((await tripRes.json()) as Array<{ id: string }>) : [];
+  const tripIds = trips.map((t) => t.id);
+
+  if (tripIds.length > 0) {
+    const tripFilter = `trip_id=in.(${tripIds.join(',')})`;
+    await Promise.allSettled([
+      supabase(c.env, `/generation_jobs?${tripFilter}`, { method: 'DELETE' }),
+      supabase(c.env, `/capsule_results?${tripFilter}`, { method: 'DELETE' }),
+      supabase(c.env, `/orders?${tripFilter}`, { method: 'DELETE' }),
+      supabase(c.env, `/email_captures?${tripFilter}`, { method: 'DELETE' }),
+    ]);
+    await supabase(c.env, `/trips?session_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' });
+  }
+
+  // Delete usage_records by email
+  if (authUser.email) {
+    await supabase(c.env, `/usage_records?user_email=eq.${encodeURIComponent(authUser.email)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // Delete the auth user via Supabase Admin API
+  const deleteRes = await fetch(`${c.env.SUPABASE_URL}/auth/v1/admin/users/${userId}`, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `Bearer ${c.env.SUPABASE_SERVICE_ROLE_KEY}`,
+      apikey: c.env.SUPABASE_SERVICE_ROLE_KEY,
+    },
+  });
+
+  if (!deleteRes.ok) {
+    console.error('[DELETE /api/account/delete] Failed to delete auth user:', await deleteRes.text());
+    return c.json({ error: 'Failed to delete account' }, 500);
+  }
+
+  return c.json({ ok: true });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
