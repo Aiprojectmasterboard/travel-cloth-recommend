@@ -8,7 +8,7 @@ import type {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-4-6-20260219';
 
 // ─── Response Types ───────────────────────────────────────────────────────────
 

@@ -3,7 +3,7 @@ import type { CityVibe, ClimateData, StylePrompt } from '../../../../packages/ty
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MODEL = 'claude-sonnet-4-6';
+const MODEL = 'claude-sonnet-4-6-20260219';
 const NEGATIVE_PROMPT =
   'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, 3d render, blurry, low quality';
 

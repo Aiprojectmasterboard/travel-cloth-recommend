@@ -1,4 +1,4 @@
-import { getClimateData } from './climateAgent';
+import { getClimateData } from './weatherAgent';
 import { generateStylePrompts } from './styleAgent';
 import { generateImage } from './imageGenAgent';
 import { generateCapsule } from './capsuleAgent';
