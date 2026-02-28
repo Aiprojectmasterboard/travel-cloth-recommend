@@ -380,10 +380,14 @@ export default function TripPage() {
                 </div>
               )}
 
-              <div className="mb-8" />
-
               <Button
-                onClick={() => setStep(3)}
+                onClick={() => {
+                  // Auto-sync: single city days = total nights
+                  if (cities.length === 1) {
+                    setCities(prev => prev.map(c => ({ ...c, days: nights })))
+                  }
+                  setStep(3)
+                }}
                 disabled={!startDate || !endDate || nights <= 0}
                 size="xl"
                 className="w-full"
@@ -408,7 +412,7 @@ export default function TripPage() {
               </p>
 
               {/* ── Gender ─── */}
-              <section className="mb-7">
+              <section className="mb-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-3">
                   Gender <span className="text-[#b8552e]">*</span>
                 </p>
@@ -618,12 +622,17 @@ export default function TripPage() {
                 <div className="flex flex-wrap gap-2">
                   {cities.map((c) => (
                     <span key={c.name} className="px-3 py-1 bg-[#b8552e]/8 text-[#b8552e] rounded-full text-xs font-medium">
-                      {c.name} · {c.days ?? 3}d
+                      {c.name} · {c.days ?? nights}d
                     </span>
                   ))}
                   <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium">
                     {formatDateDisplay(startDate)} → {formatDateDisplay(endDate)}
                   </span>
+                  {cities.length > 1 && (
+                    <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium">
+                      {nights}n total
+                    </span>
+                  )}
                   {gender && (
                     <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium capitalize">
                       {gender === 'other' ? 'Non-binary' : gender}
