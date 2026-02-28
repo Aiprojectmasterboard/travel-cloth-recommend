@@ -13,20 +13,19 @@ const MAX_CITIES = 5
 // ─── Style options ─────────────────────────────────────────────────────────────
 
 const STYLE_OPTIONS = [
-  { id: 'casual',      label: 'Casual',         icon: '👕' },
-  { id: 'minimalist',  label: 'Minimalist',      icon: '⬜' },
-  { id: 'streetwear',  label: 'Streetwear',      icon: '🧢' },
-  { id: 'classic',     label: 'Classic',         icon: '🎩' },
-  { id: 'sporty',      label: 'Sporty',          icon: '🏃' },
-  { id: 'bohemian',    label: 'Bohemian',        icon: '🌸' },
-  { id: 'business',    label: 'Business',        icon: '👔' },
+  { id: 'casual',      label: 'Casual',     icon: '👕' },
+  { id: 'minimalist',  label: 'Minimalist',  icon: '⬜' },
+  { id: 'streetwear',  label: 'Streetwear',  icon: '🧢' },
+  { id: 'classic',     label: 'Classic',     icon: '🎩' },
+  { id: 'sporty',      label: 'Sporty',      icon: '🏃' },
+  { id: 'bohemian',    label: 'Bohemian',    icon: '🌸' },
+  { id: 'business',    label: 'Business',    icon: '👔' },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatDateDisplay(iso: string): string {
   if (!iso) return ''
-  // Parse without timezone to avoid off-by-one day
   const [y, m, d] = iso.split('-').map(Number)
   return new Date(y, m - 1, d).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
@@ -43,7 +42,6 @@ function getMonthFromDate(iso: string): number {
   return new Date(iso + 'T00:00:00').getMonth() + 1
 }
 
-// Minimum selectable date = today
 const TODAY = new Date().toISOString().split('T')[0]
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -52,7 +50,8 @@ export default function TripPage() {
   const router = useRouter()
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile } = useTurnstile()
 
-  const [step, setStep] = useState<1 | 2 | 3>(1)
+  // Now 2 steps instead of 3
+  const [step, setStep] = useState<1 | 2>(1)
 
   // Step 1 — Cities
   const [cities, setCities] = useState<CityInput[]>([])
@@ -60,23 +59,21 @@ export default function TripPage() {
   const [suggestions, setSuggestions] = useState<typeof CITY_DB>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  // Step 2 — Date range
+  // Step 1 — Date range (combined with cities)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
 
-  // Step 3 — Profile
+  // Step 2 — Profile
   const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null)
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric')
-  // Metric inputs
   const [heightCm, setHeightCm] = useState('')
   const [weightKg, setWeightKg] = useState('')
-  // Imperial inputs
   const [heightFt, setHeightFt] = useState('')
   const [heightIn, setHeightIn] = useState('')
   const [weightLb, setWeightLb] = useState('')
   const [stylePrefs, setStylePrefs] = useState<string[]>([])
 
-  // Step 3 — Photo (optional)
+  // Step 2 — Photo (optional)
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -101,7 +98,7 @@ export default function TripPage() {
   function addCityFromSuggestion(s: (typeof CITY_DB)[0]) {
     if (cities.length >= MAX_CITIES) return
     if (cities.some((c) => c.name.toLowerCase() === s.city.toLowerCase())) return
-    setCities((prev) => [...prev, { name: s.city, country: s.country, lat: s.lat, lon: s.lon, days: 3 }])
+    setCities((prev) => [...prev, { name: s.city, country: s.country, lat: s.lat, lon: s.lon }])
     setCityInput('')
     setSuggestions([])
     setShowSuggestions(false)
@@ -111,7 +108,7 @@ export default function TripPage() {
     const name = cityInput.trim()
     if (!name || cities.length >= MAX_CITIES) return
     if (cities.some((c) => c.name.toLowerCase() === name.toLowerCase())) return
-    setCities((prev) => [...prev, { name, country: '', days: 3 }])
+    setCities((prev) => [...prev, { name, country: '' }])
     setCityInput('')
     setSuggestions([])
     setShowSuggestions(false)
@@ -119,12 +116,6 @@ export default function TripPage() {
 
   function removeCity(name: string) {
     setCities((prev) => prev.filter((c) => c.name !== name))
-  }
-
-  function updateDays(name: string, delta: number) {
-    setCities((prev) =>
-      prev.map((c) => c.name === name ? { ...c, days: Math.max(1, Math.min(30, (c.days ?? 3) + delta)) } : c)
-    )
   }
 
   // ─── Photo helper ────────────────────────────────────────────────────────────
@@ -154,7 +145,6 @@ export default function TripPage() {
         face_url = result.face_url
       }
 
-      // Convert to metric for the API
       const resolvedHeightCm = unitSystem === 'metric'
         ? (heightCm ? parseInt(heightCm) : undefined)
         : (heightFt || heightIn
@@ -164,9 +154,18 @@ export default function TripPage() {
         ? (weightKg ? parseInt(weightKg) : undefined)
         : (weightLb ? Math.round(parseInt(weightLb) * 0.453592) : undefined)
 
+      // Distribute nights evenly across cities (days auto-computed from date range)
+      const totalNights = getNightCount(startDate, endDate)
+      const baseNights = Math.max(1, Math.floor(totalNights / cities.length))
+      const remainder = totalNights - baseNights * cities.length
+      const citiesWithDays: CityInput[] = cities.map((c, i) => ({
+        ...c,
+        days: baseNights + (i < remainder ? 1 : 0),
+      }))
+
       const token = turnstileToken ?? 'dev-bypass'
       const preview = await apiPost<PreviewResponse>('/api/preview', {
-        cities,
+        cities: citiesWithDays,
         month: getMonthFromDate(startDate),
         start_date: startDate,
         end_date: endDate,
@@ -190,6 +189,7 @@ export default function TripPage() {
   // ─── Render ──────────────────────────────────────────────────────────────────
 
   const nights = getNightCount(startDate, endDate)
+  const step1Valid = cities.length > 0 && !!startDate && !!endDate && nights > 0
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
@@ -203,9 +203,9 @@ export default function TripPage() {
           Travel <span className="italic text-[#b8552e]">Capsule</span> AI
         </a>
 
-        {/* Step indicator */}
+        {/* Step indicator — 2 steps */}
         <div className="flex items-center gap-2" aria-label="Form progress">
-          {([1, 2, 3] as const).map((s) => (
+          {([1, 2] as const).map((s) => (
             <div
               key={s}
               className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
@@ -230,14 +230,22 @@ export default function TripPage() {
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-lg mx-auto">
 
-          {/* ─── Step 1: Cities ──────────────────────────────────── */}
+          {/* ─── Step 1: Where + When (combined) ─────────────────── */}
           {step === 1 && (
             <div>
-              <p className="text-xs uppercase tracking-widest text-[#b8552e]/70 font-medium mb-2">Step 1 of 3</p>
+              <p className="text-xs uppercase tracking-widest text-[#b8552e]/70 font-medium mb-2">Step 1 of 2</p>
               <h1 className="text-3xl font-bold text-[#1A1410] mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
-                Where are you going?
+                Plan your trip
               </h1>
-              <p className="text-[#9c8c7e] mb-7">Add up to {MAX_CITIES} destinations.</p>
+              <p className="text-[#9c8c7e] mb-7">
+                Choose your destinations and travel dates.
+              </p>
+
+              {/* ── Where ── */}
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-3">
+                Where are you going?
+                <span className="ml-1.5 font-normal normal-case text-[#9c8c7e]/60">Up to {MAX_CITIES} destinations</span>
+              </p>
 
               <div className="relative mb-4">
                 <div className="flex gap-2">
@@ -286,6 +294,7 @@ export default function TripPage() {
                 )}
               </div>
 
+              {/* City list */}
               {cities.length > 0 && (
                 <div className="space-y-2 mb-7">
                   {cities.map((city, i) => (
@@ -297,14 +306,10 @@ export default function TripPage() {
                         <p className="font-medium text-[#1A1410] text-sm truncate">{city.name}</p>
                         {city.country && <p className="text-xs text-[#9c8c7e]">{city.country}</p>}
                       </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <button onClick={() => updateDays(city.name, -1)} className="w-6 h-6 rounded-full bg-[#F5EFE6] text-[#1A1410] text-sm font-bold flex items-center justify-center hover:bg-[#e9e0d4] transition-colors">−</button>
-                        <span className="text-sm text-[#1A1410] w-8 text-center tabular-nums">{city.days ?? 3}d</span>
-                        <button onClick={() => updateDays(city.name, 1)} className="w-6 h-6 rounded-full bg-[#F5EFE6] text-[#1A1410] text-sm font-bold flex items-center justify-center hover:bg-[#e9e0d4] transition-colors">+</button>
-                      </div>
                       <button
                         onClick={() => removeCity(city.name)}
                         className="w-6 h-6 rounded-full bg-[#1A1410]/6 text-[#9c8c7e] flex items-center justify-center hover:bg-red-50 hover:text-red-400 transition-colors flex-shrink-0"
+                        aria-label={`Remove ${city.name}`}
                       >
                         <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -315,32 +320,14 @@ export default function TripPage() {
                 </div>
               )}
 
-              <Button onClick={() => setStep(2)} disabled={cities.length === 0} size="xl" className="w-full">
-                Continue →
-              </Button>
-            </div>
-          )}
-
-          {/* ─── Step 2: Travel Dates ────────────────────────────── */}
-          {step === 2 && (
-            <div>
-              <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm text-[#9c8c7e] mb-6 hover:text-[#1A1410] transition-colors">
-                ← Back
-              </button>
-              <p className="text-xs uppercase tracking-widest text-[#b8552e]/70 font-medium mb-2">Step 2 of 3</p>
-              <h1 className="text-3xl font-bold text-[#1A1410] mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
+              {/* ── When ── */}
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-3 mt-2">
                 When are you traveling?
-              </h1>
-              <p className="text-[#9c8c7e] mb-7">
-                Select exact dates for precise weather analysis.
               </p>
 
-              {/* Date range inputs */}
               <div className="grid grid-cols-2 gap-3 mb-4">
                 <div>
-                  <label className="block text-xs font-medium text-[#9c8c7e] uppercase tracking-wide mb-1.5">
-                    From
-                  </label>
+                  <label className="block text-xs text-[#9c8c7e] mb-1.5">From</label>
                   <input
                     type="date"
                     value={startDate}
@@ -353,9 +340,7 @@ export default function TripPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-[#9c8c7e] uppercase tracking-wide mb-1.5">
-                    To
-                  </label>
+                  <label className="block text-xs text-[#9c8c7e] mb-1.5">To</label>
                   <input
                     type="date"
                     value={endDate}
@@ -367,43 +352,35 @@ export default function TripPage() {
                 </div>
               </div>
 
-              {/* Duration summary */}
+              {/* Duration summary — auto-computed from dates */}
               {startDate && endDate && nights > 0 && (
                 <div className="mb-8 px-5 py-4 bg-white rounded-xl border border-[#F5EFE6] flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-[#1A1410]">
                       {formatDateDisplay(startDate)} → {formatDateDisplay(endDate)}
                     </p>
-                    <p className="text-xs text-[#9c8c7e] mt-0.5">{nights} night{nights !== 1 ? 's' : ''}</p>
+                    <p className="text-xs text-[#9c8c7e] mt-0.5">
+                      {nights} night{nights !== 1 ? 's' : ''}
+                      {cities.length > 1 && ` · ${cities.length} destinations`}
+                    </p>
                   </div>
                   <span className="text-2xl">✈️</span>
                 </div>
               )}
 
-              <Button
-                onClick={() => {
-                  // Auto-sync: single city days = total nights
-                  if (cities.length === 1) {
-                    setCities(prev => prev.map(c => ({ ...c, days: nights })))
-                  }
-                  setStep(3)
-                }}
-                disabled={!startDate || !endDate || nights <= 0}
-                size="xl"
-                className="w-full"
-              >
+              <Button onClick={() => setStep(2)} disabled={!step1Valid} size="xl" className="w-full">
                 Continue →
               </Button>
             </div>
           )}
 
-          {/* ─── Step 3: Profile + Style + Photo ─────────────────── */}
-          {step === 3 && (
+          {/* ─── Step 2: Profile + Style + Photo ─────────────────── */}
+          {step === 2 && (
             <div>
-              <button onClick={() => setStep(2)} className="flex items-center gap-1.5 text-sm text-[#9c8c7e] mb-6 hover:text-[#1A1410] transition-colors">
+              <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm text-[#9c8c7e] mb-6 hover:text-[#1A1410] transition-colors">
                 ← Back
               </button>
-              <p className="text-xs uppercase tracking-widest text-[#b8552e]/70 font-medium mb-2">Step 3 of 3</p>
+              <p className="text-xs uppercase tracking-widest text-[#b8552e]/70 font-medium mb-2">Step 2 of 2</p>
               <h1 className="text-3xl font-bold text-[#1A1410] mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
                 Personalize your look
               </h1>
@@ -540,7 +517,7 @@ export default function TripPage() {
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-0.5">
                   Your Style
                 </p>
-                <p className="text-xs text-[#9c8c7e]/70 mb-3">Select all that apply — the more you pick, the more personal your capsule</p>
+                <p className="text-xs text-[#9c8c7e]/70 mb-3">Select all that apply</p>
                 <div className="flex flex-wrap gap-2">
                   {STYLE_OPTIONS.map(({ id, label, icon }) => {
                     const selected = stylePrefs.includes(id)
@@ -622,17 +599,15 @@ export default function TripPage() {
                 <div className="flex flex-wrap gap-2">
                   {cities.map((c) => (
                     <span key={c.name} className="px-3 py-1 bg-[#b8552e]/8 text-[#b8552e] rounded-full text-xs font-medium">
-                      {c.name} · {c.days ?? nights}d
+                      {c.name}
                     </span>
                   ))}
                   <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium">
                     {formatDateDisplay(startDate)} → {formatDateDisplay(endDate)}
                   </span>
-                  {cities.length > 1 && (
-                    <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium">
-                      {nights}n total
-                    </span>
-                  )}
+                  <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium">
+                    {nights} night{nights !== 1 ? 's' : ''}
+                  </span>
                   {gender && (
                     <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium capitalize">
                       {gender === 'other' ? 'Non-binary' : gender}
