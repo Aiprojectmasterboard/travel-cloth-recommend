@@ -87,8 +87,8 @@ export default function TermsPage() {
               content, all sales are final. We will consider refund requests made within 24 hours of
               purchase if the Service failed to deliver results due to a technical error on our part.
               Contact us at{' '}
-              <a href="mailto:hello@travelcapsule.ai" className="text-[#b8552e] hover:underline">
-                hello@travelcapsule.ai
+              <a href="mailto:hello@travelscapsule.com" className="text-[#b8552e] hover:underline">
+                hello@travelscapsule.com
               </a>{' '}
               to request a refund.
             </p>
@@ -125,8 +125,8 @@ export default function TermsPage() {
 
         <p className="mt-12 text-sm text-[#9c8c7e]">
           Questions? Email us at{' '}
-          <a href="mailto:hello@travelcapsule.ai" className="text-[#b8552e] hover:underline">
-            hello@travelcapsule.ai
+          <a href="mailto:hello@travelscapsule.com" className="text-[#b8552e] hover:underline">
+            hello@travelscapsule.com
           </a>
           .
         </p>

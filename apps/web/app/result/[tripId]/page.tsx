@@ -20,7 +20,7 @@ export async function generateMetadata(
     openGraph: {
       title: 'Travel Capsule AI — My Travel Style Gallery',
       description: 'View my AI-generated travel outfit images.',
-      url: `https://travelcapsule.ai/result/${tripId}`,
+      url: `https://travelscapsule.com/result/${tripId}`,
       type: 'website',
     },
   }

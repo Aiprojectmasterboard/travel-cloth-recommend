@@ -33,7 +33,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/api/', '/result/'],
       },
     ],
-    sitemap: 'https://travelcapsule.ai/sitemap.xml',
-    host: 'https://travelcapsule.ai',
+    sitemap: 'https://travelscapsule.com/sitemap.xml',
+    host: 'https://travelscapsule.com',
   }
 }

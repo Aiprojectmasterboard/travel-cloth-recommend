@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 
 export const runtime = 'edge'
 
-const SITE_URL = 'https://travelcapsule.ai'
+const SITE_URL = 'https://travelscapsule.com'
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()

@@ -137,7 +137,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   '/api/*',
   cors({
-    origin: ['https://travelcapsule.ai', 'https://travelcapsule.com', 'https://travelscapsule.com', 'http://localhost:3000'],
+    origin: ['https://travelscapsule.com', 'https://travel-cloth-recommend.pages.dev', 'http://localhost:3000'],
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
@@ -284,7 +284,7 @@ app.post('/api/preview/email', async (c) => {
   const teaserUrl = jobs[0]?.image_url ?? '';
 
   // Send mood card email via Resend
-  const galleryPreviewUrl = `https://travelcapsule.ai/result/${trip_id}`;
+  const galleryPreviewUrl = `https://travelscapsule.com/result/${trip_id}`;
   const emailHtml = buildMoodCardEmail(galleryPreviewUrl, teaserUrl);
 
   const emailRes = await fetch('https://api.resend.com/emails', {
@@ -294,7 +294,7 @@ app.post('/api/preview/email', async (c) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      from: 'Travel Capsule AI <hello@travelcapsule.com>',
+      from: 'Travel Capsule AI <hello@travelscapsule.com>',
       to: [email],
       subject: 'Your Travel Mood Card is Ready',
       html: emailHtml,
@@ -360,10 +360,10 @@ app.post('/api/payment/checkout', async (c) => {
   const productId = polarProductId(typedPlan, c.env);
 
   // return_url: redirect to result page after successful payment
-  // Use the request Origin to support both travelcapsule.ai and travelscapsule.com
-  const reqOrigin = c.req.header('origin') ?? 'https://travelcapsule.ai';
-  const allowedOrigins = ['https://travelcapsule.ai', 'https://travelcapsule.com', 'https://travelscapsule.com'];
-  const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelcapsule.ai';
+  // Use the request Origin to support both travelscapsule.com and pages.dev
+  const reqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
+  const allowedOrigins = ['https://travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
+  const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelscapsule.com';
   const returnUrl = `${returnBase}/result/${trip_id}`;
 
   const checkoutPayload: Record<string, unknown> = {
@@ -539,9 +539,9 @@ app.post('/api/payment/upgrade', async (c) => {
   const standardOrder = orders[0];
 
   // Create Polar checkout for Pro upgrade
-  const upgradeReqOrigin = c.req.header('origin') ?? 'https://travelcapsule.ai';
-  const upgradeAllowed = ['https://travelcapsule.ai', 'https://travelcapsule.com', 'https://travelscapsule.com'];
-  const upgradeBase = upgradeAllowed.includes(upgradeReqOrigin) ? upgradeReqOrigin : 'https://travelcapsule.ai';
+  const upgradeReqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
+  const upgradeAllowed = ['https://travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
+  const upgradeBase = upgradeAllowed.includes(upgradeReqOrigin) ? upgradeReqOrigin : 'https://travelscapsule.com';
   const upgradeReturnUrl = `${upgradeBase}/result/${trip_id}`;
   const checkoutPayload = {
     products: [c.env.POLAR_PRODUCT_ID_PRO],
@@ -767,7 +767,7 @@ app.get('/api/result/:tripId', async (c) => {
 
   if (trip.length === 0) return c.json({ error: 'Trip not found' }, 404);
 
-  const shareUrl = `https://travelcapsule.ai/share/${tripId}?utm_source=share&utm_medium=direct`;
+  const shareUrl = `https://travelscapsule.com/share/${tripId}?utm_source=share&utm_medium=direct`;
 
   return c.json({
     trip: trip[0],
@@ -808,7 +808,7 @@ app.get('/api/share/:tripId', async (c) => {
   const moodName = (firstVibe?.mood_label as string) ?? (firstVibe?.mood_name as string) ?? firstCity;
   const ogTitle = `${moodName} | Travel Capsule AI`;
   const ogDesc = `AI-generated travel outfit styling for ${firstCity}. See the full capsule wardrobe.`;
-  const shareUrl = `https://travelcapsule.ai/share/${tripId}?utm_source=share&utm_medium=direct`;
+  const shareUrl = `https://travelscapsule.com/share/${tripId}?utm_source=share&utm_medium=direct`;
 
   // Returns ShareResult shape as expected by ShareClient
   return c.json({

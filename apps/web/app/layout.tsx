@@ -26,7 +26,7 @@ const plusJakartaSans = Plus_Jakarta_Sans({
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const SITE_URL = 'https://travelcapsule.ai'
+const SITE_URL = 'https://travelscapsule.com'
 const SITE_NAME = 'Travel Capsule AI'
 
 // ─── SEO Metadata ─────────────────────────────────────────────────────────────
@@ -348,6 +348,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </LanguageProvider>
         </AuthProvider>
+        {/* Google Analytics */}
+        <Script
+          src="https://www.googletagmanager.com/gtag/js?id=G-K0HR5HHCP6"
+          strategy="afterInteractive"
+        />
+        <Script
+          id="gtag-init"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-K0HR5HHCP6');
+            `,
+          }}
+        />
         {/* Userback — user feedback widget */}
         <Script
           id="userback-init"

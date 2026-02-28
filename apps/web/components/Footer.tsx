@@ -67,7 +67,7 @@ export default function Footer() {
           <a href="#faq" className="footer-link" onClick={e => { e.preventDefault(); document.getElementById('faqSection')?.scrollIntoView({ behavior: 'smooth' }) }}>
             {t.footer.refund}
           </a>
-          <a href="mailto:hello@travelcapsule.ai" className="footer-link">
+          <a href="mailto:hello@travelscapsule.com" className="footer-link">
             {t.footer.contact}
           </a>
         </div>

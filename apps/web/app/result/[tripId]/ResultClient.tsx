@@ -566,7 +566,7 @@ export default function ResultClient({ tripId }: { tripId: string }) {
           <div className="flex gap-6 text-sm text-muted">
             <a href="/legal/privacy" className="hover:text-primary transition-colors">Privacy</a>
             <a href="/legal/terms" className="hover:text-primary transition-colors">Terms</a>
-            <a href="mailto:support@travelcapsule.ai" className="hover:text-primary transition-colors">Support</a>
+            <a href="mailto:support@travelscapsule.com" className="hover:text-primary transition-colors">Support</a>
           </div>
           <p className="text-xs text-muted">&copy; {new Date().getFullYear()} Travel Capsule AI</p>
         </div>

@@ -15,7 +15,7 @@ interface ShareModalProps {
 // ─── UTM link builder ─────────────────────────────────────────────────────────
 
 function buildShareUrl(tripId: string, platform: string): string {
-  const base = `https://travelcapsule.ai/result/${tripId}`
+  const base = `https://travelscapsule.com/result/${tripId}`
   const params = new URLSearchParams({
     utm_source: platform,
     utm_medium: 'social',
@@ -31,7 +31,7 @@ function buildReferralUrl(tripId: string, platform: string): string {
     utm_campaign: 'shared_result',
     utm_content: tripId,
   })
-  return `https://travelcapsule.ai/?${params.toString()}`
+  return `https://travelscapsule.com/?${params.toString()}`
 }
 
 // ─── Platform share openers ───────────────────────────────────────────────────

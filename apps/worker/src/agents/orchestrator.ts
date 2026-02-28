@@ -494,7 +494,7 @@ export async function runResult(
   }
 
   // ── 5. Fulfillment (email + R2 cleanup) ──────────────────────────────────
-  const galleryUrl = `https://travelcapsule.ai/result/${tripId}`;
+  const galleryUrl = `https://travelscapsule.com/result/${tripId}`;
   await fulfillmentAgent({ tripId, email: userEmail, galleryUrl }, env);
 
   // ── 6. Growth (share copy + upgrade token) ────────────────────────────────

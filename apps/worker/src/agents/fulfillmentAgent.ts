@@ -137,7 +137,7 @@ export async function fulfillmentAgent(
   // ── 3. Send email via Resend ──────────────────────────────────────────────
   if (email && isValidEmail(email)) {
     const emailPayload = {
-      from: 'Travel Capsule AI <hello@travelcapsule.com>',
+      from: 'Travel Capsule AI <hello@travelscapsule.com>',
       to: [email],
       subject: `Your Travel Capsule for ${cityNames.map(escapeHtml).join(', ')} is Ready!`,
       html: buildEmailHtml(tripId, galleryUrl, cityNames),

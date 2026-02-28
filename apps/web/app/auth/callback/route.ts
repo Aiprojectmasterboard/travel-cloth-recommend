@@ -3,13 +3,15 @@ import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+export const runtime = 'edge'
+
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const type = requestUrl.searchParams.get('type')
 
   // Validate redirect target against the known site URL to prevent open redirects.
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelcapsule.ai'
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelscapsule.com'
 
   if (code) {
     const cookieStore = await cookies()

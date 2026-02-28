@@ -129,8 +129,8 @@ export default function PrivacyPage() {
             </p>
             <p className="mt-3">
               To exercise any of your rights, contact us at{' '}
-              <a href="mailto:hello@travelcapsule.ai" className="text-[#b8552e] hover:underline">
-                hello@travelcapsule.ai
+              <a href="mailto:hello@travelscapsule.com" className="text-[#b8552e] hover:underline">
+                hello@travelscapsule.com
               </a>
               . We will respond within 30 days.
             </p>
@@ -140,8 +140,8 @@ export default function PrivacyPage() {
 
         <p className="mt-12 text-sm text-[#9c8c7e]">
           Questions? Email us at{' '}
-          <a href="mailto:hello@travelcapsule.ai" className="text-[#b8552e] hover:underline">
-            hello@travelcapsule.ai
+          <a href="mailto:hello@travelscapsule.com" className="text-[#b8552e] hover:underline">
+            hello@travelscapsule.com
           </a>
           .
         </p>

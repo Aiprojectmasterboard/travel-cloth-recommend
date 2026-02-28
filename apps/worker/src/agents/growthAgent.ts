@@ -105,7 +105,7 @@ export async function growthAgent(
 
   // UTM share link
   const shareUrl =
-    `https://travelcapsule.com/share/${tripId}` +
+    `https://travelscapsule.com/share/${tripId}` +
     `?utm_source=share&utm_medium=direct&utm_campaign=${encodeURIComponent(moodName)}`;
 
   // Upgrade token (Standard plan only — valid 3 min for upsell flow)
