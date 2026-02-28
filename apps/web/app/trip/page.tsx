@@ -10,6 +10,60 @@ import CITY_DB from '../../../../packages/city-vibes-db/cities.json'
 
 const MAX_CITIES = 5
 
+// ─── Locale-independent date selector ─────────────────────────────────────────
+
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+const THIS_YEAR = new Date().getFullYear()
+const YEAR_OPTIONS = [THIS_YEAR, THIS_YEAR + 1, THIS_YEAR + 2]
+
+function DateSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string
+  onChange: (iso: string) => void
+  disabled?: boolean
+}) {
+  const [yr, mo, dy] = value ? value.split('-') : ['', '', '']
+
+  function commit(y: string, m: string, d: string) {
+    if (y && m && d) {
+      const maxDay = new Date(+y, +m, 0).getDate()
+      const safe = Math.min(+d, maxDay).toString().padStart(2, '0')
+      onChange(`${y}-${m}-${safe}`)
+    } else {
+      onChange('')
+    }
+  }
+
+  const daysCount = yr && mo ? new Date(+yr, +mo, 0).getDate() : 31
+  const cls = 'px-2 py-2 rounded-lg border border-[#F5EFE6] bg-[#FDF8F3] text-[#1A1410] text-xs focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors disabled:opacity-40'
+
+  return (
+    <div className="flex gap-1">
+      <select value={mo} disabled={disabled} onChange={(e) => commit(yr, e.target.value, dy)} className={`${cls} flex-1`}>
+        <option value="">Month</option>
+        {MONTHS_SHORT.map((label, idx) => {
+          const v = String(idx + 1).padStart(2, '0')
+          return <option key={v} value={v}>{label}</option>
+        })}
+      </select>
+      <select value={dy} disabled={disabled || !mo} onChange={(e) => commit(yr, mo, e.target.value)} className={`${cls} w-16`}>
+        <option value="">Day</option>
+        {Array.from({ length: daysCount }, (_, i) => {
+          const d = String(i + 1).padStart(2, '0')
+          return <option key={d} value={d}>{i + 1}</option>
+        })}
+      </select>
+      <select value={yr} disabled={disabled} onChange={(e) => commit(e.target.value, mo, dy)} className={`${cls} w-20`}>
+        <option value="">Year</option>
+        {YEAR_OPTIONS.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+      </select>
+    </div>
+  )
+}
+
 // ─── Local extended type (not in types package) ────────────────────────────────
 
 interface CityWithDates extends CityInput {
@@ -376,36 +430,18 @@ export default function TripPage() {
                           </button>
                         </div>
 
-                        {/* Date pickers row */}
-                        <div className="flex items-center gap-2 pl-8">
-                          <div className="flex-1">
+                        {/* Date selectors — locale-independent Month/Day/Year */}
+                        <div className="pl-8 mt-1 space-y-2">
+                          <div>
                             <label className="block text-xs text-[#9c8c7e] mb-1">From</label>
-                            <input
-                              type="date"
-                              lang="en"
-                              value={city.start_date}
-                              min={minStart}
-                              onChange={(e) => updateCityDate(i, 'start_date', e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-[#F5EFE6] bg-[#FDF8F3] text-[#1A1410] text-xs focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors cursor-pointer"
-                            />
+                            <DateSelect value={city.start_date} onChange={(v) => updateCityDate(i, 'start_date', v)} />
                           </div>
-                          <span className="text-[#9c8c7e] text-sm mt-4">→</span>
-                          <div className="flex-1">
+                          <div>
                             <label className="block text-xs text-[#9c8c7e] mb-1">To</label>
-                            <input
-                              type="date"
-                              lang="en"
-                              value={city.end_date}
-                              min={city.start_date || minStart}
-                              disabled={!city.start_date}
-                              onChange={(e) => updateCityDate(i, 'end_date', e.target.value)}
-                              className="w-full px-3 py-2 rounded-lg border border-[#F5EFE6] bg-[#FDF8F3] text-[#1A1410] text-xs focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors cursor-pointer disabled:opacity-40"
-                            />
+                            <DateSelect value={city.end_date} onChange={(v) => updateCityDate(i, 'end_date', v)} disabled={!city.start_date} />
                           </div>
                           {nights > 0 && (
-                            <span className="text-xs text-[#9c8c7e] whitespace-nowrap mt-4">
-                              {nights} night{nights !== 1 ? 's' : ''}
-                            </span>
+                            <p className="text-xs text-[#9c8c7e]">{nights} night{nights !== 1 ? 's' : ''}</p>
                           )}
                         </div>
                       </div>
@@ -446,12 +482,12 @@ export default function TripPage() {
               <h1 className="text-3xl font-bold text-[#1A1410] mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
                 Personalize your look
               </h1>
-              <p className="text-[#9c8c7e] mb-7">
+              <p className="text-[#9c8c7e] mb-4">
                 Help the AI style your perfect capsule wardrobe.
               </p>
 
               {/* ── Gender ─── */}
-              <section className="mb-4">
+              <section className="mb-3">
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-3">
                   Gender <span className="text-[#b8552e]">*</span>
                 </p>
