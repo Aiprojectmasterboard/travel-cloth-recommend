@@ -10,6 +10,13 @@ import CITY_DB from '../../../../packages/city-vibes-db/cities.json'
 
 const MAX_CITIES = 5
 
+// ─── Local extended type (not in types package) ────────────────────────────────
+
+interface CityWithDates extends CityInput {
+  start_date: string
+  end_date: string
+}
+
 // ─── Style options ─────────────────────────────────────────────────────────────
 
 const STYLE_OPTIONS = [
@@ -53,15 +60,11 @@ export default function TripPage() {
   // Now 2 steps instead of 3
   const [step, setStep] = useState<1 | 2>(1)
 
-  // Step 1 — Cities
-  const [cities, setCities] = useState<CityInput[]>([])
+  // Step 1 — Cities with per-city dates
+  const [cities, setCities] = useState<CityWithDates[]>([])
   const [cityInput, setCityInput] = useState('')
   const [suggestions, setSuggestions] = useState<typeof CITY_DB>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
-
-  // Step 1 — Date range (combined with cities)
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
 
   // Step 2 — Profile
   const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null)
@@ -95,10 +98,17 @@ export default function TripPage() {
     setShowSuggestions(filtered.length > 0)
   }
 
+  function buildNewCity(name: string, country: string, lat?: number, lon?: number): CityWithDates {
+    // Auto-suggest start_date = previous city's end_date
+    const prev = cities.length > 0 ? cities[cities.length - 1] : null
+    const suggestedStart = prev?.end_date ?? ''
+    return { name, country, lat, lon, start_date: suggestedStart, end_date: '' }
+  }
+
   function addCityFromSuggestion(s: (typeof CITY_DB)[0]) {
     if (cities.length >= MAX_CITIES) return
     if (cities.some((c) => c.name.toLowerCase() === s.city.toLowerCase())) return
-    setCities((prev) => [...prev, { name: s.city, country: s.country, lat: s.lat, lon: s.lon }])
+    setCities((prev) => [...prev, buildNewCity(s.city, s.country, s.lat, s.lon)])
     setCityInput('')
     setSuggestions([])
     setShowSuggestions(false)
@@ -108,7 +118,7 @@ export default function TripPage() {
     const name = cityInput.trim()
     if (!name || cities.length >= MAX_CITIES) return
     if (cities.some((c) => c.name.toLowerCase() === name.toLowerCase())) return
-    setCities((prev) => [...prev, { name, country: '' }])
+    setCities((prev) => [...prev, buildNewCity(name, '')])
     setCityInput('')
     setSuggestions([])
     setShowSuggestions(false)
@@ -116,6 +126,24 @@ export default function TripPage() {
 
   function removeCity(name: string) {
     setCities((prev) => prev.filter((c) => c.name !== name))
+  }
+
+  function updateCityDate(index: number, field: 'start_date' | 'end_date', value: string) {
+    setCities((prev) => {
+      const next = [...prev]
+      next[index] = { ...next[index], [field]: value }
+      // If start_date changed and end_date is now before start_date, clear end_date
+      if (field === 'start_date' && next[index].end_date && value > next[index].end_date) {
+        next[index] = { ...next[index], end_date: '' }
+      }
+      // Auto-suggest next city's start_date when this city's end_date is set
+      if (field === 'end_date' && value && index + 1 < next.length) {
+        if (!next[index + 1].start_date) {
+          next[index + 1] = { ...next[index + 1], start_date: value }
+        }
+      }
+      return next
+    })
   }
 
   // ─── Photo helper ────────────────────────────────────────────────────────────
@@ -131,10 +159,34 @@ export default function TripPage() {
     setStylePrefs((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id])
   }
 
+  // ─── Validation ──────────────────────────────────────────────────────────────
+
+  function allCitiesHaveValidDates(): boolean {
+    if (cities.length === 0) return false
+    for (const city of cities) {
+      if (!city.start_date || !city.end_date) return false
+      if (city.end_date <= city.start_date) return false
+    }
+    return true
+  }
+
+  function hasNoOverlaps(): boolean {
+    for (let i = 1; i < cities.length; i++) {
+      // Each city must start on or after the previous city ends
+      if (cities[i].start_date < cities[i - 1].end_date) return false
+    }
+    return true
+  }
+
+  const overallStartDate = cities.length > 0 ? cities[0].start_date : ''
+  const overallEndDate = cities.length > 0 ? cities[cities.length - 1].end_date : ''
+  const totalNights = getNightCount(overallStartDate, overallEndDate)
+  const step1Valid = allCitiesHaveValidDates() && hasNoOverlaps()
+
   // ─── Submit ──────────────────────────────────────────────────────────────────
 
   async function handleSubmit() {
-    if (cities.length === 0 || !startDate || !endDate || !gender) return
+    if (!step1Valid || !gender) return
     setSubmitting(true)
     setSubmitError(null)
 
@@ -154,14 +206,17 @@ export default function TripPage() {
         ? (weightKg ? parseInt(weightKg) : undefined)
         : (weightLb ? Math.round(parseInt(weightLb) * 0.453592) : undefined)
 
-      // Distribute nights evenly across cities (days auto-computed from date range)
-      const totalNights = getNightCount(startDate, endDate)
-      const baseNights = Math.max(1, Math.floor(totalNights / cities.length))
-      const remainder = totalNights - baseNights * cities.length
-      const citiesWithDays: CityInput[] = cities.map((c, i) => ({
-        ...c,
-        days: baseNights + (i < remainder ? 1 : 0),
+      // Each city's days = nights for that city
+      const citiesWithDays: CityInput[] = cities.map((c) => ({
+        name: c.name,
+        country: c.country,
+        lat: c.lat,
+        lon: c.lon,
+        days: getNightCount(c.start_date, c.end_date),
       }))
+
+      const startDate = overallStartDate
+      const endDate = overallEndDate
 
       const token = turnstileToken ?? 'dev-bypass'
       const preview = await apiPost<PreviewResponse>('/api/preview', {
@@ -187,9 +242,6 @@ export default function TripPage() {
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────────
-
-  const nights = getNightCount(startDate, endDate)
-  const step1Valid = cities.length > 0 && !!startDate && !!endDate && nights > 0
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
@@ -230,7 +282,7 @@ export default function TripPage() {
       <main className="pt-24 pb-16 px-4">
         <div className="max-w-lg mx-auto">
 
-          {/* ─── Step 1: Where + When (combined) ─────────────────── */}
+          {/* ─── Step 1: Where + Per-city dates ───────────────────── */}
           {step === 1 && (
             <div>
               <p className="text-xs uppercase tracking-widest text-[#b8552e]/70 font-medium mb-2">Step 1 of 2</p>
@@ -294,73 +346,83 @@ export default function TripPage() {
                 )}
               </div>
 
-              {/* City list */}
+              {/* City list with per-city date pickers */}
               {cities.length > 0 && (
-                <div className="space-y-2 mb-7">
-                  {cities.map((city, i) => (
-                    <div key={city.name} className="flex items-center gap-3 bg-white rounded-xl px-4 py-3 border border-[#F5EFE6]">
-                      <span className="w-5 h-5 rounded-full bg-[#b8552e]/10 text-[#b8552e] text-xs flex items-center justify-center font-semibold flex-shrink-0">
-                        {i + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[#1A1410] text-sm truncate">{city.name}</p>
-                        {city.country && <p className="text-xs text-[#9c8c7e]">{city.country}</p>}
+                <div className="space-y-3 mb-7">
+                  {cities.map((city, i) => {
+                    const nights = getNightCount(city.start_date, city.end_date)
+                    const prevCityEnd = i > 0 ? cities[i - 1].end_date : ''
+                    const minStart = i === 0 ? TODAY : (prevCityEnd || TODAY)
+
+                    return (
+                      <div key={city.name} className="bg-white rounded-xl border border-[#F5EFE6] px-4 py-3">
+                        {/* City name row */}
+                        <div className="flex items-start gap-3 mb-3">
+                          <span className="w-5 h-5 rounded-full bg-[#b8552e]/10 text-[#b8552e] text-xs flex items-center justify-center font-semibold flex-shrink-0 mt-0.5">
+                            {i + 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-[#1A1410] text-sm truncate">{city.name}</p>
+                            {city.country && <p className="text-xs text-[#9c8c7e]">{city.country}</p>}
+                          </div>
+                          <button
+                            onClick={() => removeCity(city.name)}
+                            className="w-6 h-6 rounded-full bg-[#1A1410]/6 text-[#9c8c7e] flex items-center justify-center hover:bg-red-50 hover:text-red-400 transition-colors flex-shrink-0"
+                            aria-label={`Remove ${city.name}`}
+                          >
+                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </div>
+
+                        {/* Date pickers row */}
+                        <div className="flex items-center gap-2 pl-8">
+                          <div className="flex-1">
+                            <label className="block text-xs text-[#9c8c7e] mb-1">From</label>
+                            <input
+                              type="date"
+                              lang="en"
+                              value={city.start_date}
+                              min={minStart}
+                              onChange={(e) => updateCityDate(i, 'start_date', e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-[#F5EFE6] bg-[#FDF8F3] text-[#1A1410] text-xs focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors cursor-pointer"
+                            />
+                          </div>
+                          <span className="text-[#9c8c7e] text-sm mt-4">→</span>
+                          <div className="flex-1">
+                            <label className="block text-xs text-[#9c8c7e] mb-1">To</label>
+                            <input
+                              type="date"
+                              lang="en"
+                              value={city.end_date}
+                              min={city.start_date || minStart}
+                              disabled={!city.start_date}
+                              onChange={(e) => updateCityDate(i, 'end_date', e.target.value)}
+                              className="w-full px-3 py-2 rounded-lg border border-[#F5EFE6] bg-[#FDF8F3] text-[#1A1410] text-xs focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors cursor-pointer disabled:opacity-40"
+                            />
+                          </div>
+                          {nights > 0 && (
+                            <span className="text-xs text-[#9c8c7e] whitespace-nowrap mt-4">
+                              {nights} night{nights !== 1 ? 's' : ''}
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <button
-                        onClick={() => removeCity(city.name)}
-                        className="w-6 h-6 rounded-full bg-[#1A1410]/6 text-[#9c8c7e] flex items-center justify-center hover:bg-red-50 hover:text-red-400 transition-colors flex-shrink-0"
-                        aria-label={`Remove ${city.name}`}
-                      >
-                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
 
-              {/* ── When ── */}
-              <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-3 mt-2">
-                When are you traveling?
-              </p>
-
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <div>
-                  <label className="block text-xs text-[#9c8c7e] mb-1.5">From</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    min={TODAY}
-                    onChange={(e) => {
-                      setStartDate(e.target.value)
-                      if (endDate && e.target.value > endDate) setEndDate('')
-                    }}
-                    className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] text-sm focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-[#9c8c7e] mb-1.5">To</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate || TODAY}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    disabled={!startDate}
-                    className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] text-sm focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors cursor-pointer disabled:opacity-40"
-                  />
-                </div>
-              </div>
-
-              {/* Duration summary — auto-computed from dates */}
-              {startDate && endDate && nights > 0 && (
+              {/* Total trip summary */}
+              {step1Valid && cities.length > 0 && (
                 <div className="mb-8 px-5 py-4 bg-white rounded-xl border border-[#F5EFE6] flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-[#1A1410]">
-                      {formatDateDisplay(startDate)} → {formatDateDisplay(endDate)}
+                      Total: {formatDateDisplay(overallStartDate)} → {formatDateDisplay(overallEndDate)}
                     </p>
                     <p className="text-xs text-[#9c8c7e] mt-0.5">
-                      {nights} night{nights !== 1 ? 's' : ''}
+                      {totalNights} night{totalNights !== 1 ? 's' : ''}
                       {cities.length > 1 && ` · ${cities.length} destinations`}
                     </p>
                   </div>
@@ -603,10 +665,10 @@ export default function TripPage() {
                     </span>
                   ))}
                   <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium">
-                    {formatDateDisplay(startDate)} → {formatDateDisplay(endDate)}
+                    {formatDateDisplay(overallStartDate)} → {formatDateDisplay(overallEndDate)}
                   </span>
                   <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium">
-                    {nights} night{nights !== 1 ? 's' : ''}
+                    {totalNights} night{totalNights !== 1 ? 's' : ''}
                   </span>
                   {gender && (
                     <span className="px-3 py-1 bg-[#1A1410]/6 text-[#1A1410] rounded-full text-xs font-medium capitalize">
@@ -625,7 +687,7 @@ export default function TripPage() {
 
               <Button
                 onClick={handleSubmit}
-                disabled={cities.length === 0 || !startDate || !endDate || gender === null || submitting}
+                disabled={!step1Valid || gender === null || submitting}
                 loading={submitting}
                 size="xl"
                 className="w-full"
