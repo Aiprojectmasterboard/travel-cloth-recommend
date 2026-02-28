@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import AuthButton from '@/components/AuthButton'
+import { useAuth } from '@/components/AuthProvider'
 import { useTurnstile } from '@/lib/turnstile'
 import { apiPost, uploadPhoto } from '@/lib/api'
 import type { CityInput, PreviewResponse } from '../../../../packages/types'
@@ -84,7 +85,15 @@ const TODAY = new Date().toISOString().split('T')[0]
 
 export default function TripPage() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile } = useTurnstile()
+
+  // Auth guard — redirect to login if not signed in
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.replace('/auth/login')
+    }
+  }, [authLoading, user, router])
 
   // Now 2 steps instead of 3
   const [step, setStep] = useState<1 | 2>(1)
@@ -319,6 +328,15 @@ export default function TripPage() {
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────────
+
+  // Show nothing while auth check is in progress (prevents flash before redirect)
+  if (authLoading || !user) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[#b8552e]/30 border-t-[#b8552e] rounded-full animate-spin" />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">

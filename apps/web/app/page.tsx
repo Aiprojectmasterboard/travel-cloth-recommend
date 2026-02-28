@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useLanguage } from '@/components/LanguageContext'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
 import AuthButton from '@/components/AuthButton'
+import { useAuth } from '@/components/AuthProvider'
 
 // ─── Image URLs (from code.html reference) ────────────────────────────────────
 
@@ -41,7 +42,11 @@ const IMG = {
 
 export default function HomePage() {
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [scrolled, setScrolled] = useState(false)
+
+  // CTA destination: /trip if logged in, /auth/login if not
+  const ctaHref = user ? '/trip' : '/auth/login'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -108,7 +113,7 @@ export default function HomePage() {
               <AuthButton />
             </div>
             <Link
-              href="/trip"
+              href={ctaHref}
               className="bg-primary hover:bg-primary/90 text-cream text-xs font-bold tracking-widest uppercase py-3 px-5 transition-all"
               aria-label={t.nav.cta}
             >
@@ -161,7 +166,7 @@ export default function HomePage() {
 
           {/* CTA */}
           <Link
-            href="/trip"
+            href={ctaHref}
             className="inline-flex items-center gap-3 bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-10 transition-all shadow-lg hover:shadow-xl"
           >
             {t.hero.cta} →
@@ -356,7 +361,7 @@ export default function HomePage() {
 
           {/* "See all 10 items" dark tile below grid on mobile / as overlay concept */}
           <Link
-            href="/trip"
+            href={ctaHref}
             className="mt-3 flex items-center justify-center gap-3 bg-secondary hover:bg-secondary/90 text-cream text-xs font-bold tracking-widest uppercase py-5 transition-all group"
             aria-label={t.blueprint.seeAllItems}
           >
@@ -500,7 +505,7 @@ export default function HomePage() {
           <p className="text-cream/70 text-base md:text-lg mb-10 leading-relaxed">{t.cta.sub}</p>
           <div className="flex flex-col items-center gap-3">
             <Link
-              href="/trip"
+              href={ctaHref}
               className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-12 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 w-full sm:w-auto"
             >
               {t.cta.button}
@@ -543,8 +548,8 @@ export default function HomePage() {
             {[
               { label: t.footer.journal, href: '/' },
               { label: t.footer.methodology, href: '/' },
-              { label: t.footer.pricing, href: '/trip' },
-              { label: t.footer.login, href: '/trip' },
+              { label: t.footer.pricing, href: ctaHref },
+              { label: t.footer.login, href: ctaHref },
               { label: t.footer.instagram, href: '/' },
             ].map(({ label, href }) => (
               <Link

@@ -141,7 +141,7 @@ export default function LoginPage() {
       if (signInError) {
         setError(signInError.message)
       } else {
-        router.push('/')
+        router.push('/trip')
       }
     } catch {
       setError('Sign in failed. Please try again.')
