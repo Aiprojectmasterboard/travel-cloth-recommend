@@ -1,108 +1,188 @@
+/**
+ * capsuleAgent.ts
+ *
+ * Generates a travel capsule wardrobe via Claude API.
+ *
+ * Two modes:
+ *   free  → Returns only item count + 3 layering principles (shown on preview page)
+ *   paid  → Returns full items (8–12) + daily outfit plan
+ *
+ * Model: claude-sonnet-4-6-20260219
+ */
+
 import Anthropic from '@anthropic-ai/sdk';
-import type {
-  CityInput,
-  ClimateData,
-  CapsuleItem,
-  DailyPlan,
-} from '../../../../packages/types/index';
+import type { Bindings, PlanType } from '../index';
+import type { VibeResult } from './vibeAgent';
+import type { WeatherResult } from './weatherAgent';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface CapsuleItem {
+  name: string;
+  category: 'top' | 'bottom' | 'outerwear' | 'shoes' | 'dress/jumpsuit' | 'accessory' | string;
+  why: string;
+  versatility_score: number; // 1–10
+}
+
+export interface DailyOutfit {
+  day: number;
+  city: string;
+  outfit: string[]; // item names from items list
+  note: string;
+}
+
+/** Free-tier teaser output */
+export interface FreeCapsuleResult {
+  plan: 'free';
+  count: number;
+  principles: string[];
+}
+
+/** Paid full output */
+export interface PaidCapsuleResult {
+  plan: PlanType;
+  items: CapsuleItem[];
+  daily_plan: DailyOutfit[];
+}
+
+export type CapsuleResult = FreeCapsuleResult | PaidCapsuleResult;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MODEL = 'claude-sonnet-4-6-20260219';
 
-// ─── Response Types ───────────────────────────────────────────────────────────
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
 
-interface CapsuleResponse {
-  items: CapsuleItem[];
-  daily_plan: DailyPlan[];
+// ─── Shared Context Builder ───────────────────────────────────────────────────
+
+function buildCityContext(
+  cities: Array<{ name: string; days: number }>,
+  vibeResults: VibeResult[],
+  weatherResults: WeatherResult[],
+  month: number
+): string {
+  const monthName = MONTH_NAMES[month - 1] ?? 'Unknown';
+  const lines = cities.map((c, i) => {
+    const vibe = vibeResults[i];
+    const weather = weatherResults[i];
+    const vibeStr = vibe ? `mood: ${vibe.mood_name}, avoid: ${vibe.avoid_note}` : '';
+    const wxStr = weather
+      ? `${weather.climate_band}, ${weather.temperature_day_avg}°C days / ${weather.temperature_night_avg}°C nights, rain ${Math.round(weather.precipitation_prob * 100)}%`
+      : '';
+    return `- ${c.name} (${c.days} days) | ${monthName} | ${wxStr} | ${vibeStr}`;
+  });
+  return lines.join('\n');
 }
 
-// ─── Main Function ────────────────────────────────────────────────────────────
+// ─── Free Mode ────────────────────────────────────────────────────────────────
 
-/**
- * Uses Claude claude-sonnet-4-6 to generate an optimized capsule wardrobe
- * and daily outfit plan for a multi-city trip.
- *
- * Focuses on carry-on friendly packing: 8–12 versatile items that maximize
- * outfit combinations across all destinations.
- */
-export async function generateCapsule(
-  cities: CityInput[],
+async function generateFree(
+  client: Anthropic,
+  cities: Array<{ name: string; days: number }>,
+  vibeResults: VibeResult[],
+  weatherResults: WeatherResult[],
+  month: number
+): Promise<FreeCapsuleResult> {
+  const cityContext = buildCityContext(cities, vibeResults, weatherResults, month);
+  const totalDays = cities.reduce((s, c) => s + c.days, 0);
+
+  const systemPrompt =
+    'You are a minimalist travel packing expert. Your role is to give a precise item count ' +
+    'and three actionable layering principles for a multi-city trip. ' +
+    'Always respond with valid JSON only — no markdown, no explanations.';
+
+  const userPrompt = `Based on this trip, calculate the ideal capsule wardrobe size and give layering principles.
+
+Trip details:
+${cityContext}
+Total days: ${totalDays}
+
+Respond ONLY with this JSON:
+{
+  "count": <integer 9-11>,
+  "principles": [
+    "Principle 1 (one actionable sentence)",
+    "Principle 2 (one actionable sentence)",
+    "Principle 3 (one actionable sentence)"
+  ]
+}`;
+
+  const message = await client.messages.create({
+    model: MODEL,
+    max_tokens: 256,
+    temperature: 0.5,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userPrompt }],
+  });
+
+  const raw = message.content[0];
+  if (raw.type !== 'text') throw new Error('[capsuleAgent:free] Unexpected Claude response type');
+
+  const cleaned = raw.text
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  const parsed = JSON.parse(cleaned) as { count: number; principles: string[] };
+
+  return {
+    plan: 'free',
+    count: Math.min(11, Math.max(9, Number(parsed.count ?? 10))),
+    principles: Array.isArray(parsed.principles)
+      ? parsed.principles.slice(0, 3).map(String)
+      : ['Layer for temperature swings', 'Choose neutral base colors', 'Pack one versatile outerwear piece'],
+  };
+}
+
+// ─── Paid Mode ────────────────────────────────────────────────────────────────
+
+async function generatePaid(
+  client: Anthropic,
+  plan: PlanType,
+  cities: Array<{ name: string; days: number }>,
+  vibeResults: VibeResult[],
+  weatherResults: WeatherResult[],
   month: number,
-  climateData: ClimateData[],
-  apiKey: string
-): Promise<{ items: CapsuleItem[]; daily_plan: DailyPlan[] }> {
-  const client = new Anthropic({ apiKey });
+  tripDays?: number
+): Promise<PaidCapsuleResult> {
+  const cityContext = buildCityContext(cities, vibeResults, weatherResults, month);
+  const totalDays = tripDays ?? cities.reduce((s, c) => s + c.days, 0);
 
-  const MONTH_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-  ];
-  const monthName = MONTH_NAMES[month - 1] ?? 'Unknown';
+  const systemPrompt =
+    'You are an expert travel fashion consultant and capsule wardrobe specialist. ' +
+    'Philosophy: maximum outfit combinations from minimum pieces — strictly carry-on only. ' +
+    'Always respond with valid JSON only — no markdown fences, no explanations.';
 
-  const cityClimateDetails = cities
-    .map((c) => {
-      const climate = climateData.find((cd) => cd.city === c.name);
-      return climate
-        ? `- ${c.name} (${c.days} days): ${climate.vibe_band}, ${climate.temp_min}–${climate.temp_max}°C, precip: ${climate.precipitation}mm`
-        : `- ${c.name} (${c.days} days): climate data unavailable`;
-    })
-    .join('\n');
+  const userPrompt = `Design a capsule wardrobe and daily outfit plan for this trip:
 
-  const totalDays = cities.reduce((sum, c) => sum + c.days, 0);
-  const cityList = cities.map((c) => c.name).join(', ');
-
-  const systemPrompt = `You are an expert travel fashion consultant and capsule wardrobe specialist.
-Your philosophy: maximum outfit combinations from minimum pieces.
-You design carry-on friendly wardrobes that work across multiple climates and dress codes.
-You always think in terms of outfit formulas and item versatility scores.
-Always respond with valid JSON only — no markdown fences, no extra text, no explanations.`;
-
-  const userPrompt = `Create an optimized capsule wardrobe for this multi-city trip:
-
-Destinations: ${cityList}
-Travel Month: ${monthName}
-Total Duration: ${totalDays} days
-
-City-by-City Climate:
-${cityClimateDetails}
+${cityContext}
+Total duration: ${totalDays} days
 
 CONSTRAINTS:
-- Strict carry-on limit: 8–12 clothing items total (shoes count as 1 pair each, accessories don't count)
-- Every item must work with at least 3 other items
+- 8–12 items total (shoes count as 1 pair; accessories excluded from count)
+- Every item must pair with at least 3 others
 - Account for climate transitions between cities
-- Include at least 1 versatile item per climate need
 - No dry-clean-only or delicate fabrics
 
-FOR EACH ITEM provide:
-- name: specific item (e.g., "White linen button-down shirt")
+Item fields:
+- name: specific item (e.g. "White linen button-down shirt")
 - category: one of [top, bottom, outerwear, shoes, dress/jumpsuit, accessory]
-- why: one sentence explaining its role in the capsule
-- versatility_score: 1–10 (10 = pairs with everything)
+- why: one sentence on its role in the capsule
+- versatility_score: 1–10
 
-FOR DAILY PLAN:
-- Assign a day number (1 to ${totalDays})
-- Specify the city for that day
-- List 3–5 item names as the outfit (from the items list)
-- Add a brief note about the activity/occasion
+Daily plan: assign each day to a city, list 3–5 item names as the outfit, add a short activity note.
 
-Respond ONLY with this exact JSON structure:
+Respond ONLY with:
 {
   "items": [
-    {
-      "name": "item name",
-      "category": "category",
-      "why": "one sentence explanation",
-      "versatility_score": 8
-    }
+    { "name": "...", "category": "...", "why": "...", "versatility_score": 8 }
   ],
   "daily_plan": [
-    {
-      "day": 1,
-      "city": "City Name",
-      "outfit": ["Item 1", "Item 2", "Item 3"],
-      "note": "Morning sightseeing to evening dinner"
-    }
+    { "day": 1, "city": "...", "outfit": ["...", "..."], "note": "..." }
   ]
 }`;
 
@@ -111,55 +191,78 @@ Respond ONLY with this exact JSON structure:
     max_tokens: 2048,
     temperature: 0.7,
     system: systemPrompt,
-    messages: [
-      {
-        role: 'user',
-        content: userPrompt,
-      },
-    ],
+    messages: [{ role: 'user', content: userPrompt }],
   });
 
-  const rawContent = message.content[0];
-  if (rawContent.type !== 'text') {
-    throw new Error(`Unexpected Claude response type: ${rawContent.type}`);
-  }
+  const raw = message.content[0];
+  if (raw.type !== 'text') throw new Error('[capsuleAgent:paid] Unexpected Claude response type');
 
-  let parsed: CapsuleResponse;
-  try {
-    const cleaned = rawContent.text
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/```\s*$/i, '')
-      .trim();
-    parsed = JSON.parse(cleaned) as CapsuleResponse;
-  } catch (err) {
-    throw new Error(
-      `Failed to parse Claude capsule response: ${(err as Error).message}\nRaw: ${rawContent.text.slice(0, 500)}`
-    );
-  }
+  const cleaned = raw.text
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  const parsed = JSON.parse(cleaned) as {
+    items: Array<{ name: string; category: string; why: string; versatility_score: number }>;
+    daily_plan: Array<{ day: number; city: string; outfit: string[]; note: string }>;
+  };
 
   if (!Array.isArray(parsed.items) || parsed.items.length === 0) {
-    throw new Error('Claude returned no capsule items');
+    throw new Error('[capsuleAgent] Claude returned no items');
   }
-
   if (!Array.isArray(parsed.daily_plan) || parsed.daily_plan.length === 0) {
-    throw new Error('Claude returned no daily plan');
+    throw new Error('[capsuleAgent] Claude returned no daily_plan');
   }
 
-  // Validate and clamp item counts
-  const items = parsed.items.slice(0, 12).map((item) => ({
+  const items: CapsuleItem[] = parsed.items.slice(0, 12).map((item) => ({
     name: String(item.name ?? ''),
     category: String(item.category ?? 'other'),
     why: String(item.why ?? ''),
     versatility_score: Math.min(10, Math.max(1, Number(item.versatility_score ?? 5))),
   }));
 
-  const daily_plan = parsed.daily_plan.map((plan) => ({
-    day: Number(plan.day ?? 1),
-    city: String(plan.city ?? ''),
-    outfit: Array.isArray(plan.outfit) ? plan.outfit.map(String) : [],
-    note: String(plan.note ?? ''),
+  const daily_plan: DailyOutfit[] = parsed.daily_plan.map((p) => ({
+    day: Number(p.day ?? 1),
+    city: String(p.city ?? ''),
+    outfit: Array.isArray(p.outfit) ? p.outfit.map(String) : [],
+    note: String(p.note ?? ''),
   }));
 
-  return { items, daily_plan };
+  return { plan, items, daily_plan };
+}
+
+// ─── Main Exported Function ───────────────────────────────────────────────────
+
+/**
+ * Generates a capsule wardrobe for a multi-city trip.
+ *
+ * @param input.vibeResult    - Array of VibeResult per city (from vibeAgent)
+ * @param input.weather       - Array of WeatherResult per city (from weatherAgent)
+ * @param input.plan          - "free" | "standard" | "pro" | "annual"
+ * @param input.cities        - Array of { name, days }
+ * @param input.month         - Travel month (1–12)
+ * @param input.tripDays      - Optional total days override
+ * @param env                 - Cloudflare Worker bindings
+ */
+export async function capsuleAgent(
+  input: {
+    vibeResults: VibeResult[];
+    weather: WeatherResult[];
+    plan: PlanType | 'free';
+    cities: Array<{ name: string; days: number }>;
+    month: number;
+    tripDays?: number;
+  },
+  env: Bindings
+): Promise<CapsuleResult> {
+  const { vibeResults, weather, plan, cities, month, tripDays } = input;
+
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+
+  if (plan === 'free') {
+    return generateFree(client, cities, vibeResults, weather, month);
+  }
+
+  return generatePaid(client, plan, cities, vibeResults, weather, month, tripDays);
 }

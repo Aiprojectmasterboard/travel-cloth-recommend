@@ -1,69 +1,132 @@
-import type { Trip } from '../../../../packages/types/index';
+/**
+ * growthAgent.ts
+ *
+ * Generates viral share copy + UTM-tagged URL + a short-lived upgrade token.
+ *
+ * upgrade_token format: HMAC-SHA256({tripId}-{timestampMs}, POLAR_WEBHOOK_SECRET)
+ * expressed as "{timestampMs}.{hex}" — valid for 3 minutes.
+ *
+ * Social copy:
+ *   instagram — emoji-rich, hashtag
+ *   twitter   — curiosity hook + link
+ *   kakao     — Korean-language copy
+ */
+
+import type { Bindings, PlanType } from '../index';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-export interface ShareContent {
-  message_ko: string;
-  message_en: string;
+export interface GrowthResult {
   share_url: string;
-}
-
-// ─── UTM Builder ──────────────────────────────────────────────────────────────
-
-function buildShareUrl(tripId: string): string {
-  const base = `https://travelcapsule.ai/result/${tripId}`;
-  const params = new URLSearchParams({
-    utm_source: 'share',
-    utm_medium: 'user',
-    utm_campaign: 'trip_share',
-  });
-  return `${base}?${params.toString()}`;
-}
-
-// ─── City List Formatter ──────────────────────────────────────────────────────
-
-function formatCityList(trip: Trip): { en: string; ko: string } {
-  const cities = trip.cities.map((c) => c.name);
-
-  if (cities.length === 0) return { en: 'my destination', ko: '여행지' };
-
-  const first = cities[0] ?? 'my destination';
-  if (cities.length === 1) return { en: first, ko: first };
-
-  const second = cities[1] ?? '';
-  if (cities.length === 2) return { en: `${first} & ${second}`, ko: `${first} & ${second}` };
-
-  const allButLast = cities.slice(0, -1).join(', ');
-  const last = cities[cities.length - 1] ?? '';
-  return {
-    en: `${allButLast} & ${last}`,
-    ko: `${allButLast} & ${last}`,
+  upgrade_token?: string; // only generated for Standard plan
+  social_copy: {
+    instagram: string;
+    twitter: string;
+    kakao: string;
   };
 }
 
-// ─── Main Function ────────────────────────────────────────────────────────────
+// ─── HMAC Helper ─────────────────────────────────────────────────────────────
+
+async function hmacHex(message: string, secret: string): Promise<string> {
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const buf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// ─── Token Functions ──────────────────────────────────────────────────────────
 
 /**
- * Generates localized share copy and a UTM-tagged share URL for a completed trip.
- * Produces both English and Korean messages for international reach.
+ * Generates a 3-minute upgrade token for Standard → Pro upsell.
+ * Format: "{timestampMs}.{hmac}"
  */
-export function generateShareContent(trip: Trip): ShareContent {
-  const shareUrl = buildShareUrl(trip.id);
-  const { en: citiesEn, ko: citiesKo } = formatCityList(trip);
+export async function generateUpgradeToken(tripId: string, env: Bindings): Promise<string> {
+  const ts = Date.now().toString();
+  const hex = await hmacHex(`${tripId}-${ts}`, env.POLAR_WEBHOOK_SECRET);
+  return `${ts}.${hex}`;
+}
 
-  const message_en =
-    `My AI-styled trip to ${citiesEn} is ready! ` +
-    `Check out my personalized capsule wardrobe and outfit plan. ` +
-    `Get yours for just $5 at ${shareUrl}`;
+/**
+ * Verifies an upgrade token for the given tripId.
+ * Returns false if the token is expired (>3 min) or the HMAC is invalid.
+ */
+export async function verifyUpgradeToken(
+  tripId: string,
+  token: string,
+  env: Bindings
+): Promise<boolean> {
+  const parts = token.split('.');
+  if (parts.length !== 2) return false;
 
-  const message_ko =
-    `${citiesKo} 여행을 위한 AI 스타일링이 완성됐어요! ` +
-    `나만을 위한 캡슐 워드로브와 데일리 아웃핏 플랜을 확인해보세요. ` +
-    `단 $5로 나만의 여행 스타일링 받기: ${shareUrl}`;
+  const ts = parts[0] ?? '';
+  const providedHex = parts[1] ?? '';
 
-  return {
-    message_ko,
-    message_en,
-    share_url: shareUrl,
+  const timestamp = parseInt(ts, 10);
+  if (isNaN(timestamp)) return false;
+
+  // 3-minute expiry
+  const THREE_MINUTES_MS = 3 * 60 * 1000;
+  if (Date.now() - timestamp > THREE_MINUTES_MS) return false;
+
+  const expectedHex = await hmacHex(`${tripId}-${ts}`, env.POLAR_WEBHOOK_SECRET);
+
+  // Timing-safe comparison
+  if (expectedHex.length !== providedHex.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < expectedHex.length; i++) {
+    mismatch |= expectedHex.charCodeAt(i) ^ providedHex.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
+
+// ─── Main Exported Function ───────────────────────────────────────────────────
+
+/**
+ * Generates growth/sharing assets for a completed trip.
+ *
+ * @param input.tripId    - Trip UUID
+ * @param input.moodName  - e.g. "Paris — Rainy Chic"
+ * @param input.plan      - Current plan (upgrade token only generated for "standard")
+ * @param env             - Cloudflare Worker bindings
+ */
+export async function growthAgent(
+  input: { tripId: string; moodName: string; plan: PlanType },
+  env: Bindings
+): Promise<GrowthResult> {
+  const { tripId, moodName, plan } = input;
+
+  // UTM share link
+  const shareUrl =
+    `https://travelcapsule.com/share/${tripId}` +
+    `?utm_source=share&utm_medium=direct&utm_campaign=${encodeURIComponent(moodName)}`;
+
+  // Upgrade token (Standard plan only — valid 3 min for upsell flow)
+  let upgradeToken: string | undefined;
+  if (plan === 'standard') {
+    upgradeToken = await generateUpgradeToken(tripId, env);
+  }
+
+  // Extract primary city name (everything before " — " if present)
+  const primaryCity = moodName.includes(' — ')
+    ? (moodName.split(' — ')[0] ?? moodName)
+    : moodName;
+
+  const social_copy = {
+    instagram:
+      `Just planned my ${primaryCity} wardrobe with AI ✈️ ${moodName} — swipe to see the full capsule! #TravelCapsule #AIFashion #TravelStyle`,
+    twitter:
+      `I asked AI to plan my ${primaryCity} wardrobe and this is what it came up with → ${shareUrl}`,
+    kakao:
+      `${primaryCity} 여행 짐싸기 AI한테 맡겼더니... ✈️ 나만의 캡슐 워드로브 완성! ${shareUrl}`,
   };
+
+  return { share_url: shareUrl, upgrade_token: upgradeToken, social_copy };
 }

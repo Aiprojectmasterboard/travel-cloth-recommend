@@ -1,33 +1,48 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { orchestrateTrip } from './agents/orchestrator';
+import { runPreview, runResult } from './agents/orchestrator';
+import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
 
 // ─── Environment Bindings ─────────────────────────────────────────────────────
-// Secrets → `wrangler secret put <NAME>`
+// Secrets  → `wrangler secret put <NAME>`
 // Plain vars → wrangler.toml [vars]
-// R2 → wrangler.toml [[r2_buckets]]
+// R2 native binding → wrangler.toml [[r2_buckets]]
 
-export interface Env {
+export type Bindings = {
   // Secrets
   ANTHROPIC_API_KEY: string;
   NANOBANANA_API_KEY: string;
   POLAR_ACCESS_TOKEN: string;
   POLAR_WEBHOOK_SECRET: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
+  R2_ACCESS_KEY_ID: string;
+  R2_SECRET_ACCESS_KEY: string;
   RESEND_API_KEY: string;
   GOOGLE_PLACES_API_KEY: string;
+  CLOUDFLARE_TURNSTILE_SECRET_KEY: string;
   // Plain vars (wrangler.toml [vars])
   SUPABASE_URL: string;
-  POLAR_PRODUCT_ID: string;
+  R2_ACCOUNT_ID: string;
+  R2_BUCKET_NAME: string;
   R2_PUBLIC_URL: string;
-  // Native R2 binding (wrangler.toml [[r2_buckets]])
-  R2_BUCKET: R2Bucket;
-}
+  POLAR_PRODUCT_ID_STANDARD: string;
+  POLAR_PRODUCT_ID_PRO: string;
+  POLAR_PRODUCT_ID_ANNUAL: string;
+  SKIP_TURNSTILE: string; // "true" for local dev only
+  // R2 native binding (wrangler.toml [[r2_buckets]])
+  R2: R2Bucket;
+};
 
-// ─── Supabase Helper ──────────────────────────────────────────────────────────
+export type PlanType = 'standard' | 'pro' | 'annual';
 
-async function supabaseRequest(
-  env: Env,
+// ─── Supabase REST Helper ─────────────────────────────────────────────────────
+
+/**
+ * Thin wrapper around the Supabase REST API.
+ * Always creates a fresh request — no shared state between calls.
+ */
+export async function supabase(
+  env: Bindings,
   path: string,
   options: RequestInit = {}
 ): Promise<Response> {
@@ -37,227 +52,316 @@ async function supabaseRequest(
     apikey: env.SUPABASE_SERVICE_ROLE_KEY,
     Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
     Prefer: 'return=representation',
-    ...(options.headers as Record<string, string>),
+    ...(options.headers as Record<string, string> | undefined),
   };
   return fetch(url, { ...options, headers });
 }
 
-// ─── Polar HMAC Verification ──────────────────────────────────────────────────
+// ─── HMAC-SHA256 Verification ─────────────────────────────────────────────────
 
-async function verifyPolarSignature(
+/**
+ * Timing-safe HMAC-SHA256 verification for Polar webhook signatures.
+ * Polar sends `webhook-signature` as `sha256=<hex>`.
+ */
+async function verifyHmac(
   body: string,
   signature: string,
   secret: string
 ): Promise<boolean> {
   const encoder = new TextEncoder();
-  const cryptoKey = await crypto.subtle.importKey(
+  const key = await crypto.subtle.importKey(
     'raw',
     encoder.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
   );
-  const signatureBuffer = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(body));
+  const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
   const computedHex = Array.from(new Uint8Array(signatureBuffer))
     .map((b) => b.toString(16).padStart(2, '0'))
     .join('');
 
-  const expected = `sha256=${computedHex}`;
-  if (expected.length !== signature.length) return false;
+  // Polar sends either "sha256=<hex>" or plain "<hex>"
+  const normalized = signature.startsWith('sha256=') ? signature.slice(7) : signature;
+
+  if (computedHex.length !== normalized.length) return false;
+
+  // Constant-time comparison via XOR
   let mismatch = 0;
-  for (let i = 0; i < expected.length; i++) {
-    mismatch |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
+  for (let i = 0; i < computedHex.length; i++) {
+    mismatch |= computedHex.charCodeAt(i) ^ normalized.charCodeAt(i);
   }
   return mismatch === 0;
 }
 
-// ─── Input Validation Helpers ─────────────────────────────────────────────────
+// ─── Turnstile Verification ───────────────────────────────────────────────────
 
-/** Accepts only RFC-4122 UUID v4 strings. Used to prevent query-string injection
- *  in Supabase REST filter paths (e.g., /trips?id=eq.<tripId>). */
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-function isValidUUID(value: string): boolean {
-  return UUID_RE.test(value);
+async function verifyTurnstile(token: string, secret: string): Promise<boolean> {
+  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ secret, response: token }),
+  });
+  if (!res.ok) return false;
+  const data = (await res.json()) as { success: boolean };
+  return data.success === true;
 }
 
-/** Loose RFC-5322 email check — rejects obvious injections. */
+// ─── Input Guards ─────────────────────────────────────────────────────────────
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function isValidUUID(v: string): boolean {
+  return UUID_RE.test(v);
+}
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
-function isValidEmail(value: string): boolean {
-  return EMAIL_RE.test(value) && value.length <= 254;
+function isValidEmail(v: string): boolean {
+  return EMAIL_RE.test(v) && v.length <= 254;
 }
 
-/** HTML-escape a string before embedding user-controlled text in HTML templates. */
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
+// ─── Polar Product ID Picker ──────────────────────────────────────────────────
+
+function polarProductId(plan: PlanType, env: Bindings): string {
+  if (plan === 'pro') return env.POLAR_PRODUCT_ID_PRO;
+  if (plan === 'annual') return env.POLAR_PRODUCT_ID_ANNUAL;
+  return env.POLAR_PRODUCT_ID_STANDARD;
 }
 
-// ─── App ──────────────────────────────────────────────────────────────────────
+// ─── Hono App ─────────────────────────────────────────────────────────────────
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono<{ Bindings: Bindings }>();
 
 app.use(
   '/api/*',
   cors({
-    origin: ['https://travelcapsule.ai', 'https://www.travelcapsule.ai'],
+    origin: ['https://travelcapsule.com', 'http://localhost:3000'],
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
 );
 
-// ─── Health Check ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 1. GET /api/health
+// ─────────────────────────────────────────────────────────────────────────────
 
-app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/health', (c) =>
+  c.json({ ok: true, timestamp: new Date().toISOString() })
+);
 
-// ─── POST /api/uploads/face ───────────────────────────────────────────────────
-// Accepts: multipart/form-data with field `file` (image)
-// Returns: { face_url } — temporary R2 path, deleted after image generation
+// ─────────────────────────────────────────────────────────────────────────────
+// 2. POST /api/preview
+// ─────────────────────────────────────────────────────────────────────────────
+// Creates a trip, runs the free-tier preview pipeline (weather+vibe+teaser+
+// capsule free mode). Enforces Turnstile and 5-trips/day rate limit.
 
-app.post('/api/uploads/face', async (c) => {
-  const formData = await c.req.formData().catch(() => null);
-  if (!formData) return c.json({ error: 'Expected multipart/form-data' }, 400);
-
-  const fileEntry = formData.get('file');
-  if (!fileEntry || typeof fileEntry === 'string') {
-    return c.json({ error: 'Missing file field' }, 400);
-  }
-  const file = fileEntry as File;
-
-  // Enforce 10 MB size limit before reading into memory.
-  const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 MB
-  if (file.size > MAX_FILE_BYTES) {
-    return c.json({ error: 'File too large. Maximum size is 10 MB.' }, 413);
-  }
-
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-  if (!allowedTypes.includes(file.type)) {
-    return c.json({ error: 'Only JPEG, PNG, WEBP are allowed' }, 415);
-  }
-
-  // Validate file extension matches the declared MIME type.
-  const mimeToExt: Record<string, string> = {
-    'image/jpeg': 'jpg',
-    'image/png': 'png',
-    'image/webp': 'webp',
+app.post('/api/preview', async (c) => {
+  let body: {
+    session_id?: string;
+    cities?: unknown[];
+    month?: number;
+    face_url?: string;
+    cf_turnstile_token?: string;
   };
-  const expectedExt = mimeToExt[file.type] ?? '';
-  const originalName = file.name ?? '';
-  const nameLower = originalName.toLowerCase();
-  const allowedExts = file.type === 'image/jpeg'
-    ? ['.jpg', '.jpeg']
-    : [`.${expectedExt}`];
-  const hasValidExt = allowedExts.some((e) => nameLower.endsWith(e));
-  if (originalName && !hasValidExt) {
-    return c.json({ error: 'File extension does not match declared content type' }, 415);
-  }
-
-  const ext = expectedExt;
-  const key = `faces/tmp/${crypto.randomUUID()}.${ext}`;
-  const arrayBuffer = await file.arrayBuffer();
-
-  await c.env.R2_BUCKET.put(key, arrayBuffer, {
-    httpMetadata: { contentType: file.type },
-    customMetadata: { uploaded_at: new Date().toISOString() },
-  });
-
-  const face_url = `${c.env.R2_PUBLIC_URL}/${key}`;
-  return c.json({ face_url }, 201);
-});
-
-// ─── POST /api/trips ──────────────────────────────────────────────────────────
-// Creates a trip record. Caller provides session_id, cities, month.
-// face_url is optional (from /api/uploads/face).
-
-app.post('/api/trips', async (c) => {
-  let body: { session_id: string; cities: unknown[]; month: number; face_url?: string };
   try {
     body = await c.req.json();
   } catch {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { session_id, cities, month, face_url } = body;
+  const { session_id, cities, month, face_url, cf_turnstile_token } = body;
 
-  if (!session_id || typeof session_id !== 'string') {
-    return c.json({ error: 'session_id is required' }, 400);
+  // Input validation
+  if (!session_id || typeof session_id !== 'string' || session_id.length > 128) {
+    return c.json({ error: 'session_id is required (max 128 chars)' }, 400);
   }
-  // Enforce a reasonable session_id length to prevent oversized DB writes.
-  if (session_id.length > 128) {
-    return c.json({ error: 'session_id must be 128 characters or fewer' }, 400);
-  }
-  if (!Array.isArray(cities) || cities.length === 0) {
-    return c.json({ error: 'cities must be a non-empty array' }, 400);
-  }
-  // Cap cities to prevent abnormally large JSONB payloads.
-  if (cities.length > 10) {
-    return c.json({ error: 'A maximum of 10 cities per trip is allowed' }, 400);
+  if (!Array.isArray(cities) || cities.length === 0 || cities.length > 10) {
+    return c.json({ error: 'cities must be a non-empty array (max 10)' }, 400);
   }
   if (typeof month !== 'number' || month < 1 || month > 12) {
-    return c.json({ error: 'month must be an integer 1-12' }, 400);
+    return c.json({ error: 'month must be 1–12' }, 400);
   }
-  // Validate optional face_url: must be a URL pointing to our R2 domain.
-  if (face_url !== undefined) {
-    if (typeof face_url !== 'string' || face_url.length > 512) {
-      return c.json({ error: 'Invalid face_url' }, 400);
+
+  // Turnstile verification (skip in local dev when SKIP_TURNSTILE === "true")
+  if (c.env.SKIP_TURNSTILE !== 'true') {
+    if (!cf_turnstile_token || typeof cf_turnstile_token !== 'string') {
+      return c.json({ error: 'Turnstile token required' }, 403);
+    }
+    const ok = await verifyTurnstile(cf_turnstile_token, c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY);
+    if (!ok) {
+      return c.json({ error: 'Turnstile verification failed' }, 403);
     }
   }
 
-  const payload = {
+  // Rate limit: 5 previews per session_id per calendar day
+  const todayStart = new Date();
+  todayStart.setUTCHours(0, 0, 0, 0);
+  const countRes = await supabase(
+    c.env,
+    `/trips?session_id=eq.${encodeURIComponent(session_id)}&created_at=gte.${todayStart.toISOString()}&select=id`,
+    { headers: { Prefer: 'count=exact' } }
+  );
+  const countHeader = countRes.headers.get('content-range');
+  const totalCount = countHeader ? parseInt(countHeader.split('/')[1] ?? '0', 10) : 0;
+  if (totalCount >= 5) {
+    return c.json({ error: 'Daily limit reached', limit: 5 }, 429);
+  }
+
+  // Insert trip row
+  const tripPayload = {
     session_id,
     cities,
     month,
     ...(face_url ? { face_url } : {}),
     status: 'pending',
   };
-
-  const res = await supabaseRequest(c.env, '/trips', {
+  const insertRes = await supabase(c.env, '/trips', {
     method: 'POST',
-    body: JSON.stringify(payload),
+    body: JSON.stringify(tripPayload),
   });
-
-  if (!res.ok) {
-    return c.json({ error: 'Failed to create trip', detail: await res.text() }, 500);
+  if (!insertRes.ok) {
+    return c.json({ error: 'Failed to create trip', detail: await insertRes.text() }, 500);
   }
+  const [trip] = (await insertRes.json()) as Array<{ id: string }>;
+  const tripId = trip.id;
 
-  const [trip] = (await res.json()) as Array<{ id: string; status: string }>;
-  return c.json({ trip_id: trip.id, status: trip.status }, 201);
+  // Run preview pipeline (async — results written to DB)
+  try {
+    const preview = await runPreview(
+      { trip_id: tripId, session_id, cities: cities as unknown[], month, face_url },
+      c.env
+    );
+    return c.json(preview);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // Check for annual limit error
+    if (msg.includes('AnnualLimitReached')) {
+      return c.json({ error: 'Annual plan trip limit reached (12/year)' }, 429);
+    }
+    console.error(`[POST /api/preview] Pipeline error for trip ${tripId}:`, msg);
+    return c.json({ error: 'Preview generation failed', trip_id: tripId }, 500);
+  }
 });
 
-// ─── POST /api/checkout ───────────────────────────────────────────────────────
-// Creates a Polar checkout session for the given trip.
-// Returns { checkout_url } — redirect the user there.
+// ─────────────────────────────────────────────────────────────────────────────
+// 3. POST /api/preview/email
+// ─────────────────────────────────────────────────────────────────────────────
+// Captures email for a preview trip and sends a mood card email via Resend.
 
-app.post('/api/checkout', async (c) => {
-  let body: { trip_id: string; customer_email?: string };
+app.post('/api/preview/email', async (c) => {
+  let body: { trip_id?: string; email?: string };
   try {
     body = await c.req.json();
   } catch {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { trip_id, customer_email } = body;
-  if (!trip_id) return c.json({ error: 'trip_id is required' }, 400);
-  if (!isValidUUID(trip_id)) return c.json({ error: 'trip_id must be a valid UUID' }, 400);
-  if (customer_email !== undefined && !isValidEmail(customer_email)) {
-    return c.json({ error: 'customer_email must be a valid email address' }, 400);
+  const { trip_id, email } = body;
+  if (!trip_id || !isValidUUID(trip_id)) {
+    return c.json({ error: 'Valid trip_id required' }, 400);
+  }
+  if (!email || !isValidEmail(email)) {
+    return c.json({ error: 'Valid email required' }, 400);
   }
 
-  // Verify trip exists
-  const tripRes = await supabaseRequest(c.env, `/trips?id=eq.${trip_id}&limit=1`);
-  if (!tripRes.ok) return c.json({ error: 'Failed to fetch trip' }, 500);
+  // Upsert email capture
+  await supabase(c.env, '/email_captures', {
+    method: 'POST',
+    headers: { Prefer: 'resolution=merge-duplicates,return=representation' },
+    body: JSON.stringify({ trip_id, email }),
+  });
 
-  const trips = (await tripRes.json()) as Array<{ id: string }>;
-  if (trips.length === 0) return c.json({ error: 'Trip not found' }, 404);
+  // Fetch teaser image from generation_jobs
+  const jobsRes = await supabase(
+    c.env,
+    `/generation_jobs?trip_id=eq.${trip_id}&job_type=eq.teaser&limit=1`
+  );
+  const jobs = jobsRes.ok
+    ? ((await jobsRes.json()) as Array<{ image_url?: string }>)
+    : [];
+  const teaserUrl = jobs[0]?.image_url ?? '';
+
+  // Send mood card email via Resend
+  const galleryPreviewUrl = `https://travelcapsule.com/result/${trip_id}`;
+  const emailHtml = buildMoodCardEmail(galleryPreviewUrl, teaserUrl);
+
+  const emailRes = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${c.env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'Travel Capsule AI <hello@travelcapsule.com>',
+      to: [email],
+      subject: 'Your Travel Mood Card is Ready',
+      html: emailHtml,
+    }),
+  });
+
+  if (!emailRes.ok) {
+    console.error('[POST /api/preview/email] Resend error:', await emailRes.text());
+    // Non-fatal — return ok anyway so UX is not disrupted
+  }
+
+  return c.json({ ok: true });
+});
+
+function buildMoodCardEmail(galleryUrl: string, teaserUrl: string): string {
+  const safeGallery = galleryUrl.replace(/"/g, '');
+  const safeTeaser = teaserUrl.replace(/"/g, '');
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>Your Mood Card</title></head>
+<body style="font-family:sans-serif;background:#fafaf8;margin:0;padding:40px 20px">
+  <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08)">
+    <div style="background:linear-gradient(135deg,#1a1a2e,#16213e);padding:36px 28px;text-align:center">
+      <p style="color:#c9a96e;font-size:12px;letter-spacing:3px;text-transform:uppercase;margin:0 0 8px">Travel Capsule AI</p>
+      <h1 style="color:#fff;font-size:24px;font-weight:700;margin:0">Your Mood Card</h1>
+    </div>
+    ${safeTeaser ? `<img src="${safeTeaser}" alt="Mood Preview" style="width:100%;display:block">` : ''}
+    <div style="padding:32px 28px;text-align:center">
+      <p style="color:#4a5568;font-size:15px;line-height:1.6;margin:0 0 24px">
+        Your AI travel style preview is ready. Unlock the full capsule wardrobe for just $5.
+      </p>
+      <a href="${safeGallery}" style="display:inline-block;background:#1a1a2e;color:#fff;text-decoration:none;padding:14px 36px;border-radius:50px;font-size:15px;font-weight:600">
+        View Full Capsule — $5
+      </a>
+    </div>
+  </div>
+</body></html>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 4. POST /api/payment/checkout
+// ─────────────────────────────────────────────────────────────────────────────
+// Creates a Polar checkout session for the given trip + plan.
+
+app.post('/api/payment/checkout', async (c) => {
+  let body: { trip_id?: string; plan?: string; customer_email?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const { trip_id, plan, customer_email } = body;
+  if (!trip_id || !isValidUUID(trip_id)) {
+    return c.json({ error: 'Valid trip_id required' }, 400);
+  }
+  if (!plan || !['standard', 'pro', 'annual'].includes(plan)) {
+    return c.json({ error: 'plan must be standard | pro | annual' }, 400);
+  }
+  if (customer_email && !isValidEmail(customer_email)) {
+    return c.json({ error: 'Invalid customer_email' }, 400);
+  }
+
+  const typedPlan = plan as PlanType;
+  const productId = polarProductId(typedPlan, c.env);
 
   const checkoutPayload: Record<string, unknown> = {
-    product_id: c.env.POLAR_PRODUCT_ID,
-    metadata: { trip_id },
+    product_id: productId,
+    metadata: { trip_id, plan: typedPlan },
     ...(customer_email ? { customer_email } : {}),
   };
 
@@ -271,8 +375,7 @@ app.post('/api/checkout', async (c) => {
   });
 
   if (!polarRes.ok) {
-    const err = await polarRes.text();
-    console.error('Polar checkout error:', err);
+    console.error('[POST /api/payment/checkout] Polar error:', await polarRes.text());
     return c.json({ error: 'Failed to create checkout session' }, 502);
   }
 
@@ -280,95 +383,30 @@ app.post('/api/checkout', async (c) => {
   return c.json({ checkout_url: session.url, checkout_id: session.id });
 });
 
-// ─── GET /api/trips/:tripId ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. POST /api/payment/webhook
+// ─────────────────────────────────────────────────────────────────────────────
+// Polar webhook receiver. Verifies HMAC-SHA256, inserts order, triggers pipeline.
 
-app.get('/api/trips/:tripId', async (c) => {
-  const tripId = c.req.param('tripId');
-  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
-
-  const tripRes = await supabaseRequest(c.env, `/trips?id=eq.${tripId}&limit=1`);
-  if (!tripRes.ok) return c.json({ error: 'Failed to fetch trip' }, 500);
-
-  const trips = (await tripRes.json()) as Array<Record<string, unknown>>;
-  if (trips.length === 0) return c.json({ error: 'Trip not found' }, 404);
-
-  const trip = trips[0];
-
-  if (trip.status === 'completed') {
-    const resultRes = await supabaseRequest(
-      c.env,
-      `/capsule_results?trip_id=eq.${tripId}&limit=1`
-    );
-    const results = (await resultRes.json()) as Array<Record<string, unknown>>;
-    if (results.length > 0) return c.json({ trip, capsule: results[0] });
-  }
-
-  // Also attach generation_jobs for progress polling
-  const jobsRes = await supabaseRequest(
-    c.env,
-    `/generation_jobs?trip_id=eq.${tripId}&select=city,mood,status,image_url`
-  );
-  const jobs = jobsRes.ok ? ((await jobsRes.json()) as unknown[]) : [];
-
-  return c.json({ trip, jobs });
-});
-
-// ─── POST /api/trips/:tripId/process ─────────────────────────────────────────
-// Manual trigger (dev/admin). Normally triggered by Polar webhook.
-
-app.post('/api/trips/:tripId/process', async (c) => {
-  const tripId = c.req.param('tripId');
-  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
-
-  const orderRes = await supabaseRequest(
-    c.env,
-    `/orders?trip_id=eq.${tripId}&status=eq.paid&limit=1`
-  );
-  if (!orderRes.ok) return c.json({ error: 'Failed to check order status' }, 500);
-
-  const orders = (await orderRes.json()) as Array<{ id: string }>;
-  if (orders.length === 0) return c.json({ error: 'No paid order found for this trip' }, 402);
-
-  const tripRes = await supabaseRequest(c.env, `/trips?id=eq.${tripId}&limit=1`);
-  const [trip] = (await tripRes.json()) as Array<Record<string, unknown>>;
-
-  await supabaseRequest(c.env, `/trips?id=eq.${tripId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ status: 'processing' }),
-  });
-
-  c.executionCtx.waitUntil(
-    orchestrateTrip(tripId, trip, c.env).catch(async (err: Error) => {
-      console.error(`Orchestration failed for trip ${tripId}:`, err.message);
-      await supabaseRequest(c.env, `/trips?id=eq.${tripId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'failed' }),
-      });
-    })
-  );
-
-  return c.json({ trip_id: tripId, status: 'processing' });
-});
-
-// ─── POST /api/webhooks/polar ─────────────────────────────────────────────────
-
-app.post('/api/webhooks/polar', async (c) => {
+app.post('/api/payment/webhook', async (c) => {
   const rawBody = await c.req.text();
-  const signature = c.req.header('X-Polar-Signature') ?? '';
+  const signature = c.req.header('webhook-signature') ?? c.req.header('x-polar-signature') ?? '';
 
-  const isValid = await verifyPolarSignature(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET);
-  if (!isValid) return c.json({ error: 'Invalid signature' }, 401);
+  const isValid = await verifyHmac(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET);
+  if (!isValid) {
+    console.warn('[Webhook] Invalid Polar signature');
+    return c.json({ error: 'Invalid signature' }, 401);
+  }
 
   let event: {
     type: string;
     data: {
       id: string;
-      metadata?: { trip_id?: string };
+      metadata?: { trip_id?: string; plan?: string };
       amount?: number;
       user?: { email?: string };
     };
   };
-
   try {
     event = JSON.parse(rawBody);
   } catch {
@@ -378,89 +416,230 @@ app.post('/api/webhooks/polar', async (c) => {
   if (event.type === 'order.paid') {
     const polarOrderId = event.data.id;
     const tripId = event.data.metadata?.trip_id;
+    const plan = (event.data.metadata?.plan ?? 'standard') as PlanType;
     const amount = event.data.amount ?? 500;
     const userEmail = event.data.user?.email ?? '';
 
-    if (!tripId) return c.json({ error: 'Missing trip_id in order metadata' }, 400);
-    if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip_id in order metadata' }, 400);
+    if (!tripId || !isValidUUID(tripId)) {
+      return c.json({ error: 'Missing or invalid trip_id in metadata' }, 400);
+    }
 
-    // Idempotency: polar_order_id is UNIQUE in DB
-    const existingRes = await supabaseRequest(
+    // Idempotency: check for existing order with this polar_order_id
+    const existingRes = await supabase(
       c.env,
       `/orders?polar_order_id=eq.${encodeURIComponent(polarOrderId)}&limit=1`
     );
     const existing = (await existingRes.json()) as Array<{ id: string }>;
-    if (existing.length > 0) return c.json({ received: true, idempotent: true });
+    if (existing.length > 0) {
+      return c.json({ received: true, idempotent: true });
+    }
 
-    const orderRes = await supabaseRequest(c.env, '/orders', {
+    // Insert order record
+    const orderRes = await supabase(c.env, '/orders', {
       method: 'POST',
-      body: JSON.stringify({ polar_order_id: polarOrderId, trip_id: tripId, status: 'paid', amount }),
+      body: JSON.stringify({
+        polar_order_id: polarOrderId,
+        trip_id: tripId,
+        status: 'paid',
+        amount,
+        plan,
+      }),
     });
     if (!orderRes.ok) {
-      console.error('Failed to insert order:', await orderRes.text());
+      console.error('[Webhook] Failed to insert order:', await orderRes.text());
       return c.json({ error: 'Failed to record order' }, 500);
     }
 
-    const tripRes = await supabaseRequest(c.env, `/trips?id=eq.${tripId}&limit=1`);
-    const [trip] = (await tripRes.json()) as Array<Record<string, unknown>>;
+    // Mark trip as processing
+    await supabase(c.env, `/trips?id=eq.${tripId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'processing' }),
+    });
 
-    if (trip) {
-      await supabaseRequest(c.env, `/trips?id=eq.${tripId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'processing' }),
-      });
-
-      c.executionCtx.waitUntil(
-        orchestrateTrip(tripId, trip, c.env, userEmail).catch(async (err: Error) => {
-          console.error(`Orchestration failed for trip ${tripId}:`, err.message);
-          await supabaseRequest(c.env, `/trips?id=eq.${tripId}`, {
+    // Standard plan: generate upgrade token and store on order
+    if (plan === 'standard') {
+      try {
+        const upgradeToken = await generateUpgradeToken(tripId, c.env);
+        await supabase(
+          c.env,
+          `/orders?polar_order_id=eq.${encodeURIComponent(polarOrderId)}`,
+          {
             method: 'PATCH',
-            body: JSON.stringify({ status: 'failed' }),
-          });
-        })
-      );
+            body: JSON.stringify({ upgrade_token: upgradeToken }),
+          }
+        );
+      } catch (err) {
+        console.error('[Webhook] Failed to generate upgrade token:', (err as Error).message);
+      }
     }
+
+    // Run result pipeline in the background
+    c.executionCtx.waitUntil(
+      runResult(tripId, plan, userEmail, c.env).catch(async (err: Error) => {
+        console.error(`[Webhook] runResult failed for trip ${tripId}:`, err.message);
+        await supabase(c.env, `/trips?id=eq.${tripId}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ status: 'failed' }),
+        });
+      })
+    );
   }
 
   return c.json({ received: true });
 });
 
-// ─── GET /api/cities/search ───────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. POST /api/payment/upgrade
+// ─────────────────────────────────────────────────────────────────────────────
+// Upgrades a Standard purchase to Pro. Verifies the 3-minute upgrade token,
+// creates a Polar checkout for the $2 Pro upgrade price difference.
 
-app.get('/api/cities/search', async (c) => {
-  const input = c.req.query('input') ?? '';
-  const trimmed = input.trim();
-  if (trimmed.length < 2) return c.json({ predictions: [] });
-  // Enforce a maximum length to prevent excessively large requests to Google Places.
-  if (trimmed.length > 100) return c.json({ error: 'Search query too long' }, 400);
+app.post('/api/payment/upgrade', async (c) => {
+  let body: { trip_id?: string; upgrade_token?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
 
-  const params = new URLSearchParams({
-    input: trimmed,
-    types: '(cities)',
-    key: c.env.GOOGLE_PLACES_API_KEY,
-  });
+  const { trip_id, upgrade_token } = body;
+  if (!trip_id || !isValidUUID(trip_id)) {
+    return c.json({ error: 'Valid trip_id required' }, 400);
+  }
+  if (!upgrade_token || typeof upgrade_token !== 'string') {
+    return c.json({ error: 'upgrade_token required' }, 400);
+  }
 
-  const googleRes = await fetch(
-    `https://maps.googleapis.com/maps/api/place/autocomplete/json?${params.toString()}`
+  // Verify the upgrade token (3-minute HMAC window)
+  const isValid = await verifyUpgradeToken(trip_id, upgrade_token, c.env);
+  if (!isValid) {
+    return c.json({ error: 'Invalid or expired upgrade token' }, 403);
+  }
+
+  // Verify Standard order exists
+  const orderRes = await supabase(
+    c.env,
+    `/orders?trip_id=eq.${trip_id}&plan=eq.standard&status=eq.paid&limit=1`
   );
-  if (!googleRes.ok) return c.json({ error: 'Google Places API error' }, 502);
+  const orders = (await orderRes.json()) as Array<{ id: string; polar_order_id: string }>;
+  if (orders.length === 0) {
+    return c.json({ error: 'No paid standard order found for this trip' }, 404);
+  }
 
-  const data = (await googleRes.json()) as {
-    predictions: Array<{
-      place_id: string;
-      description: string;
-      structured_formatting: { main_text: string; secondary_text: string };
-    }>;
+  const standardOrder = orders[0];
+
+  // Create Polar checkout for Pro upgrade (charge the $2 difference via pro product)
+  const checkoutPayload = {
+    product_id: c.env.POLAR_PRODUCT_ID_PRO,
+    metadata: {
+      trip_id,
+      plan: 'pro',
+      upgrade_from: standardOrder.polar_order_id,
+    },
   };
 
-  const predictions = (data.predictions ?? []).map((p) => ({
-    place_id: p.place_id,
-    description: p.description,
-    city: p.structured_formatting?.main_text ?? '',
-    country: p.structured_formatting?.secondary_text ?? '',
-  }));
+  const polarRes = await fetch('https://api.polar.sh/v1/checkouts/custom/', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${c.env.POLAR_ACCESS_TOKEN}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(checkoutPayload),
+  });
 
-  return c.json({ predictions });
+  if (!polarRes.ok) {
+    console.error('[POST /api/payment/upgrade] Polar error:', await polarRes.text());
+    return c.json({ error: 'Failed to create upgrade checkout' }, 502);
+  }
+
+  const session = (await polarRes.json()) as { url: string; id: string };
+
+  // Record upgrade_from reference on the standard order
+  await supabase(c.env, `/orders?id=eq.${standardOrder.id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ upgrade_initiated_at: new Date().toISOString() }),
+  });
+
+  return c.json({ checkout_url: session.url });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. GET /api/result/:tripId
+// ─────────────────────────────────────────────────────────────────────────────
+// Returns the full paid result for a trip (requires paid order).
+
+app.get('/api/result/:tripId', async (c) => {
+  const tripId = c.req.param('tripId');
+  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
+
+  // Must have a paid order
+  const orderRes = await supabase(
+    c.env,
+    `/orders?trip_id=eq.${tripId}&status=eq.paid&limit=1`
+  );
+  const orders = (await orderRes.json()) as Array<Record<string, unknown>>;
+  if (orders.length === 0) {
+    return c.json({ error: 'Payment required to view results' }, 402);
+  }
+
+  const [trip, capsule, images] = await Promise.all([
+    supabase(c.env, `/trips?id=eq.${tripId}&limit=1`).then((r) =>
+      r.json() as Promise<Array<Record<string, unknown>>>
+    ),
+    supabase(c.env, `/capsule_results?trip_id=eq.${tripId}&limit=1`).then((r) =>
+      r.json() as Promise<Array<Record<string, unknown>>>
+    ),
+    supabase(
+      c.env,
+      `/generation_jobs?trip_id=eq.${tripId}&select=city,mood,status,image_url,job_type`
+    ).then((r) => r.json() as Promise<Array<Record<string, unknown>>>),
+  ]);
+
+  if (trip.length === 0) return c.json({ error: 'Trip not found' }, 404);
+
+  const shareUrl = `https://travelcapsule.com/share/${tripId}?utm_source=share&utm_medium=direct`;
+
+  return c.json({
+    trip: trip[0],
+    order: orders[0],
+    capsule: capsule[0] ?? null,
+    images,
+    share_url: shareUrl,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 8. GET /api/share/:tripId
+// ─────────────────────────────────────────────────────────────────────────────
+// Public share page data — teaser image + trip vibe (no auth required).
+
+app.get('/api/share/:tripId', async (c) => {
+  const tripId = c.req.param('tripId');
+  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
+
+  const [tripRows, jobRows] = await Promise.all([
+    supabase(c.env, `/trips?id=eq.${tripId}&select=id,cities,month,status&limit=1`).then(
+      (r) => r.json() as Promise<Array<Record<string, unknown>>>
+    ),
+    supabase(
+      c.env,
+      `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser&status=eq.completed&select=city,mood,image_url&limit=1`
+    ).then((r) => r.json() as Promise<Array<Record<string, unknown>>>),
+  ]);
+
+  if (tripRows.length === 0) return c.json({ error: 'Trip not found' }, 404);
+
+  return c.json({
+    trip: tripRows[0],
+    teaser: jobRows[0] ?? null,
+    cta_url: `https://travelcapsule.com/result/${tripId}`,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Legacy compatibility routes (kept for backward compat)
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 export default app;

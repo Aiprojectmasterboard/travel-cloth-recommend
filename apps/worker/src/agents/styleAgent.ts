@@ -1,119 +1,162 @@
+/**
+ * styleAgent.ts  (Pro plan only)
+ *
+ * Uses Claude API to generate NanoBanana-ready image prompts for each city.
+ * Produces 2 prompts per city (max 6 total for a 3-city trip).
+ *
+ * Model: claude-sonnet-4-6-20260219
+ */
+
 import Anthropic from '@anthropic-ai/sdk';
-import type { CityVibe, ClimateData, StylePrompt } from '../../../../packages/types/index';
+import type { Bindings } from '../index';
+import type { VibeResult } from './vibeAgent';
+import type { WeatherResult } from './weatherAgent';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface StylePrompts {
+  city: string;
+  mood: string;     // short label e.g. "morning-exploration"
+  prompt: string;   // full NanoBanana positive prompt
+  negative_prompt: string;
+}
+
+// Claude response shape
+interface ClaudeStyleResponse {
+  prompts: Array<{
+    city: string;
+    mood: string;
+    prompt: string;
+    negative_prompt: string;
+  }>;
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MODEL = 'claude-sonnet-4-6-20260219';
-const NEGATIVE_PROMPT =
-  'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, 3d render, blurry, low quality';
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
+const DEFAULT_NEGATIVE =
+  'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, ' +
+  '3d render, blurry, low quality, nsfw, watermark, text overlay, logo';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+const PROMPTS_PER_CITY = 2;
+const MAX_CITIES = 3;
 
-interface StylePromptsResponse {
-  prompts: Array<{
-    mood: string;
-    prompt_en: string;
-  }>;
-}
-
-// ─── Main Function ────────────────────────────────────────────────────────────
+// ─── Main Exported Function ───────────────────────────────────────────────────
 
 /**
- * Uses Claude claude-sonnet-4-6 to generate 3-4 mood-based fashion editorial
- * image prompts for a given city, taking climate and vibe into account.
+ * Generates 2 NanoBanana image prompts per city (up to 6 total).
+ *
+ * @param input.vibeResults - Array of VibeResult from vibeAgent (one per city)
+ * @param input.cities      - City names in the same order as vibeResults
+ * @param input.weather     - Optional WeatherResult array for additional context
+ * @param env               - Cloudflare Worker bindings
  */
-export async function generateStylePrompts(
-  city: CityVibe,
-  climate: ClimateData,
-  apiKey: string
-): Promise<StylePrompt[]> {
-  const client = new Anthropic({ apiKey });
+export async function styleAgent(
+  input: {
+    vibeResults: VibeResult[];
+    cities: string[];
+    weather?: WeatherResult[];
+  },
+  env: Bindings
+): Promise<StylePrompts[]> {
+  const { vibeResults, cities, weather = [] } = input;
 
-  const monthName = MONTH_NAMES[climate.month - 1] ?? 'Unknown';
-  const keywordsStr = city.style_keywords.join(', ');
+  // Cap to MAX_CITIES to keep token usage predictable
+  const activeCities = cities.slice(0, MAX_CITIES);
+  const activeVibes = vibeResults.slice(0, MAX_CITIES);
 
-  const systemPrompt = `You are a professional fashion stylist and photographer specializing in travel editorial content.
-Your task is to write precise, vivid image generation prompts for AI image models.
-Each prompt must produce a photorealistic fashion editorial image that captures the unique spirit of the destination.
-Always respond with valid JSON only — no markdown, no extra text.`;
+  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
-  const userPrompt = `Generate 3 to 4 distinct fashion editorial image prompts for:
+  // Build per-city context block
+  const cityBlocks = activeCities.map((city, i) => {
+    const vibe = activeVibes[i];
+    const wx = weather[i];
+    const vibeStr = vibe
+      ? `mood: ${vibe.mood_name}, tags: ${vibe.vibe_tags.join(', ')}, avoid: ${vibe.avoid_note}`
+      : 'no vibe data';
+    const wxStr = wx
+      ? `${wx.climate_band}, ${wx.temperature_day_avg}°C avg, rain prob ${Math.round(wx.precipitation_prob * 100)}%`
+      : 'no weather data';
+    return `City ${i + 1}: ${city}\n  Vibe: ${vibeStr}\n  Weather: ${wxStr}`;
+  }).join('\n\n');
 
-City: ${city.city}, ${city.country}
-Vibe: ${city.vibe_cluster}
-Style Keywords: ${keywordsStr}
-Travel Month: ${monthName}
-Climate: ${climate.vibe_band} (${climate.temp_min}°C – ${climate.temp_max}°C, precipitation: ${climate.precipitation}mm)
+  const systemPrompt =
+    'You are a professional fashion stylist and AI image director. ' +
+    'Your task is to write precise, vivid NanoBanana image generation prompts ' +
+    'for fashion editorial photography. Each prompt must be photorealistic and ' +
+    'capture the unique spirit of the destination and its current weather. ' +
+    'Always respond with valid JSON only — no markdown fences, no extra text.';
 
-Requirements for each prompt:
-1. Specify a clear MOOD (e.g., "morning-exploration", "golden-hour-cafe", "local-market", "evening-out")
-2. Include specific clothing items appropriate for the climate and city vibe
-3. Mention the city backdrop or a recognizable location type in ${city.city}
-4. Describe lighting style (e.g., soft morning light, golden hour, overcast diffused)
-5. Use the style: "fashion editorial photography, [clothing details], [city backdrop], [lighting], [camera angle], professional model, high fashion magazine style"
+  const userPrompt = `Generate exactly ${PROMPTS_PER_CITY} fashion editorial image prompts for EACH of the following cities (${activeCities.length * PROMPTS_PER_CITY} prompts total):
 
-Climate guidance:
-- cold (< 10°C): heavy coats, layered knits, boots, warm accessories
-- mild (10–18°C): light jacket or trench coat, layered outfits
-- warm (18–26°C): light clothing, breathable fabrics, light layers
-- hot (> 26°C): minimal, breathable, sun protection
-- rainy: waterproof outerwear, rain boots or waterproof shoes, umbrella as prop
+${cityBlocks}
 
-Respond ONLY with this JSON structure:
+Rules for each prompt:
+1. mood: 2-3 word hyphenated English label (e.g. "morning-exploration", "golden-hour-cafe")
+2. Each prompt must specify:
+   - Specific clothing items appropriate for the climate and city vibe
+   - A recognizable location type in that city (cafe, street, market, rooftop, etc.)
+   - Lighting style (golden hour, soft overcast, neon-lit evening, bright midday, etc.)
+   - Camera angle (full body, 3/4 shot, street-level)
+   - End with: "fashion editorial photography, professional model, high fashion magazine style, photorealistic, 4K"
+3. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
+4. Prompts for the same city must have different moods/times-of-day
+
+Climate clothing guide:
+- cold (<10°C): heavy coats, thermal layers, knits, waterproof boots
+- mild (10–18°C): trench coat, light knitwear, ankle boots
+- warm (18–26°C): light layers, breathable fabrics, sandals or loafers
+- hot (>26°C): linen, minimal layers, sun hat, sandals
+- rainy: waterproof jacket, rain boots, umbrella as prop
+
+Respond ONLY with this JSON:
 {
   "prompts": [
-    { "mood": "mood-name", "prompt_en": "full prompt here" },
-    { "mood": "mood-name", "prompt_en": "full prompt here" },
-    { "mood": "mood-name", "prompt_en": "full prompt here" }
+    { "city": "CityName", "mood": "mood-label", "prompt": "...", "negative_prompt": "..." },
+    ...
   ]
 }`;
 
   const message = await client.messages.create({
     model: MODEL,
-    max_tokens: 1024,
-    temperature: 0.8,
+    max_tokens: 2048,
+    temperature: 0.85,
     system: systemPrompt,
-    messages: [
-      {
-        role: 'user',
-        content: userPrompt,
-      },
-    ],
+    messages: [{ role: 'user', content: userPrompt }],
   });
 
-  const rawContent = message.content[0];
-  if (rawContent.type !== 'text') {
-    throw new Error(`Unexpected response type from Claude: ${rawContent.type}`);
+  const raw = message.content[0];
+  if (raw.type !== 'text') {
+    throw new Error('[styleAgent] Unexpected Claude response type');
   }
 
-  let parsed: StylePromptsResponse;
+  const cleaned = raw.text
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/```\s*$/i, '')
+    .trim();
+
+  let parsed: ClaudeStyleResponse;
   try {
-    // Strip potential markdown code fences
-    const cleaned = rawContent.text
-      .replace(/^```json\s*/i, '')
-      .replace(/^```\s*/i, '')
-      .replace(/```\s*$/i, '')
-      .trim();
-    parsed = JSON.parse(cleaned) as StylePromptsResponse;
+    parsed = JSON.parse(cleaned) as ClaudeStyleResponse;
   } catch (err) {
     throw new Error(
-      `Failed to parse Claude response as JSON for ${city.city}: ${(err as Error).message}\nRaw: ${rawContent.text}`
+      `[styleAgent] Failed to parse Claude JSON: ${(err as Error).message}\nRaw: ${cleaned.slice(0, 400)}`
     );
   }
 
   if (!Array.isArray(parsed.prompts) || parsed.prompts.length === 0) {
-    throw new Error(`Claude returned no prompts for ${city.city}`);
+    throw new Error('[styleAgent] Claude returned no prompts');
   }
 
-  return parsed.prompts.map((p) => ({
-    city: city.city,
-    mood: p.mood,
-    prompt_en: p.prompt_en,
-    negative_prompt: NEGATIVE_PROMPT,
-  }));
+  // Normalise and cap at MAX_CITIES * PROMPTS_PER_CITY
+  return parsed.prompts
+    .slice(0, MAX_CITIES * PROMPTS_PER_CITY)
+    .map((p) => ({
+      city: String(p.city ?? ''),
+      mood: String(p.mood ?? 'editorial'),
+      prompt: String(p.prompt ?? ''),
+      negative_prompt: String(p.negative_prompt ?? DEFAULT_NEGATIVE),
+    }));
 }

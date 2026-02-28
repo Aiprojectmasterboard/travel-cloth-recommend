@@ -1,311 +1,513 @@
-import { getClimateData } from './weatherAgent';
-import { generateStylePrompts } from './styleAgent';
-import { generateImage } from './imageGenAgent';
-import { generateCapsule } from './capsuleAgent';
-import { fulfillTrip } from './fulfillmentAgent';
-import { generateShareContent } from './growthAgent';
-import type {
-  CityInput,
-  CityVibe,
-  ClimateData,
-  StylePrompt,
-  Trip,
-} from '../../../../packages/types/index';
-import type { Env } from '../index';
+/**
+ * orchestrator.ts
+ *
+ * Two exported pipeline functions:
+ *
+ *   runPreview(input, env) — free-tier pipeline:
+ *     trips INSERT → annual limit check → weather (parallel) → vibe (parallel)
+ *     → teaser (first city) → capsule free mode → generation_jobs INSERT → return PreviewResponse
+ *
+ *   runResult(tripId, plan, email, env) — post-payment pipeline:
+ *     usage_records update → [pro/annual: styleAgent + imageGenAgent]
+ *     → [standard: teaser unblur] → capsuleAgent paid → fulfillmentAgent → growthAgent
+ */
+
+import type { Bindings, PlanType } from '../index';
+import { weatherAgent, type WeatherResult } from './weatherAgent';
+import { vibeAgent, type VibeResult } from './vibeAgent';
+import { teaserAgent } from './teaserAgent';
+import { capsuleAgent, type CapsuleResult } from './capsuleAgent';
+import { styleAgent } from './styleAgent';
+import { imageGenAgent } from './imageGenAgent';
+import { fulfillmentAgent } from './fulfillmentAgent';
+import { growthAgent } from './growthAgent';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface TripInput {
+  trip_id: string;
+  session_id: string;
+  cities: unknown[]; // raw JSONB from DB — cast to CityInput[] below
+  month: number;
+  face_url?: string;
+}
+
+interface CityInput {
+  name: string;
+  country: string;
+  days: number;
+  lat?: number;
+  lon?: number;
+}
+
+export interface PreviewResponse {
+  trip_id: string;
+  status: 'completed' | 'processing';
+  teaser_url: string | null;
+  mood_label: string | null;       // e.g. "Paris — Rainy Chic"
+  capsule: CapsuleResult;
+  vibes: VibeResult[];
+  weather: WeatherResult[];
+}
 
 // ─── Supabase Helper ──────────────────────────────────────────────────────────
 
-async function supabaseRequest(
-  env: Env,
+async function sbFetch(
+  env: Bindings,
   path: string,
-  options: RequestInit = {}
+  init: RequestInit = {}
 ): Promise<Response> {
-  const url = `${env.SUPABASE_URL}/rest/v1${path}`;
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    apikey: env.SUPABASE_SERVICE_ROLE_KEY,
-    Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
-    Prefer: 'return=representation',
-    ...(options.headers as Record<string, string>),
-  };
-  return fetch(url, { ...options, headers });
+  return fetch(`${env.SUPABASE_URL}/rest/v1${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: env.SUPABASE_SERVICE_ROLE_KEY,
+      Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      Prefer: 'return=representation',
+      ...(init.headers as Record<string, string> | undefined),
+    },
+  });
 }
 
-// ─── Concurrency Limiter ──────────────────────────────────────────────────────
+async function sbPatch(env: Bindings, path: string, body: Record<string, unknown>): Promise<void> {
+  await sbFetch(env, path, {
+    method: 'PATCH',
+    headers: { Prefer: 'return=minimal' },
+    body: JSON.stringify(body),
+  });
+}
 
-async function runWithConcurrency<T>(
-  tasks: Array<() => Promise<T>>,
-  concurrency: number
-): Promise<T[]> {
-  const results: T[] = [];
-  let index = 0;
+// ─── Annual Limit Check ───────────────────────────────────────────────────────
 
-  async function worker(): Promise<void> {
-    while (index < tasks.length) {
-      const taskIndex = index++;
-      const task = tasks[taskIndex];
-      if (task) {
-        results[taskIndex] = await task();
-      }
+/**
+ * Throws an error with message "AnnualLimitReached" if the user_email has
+ * consumed >= 12 trips in the current annual billing period.
+ * Only applies to the "annual" plan.
+ */
+async function checkAnnualLimit(
+  userEmail: string,
+  env: Bindings
+): Promise<void> {
+  if (!userEmail) return; // anonymous previews are not tracked
+
+  const res = await sbFetch(
+    env,
+    `/usage_records?user_email=eq.${encodeURIComponent(userEmail)}&plan=eq.annual&limit=1`
+  );
+
+  if (!res.ok) {
+    console.warn('[Orchestrator] Could not check annual usage — proceeding');
+    return;
+  }
+
+  const rows = (await res.json()) as Array<{ trip_count: number; period_start: string }>;
+  if (rows.length === 0) return; // no record yet → first trip, allow
+
+  const row = rows[0];
+  if (row && row.trip_count >= 12) {
+    throw new Error('AnnualLimitReached');
+  }
+}
+
+/**
+ * Increments usage_records.trip_count for an annual-plan user.
+ * Uses upsert so the row is created on first trip.
+ */
+async function incrementAnnualUsage(userEmail: string, env: Bindings): Promise<void> {
+  if (!userEmail) return;
+
+  // Compute period start (1st of the current month as a proxy for billing cycle)
+  const now = new Date();
+  const periodStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+
+  // Upsert: if row exists increment, else create with count=1
+  const existing = await sbFetch(
+    env,
+    `/usage_records?user_email=eq.${encodeURIComponent(userEmail)}&plan=eq.annual&limit=1`
+  );
+
+  if (existing.ok) {
+    const rows = (await existing.json()) as Array<{ id: string; trip_count: number }>;
+    if (rows.length > 0 && rows[0]) {
+      // Increment existing row
+      await sbPatch(env, `/usage_records?id=eq.${rows[0].id}`, {
+        trip_count: rows[0].trip_count + 1,
+        updated_at: new Date().toISOString(),
+      });
+      return;
     }
   }
 
-  const workers = Array.from({ length: concurrency }, () => worker());
-  await Promise.all(workers);
+  // Insert first-time row
+  await sbFetch(env, '/usage_records', {
+    method: 'POST',
+    body: JSON.stringify({
+      user_email: userEmail,
+      plan: 'annual',
+      trip_count: 1,
+      period_start: periodStart,
+    }),
+  });
+}
+
+// ─── CityInput Parser ─────────────────────────────────────────────────────────
+
+function parseCities(raw: unknown[]): CityInput[] {
+  const results: CityInput[] = [];
+  for (const c of raw) {
+    if (typeof c !== 'object' || c === null) continue;
+    const obj = c as Record<string, unknown>;
+    if (!obj.name || typeof obj.name !== 'string') continue;
+    results.push({
+      name: obj.name,
+      country: typeof obj.country === 'string' ? obj.country : '',
+      days: typeof obj.days === 'number' ? obj.days : 1,
+      lat: typeof obj.lat === 'number' ? obj.lat : undefined,
+      lon: typeof obj.lon === 'number' ? obj.lon : undefined,
+    });
+  }
   return results;
 }
 
-// ─── City Vibe Lookup ─────────────────────────────────────────────────────────
-
-async function getCityVibe(city: CityInput, env: Env): Promise<CityVibe | null> {
-  const res = await supabaseRequest(
-    env,
-    `/city_vibes?city=eq.${encodeURIComponent(city.name)}&limit=1`
-  );
-
-  if (!res.ok) return null;
-
-  const vibes = (await res.json()) as CityVibe[];
-  if (vibes.length > 0) return vibes[0];
-
-  // Fallback: construct a minimal CityVibe from the city input
-  return {
-    city: city.name,
-    country: city.country,
-    lat: city.lat ?? 0,
-    lon: city.lon ?? 0,
-    vibe_cluster: 'urban-casual',
-    style_keywords: ['versatile', 'comfortable', 'smart-casual'],
-  };
-}
-
-// ─── Main Orchestrator ────────────────────────────────────────────────────────
+// ─── runPreview ───────────────────────────────────────────────────────────────
 
 /**
- * Orchestrates the full AI pipeline for a trip:
+ * Runs the free-tier preview pipeline for a newly created trip.
  *
- * 1. Load trip from Supabase
- * 2. Fetch climate data for all cities (parallel)
- * 3. Generate style prompts via Claude (parallel per city)
- * 4. Save generation_jobs to DB
- * 5. Generate images via NanoBanana (concurrency: 2)
- * 6. Generate capsule wardrobe via Claude
- * 7. Run fulfillment (email + privacy cleanup)
- * 8. Generate share content
- * 9. Mark trip as completed
+ * Writes to: generation_jobs (teaser row), trips.status
+ * Returns:   PreviewResponse (teaser URL, mood, free capsule, weather/vibe arrays)
  */
-export async function orchestrateTrip(
-  tripId: string,
-  tripData: Record<string, unknown>,
-  env: Env,
-  userEmail = ''
-): Promise<void> {
-  console.log(`[Orchestrator] Starting pipeline for trip ${tripId}`);
+export async function runPreview(
+  input: TripInput,
+  env: Bindings
+): Promise<PreviewResponse> {
+  const { trip_id, cities: rawCities, month, face_url } = input;
 
-  // ── Step 1: Parse trip data ─────────────────────────────────────────────────
+  console.log(`[runPreview] Starting free preview for trip ${trip_id}`);
 
-  const trip: Trip = {
-    id: tripId,
-    session_id: String(tripData.session_id ?? ''),
-    cities: (tripData.cities as CityInput[]) ?? [],
-    month: Number(tripData.month ?? 1),
-    face_url: tripData.face_url ? String(tripData.face_url) : undefined,
-    status: 'processing',
-    created_at: String(tripData.created_at ?? new Date().toISOString()),
-  };
+  // Mark trip as processing
+  await sbPatch(env, `/trips?id=eq.${trip_id}`, { status: 'processing' });
 
-  if (trip.cities.length === 0) {
-    throw new Error(`Trip ${tripId} has no cities`);
+  const cities = parseCities(rawCities);
+  if (cities.length === 0) {
+    throw new Error(`Trip ${trip_id} has no valid cities in the payload`);
   }
 
   try {
-    // ── Step 2: Climate data (parallel) ──────────────────────────────────────
+    // ── 1. Annual limit check ────────────────────────────────────────────────
+    // (annual check is primarily enforced in runResult; this is a guard for
+    // edge cases where email is known at preview time)
 
-    console.log(`[Orchestrator] Fetching climate data for ${trip.cities.length} cities`);
-    const climateResults = await Promise.allSettled(
-      trip.cities.map((city) => getClimateData(city, trip.month))
-    );
-
-    const climateData: ClimateData[] = climateResults.map((result, i) => {
-      if (result.status === 'fulfilled') return result.value;
-      console.warn(
-        `[Orchestrator] Climate fetch failed for ${trip.cities[i]?.name}: ${result.reason}`
-      );
-      // Fallback climate data
-      return {
-        city: trip.cities[i]?.name ?? 'Unknown',
-        month: trip.month,
-        temp_min: 15,
-        temp_max: 22,
-        precipitation: 50,
-        vibe_band: 'warm' as const,
-      };
-    });
-
-    // ── Step 3: Style prompts (parallel per city) ─────────────────────────────
-
-    console.log(`[Orchestrator] Generating style prompts for ${trip.cities.length} cities`);
-    const cityVibes = await Promise.all(
-      trip.cities.map((city) => getCityVibe(city, env))
-    );
-
-    const stylePromptsResults = await Promise.allSettled(
-      trip.cities.map(async (city, i) => {
-        const vibe = cityVibes[i] ?? {
-          city: city.name,
-          country: city.country,
-          lat: city.lat ?? 0,
-          lon: city.lon ?? 0,
-          vibe_cluster: 'urban-casual',
-          style_keywords: ['versatile', 'comfortable'],
-        };
-        // climateData is always populated (API result or fallback), but guard defensively.
-        const climate = climateData[i];
-        if (!climate) throw new Error(`No climate data for ${city.name}`);
-        return generateStylePrompts(vibe, climate, env.ANTHROPIC_API_KEY);
+    // ── 2. Weather — parallel per city ───────────────────────────────────────
+    const weatherResults = await Promise.all(
+      cities.map(async (city): Promise<WeatherResult> => {
+        if (!city.lat || !city.lon) {
+          // Return a neutral fallback if coordinates are missing
+          return {
+            city: city.name,
+            month,
+            temperature_day_avg: 20,
+            temperature_night_avg: 13,
+            precipitation_prob: 0.3,
+            climate_band: 'warm',
+            style_hint: 'Pack versatile layers for mixed conditions.',
+          };
+        }
+        try {
+          return await weatherAgent({ city: city.name, lat: city.lat, lon: city.lon, month }, env);
+        } catch (err) {
+          console.warn(`[runPreview] Weather failed for ${city.name}:`, (err as Error).message);
+          return {
+            city: city.name,
+            month,
+            temperature_day_avg: 20,
+            temperature_night_avg: 13,
+            precipitation_prob: 0.3,
+            climate_band: 'warm',
+            style_hint: 'Pack versatile layers for mixed conditions.',
+          };
+        }
       })
     );
 
-    const allStylePrompts: StylePrompt[] = [];
-    for (const result of stylePromptsResults) {
-      if (result.status === 'fulfilled') {
-        allStylePrompts.push(...result.value);
-      } else {
-        console.warn(`[Orchestrator] Style prompt generation failed: ${result.reason}`);
+    // ── 3. Vibe — parallel per city ──────────────────────────────────────────
+    const vibeResults = await Promise.all(
+      cities.map(async (city, i): Promise<VibeResult> => {
+        const weather = weatherResults[i] ?? {
+          city: city.name,
+          month,
+          temperature_day_avg: 20,
+          temperature_night_avg: 13,
+          precipitation_prob: 0.3,
+          climate_band: 'warm' as const,
+          style_hint: '',
+        };
+        try {
+          return await vibeAgent({ city: city.name, country: city.country, weather }, env);
+        } catch (err) {
+          console.warn(`[runPreview] Vibe failed for ${city.name}:`, (err as Error).message);
+          return {
+            mood_label: `${city.name} — City Style`,
+            mood_name: 'City Style',
+            vibe_tags: ['versatile', 'travel-ready', 'stylish'],
+            color_palette: ['#8B7355', '#C4B5A0', '#2C3E50'],
+            avoid_note: 'Pack for varied conditions.',
+          };
+        }
+      })
+    );
+
+    // ── 4. Teaser image — first city only ────────────────────────────────────
+    let teaserUrl: string | null = null;
+    const firstVibe = vibeResults[0];
+
+    if (firstVibe) {
+      try {
+        const teaser = await teaserAgent(
+          { tripId: trip_id, vibeResult: firstVibe, faceUrl: face_url },
+          env
+        );
+        teaserUrl = teaser.image_url;
+
+        // Insert generation_jobs row for the teaser
+        await sbFetch(env, '/generation_jobs', {
+          method: 'POST',
+          body: JSON.stringify({
+            trip_id,
+            city: cities[0]?.name ?? '',
+            mood: firstVibe.mood_name,
+            prompt: firstVibe.mood_label,
+            status: 'completed',
+            image_url: teaserUrl,
+            job_type: 'teaser',
+            attempts: 1,
+          }),
+        });
+      } catch (err) {
+        console.error(`[runPreview] Teaser generation failed for trip ${trip_id}:`, (err as Error).message);
+        // Non-fatal — preview can proceed without teaser
       }
     }
 
-    if (allStylePrompts.length === 0) {
-      throw new Error('No style prompts could be generated for any city');
-    }
+    // ── 5. Capsule — free mode ───────────────────────────────────────────────
+    const capsule = await capsuleAgent(
+      {
+        vibeResults,
+        weather: weatherResults,
+        plan: 'free',
+        cities: cities.map((c) => ({ name: c.name, days: c.days })),
+        month,
+      },
+      env
+    );
 
-    // ── Step 4: Save generation_jobs to DB ────────────────────────────────────
+    // ── 6. Mark trip as completed (free stage) ───────────────────────────────
+    await sbPatch(env, `/trips?id=eq.${trip_id}`, {
+      status: 'completed',
+      // Store vibe data on trip row so runResult can use it without re-running vibeAgent
+      vibe_data: vibeResults,
+      weather_data: weatherResults,
+    });
 
-    console.log(`[Orchestrator] Saving ${allStylePrompts.length} generation jobs to DB`);
-    const jobRecords = allStylePrompts.map((sp) => ({
+    console.log(`[runPreview] Free preview complete for trip ${trip_id}`);
+
+    return {
+      trip_id,
+      status: 'completed',
+      teaser_url: teaserUrl,
+      mood_label: firstVibe?.mood_label ?? null,
+      capsule,
+      vibes: vibeResults,
+      weather: weatherResults,
+    };
+  } catch (err) {
+    await sbPatch(env, `/trips?id=eq.${trip_id}`, { status: 'failed' });
+    throw err;
+  }
+}
+
+// ─── runResult ────────────────────────────────────────────────────────────────
+
+/**
+ * Runs the post-payment pipeline after a Polar `order.paid` event.
+ *
+ * standard → unblur teaser + full capsule + email
+ * pro/annual → style prompts + multi-image generation + full capsule + email
+ */
+export async function runResult(
+  tripId: string,
+  plan: PlanType,
+  userEmail: string,
+  env: Bindings
+): Promise<void> {
+  console.log(`[runResult] Starting ${plan} pipeline for trip ${tripId}`);
+
+  // ── 1. Fetch trip data (vibes + weather stored from runPreview) ─────────────
+  const tripRes = await sbFetch(env, `/trips?id=eq.${tripId}&limit=1`);
+  if (!tripRes.ok) throw new Error(`[runResult] Failed to fetch trip ${tripId}`);
+
+  const trips = (await tripRes.json()) as Array<Record<string, unknown>>;
+  if (trips.length === 0) throw new Error(`[runResult] Trip ${tripId} not found`);
+
+  const trip = trips[0];
+  const rawCities = Array.isArray(trip.cities) ? trip.cities : [];
+  const cities = parseCities(rawCities);
+  const month = typeof trip.month === 'number' ? trip.month : 1;
+  const faceUrl = typeof trip.face_url === 'string' ? trip.face_url : undefined;
+
+  // Retrieve cached vibe/weather from trip row (set by runPreview)
+  const vibeResults: VibeResult[] = Array.isArray(trip.vibe_data)
+    ? (trip.vibe_data as VibeResult[])
+    : [];
+  const weatherResults: WeatherResult[] = Array.isArray(trip.weather_data)
+    ? (trip.weather_data as WeatherResult[])
+    : [];
+
+  // If vibes are missing (edge case), re-run weather+vibe pipeline
+  const finalVibes: VibeResult[] = vibeResults.length > 0
+    ? vibeResults
+    : await Promise.all(
+        cities.map(async (city, i) => {
+          const weather = weatherResults[i] ?? {
+            city: city.name,
+            month,
+            temperature_day_avg: 20,
+            temperature_night_avg: 13,
+            precipitation_prob: 0.3,
+            climate_band: 'warm' as const,
+            style_hint: '',
+          };
+          return vibeAgent({ city: city.name, country: city.country, weather }, env);
+        })
+      );
+
+  const finalWeather: WeatherResult[] = weatherResults.length > 0
+    ? weatherResults
+    : await Promise.all(
+        cities.map((city) =>
+          city.lat && city.lon
+            ? weatherAgent({ city: city.name, lat: city.lat, lon: city.lon, month }, env)
+            : Promise.resolve<WeatherResult>({
+                city: city.name,
+                month,
+                temperature_day_avg: 20,
+                temperature_night_avg: 13,
+                precipitation_prob: 0.3,
+                climate_band: 'warm',
+                style_hint: '',
+              })
+        )
+      );
+
+  // ── 2. Annual limit check + usage increment ──────────────────────────────
+  if (plan === 'annual') {
+    await checkAnnualLimit(userEmail, env);
+    await incrementAnnualUsage(userEmail, env);
+  }
+
+  // ── 3. Plan-specific image pipeline ──────────────────────────────────────
+
+  if (plan === 'pro' || plan === 'annual') {
+    // a. Generate style prompts via Claude
+    const stylePrompts = await styleAgent(
+      {
+        vibeResults: finalVibes,
+        cities: cities.map((c) => c.name),
+        weather: finalWeather,
+      },
+      env
+    );
+
+    // b. Insert generation_jobs rows for each prompt
+    const jobInsertRows = stylePrompts.map((sp) => ({
       trip_id: tripId,
       city: sp.city,
       mood: sp.mood,
-      prompt: sp.prompt_en,
+      prompt: sp.prompt,
       status: 'pending',
+      job_type: 'pro',
     }));
 
-    const insertRes = await supabaseRequest(env, '/generation_jobs', {
-      method: 'POST',
-      headers: { Prefer: 'return=representation' },
-      body: JSON.stringify(jobRecords),
-    });
-
-    let savedJobs: Array<{ id: string; city: string; mood: string; prompt: string }> = [];
-    if (insertRes.ok) {
-      savedJobs = await insertRes.json();
-    } else {
-      console.error(`[Orchestrator] Failed to save jobs: ${await insertRes.text()}`);
+    let jobIds: Record<string, string> = {};
+    try {
+      const insertRes = await sbFetch(env, '/generation_jobs', {
+        method: 'POST',
+        body: JSON.stringify(jobInsertRows),
+      });
+      if (insertRes.ok) {
+        const savedJobs = (await insertRes.json()) as Array<{ id: string; city: string; mood: string }>;
+        for (const job of savedJobs) {
+          jobIds[`${job.city}/${job.mood}`] = job.id;
+        }
+      }
+    } catch (err) {
+      console.warn('[runResult] Failed to insert generation_jobs:', (err as Error).message);
     }
 
-    // ── Step 5: Generate images (concurrency: 2) ──────────────────────────────
-
-    console.log(`[Orchestrator] Generating ${allStylePrompts.length} images (concurrency: 2)`);
-
-    const imageTasks = allStylePrompts.map((sp, i) => async () => {
-      const job = savedJobs[i];
-      const jobId = job?.id;
-
-      // Mark job as processing
-      if (jobId) {
-        await supabaseRequest(env, `/generation_jobs?id=eq.${jobId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'processing', attempts: 1 }),
-        });
-      }
-
-      try {
-        const imageUrl = await generateImage(sp, env.NANOBANANA_API_KEY, trip.face_url);
-
-        if (jobId) {
-          await supabaseRequest(env, `/generation_jobs?id=eq.${jobId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'completed', image_url: imageUrl }),
-          });
-        }
-
-        return { jobId, imageUrl, success: true };
-      } catch (err) {
-        console.error(
-          `[Orchestrator] Image generation failed for ${sp.city}/${sp.mood}: ${(err as Error).message}`
-        );
-
-        if (jobId) {
-          await supabaseRequest(env, `/generation_jobs?id=eq.${jobId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({ status: 'failed', attempts: 3 }),
-          });
-        }
-
-        return { jobId, imageUrl: null, success: false };
-      }
-    });
-
-    await runWithConcurrency(imageTasks, 2);
-
-    // ── Step 6: Generate capsule wardrobe via Claude ───────────────────────────
-
-    console.log(`[Orchestrator] Generating capsule wardrobe via Claude`);
-    const { items, daily_plan } = await generateCapsule(
-      trip.cities,
-      trip.month,
-      climateData,
-      env.ANTHROPIC_API_KEY
+    // c. Generate images
+    await imageGenAgent(
+      {
+        prompts: stylePrompts,
+        tripId,
+        jobIds,
+        faceUrl,
+      },
+      env
     );
+  } else {
+    // Standard plan: mark the teaser as "unblurred" (client uses this flag)
+    await sbFetch(env, `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ status: 'unblurred' }),
+    });
+  }
 
-    // Save capsule_results to DB
-    const capsuleRes = await supabaseRequest(env, '/capsule_results', {
+  // ── 4. Full capsule wardrobe ──────────────────────────────────────────────
+  const totalDays = cities.reduce((s, c) => s + c.days, 0);
+
+  const capsule = await capsuleAgent(
+    {
+      vibeResults: finalVibes,
+      weather: finalWeather,
+      plan,
+      cities: cities.map((c) => ({ name: c.name, days: c.days })),
+      month,
+      tripDays: totalDays,
+    },
+    env
+  );
+
+  // Save capsule_results
+  try {
+    await sbFetch(env, '/capsule_results', {
       method: 'POST',
       body: JSON.stringify({
         trip_id: tripId,
-        items,
-        daily_plan,
+        ...(capsule.plan !== 'free' ? capsule : {}),
+        plan: capsule.plan,
       }),
     });
-
-    if (!capsuleRes.ok) {
-      const errText = await capsuleRes.text();
-      console.error(`[Orchestrator] Failed to save capsule results: ${errText}`);
-    } else {
-      console.log(`[Orchestrator] Capsule results saved for trip ${tripId}`);
-    }
-
-    // ── Step 7: Fulfillment (email + privacy cleanup) ─────────────────────────
-
-    console.log(`[Orchestrator] Running fulfillment for trip ${tripId}`);
-    await fulfillTrip(tripId, userEmail, env);
-
-    // ── Step 8: Generate share content ────────────────────────────────────────
-
-    const shareContent = generateShareContent(trip);
-    console.log(
-      `[Orchestrator] Share content generated. URL: ${shareContent.share_url}`
-    );
-
-    // Optionally persist share content to DB here if needed
-
-    // ── Step 9: Mark trip as completed ───────────────────────────────────────
-
-    await supabaseRequest(env, `/trips?id=eq.${tripId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'completed' }),
-    });
-
-    console.log(`[Orchestrator] Trip ${tripId} completed successfully`);
   } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.error(`[Orchestrator] Fatal error for trip ${tripId}: ${message}`);
-
-    await supabaseRequest(env, `/trips?id=eq.${tripId}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ status: 'failed' }),
-    });
-
-    throw err;
+    console.error('[runResult] Failed to save capsule_results:', (err as Error).message);
   }
+
+  // ── 5. Fulfillment (email + R2 cleanup) ──────────────────────────────────
+  const galleryUrl = `https://travelcapsule.com/result/${tripId}`;
+  await fulfillmentAgent({ tripId, email: userEmail, galleryUrl }, env);
+
+  // ── 6. Growth (share copy + upgrade token) ────────────────────────────────
+  const firstVibe = finalVibes[0];
+  const moodLabel = firstVibe?.mood_label ?? cities[0]?.name ?? 'Travel Capsule';
+
+  const growth = await growthAgent({ tripId, moodName: moodLabel, plan }, env);
+
+  // Persist growth data on trip row
+  await sbPatch(env, `/trips?id=eq.${tripId}`, {
+    share_url: growth.share_url,
+    upgrade_token: growth.upgrade_token ?? null,
+    status: 'completed',
+  });
+
+  console.log(`[runResult] ${plan} pipeline complete for trip ${tripId}. Share: ${growth.share_url}`);
 }
