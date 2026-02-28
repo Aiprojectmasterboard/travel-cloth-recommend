@@ -7,3 +7,6 @@ dist/
 .next/
 .DS_Store
 *.log
+.vercel/
+*.tsbuildinfo
+.idx/
