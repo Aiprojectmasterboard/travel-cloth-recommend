@@ -1,188 +1,72 @@
 # Travel Capsule AI -- Design System Specification
 
 > **Product**: Travel Capsule AI
-> **Pricing**: $5 / trip (one-time, no subscription)
-> **Positioning**: Luxury editorial mood -- AI travel styling at the intersection of fashion and travel
+> **Pricing**: $5 Standard / $12 Pro / $29 Annual
+> **Positioning**: Luxury travel editorial -- AI travel styling at the intersection of fashion and travel
+> **Mood**: Luxury Travel Editorial
 > **Last updated**: 2026-02-28
 
 ---
 
 ## Table of Contents
 
-1. [Brand Direction](#1-brand-direction)
-2. [Color System](#2-color-system)
-3. [Typography](#3-typography)
-4. [Component Catalog & States](#4-component-catalog--states)
-5. [Page Layout Specifications](#5-page-layout-specifications)
-6. [Animation Rules](#6-animation-rules)
-7. [Spacing System](#7-spacing-system)
-8. [Icon System](#8-icon-system)
-9. [Responsive Image Strategy](#9-responsive-image-strategy)
+1. [tailwind.config.ts](#1-tailwindconfigts)
+2. [globals.css](#2-globalscss)
+3. [Component Tailwind Class Spec](#3-component-tailwind-class-spec)
+4. [Funnel Component UI Detail](#4-funnel-component-ui-detail)
+5. [Copy Guide (English)](#5-copy-guide-english)
 
 ---
 
-## 1. Brand Direction
+## 1. tailwind.config.ts
 
-### Mood
+The single source of truth for all design tokens. This file lives at `apps/web/tailwind.config.ts`.
 
-**"Luxury Travel Editorial"** -- Vogue Voyage meets AI.
+### Color Tokens
 
-Travel Capsule AI sits at the premium end of AI consumer tools. Every visual decision should feel like flipping through a high-end travel magazine: warm tones, generous whitespace, editorial photography, and confident typography.
+| Token | Hex | Usage |
+|-------|-----|-------|
+| `primary` | `#b8552e` | CTA buttons, active states, brand accent, links, check icons |
+| `secondary` | `#1A1410` | Body text, headings, dark section backgrounds (Hero, CTA) |
+| `cream` | `#FDF8F3` | Default page background, modal backgrounds |
+| `sand` | `#F5EFE6` | Alternate section backgrounds, card borders, input borders |
+| `gold` | `#D4AF37` | Mood name italic accents, premium highlights, star ratings |
+| `weatherBlue` | `#E0F2FE` | Weather UI elements, precipitation bars |
 
-### Tone of Voice
-
-- **Warm & refined** -- never cold or clinical
-- **Trustworthy** -- professional without being corporate
-- **Inviting** -- approachable luxury, not exclusive luxury
-- **Confident** -- clear value proposition, no apologizing for the price
-
-### Reference Brands
-
-| Brand | What we borrow |
-|-------|---------------|
-| **Net-a-Porter** | Product card elegance, serif/sans contrast, cream-and-ink palette |
-| **Kinfolk Magazine** | Generous whitespace, editorial grid, muted photography style |
-| **Airbnb Luxe** | Trust through simplicity, warm photography, smooth micro-interactions |
-
-### Brand Principles
-
-1. **Editorial first** -- every page should feel like a magazine spread
-2. **Warm over cool** -- terracotta and sand over blue and grey
-3. **Typography drives hierarchy** -- Playfair Display creates instant luxury
-4. **Restraint is luxury** -- fewer elements, more breathing room
-5. **Photography sets the tone** -- 3:4 portrait ratio, warm color grading
-
----
-
-## 2. Color System
-
-### Color Palette
-
-| Token | Hex | RGB | Usage |
-|-------|-----|-----|-------|
-| **Primary (Terracotta)** | `#C4613A` | `rgb(196, 97, 58)` | CTA buttons, active states, brand accent, links |
-| **Ink** | `#1A1410` | `rgb(26, 20, 16)` | Body text, headings, primary foreground |
-| **Sand** | `#F5EFE6` | `rgb(245, 239, 230)` | Alternate section backgrounds, subtle fills |
-| **Cream** | `#FDF8F3` | `rgb(253, 248, 243)` | Default page background |
-| **Gold** | `#C8A96E` | `rgb(200, 169, 110)` | Premium accents, pricing, selected states, month picker active |
-| **Muted** | `#8A7B6E` | `rgb(138, 123, 110)` | Secondary text, captions, placeholders |
-| **White** | `#FFFFFF` | `rgb(255, 255, 255)` | Card backgrounds, overlays |
-| **Warm White** | `#FAF6F0` | `rgb(250, 246, 240)` | "How It Works" section background, input fills |
-| **Error** | `#D64545` | `rgb(214, 69, 69)` | Validation errors, destructive actions |
-| **Success** | `#2D7D52` | `rgb(45, 125, 82)` | Success states, completed steps |
-| **Border** | `rgba(26,20,16,0.12)` | -- | Dividers, card borders, subtle separators |
-
-### Derived Colors (Functional)
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| Primary Hover | `#B3582F` | Button hover state (darkened terracotta) |
-| Primary Shadow | `rgba(196, 97, 58, 0.35)` | CTA button box-shadow |
-| Primary Shadow Hover | `rgba(196, 97, 58, 0.45)` | CTA hover box-shadow |
-| Ink Overlay | `rgba(26, 20, 16, 0.8)` | Modal backdrop |
-| Gold Glow | `rgba(200, 169, 110, 0.3)` | Active step ring |
-| Success Green | `#5B8C5A` | Completed step dots, live indicator |
-
-### CSS Custom Properties
-
-```css
-:root {
-  /* -- Core Palette -- */
-  --color-primary: #C4613A;
-  --color-primary-hover: #B3582F;
-  --color-ink: #1A1410;
-  --color-sand: #F5EFE6;
-  --color-cream: #FDF8F3;
-  --color-gold: #C8A96E;
-  --color-muted: #8A7B6E;
-  --color-white: #FFFFFF;
-  --color-warm-white: #FAF6F0;
-
-  /* -- Semantic -- */
-  --color-error: #D64545;
-  --color-success: #2D7D52;
-  --color-success-alt: #5B8C5A;
-  --color-border: rgba(26, 20, 16, 0.12);
-
-  /* -- Shadows -- */
-  --shadow-primary: 0 4px 20px rgba(196, 97, 58, 0.35);
-  --shadow-primary-hover: 0 8px 30px rgba(196, 97, 58, 0.45);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
-  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
-  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.3);
-
-  /* -- Overlay -- */
-  --overlay-backdrop: rgba(26, 20, 16, 0.8);
-  --overlay-blur: blur(8px);
-}
-```
-
-### Tailwind Configuration
+### Full Configuration
 
 ```typescript
-// tailwind.config.ts
+// apps/web/tailwind.config.ts
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
-  content: [
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-  ],
+  content: ['./app/**/*.{js,ts,jsx,tsx}', './components/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        primary: {
-          DEFAULT: '#C4613A',
-          hover: '#B3582F',
-        },
-        ink: '#1A1410',
-        sand: '#F5EFE6',
+        primary: '#b8552e',
+        secondary: '#1A1410',
         cream: '#FDF8F3',
-        gold: '#C8A96E',
-        muted: '#8A7B6E',
-        'warm-white': '#FAF6F0',
-        error: '#D64545',
-        success: '#2D7D52',
-        'success-alt': '#5B8C5A',
-        border: 'rgba(26, 20, 16, 0.12)',
+        sand: '#F5EFE6',
+        gold: '#D4AF37',
+        weatherBlue: '#E0F2FE',
       },
-      boxShadow: {
-        'primary': '0 4px 20px rgba(196, 97, 58, 0.35)',
-        'primary-hover': '0 8px 30px rgba(196, 97, 58, 0.45)',
-        'card': '0 2px 12px rgba(0, 0, 0, 0.06)',
-        'card-hover': '0 8px 30px rgba(0, 0, 0, 0.12)',
-        'modal': '0 20px 60px rgba(0, 0, 0, 0.3)',
+      fontFamily: {
+        serif: ['Playfair Display', 'serif'],
+        sans: ['Plus Jakarta Sans', 'sans-serif'],
       },
     },
   },
   plugins: [],
 }
-
 export default config
 ```
 
-### Dark Mode
-
-Not supported. Out of scope for the current product version. The warm editorial palette is designed exclusively for light mode.
-
----
-
-## 3. Typography
-
-### Font Stack
-
-| Role | Font Family | Source | Fallback |
-|------|-------------|--------|----------|
-| **Heading** | Playfair Display | Google Fonts | Georgia, serif |
-| **Body / UI** | DM Sans | Google Fonts | system-ui, sans-serif |
-| **Mono / Price** | JetBrains Mono | Google Fonts | monospace |
-
-### Next.js Font Loading
+### Next.js Font Loading (app/layout.tsx)
 
 ```typescript
-// app/layout.tsx
-import { Playfair_Display, DM_Sans } from 'next/font/google'
+import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google'
 
 const playfair = Playfair_Display({
   subsets: ['latin'],
@@ -192,1953 +76,1290 @@ const playfair = Playfair_Display({
   display: 'swap',
 })
 
-const dmSans = DM_Sans({
+const jakartaSans = Plus_Jakarta_Sans({
   subsets: ['latin'],
-  weight: ['300', '400', '500'],
-  variable: '--font-dm-sans',
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-jakarta-sans',
   display: 'swap',
 })
-```
 
-### Tailwind Font Extension
-
-```typescript
-// tailwind.config.ts > theme.extend
-fontFamily: {
-  playfair: ['Playfair Display', 'Georgia', 'serif'],
-  sans: ['DM Sans', 'system-ui', 'sans-serif'],
-  mono: ['JetBrains Mono', 'monospace'],
-},
-```
-
-### Type Scale
-
-| Token | Size (rem) | Size (px) | Weight | Line-height | Letter-spacing | Font Family | Usage |
-|-------|-----------|-----------|--------|-------------|----------------|-------------|-------|
-| **Display** | 4rem | 64px | 700 | 1.1 | -0.03em | Playfair Display | Hero headline |
-| **H1** | 2.5rem | 40px | 700 | 1.2 | -0.025em | Playfair Display | Page titles |
-| **H2** | 2rem | 32px | 600 | 1.3 | -0.025em | Playfair Display | Section titles |
-| **H3** | 1.5rem | 24px | 600 | 1.4 | 0 | Playfair Display | Card titles |
-| **Body LG** | 1.125rem | 18px | 400 | 1.6 | 0 | DM Sans | Lead paragraphs |
-| **Body** | 1rem | 16px | 400 | 1.6 | 0 | DM Sans | Default body text |
-| **Body SM** | 0.875rem | 14px | 400 | 1.5 | 0 | DM Sans | Secondary text, captions |
-| **Label** | 0.75rem | 12px | 500 | 1.4 | 0.12em | DM Sans | Labels, tags, overlines (uppercase) |
-| **Price** | 2rem | 32px | 700 | 1.0 | 0 | JetBrains Mono | Price display |
-
-### Responsive Type
-
-Hero headline uses `clamp()` for fluid scaling:
-
-```css
-/* Hero headline */
-.hero h1 {
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(2.8rem, 5vw, 5rem);
-  font-weight: 700;
-  line-height: 1.1;
-  letter-spacing: -0.03em;
-}
-
-/* Section titles */
-.section-title {
-  font-family: 'Playfair Display', serif;
-  font-size: clamp(1.9rem, 3.5vw, 3rem);
-  line-height: 1.15;
-  letter-spacing: -0.025em;
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={`${playfair.variable} ${jakartaSans.variable}`}>
+      <body>{children}</body>
+    </html>
+  )
 }
 ```
 
-### Section Labels (Overline)
+### Dark Mode
 
-Used above every section title for category context:
-
-```css
-.section-label {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.72rem;
-  letter-spacing: 0.15em;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  font-weight: 600;
-  margin-bottom: 0.75rem;
-}
-```
+Not supported in the current version. The warm editorial palette is designed exclusively for light mode. The `darkMode: 'class'` configuration is included as a forward-compatible option for a potential future iteration.
 
 ---
 
-## 4. Component Catalog & States
+## 2. globals.css
 
-### 4.1 Button
-
-#### Props Interface
-
-```typescript
-interface ButtonProps {
-  variant: 'primary' | 'secondary' | 'ghost'
-  size: 'sm' | 'md' | 'lg'
-  children: React.ReactNode
-  onClick?: () => void
-  disabled?: boolean
-  loading?: boolean
-  type?: 'button' | 'submit'
-  ariaLabel?: string
-  fullWidth?: boolean
-  className?: string
-}
-```
-
-#### Size Scale
-
-| Size | Padding | Font Size | Border Radius | Min Height |
-|------|---------|-----------|---------------|------------|
-| `sm` | `0.5rem 1.2rem` | `0.85rem` | `50px` | `36px` |
-| `md` | `0.9rem 2rem` | `0.95rem` | `50px` | `44px` |
-| `lg` | `1rem 2.5rem` | `1rem` | `50px` | `52px` |
-
-#### Variant: Primary
+This file lives at `apps/web/app/globals.css`. It imports Google Fonts (for development convenience), defines Tailwind layers, and establishes global styles including the editorial grain texture overlay.
 
 ```css
-.btn-primary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: var(--color-primary);
-  color: #FFFFFF;
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 600;
-  border: none;
-  border-radius: 50px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: transform 0.15s ease,
-              box-shadow 0.15s ease,
-              background 0.15s ease;
-  box-shadow: var(--shadow-primary);
-}
+/* apps/web/app/globals.css */
 
-/* Hover */
-.btn-primary:hover {
-  background: var(--color-primary-hover);
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-primary-hover);
-}
+/* =============================================
+   1. Google Fonts
+   ============================================= */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
-/* Active / Pressed */
-.btn-primary:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(196, 97, 58, 0.3);
-}
+/* =============================================
+   2. Tailwind Layers
+   ============================================= */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-/* Focus Visible (keyboard navigation) */
-.btn-primary:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 3px;
-}
-
-/* Loading */
-.btn-primary[data-loading="true"] {
-  opacity: 0.75;
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-/* Disabled */
-.btn-primary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-```
-
-#### Loading Spinner (inside button)
-
-```css
-.btn-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #FFFFFF;
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  flex-shrink: 0;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-```
-
-#### Variant: Secondary
-
-```css
-.btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  background: transparent;
-  color: var(--color-primary);
-  font-family: 'DM Sans', sans-serif;
-  font-weight: 500;
-  border: 1.5px solid var(--color-primary);
-  border-radius: 50px;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-}
-
-/* Hover */
-.btn-secondary:hover {
-  background: rgba(196, 97, 58, 0.06);
-  transform: translateY(-1px);
-}
-
-/* Active */
-.btn-secondary:active {
-  transform: translateY(0);
-}
-
-/* Focus Visible */
-.btn-secondary:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 3px;
-}
-
-/* Disabled */
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-```
-
-#### Variant: Ghost
-
-```css
-.btn-ghost {
-  background: none;
-  border: none;
-  color: var(--color-muted);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.9rem;
-  text-decoration: underline;
-  cursor: pointer;
-  transition: color 0.2s ease;
-}
-
-/* Hover */
-.btn-ghost:hover {
-  color: var(--color-ink);
-}
-
-/* Focus Visible */
-.btn-ghost:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-/* Disabled */
-.btn-ghost:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-```
-
-#### Checkout Button (Special Primary Variant)
-
-Used in pricing and form preview. Gradient-enhanced primary button.
-
-```css
-.checkout-btn {
-  display: block;
-  width: 100%;
-  background: linear-gradient(135deg, #C4613A 0%, #D97A52 100%);
-  color: #FFFFFF;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 1rem;
-  font-weight: 500;
-  padding: 1rem;
-  border-radius: 12px;
-  border: none;
-  cursor: pointer;
-  box-shadow: 0 6px 25px rgba(196, 97, 58, 0.4);
-  transition: transform 0.15s ease,
-              box-shadow 0.15s ease,
-              background 0.15s ease;
-}
-
-.checkout-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #B8552F 0%, #C46840 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 10px 35px rgba(196, 97, 58, 0.5);
-}
-
-.checkout-btn:active {
-  transform: translateY(0);
-}
-
-.checkout-btn:disabled {
-  opacity: 0.75;
-  cursor: not-allowed;
-  transform: none;
-}
-```
-
----
-
-### 4.2 Card
-
-#### Props Interface
-
-```typescript
-interface CardProps {
-  variant: 'default' | 'elevated'
-  selected?: boolean
-  children: React.ReactNode
-  onClick?: () => void
-  className?: string
-}
-```
-
-#### Variant: Default
-
-```css
-.card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: 12px;
-  overflow: hidden;
-  transition: transform 0.2s ease,
-              box-shadow 0.2s ease,
-              border-color 0.2s ease;
-}
-
-/* Hover -- lift effect */
-.card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-card-hover);
-}
-
-/* Selected -- gold border */
-.card[data-selected="true"],
-.card.selected {
-  border-color: var(--color-gold);
-  box-shadow: 0 0 0 1px var(--color-gold);
-}
-```
-
-#### Variant: Elevated
-
-```css
-.card-elevated {
-  background: var(--color-white);
-  border: none;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card-elevated:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-card-hover);
-}
-```
-
-#### Dark Card (Form section context)
-
-Used inside the dark-background form section:
-
-```css
-.form-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  padding: 2rem;
-  transition: box-shadow 0.2s ease;
-}
-```
-
-#### Pricing Card (Dark, premium)
-
-```css
-.pricing-card {
-  background: linear-gradient(145deg, #1E1A16 0%, #26201A 100%);
-  border: 1px solid rgba(200, 169, 110, 0.3);
-  border-radius: 20px;
-  padding: 2.5rem;
-  box-shadow: var(--shadow-modal);
-  position: relative;
-  overflow: hidden;
-  text-align: center;
-  color: #FFFFFF;
-}
-
-/* Radial gold glow overlay (::before pseudo) */
-.pricing-card::before {
+/* =============================================
+   3. Grain Texture Overlay
+   Used on Hero and dark sections for editorial feel.
+   Apply class `grain-overlay` on a `relative overflow-hidden` container.
+   ============================================= */
+.grain-overlay::before {
   content: '';
   position: absolute;
-  top: -50%; left: -50%;
-  width: 200%; height: 200%;
-  background: radial-gradient(
-    circle at 70% 30%,
-    rgba(200, 169, 110, 0.15) 0%,
-    transparent 60%
-  );
-  pointer-events: none;
-}
-```
-
----
-
-### 4.3 Input
-
-#### Props Interface
-
-```typescript
-interface InputProps {
-  type: 'text' | 'email' | 'file' | 'number'
-  value?: string | number
-  placeholder?: string
-  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onFocus?: () => void
-  onBlur?: () => void
-  error?: string
-  disabled?: boolean
-  success?: boolean
-  label?: string
-  ariaLabel?: string
-  className?: string
-}
-```
-
-#### Default State
-
-```css
-.input {
-  width: 100%;
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--color-border);
-  border-radius: 8px;
-  background: var(--color-warm-white);
-  color: var(--color-ink);
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
-}
-
-.input::placeholder {
-  color: var(--color-muted);
-  opacity: 0.6;
-}
-```
-
-#### Focus State
-
-```css
-.input:focus {
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(196, 97, 58, 0.1);
-}
-```
-
-#### Error State
-
-```css
-.input-error {
-  border-color: var(--color-error);
-}
-
-.input-error:focus {
-  border-color: var(--color-error);
-  box-shadow: 0 0 0 3px rgba(214, 69, 69, 0.1);
-}
-
-.input-error-message {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.78rem;
-  color: var(--color-error);
-  margin-top: 0.35rem;
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-```
-
-#### Success State
-
-```css
-.input-success {
-  border-color: var(--color-success);
-}
-
-.input-success:focus {
-  border-color: var(--color-success);
-  box-shadow: 0 0 0 3px rgba(45, 125, 82, 0.1);
-}
-```
-
-#### Disabled State
-
-```css
-.input:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: var(--color-sand);
-}
-```
-
-#### Dark Input (Form section context)
-
-```css
-.city-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  outline: none;
-  color: #FFFFFF;
-  font-size: 0.95rem;
-  font-family: 'DM Sans', sans-serif;
-}
-
-.city-input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
-}
-
-/* Wrapper for dark inputs */
-.city-row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 0.7rem 1rem;
-  transition: border-color 0.2s ease;
-}
-
-.city-row:focus-within {
-  border-color: var(--color-gold);
-}
-```
-
-#### iOS Zoom Prevention
-
-Inputs on mobile must have `font-size >= 16px` to prevent iOS auto-zoom:
-
-```css
-@media (max-width: 480px) {
-  .city-input,
-  .days-input,
-  input[type="number"] {
-    font-size: 16px;
-  }
-}
-```
-
----
-
-### 4.4 ImageCard
-
-#### Props Interface
-
-```typescript
-interface ImageCardProps {
-  src: string
-  alt: string
-  city?: string
-  mood?: string
-  look?: string
-  state: 'loading' | 'visible' | 'blurred'
-  onUnlock?: () => void
-  className?: string
-}
-```
-
-#### State: Loading (Skeleton)
-
-```css
-.image-card-skeleton {
-  aspect-ratio: 3 / 4;
-  border-radius: 12px;
-  overflow: hidden;
-  background: linear-gradient(
-    90deg,
-    var(--color-sand) 25%,
-    var(--color-warm-white) 37%,
-    var(--color-sand) 63%
-  );
-  background-size: 400% 100%;
-  animation: shimmer 1500ms ease-in-out infinite;
-}
-
-@keyframes shimmer {
-  0%   { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-```
-
-#### State: Visible (Unlocked)
-
-```css
-.image-card {
-  border-radius: 12px;
-  overflow: hidden;
-  background: var(--color-cream);
-  box-shadow: var(--shadow-card);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.image-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-card-hover);
-}
-
-.image-card-img {
-  aspect-ratio: 3 / 4;
-  width: 100%;
-  height: auto;
-  object-fit: cover;
-  display: block;
-}
-
-.image-card-info {
-  padding: 0.9rem;
-}
-
-.image-card-city {
-  font-size: 0.75rem;
-  color: var(--color-muted);
-  letter-spacing: 0.05em;
-  margin-bottom: 0.2rem;
-}
-
-.image-card-look {
-  font-size: 0.88rem;
-  font-weight: 500;
-  color: var(--color-ink);
-  line-height: 1.3;
-}
-
-/* Mood badge (top-left overlay) */
-.image-card-mood {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(253, 250, 246, 0.9);
-  font-size: 0.65rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 3px 8px;
-  border-radius: 4px;
-  color: var(--color-ink);
-  font-weight: 500;
-}
-```
-
-#### State: Blurred (Paywall Overlay)
-
-```css
-.image-card-blurred img {
-  filter: blur(6px) brightness(0.7);
-  transition: filter 0.8s ease-out;
-}
-
-.image-card-overlay {
-  position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: #FFFFFF;
-  text-align: center;
-  gap: 0.3rem;
-  z-index: 2;
-}
-
-.image-card-lock-icon {
-  font-size: 1.4rem;
-}
-
-.image-card-lock-text {
-  font-size: 0.7rem;
-  font-family: 'DM Sans', sans-serif;
-}
-
-/* Watermark gradient (bottom) */
-.image-card-watermark {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-  padding: 0.8rem 0.5rem 0.4rem;
-  font-size: 0.6rem;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  letter-spacing: 0.08em;
-}
-```
-
-#### Blur Reveal Animation (post-payment)
-
-```css
-.image-card-revealed img {
-  filter: blur(0);
-  transition: filter 800ms ease-out;
-}
-
-.image-card-revealed .image-card-overlay {
-  opacity: 0;
-  transition: opacity 400ms ease-out;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.5'/%3E%3C/svg%3E");
+  opacity: 0.05;
   pointer-events: none;
-}
-```
-
----
-
-### 4.5 ProgressBar
-
-#### Props Interface
-
-```typescript
-interface ProgressBarProps {
-  currentStep: 1 | 2 | 3 | 4
-}
-
-// Step definition
-interface Step {
-  num: number
-  icon: string
-  label: string
-}
-```
-
-#### Steps Data
-
-```typescript
-const STEPS: Step[] = [
-  { num: 1, icon: '\uD83D\uDCCD', label: 'City Input' },
-  { num: 2, icon: '\uD83D\uDCC5', label: 'Month Select' },
-  { num: 3, icon: '\uD83D\uDC41',  label: 'Preview' },
-  { num: 4, icon: '\uD83D\uDD13', label: 'Checkout Complete' },
-]
-```
-
-#### Visual Design
-
-```css
-/* Container */
-.progress-steps-wrap {
-  width: 100%;
-  max-width: 500px;
-  margin: 0 auto 2rem;
-}
-
-.progress-steps {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-}
-
-/* Each step item */
-.step-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  flex: 1;
-}
-
-/* Circle */
-.step-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
   z-index: 1;
-  flex-shrink: 0;
-  transition: background 0.25s ease, box-shadow 0.25s ease;
 }
 
-/* Step states */
-.step-circle-completed {
-  background: var(--color-primary);
-  color: #FFFFFF;
+/* =============================================
+   4. Editorial Typography Utility
+   ============================================= */
+.editorial-text {
+  font-family: 'Playfair Display', serif;
 }
 
-.step-circle-current {
-  background: var(--color-gold);
-  color: var(--color-ink);
-  box-shadow: 0 0 0 3px rgba(200, 169, 110, 0.3);
-}
-
-.step-circle-upcoming {
-  background: var(--color-border);
-  color: var(--color-muted);
-}
-
-/* Labels */
-.step-label {
-  margin-top: 0.45rem;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.72rem;
-  font-weight: 500;
-  text-align: center;
-  white-space: nowrap;
-}
-
-.step-label-completed { color: var(--color-primary); }
-.step-label-current   { color: var(--color-ink); font-weight: 600; }
-.step-label-upcoming  { color: var(--color-muted); }
-
-/* Connector line between steps */
-.step-connector {
-  position: absolute;
-  top: 18px;
-  left: 50%;
-  width: 100%;
-  height: 2px;
-  z-index: 0;
-}
-
-.step-connector-done    { background: var(--color-primary); }
-.step-connector-pending { background: var(--color-border); }
-```
-
-#### Modal Progress Bar (Linear)
-
-```css
-.progress-bar {
-  height: 4px;
-  background: var(--color-sand);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-fill {
-  height: 100%;
-  background: var(--color-primary);
-  border-radius: 2px;
-  transition: width 1s ease;
-}
-```
-
-#### Mobile Adaptation
-
-```css
-@media (max-width: 480px) {
-  .step-label   { display: none; }
-  .step-circle  { width: 30px; height: 30px; }
-  .step-icon    { font-size: 0.8rem; }
-  .step-connector { top: 15px; }
-}
-```
-
----
-
-### 4.6 CityTag
-
-#### Props Interface
-
-```typescript
-interface CityTagProps {
-  city: string
-  flag: string
-  days: number
-  onRemove: () => void
-  canRemove: boolean
-}
-```
-
-#### Visual Design
-
-```css
-.city-row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 0.7rem 1rem;
-  transition: border-color 0.2s ease;
-}
-
-.city-row:focus-within {
-  border-color: var(--color-gold);
-}
-
-.city-icon {
-  font-size: 1.1rem;
-  flex-shrink: 0;
-}
-
-.city-remove {
-  background: none;
-  border: none;
-  color: rgba(255, 255, 255, 0.3);
-  cursor: pointer;
-  font-size: 1.1rem;
+/* =============================================
+   5. Material Symbols Icon Font
+   ============================================= */
+.material-symbols {
+  font-family: 'Material Symbols Outlined';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 24px;
   line-height: 1;
-  transition: color 0.2s ease;
-  flex-shrink: 0;
-  padding: 0 0.2rem;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'liga';
 }
 
-.city-remove:hover {
-  color: var(--color-primary);
+/* =============================================
+   6. Base / Body Defaults
+   ============================================= */
+body {
+  @apply font-sans antialiased text-secondary bg-cream;
 }
 
-/* Days badge */
-.days-input {
-  width: 58px;
-  background: rgba(255, 255, 255, 0.1);
-  border: none;
-  outline: none;
-  color: #FFFFFF;
-  font-size: 0.9rem;
-  font-family: 'DM Sans', sans-serif;
-  text-align: center;
-  border-radius: 6px;
-  padding: 0.3rem;
-  flex-shrink: 0;
+/* =============================================
+   7. Scrollbar Styling (optional, editorial polish)
+   ============================================= */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FDF8F3; /* cream */
+}
+::-webkit-scrollbar-thumb {
+  background: #F5EFE6; /* sand */
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b8552e; /* primary */
 }
 
-.days-label {
-  font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.4);
-  flex-shrink: 0;
-}
-```
-
-#### Add City Button
-
-```css
-.add-city-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: none;
-  border: 1px dashed rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.85rem;
-  font-family: 'DM Sans', sans-serif;
-  padding: 0.65rem 1rem;
-  border-radius: 10px;
-  cursor: pointer;
-  width: 100%;
-  transition: all 0.2s ease;
-}
-
-.add-city-btn:hover:not(:disabled) {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
-}
-
-.add-city-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+/* =============================================
+   8. Selection Color
+   ============================================= */
+::selection {
+  background-color: rgba(184, 85, 46, 0.15); /* primary/15 */
+  color: #1A1410; /* secondary */
 }
 ```
 
----
-
-### 4.7 MonthPicker
-
-#### Props Interface
-
-```typescript
-interface MonthPickerProps {
-  selectedIndex: number
-  onSelect: (index: number) => void
-  months: string[]  // Localized month names, 12 items
-}
-```
-
-#### Visual Design
-
-```css
-.month-grid {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 0.4rem;
-}
-
-.month-btn {
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 0.72rem;
-  font-family: 'DM Sans', sans-serif;
-  padding: 0.5rem 0;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  text-align: center;
-  letter-spacing: 0.03em;
-}
-
-/* Hover & Active (selected) */
-.month-btn:hover,
-.month-btn.active {
-  background: var(--color-gold);
-  border-color: var(--color-gold);
-  color: var(--color-ink);
-  font-weight: 500;
-}
-
-/* Focus Visible */
-.month-btn:focus-visible {
-  outline: 2px solid var(--color-gold);
-  outline-offset: 2px;
-}
-```
-
-#### Mobile Layout
-
-```css
-/* Tablet */
-@media (max-width: 640px) {
-  .month-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-
-/* Small mobile */
-@media (max-width: 480px) {
-  .month-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
-```
-
----
-
-### 4.8 Toast / Notification
-
-#### Props Interface
-
-```typescript
-interface ToastProps {
-  message: string
-  visible: boolean
-  type?: 'success' | 'error' | 'warning' | 'info'
-  duration?: number  // Default: 3000ms
-}
-```
-
-#### Visual Design
-
-```css
-.toast {
-  position: fixed;
-  bottom: 2rem;
-  right: 2rem;
-  padding: 0.8rem 1.4rem;
-  border-radius: 10px;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.88rem;
-  z-index: 2000;
-  max-width: 280px;
-  line-height: 1.4;
-  transform: translateY(20px);
-  opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
-  pointer-events: none;
-}
-
-/* Visible state */
-.toast.show {
-  transform: translateY(0);
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* Type variants */
-.toast-default,
-.toast-info {
-  background: var(--color-ink);
-  color: #FFFFFF;
-}
-
-.toast-success {
-  background: var(--color-success);
-  color: #FFFFFF;
-}
-
-.toast-error {
-  background: var(--color-error);
-  color: #FFFFFF;
-}
-
-.toast-warning {
-  background: #E8A93E;
-  color: var(--color-ink);
-}
-```
-
-#### Auto-dismiss Behavior
-
-```typescript
-// Usage pattern
-const TOAST_DURATION = 3000 // 3 seconds
-
-function showToast(message: string, type: ToastType = 'info') {
-  setToast({ message, visible: true, type })
-  setTimeout(() => {
-    setToast(prev => ({ ...prev, visible: false }))
-  }, TOAST_DURATION)
-}
-```
-
-#### Mobile Adaptation
-
-```css
-@media (max-width: 640px) {
-  .toast {
-    bottom: 1rem;
-    right: 1rem;
-    left: 1rem;
-    max-width: none;
-  }
-}
-```
-
----
-
-## 5. Page Layout Specifications
-
-### Grid System
-
-| Breakpoint | Width Range | Container | Columns | Gutter | Side Padding |
-|------------|------------|-----------|---------|--------|--------------|
-| **Mobile** | 320-767px | `100% - 32px` | 4 | 16px | 16px each |
-| **Tablet** | 768-1023px | `100% - 64px` | 8 | 24px | 32px each |
-| **Desktop** | 1024px+ | `max-width: 1200px` | 12 | 32px | auto (centered) |
-
-```css
-.container {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 2rem;
-}
-
-@media (max-width: 640px) {
-  .container {
-    padding: 0 1.2rem;
-  }
-}
-```
-
-### Section Rhythm
-
-```css
-section {
-  padding: 5rem 0;
-}
-
-@media (max-width: 640px) {
-  section {
-    padding: 3.5rem 0;
-  }
-}
-```
-
----
-
-### 5.1 Landing Page Layout
-
-#### Section Flow & Background Pattern
-
-| Order | Section | Background | Notes |
-|-------|---------|------------|-------|
-| 1 | Header (fixed) | `cream @ 92% opacity + blur(12px)` | Sticky, z-index: 100 |
-| 2 | Hero | `sand` | Full viewport height |
-| 3 | Social Proof Bar | `cream` | Inline trust signals |
-| 4 | How It Works | `warm-white` | Border-top, border-bottom |
-| 5 | Form (Trip Builder) | `ink` (dark) | Dark background, gold accents |
-| 6 | Sample Output | `sand` | 4-column image grid |
-| 7 | Capsule Wardrobe | `cream` | 5-column item grid |
-| 8 | Pricing | `warm-white` | Centered dark card |
-| 9 | FAQ | `cream` | 2-column accordion |
-| 10 | Partner CTA | `sand` | Contact form |
-| 11 | Footer | `ink` (dark) | Minimal |
-
-#### Hero Layout
-
-**Desktop** (>1024px):
-```
-+------------------------------+------------------------------+
-|        hero-left (6col)      |       hero-right (6col)      |
-|                              |                              |
-|  [tag]                       |  +--------+ +--------+       |
-|  [headline - Playfair]       |  |        | |  img2  |       |
-|  [sub text]                  |  | main   | +--------+       |
-|  [social proof]              |  | image  | +--------+       |
-|  [CTA primary] [CTA ghost]  |  |        | |  img3  |       |
-|  [trust numbers: 3-4 | 8-12 |  +--------+ +--------+       |
-|    | 2-4min | $5]            |                              |
-+------------------------------+------------------------------+
-```
-
-**Tablet** (768-1024px):
-```
-+--------------------------------------------+
-|            hero-left (full width)          |
-|  [tag] [headline] [sub] [CTAs] [trust]    |
-+--------------------------------------------+
-|  [horizontal scroll strip of 3 cards]      |
-+--------------------------------------------+
-```
-
-**Mobile** (<768px):
-```
-+------------------------+
-| [tag]                  |
-| [headline]             |
-| [sub text]             |
-| [social proof]         |
-| [CTA full width]       |
-| [ghost link]           |
-| [trust row centered]   |
-+------------------------+
-| [scroll strip cards]   |
-+------------------------+
-```
-
-#### CTA Fixed Bottom (Mobile)
-
-On mobile, the primary CTA can optionally be fixed to the bottom of the viewport for maximum conversion:
-
-```css
-@media (max-width: 640px) {
-  .btn-primary--hero {
-    width: 100%;
-    justify-content: center;
-  }
-}
-```
-
----
-
-### 5.2 Trip Form Layout
-
-**Desktop** (>1024px):
-
-```
-+-----------------------------------------------------+
-|               [Progress Steps: 1 - 2 - 3 - 4]       |
-+-----------------------------------------------------+
-|  Left (6 col)                |  Right (6 col)        |
-|  +-------------------------+ |  +------------------+ |
-|  | [City Input Card]       | |  | Preview Card     | |
-|  |  Paris  [4 nights]  x   | |  | [2x2 image grid] | |
-|  |  Rome   [3 nights]  x   | |  | blur + lock      | |
-|  |  + Add city              | |  |                  | |
-|  +-------------------------+ |  | [price breakdown] | |
-|  +-------------------------+ |  | $5 total          | |
-|  | [Month Picker: 6-col]   | |  |                  | |
-|  |  Jan Feb Mar Apr May Jun | |  | [Checkout CTA]   | |
-|  |  Jul Aug Sep Oct Nov Dec | |  | [security note]  | |
-|  +-------------------------+ |  +------------------+ |
-|  +-------------------------+ |     (sticky)          |
-|  | [Photo Upload Zone]     | |                       |
-|  +-------------------------+ |                       |
-+-----------------------------------------------------+
-```
-
-- Left: form inputs stacked vertically
-- Right: `position: sticky; top: 90px;` preview card
-
-**Mobile** (<768px):
-
-```
-+------------------------+
-| [Progress Steps]       |
-+------------------------+
-| [City Input Card]      |
-+------------------------+
-| [Month Picker]         |
-+------------------------+
-| [Photo Upload]         |
-+------------------------+
-| [Preview Card]         |
-| [Price / CTA]          |
-+------------------------+
-```
-
----
-
-### 5.3 Preview Page Layout
-
-**Desktop** (>1024px):
-
-```
-+--------------------------------------------------+
-| [2x2 Image Grid]           | [Pricing Sidebar]   |
-| +--------+ +--------+      | [Price: $5]         |
-| | img 1  | | img 2  |      | [Features list]     |
-| | visible| | blurred|      | [CTA button]        |
-| +--------+ +--------+      | [Guarantee]         |
-| +--------+ +--------+      |                     |
-| | img 3  | | img 4  |      |                     |
-| | blurred| | blurred|      |                     |
-| +--------+ +--------+      |                     |
-+--------------------------------------------------+
-```
-
-**Mobile** (<768px):
-
-```
-+------------------------+
-| [img 1] [img 2]        |
-| [img 3] [img 4]        |
-+------------------------+
-| [fixed bottom CTA bar] |
-+------------------------+
-```
-
----
-
-### 5.4 Result Gallery Layout
-
-**Desktop** (>1024px):
-
-```
-+-------------------------------------------------+
-|  [Trip Header: City names + date + share btn]   |
-+-------------------------------------------------+
-|  [3-column image grid]                          |
-|  +----------+ +----------+ +----------+        |
-|  | Paris 1  | | Paris 2  | | Paris 3  |        |
-|  +----------+ +----------+ +----------+        |
-|  | Rome 1   | | Rome 2   | | Rome 3   |        |
-|  +----------+ +----------+ +----------+        |
-+-------------------------------------------------+
-|  [Capsule Wardrobe Section]                     |
-|  [horizontal scroll card row]                   |
-|  +------+ +------+ +------+ +------+ +------+  |
-|  | item | | item | | item | | item | | item |  |
-|  +------+ +------+ +------+ +------+ +------+  |
-+-------------------------------------------------+
-|  [Daily Outfit Plan]                            |
-+-------------------------------------------------+
-```
-
-**Tablet** (768-1023px): 2-column image grid
-**Mobile** (<768px): 1-column image grid
-
-```css
-.output-demo {
-  display: grid;
-  gap: 1.2rem;
-  margin-top: 3rem;
-}
-
-/* Desktop: 4 columns */
-@media (min-width: 1024px) {
-  .output-demo { grid-template-columns: repeat(4, 1fr); }
-}
-
-/* Tablet: 2 columns */
-@media (max-width: 1024px) {
-  .output-demo { grid-template-columns: repeat(2, 1fr); }
-}
-
-/* Mobile: 2 columns (compact) */
-@media (max-width: 640px) {
-  .output-demo {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.8rem;
-  }
-}
-
-/* Capsule wardrobe */
-.capsule-grid {
-  display: grid;
-  gap: 1rem;
-  margin-top: 3rem;
-}
-
-@media (min-width: 1024px) {
-  .capsule-grid { grid-template-columns: repeat(5, 1fr); }
-}
-
-@media (max-width: 1024px) {
-  .capsule-grid { grid-template-columns: repeat(4, 1fr); }
-}
-
-@media (max-width: 640px) {
-  .capsule-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.8rem;
-  }
-}
-```
-
----
-
-## 6. Animation Rules
-
-All animations follow the principle of **subtlety and purpose**. Every animation should feel natural and editorial, never flashy or gimmicky.
-
-### Global Motion Preferences
-
-```css
-/* Respect user motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-}
-```
-
-### 6.1 Scroll-triggered Fade-up
-
-Used on section headings, cards, and content blocks when they enter the viewport.
-
-```css
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
-}
-
-.reveal.in-view {
-  opacity: 1;
-  transform: translateY(0);
-}
-```
-
-**Parameters:**
-- `opacity`: 0 -> 1
-- `translateY`: 24px -> 0
-- `duration`: 600ms
-- `easing`: ease-out
-- `stagger`: 100ms between sibling elements
-- `threshold`: 10% viewport intersection
-
-**JavaScript (Intersection Observer):**
-
-```typescript
-const observer = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry, index) => {
-      if (entry.isIntersecting) {
-        setTimeout(() => {
-          entry.target.classList.add('in-view')
-        }, index * 100) // stagger
-        observer.unobserve(entry.target)
-      }
-    })
-  },
-  { threshold: 0.1 }
-)
-
-document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-```
-
-### 6.2 Hover Lift
-
-Used on cards, image tiles, and interactive elements.
-
-```css
-.hover-lift {
-  transition: transform 0.3s ease-out, box-shadow 0.3s ease-out;
-}
-
-.hover-lift:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-}
-```
-
-**Parameters:**
-- `translateY`: 0 -> -4px
-- `box-shadow`: base -> enhanced
-- `duration`: 300ms
-- `easing`: ease-out
-
-### 6.3 CTA Pulse
-
-Subtle attention-drawing pulse on the primary CTA. Used sparingly -- only on the hero CTA.
-
-```css
-@keyframes ctaPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(196, 97, 58, 0.4); }
-  70%  { box-shadow: 0 0 0 12px rgba(196, 97, 58, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(196, 97, 58, 0); }
-}
-
-.btn-primary--pulse {
-  animation: ctaPulse 2000ms ease-out infinite;
-}
-```
-
-**Parameters:**
-- Shadow spread: 0 -> 12px -> 0
-- Shadow opacity: 0.4 -> 0
-- `duration`: 2000ms
-- `timing`: infinite
-- `easing`: ease-out
-
-### 6.4 Image Blur Reveal (Post-payment)
-
-When a user completes payment, locked images transition from blurred to clear.
-
-```css
-@keyframes blurReveal {
-  from { filter: blur(20px); opacity: 0.7; }
-  to   { filter: blur(0);    opacity: 1;   }
-}
-
-.image-revealed {
-  animation: blurReveal 800ms ease-out forwards;
-}
-```
-
-**Parameters:**
-- `filter`: blur(20px) -> blur(0)
-- `opacity`: 0.7 -> 1
-- `duration`: 800ms
-- `easing`: ease-out
-- `fill-mode`: forwards
-
-### 6.5 Loading Skeleton (Shimmer)
-
-Used as a placeholder while images or content are loading.
-
-```css
-@keyframes shimmer {
-  0%   { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-.skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-sand) 25%,
-    var(--color-warm-white) 37%,
-    var(--color-sand) 63%
-  );
-  background-size: 400% 100%;
-  animation: shimmer 1500ms ease-in-out infinite;
-  border-radius: 8px;
-}
-```
-
-**Parameters:**
-- `background`: linear-gradient shimmer sweep
-- `duration`: 1500ms
-- `timing`: ease-in-out, infinite
-
-### 6.6 Page Transition
-
-Fade-in when navigating between pages.
-
-```css
-@keyframes pageEnter {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-
-.page-enter {
-  animation: pageEnter 400ms ease-out;
-}
-```
-
-**Parameters:**
-- `opacity`: 0 -> 1
-- `duration`: 400ms
-- `easing`: ease-out
-
-### 6.7 Modal Slide-up
-
-Modals enter from below with a spring-like cubic bezier.
-
-```css
-.modal-slide {
-  transform: translateY(32px);
-  opacity: 0;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
-              opacity 0.35s ease;
-}
-
-.modal-slide-in {
-  transform: translateY(0);
-  opacity: 1;
-}
-```
-
-### 6.8 Spinner (Loading States)
-
-```css
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(196, 97, 58, 0.25);
-  border-top-color: var(--color-primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-}
-```
-
-### 6.9 Live Indicator Blink
-
-Green dot pulsing indicator for social proof ("X people using now").
-
-```css
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.3; }
-}
-
-.live-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--color-success-alt);
-  animation: blink 2.2s ease-in-out infinite;
-}
-```
-
----
-
-## 7. Spacing System
-
-Base unit: **4px**. All spacing values are multiples of 4px.
-
-### Spacing Scale
-
-| Token | Value | rem | Common Usage |
-|-------|-------|-----|--------------|
-| `space-1` | 4px | 0.25rem | Icon gaps, tight internal spacing |
-| `space-2` | 8px | 0.5rem | Compact component padding |
-| `space-3` | 12px | 0.75rem | Small gaps between related elements |
-| `space-4` | 16px | 1rem | Default component padding, form group gaps |
-| `space-5` | 20px | 1.25rem | Medium gaps |
-| `space-6` | 24px | 1.5rem | Section sub-margins, card padding |
-| `space-8` | 32px | 2rem | Container horizontal padding, card group gaps |
-| `space-10` | 40px | 2.5rem | Large component spacing |
-| `space-12` | 48px | 3rem | Section vertical margins (inner) |
-| `space-16` | 64px | 4rem | Major section spacing |
-| `space-20` | 80px | 5rem | Section vertical padding (standard) |
-| `space-24` | 96px | 6rem | Hero section padding |
-
-### Tailwind Spacing Extension
-
-```typescript
-// tailwind.config.ts > theme.extend
-spacing: {
-  '1':  '4px',
-  '2':  '8px',
-  '3':  '12px',
-  '4':  '16px',
-  '5':  '20px',
-  '6':  '24px',
-  '8':  '32px',
-  '10': '40px',
-  '12': '48px',
-  '16': '64px',
-  '20': '80px',
-  '24': '96px',
-},
-```
-
-### Component Spacing Reference
-
-| Element | Padding / Margin | Value |
-|---------|-----------------|-------|
-| `.container` horizontal | padding | `0 2rem` (32px) |
-| `.container` horizontal (mobile) | padding | `0 1.2rem` (~19px) |
-| `section` vertical | padding | `5rem 0` (80px) |
-| `section` vertical (mobile) | padding | `3.5rem 0` (56px) |
-| Card internal | padding | `2rem` (32px) |
-| Card internal (mobile) | padding | `1.2rem` (~19px) |
-| Form card gap | margin-bottom | `1.2rem` |
-| Grid gap (steps) | gap | `2.5rem` (40px) |
-| Output grid gap | gap | `1.2rem` (~19px) |
-| Hero left padding (desktop) | padding | `5rem 3rem 5rem 6rem` |
-| Header padding | padding | `1.2rem 2.5rem` |
-
----
-
-## 8. Icon System
-
-### Library
-
-**Lucide React** -- consistent, clean, MIT-licensed icon set.
-
-```bash
-npm install lucide-react
-```
-
-### Sizes
-
-| Token | Size | Usage |
-|-------|------|-------|
-| `icon-sm` | 16px | Inline text, labels, badges |
-| `icon-md` | 20px | Default UI icons, buttons, nav |
-| `icon-lg` | 24px | Section headers, empty states |
-
-### Icon Color Rules
-
-- Icons inherit `currentColor` by default
-- Primary action icons: `var(--color-primary)` (#C4613A)
-- Muted / secondary icons: `var(--color-muted)` (#8A7B6E)
-- On dark backgrounds: `rgba(255, 255, 255, 0.6)` or white
-- Success: `var(--color-success)` (#2D7D52)
-- Error: `var(--color-error)` (#D64545)
-
-### Icon Catalog (Primary Usage)
-
-| Icon | Lucide Name | Context |
-|------|-------------|---------|
-| Search / City Lookup | `Search` | City autocomplete input |
-| Calendar | `Calendar` | Month picker label |
-| Upload | `Upload` | Photo upload zone |
-| Camera | `Camera` | Photo upload alternative |
-| X / Close | `X` | Remove city, close modal, dismiss toast |
-| Check | `Check` | Completed step, success state |
-| ChevronDown | `ChevronDown` | Dropdown indicators |
-| ChevronRight | `ChevronRight` | Navigation, CTA arrow |
-| Lock | `Lock` | Locked/blurred image overlay |
-| Unlock | `Unlock` | Post-payment reveal |
-| Share2 | `Share2` | Share gallery link |
-| Copy | `Copy` | Copy link to clipboard |
-| Mail | `Mail` | Email receipt / newsletter |
-| Globe | `Globe` | Language switcher |
-| Plane | `Plane` | Travel context, header icon |
-| MapPin | `MapPin` | City input, destination marker |
-| Thermometer | `Thermometer` | Climate data display |
-| Sun / Cloud / CloudRain | `Sun`, `Cloud`, `CloudRain` | Weather badges |
-| Loader2 | `Loader2` | Spinning loader (animated) |
-| AlertCircle | `AlertCircle` | Error state, validation |
-| CheckCircle2 | `CheckCircle2` | Success state |
-| Info | `Info` | Tooltip, info badge |
-| CreditCard | `CreditCard` | Payment context |
-| Shield | `Shield` | Security / privacy badge |
-| Eye | `Eye` | Preview step |
-
-### Usage Example
+### Grain Overlay Usage Example
 
 ```tsx
-import { MapPin, Calendar, Upload, Check, X } from 'lucide-react'
-
-// Default size (20px)
-<MapPin size={20} className="text-primary" />
-
-// Small inline (16px)
-<Check size={16} className="text-success" />
-
-// Large header (24px)
-<Calendar size={24} className="text-muted" />
+{/* Hero section with grain texture */}
+<section className="relative overflow-hidden bg-secondary grain-overlay">
+  {/* Content sits above the ::before pseudo-element */}
+  <div className="relative z-10 max-w-7xl mx-auto px-6 py-24">
+    <h1 className="font-serif text-5xl text-cream">Your Style, Destination-Ready</h1>
+  </div>
+</section>
 ```
 
 ---
 
-## 9. Responsive Image Strategy
+## 3. Component Tailwind Class Spec
 
-### Aspect Ratio
+All reusable UI components live in `apps/web/components/ui/`. Each component below includes every variant, state, and their complete Tailwind class strings. Developers should copy these classes directly into the component implementation.
 
-All AI-generated outfit images use a **3:4 portrait ratio** (vertical), consistent with fashion editorial and lookbook standards.
+---
 
-```css
-.outfit-image {
-  aspect-ratio: 3 / 4;
-  width: 100%;
-  object-fit: cover;
+### 3.1 Button (`components/ui/Button.tsx`)
+
+```tsx
+// Type definition
+type ButtonProps = {
+  variant?: 'primary' | 'ghost' | 'secondary'
+  size?: 'sm' | 'md' | 'xl'
+  loading?: boolean
+  disabled?: boolean
+  children: React.ReactNode
+} & React.ButtonHTMLAttributes<HTMLButtonElement>
+```
+
+#### Variants
+
+| Variant | Tailwind Classes |
+|---------|-----------------|
+| `primary` | `bg-primary hover:bg-primary/90 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200` |
+| `ghost` | `bg-transparent border border-white/30 hover:border-white text-white px-6 py-3 rounded-lg transition-all` |
+| `secondary` | `bg-sand hover:bg-sand/80 text-secondary border border-sand px-6 py-3 rounded-lg transition-all` |
+
+#### Sizes
+
+| Size | Tailwind Classes |
+|------|-----------------|
+| `sm` | `px-4 py-2 text-sm` |
+| `md` | `px-6 py-3 text-base` (default) |
+| `xl` | `px-10 py-4 text-lg` |
+
+#### States
+
+| State | Tailwind Classes |
+|-------|-----------------|
+| `loading` | Spinner SVG + `"..."` text appended, `pointer-events-none opacity-80` |
+| `disabled` | `opacity-50 cursor-not-allowed` |
+
+#### Full Implementation Reference
+
+```tsx
+// apps/web/components/ui/Button.tsx
+import { forwardRef } from 'react'
+
+const variantClasses = {
+  primary:
+    'bg-primary hover:bg-primary/90 text-white font-bold shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200',
+  ghost:
+    'bg-transparent border border-white/30 hover:border-white text-white transition-all',
+  secondary:
+    'bg-sand hover:bg-sand/80 text-secondary border border-sand transition-all',
+} as const
+
+const sizeClasses = {
+  sm: 'px-4 py-2 text-sm',
+  md: 'px-6 py-3 text-base',
+  xl: 'px-10 py-4 text-lg',
+} as const
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ variant = 'primary', size = 'md', loading, disabled, children, className, ...props }, ref) => {
+    return (
+      <button
+        ref={ref}
+        disabled={disabled || loading}
+        className={`
+          inline-flex items-center justify-center gap-2 rounded-lg font-sans
+          ${variantClasses[variant]}
+          ${sizeClasses[size]}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
+          ${loading ? 'pointer-events-none opacity-80' : ''}
+          ${className ?? ''}
+        `}
+        {...props}
+      >
+        {loading && (
+          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        )}
+        {children}
+        {loading && '...'}
+      </button>
+    )
+  }
+)
+Button.displayName = 'Button'
+```
+
+---
+
+### 3.2 Card (`components/ui/Card.tsx`)
+
+```
+Default:  p-8 rounded-2xl bg-white border border-sand hover:border-primary/30 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group
+```
+
+```tsx
+// apps/web/components/ui/Card.tsx
+export function Card({ children, className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={`
+        p-8 rounded-2xl bg-white border border-sand
+        hover:border-primary/30 hover:shadow-xl hover:-translate-y-1
+        transition-all duration-300 group
+        ${className ?? ''}
+      `}
+      {...props}
+    >
+      {children}
+    </div>
+  )
 }
 ```
 
-### Format
+---
 
-- **Primary format**: WebP (required)
-- **Fallback**: JPEG (for older browsers)
-- **Quality**: 80 for display images, 60 for thumbnails
+### 3.3 Input (`components/ui/Input.tsx`)
 
-```html
-<picture>
-  <source srcset="/outfit-paris-1.webp" type="image/webp" />
-  <img
-    src="/outfit-paris-1.jpg"
-    alt="Paris spring outfit: linen blazer and wide-leg trousers"
-    loading="lazy"
-    decoding="async"
-    width="600"
-    height="800"
-  />
-</picture>
+| State | Tailwind Classes |
+|-------|-----------------|
+| Default | `border border-sand focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 w-full bg-white` |
+| Error | `border-red-400 focus:border-red-400 focus:ring-red-400` |
+
+```tsx
+// apps/web/components/ui/Input.tsx
+type InputProps = {
+  error?: boolean
+} & React.InputHTMLAttributes<HTMLInputElement>
+
+export function Input({ error, className, ...props }: InputProps) {
+  return (
+    <input
+      className={`
+        border rounded-lg px-4 py-3 w-full bg-white font-sans
+        focus:outline-none focus:ring-1 transition-colors
+        ${error
+          ? 'border-red-400 focus:border-red-400 focus:ring-red-400'
+          : 'border-sand focus:border-primary focus:ring-primary'
+        }
+        ${className ?? ''}
+      `}
+      {...props}
+    />
+  )
+}
 ```
 
-### Lazy Loading
+---
 
-All images below the fold use native lazy loading:
+### 3.4 ImageCard (`components/ui/ImageCard.tsx`)
 
-```html
-<img
-  src="outfit.webp"
-  alt="descriptive text"
-  loading="lazy"
-  decoding="async"
+Two modes: **visible** (unlocked) and **blurred** (locked).
+
+| Mode | Container Classes | Image Classes | Overlay Classes |
+|------|-------------------|---------------|-----------------|
+| Visible | `rounded-xl overflow-hidden shadow-md aspect-square` | `w-full h-full object-cover` | -- |
+| Blurred | `relative rounded-xl overflow-hidden aspect-square` | `w-full h-full object-cover blur-sm scale-105` | `absolute inset-0 bg-black/30 flex items-center justify-center` |
+
+Lock icon inside the overlay:
+
+```tsx
+<span className="material-symbols text-white text-4xl">lock</span>
+```
+
+Full implementation:
+
+```tsx
+// apps/web/components/ui/ImageCard.tsx
+type ImageCardProps = {
+  src: string
+  alt: string
+  locked?: boolean
+}
+
+export function ImageCard({ src, alt, locked = false }: ImageCardProps) {
+  if (!locked) {
+    return (
+      <div className="rounded-xl overflow-hidden shadow-md aspect-square">
+        <img src={src} alt={alt} className="w-full h-full object-cover" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative rounded-xl overflow-hidden aspect-square">
+      <img src={src} alt={alt} className="w-full h-full object-cover blur-sm scale-105" />
+      <div className="absolute inset-0 bg-black/30 flex items-center justify-center">
+        <span className="material-symbols text-white text-4xl">lock</span>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+### 3.5 WeatherWidget (`components/ui/WeatherWidget.tsx`)
+
+```
+Container:  w-48 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-white/20
+```
+
+```tsx
+// apps/web/components/ui/WeatherWidget.tsx
+type WeatherWidgetProps = {
+  city: string
+  tempDay: number
+  tempNight: number
+  icon: string // Material Symbols icon name, e.g. "sunny", "cloud", "rainy"
+}
+
+export function WeatherWidget({ city, tempDay, tempNight, icon }: WeatherWidgetProps) {
+  return (
+    <div className="w-48 bg-white/95 backdrop-blur-sm rounded-xl p-4 shadow-xl border border-white/20">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="material-symbols text-primary text-xl">{icon}</span>
+        <span className="font-sans font-semibold text-secondary text-sm">{city}</span>
+      </div>
+      <div className="flex justify-between text-secondary">
+        <div>
+          <div className="text-xs text-secondary/60">Day</div>
+          <div className="text-lg font-bold">{tempDay}&deg;</div>
+        </div>
+        <div>
+          <div className="text-xs text-secondary/60">Night</div>
+          <div className="text-lg font-bold">{tempNight}&deg;</div>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+### 3.6 Badge (`components/ui/Badge.tsx`)
+
+```tsx
+// apps/web/components/ui/Badge.tsx
+const badgeVariants = {
+  default: 'bg-sand text-secondary text-xs px-2 py-0.5 rounded-full font-sans',
+  primary: 'bg-primary text-white text-xs px-2 py-0.5 rounded-full font-sans',
+  gold: 'bg-gold/20 text-gold text-xs px-2 py-0.5 rounded-full font-sans font-semibold',
+} as const
+
+type BadgeProps = {
+  variant?: keyof typeof badgeVariants
+  children: React.ReactNode
+}
+
+export function Badge({ variant = 'default', children }: BadgeProps) {
+  return <span className={badgeVariants[variant]}>{children}</span>
+}
+```
+
+---
+
+## 4. Funnel Component UI Detail
+
+All funnel components live in `apps/web/components/funnel/`. These components power the Free-to-Paid conversion flow. Each includes full JSX structure with exact Tailwind classes.
+
+---
+
+### 4.1 ProgressChecklist (`components/funnel/ProgressChecklist.tsx`)
+
+The progress checklist builds trust by showing the user what the AI has already completed for them. Completed items use `check_circle` in primary color; locked items use `lock` in muted/30.
+
+```tsx
+// apps/web/components/funnel/ProgressChecklist.tsx
+type ProgressItem = {
+  label: string
+  completed: boolean
+  highlight?: string // italic gold text, e.g. moodName
+}
+
+type ProgressChecklistProps = {
+  items: ProgressItem[]
+}
+
+export function ProgressChecklist({ items }: ProgressChecklistProps) {
+  return (
+    <div className="flex flex-col gap-3">
+      {items.map((item, i) => (
+        <div key={i} className="flex items-center gap-2">
+          {item.completed ? (
+            <span className="material-symbols text-primary text-xl">check_circle</span>
+          ) : (
+            <span className="material-symbols text-secondary/30 text-xl">lock</span>
+          )}
+          {item.completed ? (
+            <span className="text-secondary font-medium">
+              {item.label}
+              {item.highlight && (
+                <>
+                  {' -- '}
+                  <em className="font-serif italic text-gold">{item.highlight}</em>
+                </>
+              )}
+            </span>
+          ) : (
+            <span className="text-secondary/40">{item.label}</span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+}
+```
+
+#### Example Usage
+
+```tsx
+<ProgressChecklist
+  items={[
+    { label: 'Weather analyzed for Paris, Tokyo', completed: true },
+    { label: 'City vibe matched', completed: true, highlight: 'Rainy Chic' },
+    { label: '4 looks generated (1 unlocked)', completed: true },
+    { label: 'Full capsule (10 items) + Day-by-day plan', completed: false },
+  ]}
 />
 ```
 
-Hero images use `loading="eager"` for immediate display:
+#### Rendered Structure
 
-```html
-<img
-  src="hero-card.webp"
-  alt="Travel outfit preview"
-  loading="eager"
-  decoding="async"
-/>
+```tsx
+<div className="flex flex-col gap-3">
+  {/* Completed item */}
+  <div className="flex items-center gap-2">
+    <span className="material-symbols text-primary text-xl">check_circle</span>
+    <span className="text-secondary font-medium">Weather analyzed for Paris, Tokyo</span>
+  </div>
+
+  {/* MoodName highlighted item */}
+  <div className="flex items-center gap-2">
+    <span className="material-symbols text-primary text-xl">check_circle</span>
+    <span className="text-secondary font-medium">
+      City vibe matched -- <em className="font-serif italic text-gold">Rainy Chic</em>
+    </span>
+  </div>
+
+  {/* Locked item */}
+  <div className="flex items-center gap-2">
+    <span className="material-symbols text-secondary/30 text-xl">lock</span>
+    <span className="text-secondary/40">Full capsule (10 items) + Day-by-day plan</span>
+  </div>
+</div>
 ```
 
-### Blur Placeholder (LQIP)
+---
 
-For progressive loading, use a low-quality blurred placeholder:
+### 4.2 WeatherCard (`components/funnel/WeatherCard.tsx`)
 
-```css
-/* Blur placeholder pattern */
-.image-container {
-  position: relative;
-  overflow: hidden;
-  background: var(--color-sand);
+Displays per-city weather data from Open-Meteo. Uses weatherBlue for precipitation.
+
+**Container**: `bg-white rounded-2xl border border-sand p-6`
+
+```tsx
+// apps/web/components/funnel/WeatherCard.tsx
+type WeatherCardProps = {
+  city: string
+  country: string
+  tempDay: number
+  tempNight: number
+  precipitationProb: number // 0-100
+  humidity: number
+  windSpeed: number
+  icon: string // Material Symbols icon name
 }
 
-.image-placeholder {
-  position: absolute;
-  inset: 0;
-  background-size: cover;
-  background-position: center;
-  filter: blur(20px);
-  transform: scale(1.1); /* prevent blur edge artifacts */
-  transition: opacity 0.4s ease-out;
-}
+export function WeatherCard({
+  city,
+  country,
+  tempDay,
+  tempNight,
+  precipitationProb,
+  humidity,
+  windSpeed,
+  icon,
+}: WeatherCardProps) {
+  return (
+    <div className="bg-white rounded-2xl border border-sand p-6">
+      {/* City heading */}
+      <div className="flex items-center gap-3 mb-1">
+        <span className="material-symbols text-primary text-2xl">{icon}</span>
+        <h3 className="font-serif text-2xl italic">{city}</h3>
+      </div>
+      <p className="text-secondary/60 text-sm ml-11">{country}</p>
 
-.image-loaded .image-placeholder {
-  opacity: 0;
+      {/* Temperature grid */}
+      <div className="grid grid-cols-2 gap-4 mt-4">
+        <div>
+          <div className="text-secondary/60 text-xs uppercase tracking-wide">Daytime</div>
+          <div className="text-3xl font-bold text-secondary">{tempDay}&deg;C</div>
+        </div>
+        <div>
+          <div className="text-secondary/60 text-xs uppercase tracking-wide">Nighttime</div>
+          <div className="text-3xl font-bold text-secondary">{tempNight}&deg;C</div>
+        </div>
+      </div>
+
+      {/* Precipitation bar */}
+      <div className="mt-4">
+        <div className="flex justify-between text-xs text-secondary/60 mb-1">
+          <span>Precipitation</span>
+          <span>{precipitationProb}%</span>
+        </div>
+        <div className="bg-sand h-2 rounded-full overflow-hidden">
+          <div
+            className="bg-weatherBlue h-2 rounded-full transition-all duration-500"
+            style={{ width: `${precipitationProb}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Extra stats row */}
+      <div className="flex gap-6 mt-4 pt-4 border-t border-sand text-sm text-secondary/70">
+        <div className="flex items-center gap-1">
+          <span className="material-symbols text-base">humidity_percentage</span>
+          {humidity}%
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="material-symbols text-base">air</span>
+          {windSpeed} km/h
+        </div>
+      </div>
+    </div>
+  )
 }
 ```
 
-### Responsive Image Sizes
+---
 
-| Context | Desktop | Tablet | Mobile |
-|---------|---------|--------|--------|
-| Hero card (main) | 230px width | -- | -- |
-| Hero card (secondary) | 200px width | -- | -- |
-| Hero strip card | -- | 160px | 120-140px |
-| Output grid card | 25% container | 50% container | 50% container |
-| Gallery image | 33% container | 50% container | 100% container |
-| Preview thumb | ~190px | ~190px | 50% container |
+### 4.3 VibeCard (`components/funnel/VibeCard.tsx`)
 
-### Image Optimization Pipeline
+Dark-background card showing the city's AI-matched mood. Gold italic mood name, vibe tags, color palette dots, and "avoid" section.
 
-1. **Generation**: NanoBanana API outputs 1024x1368 PNG (3:4)
-2. **Processing**: Convert to WebP at 80% quality via Cloudflare Workers
-3. **Storage**: Upload to Cloudflare R2
-4. **Delivery**: Serve via R2 public URL (CDN)
-5. **Client-side**: Display with `aspect-ratio: 3/4`, `object-fit: cover`, `loading: lazy`
+**Container**: `bg-secondary text-cream rounded-2xl p-6`
 
-### srcset for Responsive Density
+```tsx
+// apps/web/components/funnel/VibeCard.tsx
+type VibeCardProps = {
+  city: string
+  moodName: string
+  vibeTags: string[]
+  colorPalette: string[] // hex colors, e.g. ['#C4613A', '#F5EFE6', ...]
+  avoidList: string[]
+}
 
-```html
-<img
-  srcset="
-    /outfit-paris-1-400w.webp 400w,
-    /outfit-paris-1-600w.webp 600w,
-    /outfit-paris-1-800w.webp 800w
-  "
-  sizes="
-    (max-width: 640px) 50vw,
-    (max-width: 1024px) 33vw,
-    25vw
-  "
-  src="/outfit-paris-1-600w.webp"
-  alt="Paris spring outfit"
-  loading="lazy"
-  decoding="async"
+export function VibeCard({ city, moodName, vibeTags, colorPalette, avoidList }: VibeCardProps) {
+  return (
+    <div className="bg-secondary text-cream rounded-2xl p-6">
+      {/* City + Mood Name */}
+      <p className="text-cream/60 text-sm mb-1">{city}</p>
+      <h3 className="font-serif italic text-gold text-2xl mb-4">{moodName}</h3>
+
+      {/* Vibe Tags */}
+      <div className="flex gap-2 flex-wrap">
+        {vibeTags.map((tag) => (
+          <span
+            key={tag}
+            className="px-2 py-0.5 rounded text-xs bg-white/10 border border-white/10"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+
+      {/* Color Palette */}
+      <div className="flex gap-2 mt-4">
+        {colorPalette.map((color) => (
+          <div
+            key={color}
+            className="w-8 h-8 rounded-full border-2 border-white/20"
+            style={{ backgroundColor: color }}
+            title={color}
+          />
+        ))}
+      </div>
+
+      {/* Avoid Section */}
+      {avoidList.length > 0 && (
+        <div className="text-cream/60 text-sm mt-4 pt-4 border-t border-white/10">
+          <span className="font-semibold text-cream/80">Avoid: </span>
+          {avoidList.join(' / ')}
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+---
+
+### 4.4 CapsuleEstimator (`components/funnel/CapsuleEstimator.tsx`)
+
+Shows estimated capsule item count and the 3 packing principles. Teases the full list behind the paywall.
+
+**Container**: `bg-sand rounded-2xl p-6`
+
+```tsx
+// apps/web/components/funnel/CapsuleEstimator.tsx
+type CapsuleEstimatorProps = {
+  itemCount: number
+  principles: string[] // exactly 3 items
+}
+
+export function CapsuleEstimator({ itemCount, principles }: CapsuleEstimatorProps) {
+  return (
+    <div className="bg-sand rounded-2xl p-6">
+      {/* Big number */}
+      <div className="flex items-baseline gap-2">
+        <span className="font-serif text-5xl text-primary">{itemCount}</span>
+        <span className="text-secondary text-2xl">items</span>
+      </div>
+      <p className="text-secondary/60 text-sm mt-1">
+        Estimated capsule wardrobe for your trip
+      </p>
+
+      {/* Three Principles */}
+      <div className="flex flex-col gap-2 mt-4">
+        {principles.map((principle) => (
+          <div key={principle} className="flex items-center gap-2">
+            <span className="material-symbols text-primary/60 text-lg">check_circle</span>
+            <span className="text-secondary text-sm">{principle}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Locked teaser */}
+      <div className="text-secondary/40 text-sm text-center mt-4 border-t border-secondary/10 pt-4">
+        <span className="material-symbols text-sm align-middle mr-1">lock</span>
+        Full item list + daily outfit plan unlocked after purchase
+      </div>
+    </div>
+  )
+}
+```
+
+#### Example Usage
+
+```tsx
+<CapsuleEstimator
+  itemCount={10}
+  principles={[
+    'Mix & match across all cities',
+    'Carry-on only — no checked luggage',
+    'Weather-adaptive layering system',
+  ]}
 />
 ```
 
 ---
 
-## Appendix: Full CSS Variable Reference
+### 4.5 TeaserGrid (`components/funnel/TeaserGrid.tsx`)
 
-```css
-:root {
-  /* Colors */
-  --color-primary: #C4613A;
-  --color-primary-hover: #B3582F;
-  --color-ink: #1A1410;
-  --color-sand: #F5EFE6;
-  --color-cream: #FDF8F3;
-  --color-gold: #C8A96E;
-  --color-muted: #8A7B6E;
-  --color-white: #FFFFFF;
-  --color-warm-white: #FAF6F0;
-  --color-error: #D64545;
-  --color-success: #2D7D52;
-  --color-success-alt: #5B8C5A;
-  --color-border: rgba(26, 20, 16, 0.12);
+2x2 grid showing 1 unlocked image + 3 blurred locked images. Includes expiry countdown timer and UNLOCKED badge.
 
-  /* Typography */
-  --font-heading: 'Playfair Display', Georgia, serif;
-  --font-body: 'DM Sans', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+**Container**: `grid grid-cols-2 gap-2`
 
-  /* Shadows */
-  --shadow-primary: 0 4px 20px rgba(196, 97, 58, 0.35);
-  --shadow-primary-hover: 0 8px 30px rgba(196, 97, 58, 0.45);
-  --shadow-card: 0 2px 12px rgba(0, 0, 0, 0.06);
-  --shadow-card-hover: 0 8px 30px rgba(0, 0, 0, 0.12);
-  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.3);
+```tsx
+// apps/web/components/funnel/TeaserGrid.tsx
+'use client'
 
-  /* Overlay */
-  --overlay-backdrop: rgba(26, 20, 16, 0.8);
-  --overlay-blur: blur(8px);
+import { useEffect, useState } from 'react'
 
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-xl: 16px;
-  --radius-2xl: 20px;
-  --radius-full: 50px;
-  --radius-circle: 50%;
-
-  /* Transitions */
-  --transition-fast: 150ms ease;
-  --transition-base: 200ms ease;
-  --transition-slow: 300ms ease-out;
-  --transition-reveal: 600ms ease-out;
-  --transition-spring: 350ms cubic-bezier(0.22, 1, 0.36, 1);
-
-  /* Z-index Scale */
-  --z-base: 0;
-  --z-card: 1;
-  --z-sticky: 10;
-  --z-header: 100;
-  --z-dropdown: 50;
-  --z-modal: 1000;
-  --z-toast: 2000;
+type TeaserGridProps = {
+  images: string[] // [0] = unlocked, [1-3] = blurred
+  expiresAt: Date
 }
+
+function formatCountdown(ms: number): string {
+  if (ms <= 0) return '00:00:00'
+  const h = Math.floor(ms / 3_600_000)
+  const m = Math.floor((ms % 3_600_000) / 60_000)
+  const s = Math.floor((ms % 60_000) / 1_000)
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+export function TeaserGrid({ images, expiresAt }: TeaserGridProps) {
+  const [remaining, setRemaining] = useState(() => expiresAt.getTime() - Date.now())
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRemaining(expiresAt.getTime() - Date.now())
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [expiresAt])
+
+  return (
+    <div className="grid grid-cols-2 gap-2">
+      {images.map((src, idx) => (
+        <div key={idx} className="relative rounded-xl overflow-hidden aspect-square">
+          {idx === 0 ? (
+            <>
+              {/* Unlocked image */}
+              <img src={src} alt={`Look ${idx + 1}`} className="w-full h-full object-cover" />
+              <span className="absolute top-2 left-2 bg-primary text-white text-xs px-2 py-0.5 rounded-full">
+                UNLOCKED
+              </span>
+            </>
+          ) : (
+            <>
+              {/* Blurred / locked image */}
+              <img
+                src={src}
+                alt={`Look ${idx + 1} (locked)`}
+                className="w-full h-full object-cover blur-sm"
+              />
+              <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px] flex items-center justify-center">
+                <span className="material-symbols text-white text-4xl">lock_outlined</span>
+              </div>
+            </>
+          )}
+        </div>
+      ))}
+
+      {/* Expiry timer overlay — spans full grid width */}
+      {remaining > 0 && (
+        <div className="col-span-2 flex justify-center mt-1">
+          <span className="bg-secondary/80 text-cream text-xs px-3 py-1 rounded-full font-mono">
+            Expires in {formatCountdown(remaining)}
+          </span>
+        </div>
+      )}
+    </div>
+  )
+}
+```
+
+#### Visual Breakdown
+
+| Grid Cell | Image State | Badge / Overlay |
+|-----------|-------------|-----------------|
+| `[0]` (top-left) | Sharp, full quality | `UNLOCKED` badge: `absolute top-2 left-2 bg-primary text-white text-xs px-2 py-0.5 rounded-full` |
+| `[1]` (top-right) | `blur-sm` | Overlay: `absolute inset-0 bg-black/30 backdrop-blur-[2px] flex items-center justify-center` + `lock_outlined text-white text-4xl` |
+| `[2]` (bottom-left) | `blur-sm` | Same overlay as [1] |
+| `[3]` (bottom-right) | `blur-sm` | Same overlay as [1] |
+| Timer (full width) | -- | `bg-secondary/80 text-cream text-xs px-3 py-1 rounded-full font-mono` |
+
+---
+
+### 4.6 EmailCapture (`components/funnel/EmailCapture.tsx`)
+
+Micro-conversion step. Captures email before the paywall. Sends the mood card via Resend.
+
+**Container**: `bg-white border border-sand rounded-2xl p-6`
+
+```tsx
+// apps/web/components/funnel/EmailCapture.tsx
+'use client'
+
+import { useState } from 'react'
+
+type EmailCaptureProps = {
+  city: string
+  moodName: string
+  onSubmit: (email: string) => Promise<void>
+}
+
+export function EmailCapture({ city, moodName, onSubmit }: EmailCaptureProps) {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setStatus('loading')
+    try {
+      await onSubmit(email)
+      setStatus('success')
+    } catch {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <div className="bg-white border border-sand rounded-2xl p-6">
+      {/* Heading */}
+      <h3 className="font-serif text-xl">
+        Get your {city} -- <em className="italic text-gold">{moodName}</em> mood card
+      </h3>
+      <p className="text-secondary/70 text-sm mt-1">
+        We'll email you the weather + vibe summary. No spam, ever.
+      </p>
+
+      {/* Input row */}
+      <form onSubmit={handleSubmit} className="flex gap-2 mt-4">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="your@email.com"
+          required
+          className="border border-sand focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary rounded-lg px-4 py-3 w-full bg-white"
+        />
+        <button
+          type="submit"
+          disabled={status === 'loading'}
+          className="bg-primary hover:bg-primary/90 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {status === 'loading' ? 'Sending...' : 'Send'}
+        </button>
+      </form>
+
+      {/* Success message */}
+      {status === 'success' && (
+        <p className="text-green-600 flex items-center gap-1 mt-2 text-sm">
+          <span className="material-symbols text-sm">check_circle</span>
+          Mood card sent! Check your inbox.
+        </p>
+      )}
+
+      {/* Error message */}
+      {status === 'error' && (
+        <p className="text-red-500 flex items-center gap-1 mt-2 text-sm">
+          <span className="material-symbols text-sm">error</span>
+          Something went wrong. Please try again.
+        </p>
+      )}
+    </div>
+  )
+}
+```
+
+---
+
+### 4.7 PaywallModal (`components/funnel/PaywallModal.tsx`)
+
+The primary monetization gate. Three pricing tiers: Standard ($5), Pro ($12, recommended), Annual ($29/yr).
+
+**Backdrop**: `fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4`
+**Modal body**: `max-w-lg w-full bg-cream rounded-3xl p-8 shadow-2xl`
+
+```tsx
+// apps/web/components/funnel/PaywallModal.tsx
+'use client'
+
+type Plan = 'standard' | 'pro' | 'annual'
+
+type PaywallModalProps = {
+  city: string
+  moodName: string
+  isOpen: boolean
+  onClose: () => void
+  onSelectPlan: (plan: Plan) => void
+}
+
+export function PaywallModal({ city, moodName, isOpen, onClose, onSelectPlan }: PaywallModalProps) {
+  if (!isOpen) return null
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-w-lg w-full bg-cream rounded-3xl p-8 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <h2 className="font-serif text-2xl text-center">
+          Your <em className="italic text-gold">{city} -- {moodName}</em> is ready
+        </h2>
+        <p className="text-secondary/60 text-sm text-center mt-2">
+          Choose a plan to unlock your full capsule wardrobe
+        </p>
+
+        {/* Plan Cards */}
+        <div className="flex flex-col gap-4 mt-6">
+
+          {/* Standard */}
+          <button
+            onClick={() => onSelectPlan('standard')}
+            className="border border-sand rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all text-left"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-secondary">Standard</h3>
+                <p className="text-secondary/60 text-sm mt-1">
+                  4 looks unlocked + capsule list + daily plan
+                </p>
+              </div>
+              <span className="text-2xl font-bold text-secondary">$5</span>
+            </div>
+          </button>
+
+          {/* Pro (recommended) */}
+          <button
+            onClick={() => onSelectPlan('pro')}
+            className="bg-primary text-white rounded-2xl p-6 ring-2 ring-primary ring-offset-2 text-left"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold">Pro</h3>
+                  <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
+                    BEST VALUE
+                  </span>
+                </div>
+                <p className="text-white/80 text-sm mt-1">
+                  All cities, 4-6 HD looks each, 1 free re-generation
+                </p>
+              </div>
+              <span className="text-2xl font-bold">$12</span>
+            </div>
+          </button>
+
+          {/* Annual */}
+          <button
+            onClick={() => onSelectPlan('annual')}
+            className="border border-sand rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all text-left"
+          >
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-secondary">Annual</h3>
+                <p className="text-secondary/60 text-sm mt-1">
+                  For the traveler who never stops -- $2.42/month, billed annually
+                </p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-secondary">$29</span>
+                <span className="text-secondary/60 text-xs block">/year</span>
+              </div>
+            </div>
+          </button>
+
+        </div>
+
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="mt-6 w-full text-center text-secondary/50 text-sm hover:text-secondary transition-colors"
+        >
+          Maybe later
+        </button>
+      </div>
+    </div>
+  )
+}
+```
+
+#### Plan Card Styles Summary
+
+| Plan | Tailwind Classes |
+|------|-----------------|
+| Standard | `border border-sand rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all text-left` |
+| Pro (recommended) | `bg-primary text-white rounded-2xl p-6 ring-2 ring-primary ring-offset-2 text-left` |
+| Annual | `border border-sand rounded-2xl p-6 cursor-pointer hover:border-primary/50 transition-all text-left` |
+
+---
+
+### 4.8 UpgradeModal (`components/funnel/UpgradeModal.tsx`)
+
+Post-purchase upsell. Standard buyers see this immediately after checkout. 3-minute countdown timer. Upgrades to Pro for $7 more.
+
+**Backdrop**: `fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center`
+**Modal body**: `max-w-md w-full bg-cream rounded-3xl p-8`
+
+```tsx
+// apps/web/components/funnel/UpgradeModal.tsx
+'use client'
+
+import { useEffect, useState } from 'react'
+
+type UpgradeModalProps = {
+  isOpen: boolean
+  onUpgrade: () => void
+  onDismiss: () => void
+  expiresAt: Date // 3 minutes from open
+}
+
+function formatTimer(ms: number): string {
+  if (ms <= 0) return '00:00'
+  const m = Math.floor(ms / 60_000)
+  const s = Math.floor((ms % 60_000) / 1_000)
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+export function UpgradeModal({ isOpen, onUpgrade, onDismiss, expiresAt }: UpgradeModalProps) {
+  const [remaining, setRemaining] = useState(() => expiresAt.getTime() - Date.now())
+
+  useEffect(() => {
+    if (!isOpen) return
+    const interval = setInterval(() => {
+      const r = expiresAt.getTime() - Date.now()
+      setRemaining(r)
+      if (r <= 0) {
+        clearInterval(interval)
+        onDismiss()
+      }
+    }, 1000)
+    return () => clearInterval(interval)
+  }, [isOpen, expiresAt, onDismiss])
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div className="max-w-md w-full bg-cream rounded-3xl p-8">
+        {/* Heading */}
+        <h2 className="font-serif text-2xl text-center">Want the full picture?</h2>
+        <p className="text-secondary/60 text-sm text-center mt-2">
+          Upgrade to Pro -- see every city's full wardrobe
+        </p>
+
+        {/* Timer */}
+        <div className="text-center mt-6">
+          <span className="font-mono text-2xl text-primary font-bold">
+            {formatTimer(remaining)}
+          </span>
+          <p className="text-secondary/50 text-xs mt-1">Offer expires soon</p>
+        </div>
+
+        {/* What you get */}
+        <ul className="mt-6 space-y-2 text-sm text-secondary">
+          <li className="flex items-center gap-2">
+            <span className="material-symbols text-primary text-lg">check_circle</span>
+            All cities -- 4-6 HD editorial looks each
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="material-symbols text-primary text-lg">check_circle</span>
+            1 free re-generation if you want a different vibe
+          </li>
+          <li className="flex items-center gap-2">
+            <span className="material-symbols text-primary text-lg">check_circle</span>
+            Priority image generation (2x faster)
+          </li>
+        </ul>
+
+        {/* CTAs */}
+        <div className="flex flex-col gap-3 mt-6">
+          {/* Upgrade CTA */}
+          <button
+            onClick={onUpgrade}
+            className="bg-primary hover:bg-primary/90 text-white font-bold px-6 py-3 rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 w-full text-center"
+          >
+            Upgrade for $7
+          </button>
+
+          {/* Dismiss CTA */}
+          <button
+            onClick={onDismiss}
+            className="bg-transparent border border-white/30 hover:border-secondary/30 text-secondary/50 hover:text-secondary px-6 py-3 rounded-lg transition-all w-full text-center"
+          >
+            No thanks
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+```
+
+---
+
+## 5. Copy Guide (English)
+
+All user-facing copy for the Travel Capsule AI conversion funnel. Organized by context. Use these strings as-is or as templates (replace `{City}`, `{MoodName}`, `{N}`, `{HH:MM:SS}` with dynamic values).
+
+---
+
+### 5.1 Free Reward Copy
+
+Shown on the preview page after the AI generates free results.
+
+| Context | Copy |
+|---------|------|
+| Headline | `Your {City} -- {MoodName} is ready to unlock` |
+| Sub-headline | `4 looks are waiting for you` |
+| Secondary CTA | `See what to wear in {City}` |
+
+---
+
+### 5.2 CTA Button Copy
+
+| Context | Copy |
+|---------|------|
+| Primary unlock | `Unlock Your {City} Looks` |
+| Standard plan | `Start My $5 Plan` |
+| Pro plan | `Get Pro -- Best Value` |
+| Upgrade upsell | `Upgrade for $7` |
+
+---
+
+### 5.3 Annual Plan Copy
+
+| Context | Copy |
+|---------|------|
+| Tagline | `For the traveler who never stops` |
+| Price detail | `$2.42/month, billed annually` |
+| Benefit | `12 trips/year included` |
+
+---
+
+### 5.4 Expiry / Urgency Copy
+
+| Context | Copy |
+|---------|------|
+| Static notice | `Your looks expire in 48 hours` |
+| Live countdown | `Expires in {HH:MM:SS}` |
+| Re-engagement | `Don't let your capsule disappear` |
+
+---
+
+### 5.5 Upsell Copy (Standard to Pro)
+
+| Context | Copy |
+|---------|------|
+| Headline | `Want the full picture?` |
+| Sub-headline | `Upgrade to Pro -- just $7 more` |
+| Benefit | `See every city's full wardrobe` |
+
+---
+
+### 5.6 Share / Viral Loop Copy
+
+| Context | Copy |
+|---------|------|
+| OG title | `See my {City} -- {MoodName} look` |
+| Share CTA | `My travel capsule for {City}` |
+| Social copy | `I'm packing like this for {City}` |
+| Receiver CTA | `Create yours -- free to start` |
+
+---
+
+### 5.7 Section Background Patterns
+
+Reference for page-level layout. Each section uses a specific background treatment to create visual rhythm.
+
+```
+Section         │ Background Classes
+────────────────┼──────────────────────────────────────────────────────
+Header          │ bg-cream/95 backdrop-blur-sm border-b border-sand
+Hero            │ bg-secondary grain-overlay (relative overflow-hidden)
+Features        │ bg-cream
+How It Works    │ bg-sand
+Testimonials    │ bg-white border-y border-sand
+CTA Section     │ bg-secondary
+Footer          │ bg-white border-t border-sand
+```
+
+#### Section Layout Examples
+
+```tsx
+{/* Header */}
+<header className="sticky top-0 z-40 bg-cream/95 backdrop-blur-sm border-b border-sand">
+  <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+    <span className="font-serif text-xl text-secondary">Travel Capsule</span>
+    <button className="bg-primary hover:bg-primary/90 text-white font-bold px-4 py-2 text-sm rounded-lg shadow-md transition-all">
+      Start Free
+    </button>
+  </nav>
+</header>
+
+{/* Hero */}
+<section className="relative overflow-hidden bg-secondary grain-overlay">
+  <div className="relative z-10 max-w-7xl mx-auto px-6 py-24 md:py-32 text-center">
+    <h1 className="font-serif text-4xl md:text-6xl text-cream leading-tight">
+      Your Style,<br />Destination-Ready
+    </h1>
+    <p className="text-cream/70 text-lg mt-6 max-w-2xl mx-auto font-sans">
+      AI-powered capsule wardrobes tailored to every city's weather and vibe
+    </p>
+    <button className="mt-8 bg-primary hover:bg-primary/90 text-white font-bold px-10 py-4 text-lg rounded-lg shadow-md hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+      Start My $5 Plan
+    </button>
+  </div>
+</section>
+
+{/* Features */}
+<section className="bg-cream py-20">
+  <div className="max-w-7xl mx-auto px-6">
+    {/* Feature cards grid */}
+  </div>
+</section>
+
+{/* How It Works */}
+<section className="bg-sand py-20">
+  <div className="max-w-7xl mx-auto px-6">
+    {/* Steps */}
+  </div>
+</section>
+
+{/* Testimonials */}
+<section className="bg-white border-y border-sand py-20">
+  <div className="max-w-7xl mx-auto px-6">
+    {/* Testimonial cards */}
+  </div>
+</section>
+
+{/* CTA Section */}
+<section className="bg-secondary py-20">
+  <div className="max-w-7xl mx-auto px-6 text-center">
+    <h2 className="font-serif text-3xl md:text-4xl text-cream">
+      Don't let your capsule disappear
+    </h2>
+    <button className="mt-8 bg-primary hover:bg-primary/90 text-white font-bold px-10 py-4 text-lg rounded-lg shadow-md hover:shadow-lg transition-all">
+      Unlock Your Looks
+    </button>
+  </div>
+</section>
+
+{/* Footer */}
+<footer className="bg-white border-t border-sand py-12">
+  <div className="max-w-7xl mx-auto px-6 text-secondary/60 text-sm">
+    {/* Footer content */}
+  </div>
+</footer>
+```
+
+---
+
+## Appendix: Quick Reference Card
+
+### Token Cheat Sheet
+
+```
+Primary    #b8552e   CTA, accent, check icons
+Secondary  #1A1410   Text, dark BG (Hero, CTA section)
+Cream      #FDF8F3   Page BG, modal BG
+Sand       #F5EFE6   Section BG, borders, input borders
+Gold       #D4AF37   MoodName italic, premium highlights
+WeatherBl  #E0F2FE   Weather precipitation bars
+
+Serif      Playfair Display   Headings, editorial italic
+Sans       Plus Jakarta Sans  Body, UI text
+Icons      Material Symbols Outlined
+```
+
+### File Path Map
+
+```
+apps/web/tailwind.config.ts          <- Tailwind config (Section 1)
+apps/web/app/globals.css             <- Global styles (Section 2)
+apps/web/components/ui/Button.tsx    <- Button component
+apps/web/components/ui/Card.tsx      <- Card component
+apps/web/components/ui/Input.tsx     <- Input component
+apps/web/components/ui/ImageCard.tsx  <- ImageCard (visible/blurred)
+apps/web/components/ui/WeatherWidget.tsx <- WeatherWidget
+apps/web/components/ui/Badge.tsx     <- Badge component
+apps/web/components/funnel/ProgressChecklist.tsx
+apps/web/components/funnel/WeatherCard.tsx
+apps/web/components/funnel/VibeCard.tsx
+apps/web/components/funnel/CapsuleEstimator.tsx
+apps/web/components/funnel/TeaserGrid.tsx
+apps/web/components/funnel/EmailCapture.tsx
+apps/web/components/funnel/PaywallModal.tsx
+apps/web/components/funnel/UpgradeModal.tsx
 ```

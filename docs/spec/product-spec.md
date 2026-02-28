@@ -1,1363 +1,1784 @@
-# Travel Capsule AI - Product Specification
+# Travel Capsule AI -- Product Specification
 
-> **Version**: 1.0.0
+> **Version**: 2.0.0
 > **Last Updated**: 2026-02-28
 > **Status**: Development
-> **Pricing**: $5 / trip (one-time, non-recurring)
+> **Domain**: TravelCapsule.com
+> **Pricing**: Standard $5 / Pro $12 / Annual $29/yr (12 trips)
 
 ---
 
 ## Table of Contents
 
-1. [제품 개요 (Product Overview)](#1-제품-개요-product-overview)
-2. [기술 스택 (Tech Stack)](#2-기술-스택-tech-stack)
-3. [전체 사용자 여정 (User Journey)](#3-전체-사용자-여정-user-journey)
-4. [페이지별 상세 스펙 (Page-by-Page Specifications)](#4-페이지별-상세-스펙-page-by-page-specifications)
-5. [Worker API 엔드포인트 목록 (Worker API Endpoints)](#5-worker-api-엔드포인트-목록-worker-api-endpoints)
-6. [기능별 인수 기준 (Acceptance Criteria)](#6-기능별-인수-기준-acceptance-criteria)
+- [제품 개요](#제품-개요)
+- [1. 퍼널 7단계 플로우](#1-퍼널-7단계-플로우)
+- [2. Free 경험 4가지 상세](#2-free-경험-4가지-상세)
+- [3. 가격 플랜 상세](#3-가격-플랜-상세)
+- [4. 전환 심리 장치](#4-전환-심리-장치)
+- [5. Post-결제 업셀 스펙](#5-post-결제-업셀-스펙)
+- [6. 공유 루프 스펙](#6-공유-루프-스펙)
+- [7. API 엔드포인트 명세](#7-api-엔드포인트-명세)
+- [8. Rate Limit & Abuse Prevention](#8-rate-limit--abuse-prevention)
 
 ---
 
-## 1. 제품 개요 (Product Overview)
+## 제품 개요
 
-### 핵심 가치 제안 (Core Value Proposition)
+**TravelCapsule.com** -- AI 여행 스타일링 서비스.
 
-Travel Capsule AI는 **$5/trip** 가격의 AI 기반 여행 스타일링 서비스이다. 여행자가 목적지 도시, 여행 월, 그리고 선택적으로 얼굴 사진을 입력하면, AI가 각 도시의 기후와 분위기(바이브)를 분석하여 최적화된 캡슐 워드로브와 데일리 아웃핏 플랜을 생성한다.
+사용자가 **도시(최대 5개) + 여행 월 + 사진(선택)**을 입력하면, AI가 도시별 날씨와 바이브를 분석하고, 무드 네이밍을 생성하며, 티저 이미지를 먼저 보여준 뒤, 결제 후 전체 코디 이미지 + 캡슐 워드로브 + 데일리 아웃핏 플랜을 제공한다.
 
-### 서비스 흐름 요약
+### 핵심 원칙
+
+> Free는 충분히 가치 있게 느껴지되, 진짜 payoff는 결제 후에만 공개한다.
+
+### 서비스 파이프라인
 
 ```
 사용자 입력 (도시 + 여행월 + 사진)
-     │
-     ▼
-AI 기후·바이브 분석
-     │
-     ▼
-코디 이미지 3-4장/도시 생성 (NanoBanana API)
-     │
-     ▼
-캡슐 워드로브 8-12개 아이템 (Claude API)
-     │
-     ▼
-데일리 아웃핏 플랜 (Claude API)
-     │
-     ▼
-결제 ($5, Polar)
-     │
-     ▼
-갤러리 링크 발송 (이메일 + 웹)
+    |
+    v  Turnstile 봇 검증
+[FREE] 날씨 분석 (Open-Meteo)
+    |
+    v
+[FREE] 도시 바이브 매칭 + 무드 네이밍 (Claude API)
+    |
+    v
+[FREE] 캡슐 카운트 추정 (Claude API)
+    |
+    v
+[FREE] 티저 이미지 생성 (NanoBanana 1장 + CSS blur 3장)
+    |
+    v  이메일 캡처 (마이크로 컨버전)
+    v  페이월 (Standard $5 / Pro $12 / Annual $29)
+    |
+    v  Polar 결제
+[POST-결제] 업셀 UpgradeModal (Standard -> Pro, $7 추가, 3분 타이머)
+    |
+    v
+[PAID] 전체 이미지 생성 + 캡슐 워드로브 + 데일리 플랜
+    |
+    v
+갤러리 링크 발송 (Resend) + 공유 루프 (UTM)
 ```
-
-### 핵심 산출물 (Deliverables per Trip)
-
-| 산출물 | 수량 | 설명 |
-|--------|------|------|
-| 코디 이미지 | 3-4장/도시 | 도시별 기후·바이브 반영 패션 에디토리얼 사진 |
-| 캡슐 워드로브 | 8-12개 아이템 | 기내 반입 가능한 최적화 의류 목록 |
-| 데일리 아웃핏 플랜 | 여행 일수만큼 | 요일별 도시·활동에 맞는 아웃핏 조합 |
-| 갤러리 링크 | 1개 | 결제 후 이메일 발송, 공유 가능 |
 
 ### 타겟 사용자
 
-- 해외여행을 계획 중인 2030 밀레니얼/Z세대
-- 여행지 기후에 맞는 옷을 고민하는 패션 관심층
-- 짐을 최소화하고 싶은 캡슐 워드로브 관심 여행자
-- SNS에 여행 코디를 공유하고 싶은 인플루언서 지향층
+| 세그먼트 | 설명 | 예상 비중 |
+|----------|------|-----------|
+| 트래블 플래너 | 여행 전 옷 고민에 시간을 쓰는 2030세대 | 40% |
+| 캡슐 워드로브 팬 | 짐 최소화, 효율적 패킹을 원하는 여행자 | 25% |
+| SNS 패션 공유족 | 여행 코디를 인스타/X에 공유하는 인플루언서 지향층 | 20% |
+| 잦은 출장자 | 월 1회 이상 해외 출장, Annual 플랜 타겟 | 15% |
+
+### 기술 스택 (변경 금지)
+
+| 영역 | 기술 |
+|------|------|
+| Frontend | Next.js App Router -> Cloudflare Pages |
+| API | Cloudflare Workers (Hono) |
+| DB | Supabase (Postgres + RLS) |
+| Storage | Cloudflare R2 |
+| 결제 | Polar (MoR) -- Stripe 사용 금지 |
+| 이미지 생성 | NanoBanana API |
+| AI (Style/Capsule/Vibe) | Claude API (claude-sonnet-4-6) |
+| 기후 데이터 | Open-Meteo (무료, 가입 불필요) |
+| 도시 검색 | Google Places API |
+| 이메일 | Resend |
+| 봇 차단 | Cloudflare Turnstile |
 
 ### Agent 아키텍처
 
 ```
-User Request
- └─ Orchestrator (apps/worker/src/agents/orchestrator.ts)
-      │
-      ├─ 1. Climate Agent     → Open-Meteo API (기후 데이터 조회)
-      │     climateAgent.ts
-      │
-      ├─ 2. Style Agent       → Claude API (코디 프롬프트 생성)
-      │     styleAgent.ts
-      │
-      ├─ 3. ImageGen Agent    → NanoBanana API (이미지 생성)
-      │     imageGenAgent.ts
-      │
-      ├─ 4. Capsule Agent     → Claude API (캡슐 워드로브 + 데일리 플랜)
-      │     capsuleAgent.ts
-      │
-      ├─ 5. Fulfillment Agent → R2 + Resend (갤러리 링크 + 프라이버시 정리)
-      │     fulfillmentAgent.ts
-      │
-      └─ 6. Growth Agent      → UTM + 공유 카피 (바이럴 루프)
-            growthAgent.ts
+User
+ +-- Orchestrator (apps/worker/src/agents/orchestrator.ts)
+      |
+      +-- [FREE] weatherAgent.ts   -> Open-Meteo API (24h 캐싱)
+      +-- [FREE] vibeAgent.ts      -> Claude API (무드 네이밍)
+      +-- [FREE] teaserAgent.ts    -> NanoBanana API (1장만 실제 생성)
+      +-- [FREE] capsuleAgent.ts   -> Claude API (카운트 + 3원칙만)
+      |
+      +-- [PAID] styleAgent.ts     -> Claude API (전체 프롬프트 생성)
+      +-- [PAID] imageGenAgent.ts  -> NanoBanana API (4~6장 실제 생성)
+      +-- [PAID] capsuleAgent.ts   -> Claude API (full: 캡슐 리스트 + 데일리 플랜)
+      |
+      +-- [ALL]  fulfillmentAgent.ts -> R2 업로드 + Resend 이메일
+      +-- [ALL]  growthAgent.ts      -> 공유 링크 + UTM + upgrade_token
 ```
-
-**파이프라인 실행 순서:**
-
-1. Trip 데이터 파싱
-2. 기후 데이터 조회 (도시별 병렬)
-3. 스타일 프롬프트 생성 (도시별 병렬, Claude API)
-4. generation_jobs DB 저장
-5. 이미지 생성 (동시성: 2, NanoBanana API)
-6. 캡슐 워드로브 생성 (Claude API)
-7. Fulfillment (이메일 + 원본 사진 삭제)
-8. 공유 콘텐츠 생성
-9. Trip 상태 `completed`로 변경
 
 ---
 
-## 2. 기술 스택 (Tech Stack)
+## 1. 퍼널 7단계 플로우
 
-| 영역 | 기술 | 비고 |
-|------|------|------|
-| **Frontend** | Next.js App Router | Cloudflare Pages에 배포 |
-| **API** | Cloudflare Workers (Hono) | Edge runtime, `process.env` 사용 불가 |
-| **DB** | Supabase (Postgres + RLS) | Session 기반 RLS, Service Role Key로 Worker 접근 |
-| **Storage** | Cloudflare R2 | 네이티브 R2 바인딩 (`R2Bucket`) 사용 |
-| **결제** | Polar (MoR) | Stripe 사용 금지, 일회성 $5, HMAC-SHA256 서명 검증 |
-| **이미지 생성** | NanoBanana API | 768x1024, 최대 3회 재시도, 얼굴 보존 지원 |
-| **AI (Style/Capsule)** | Claude API (claude-sonnet-4-6) | Style: temp 0.8, Capsule: temp 0.7 |
-| **기후 데이터** | Open-Meteo | 무료, 가입 불필요, 12개월 월별 예보 |
-| **도시 검색** | Google Places API | Autocomplete, `(cities)` 타입 필터 |
-| **이메일** | Resend | 갤러리 링크 포함 HTML 이메일 |
-
-### DB 스키마 요약
-
-| 테이블 | 주요 컬럼 | RLS 정책 |
-|--------|-----------|----------|
-| `trips` | `id(UUID PK)`, `session_id`, `cities(JSONB)`, `month`, `face_url`, `status`, `gallery_url` | anon: session_id 매칭 SELECT/INSERT |
-| `orders` | `id(UUID PK)`, `polar_order_id(UNIQUE)`, `trip_id(FK)`, `status`, `amount`, `customer_email` | anon 접근 불가 (Service Role Only) |
-| `generation_jobs` | `id(UUID PK)`, `trip_id(FK)`, `city`, `mood`, `prompt`, `status`, `image_url`, `attempts` | anon: trip의 session_id 매칭 SELECT |
-| `capsule_results` | `id(UUID PK)`, `trip_id(FK UNIQUE)`, `items(JSONB)`, `daily_plan(JSONB)` | anon: trip의 session_id 매칭 SELECT |
-| `city_vibes` | `id(UUID PK)`, `city(UNIQUE)`, `country`, `lat`, `lon`, `vibe_cluster`, `style_keywords(TEXT[])` | 모든 사용자 공개 읽기 |
-
----
-
-## 3. 전체 사용자 여정 (User Journey)
-
-### 3.1 여정 전체 흐름도
-
-```
-[1. 랜딩 페이지 도착] ──► [2. 폼 입력] ──► [3. AI 처리 중] ──► [4. 미리보기]
-                                                                       │
-                                                                       ▼
-                        [7. 공유] ◄── [6. 갤러리 수령] ◄── [5. 결제 ($5)]
-```
-
-### 3.2 단계별 상세 분석
-
-#### 단계 1: 랜딩 페이지 도착
+### Stage 1: 입력 (Input)
 
 | 항목 | 설명 |
 |------|------|
-| **사용자 행동** | 광고/SNS 공유 링크 클릭 → 랜딩 페이지 도착. 헤드라인과 히어로 이미지를 스캔, 서비스 가치 파악 시도. 스크롤하며 작동 방식과 샘플 결과물 확인. |
-| **감정 상태** | 호기심 + 약간의 의심 ("정말 AI가 코디를 해줄 수 있어?") |
-| **이탈 위험 요소** | (1) 가치 제안이 3초 안에 전달되지 않으면 이탈 (2) 모바일에서 로딩이 느리면 바로 이탈 (3) 사회적 증거(리뷰, 사용자 수)가 없으면 신뢰 부족 |
-| **대응 전략** | (1) 히어로 섹션: 6단어 이내 핵심 카피 + 결과물 미리보기 이미지 (2) Core Web Vitals 최적화 (LCP < 2.5s) (3) 소셜 프루프: 사용자 수 카운터 + 별점 리뷰 3-5개 (4) "See a Sample" CTA로 즉시 결과 확인 유도 |
-| **핵심 KPI** | 바운스율 < 50%, 스크롤 깊이 > 50% |
-
-#### 단계 2: 폼 입력 (도시 선택, 여행월, 사진 업로드)
-
-| 항목 | 설명 |
-|------|------|
-| **사용자 행동** | (1) 도시 입력 (Google Places Autocomplete, 최대 3개 도시, 각 도시별 일수 입력) (2) 여행월 선택 (월 피커) (3) 사진 업로드 (선택, 얼굴 사진) (4) 이메일 입력 |
-| **감정 상태** | 기대감 + "이게 정말 되나?" 반신반의 → 폼 완성 시 기대감 상승 |
-| **이탈 위험 요소** | (1) 폼이 복잡하게 느껴지면 이탈 (2) 도시 검색이 안 되면 좌절 (3) 사진 업로드 필수로 느껴지면 진입 장벽 (4) 가격이 폼 완성 후에야 나오면 배신감 |
-| **대응 전략** | (1) 프로그레스 스텝 표시 (Step 1/3 → 2/3 → 3/3) (2) Google Places Autocomplete으로 2글자부터 즉시 추천 (3) 사진 업로드를 "선택사항"으로 명확히 표시 (4) 폼 위에 "$5 one-time, no subscription" 항상 노출 (5) 인라인 검증: 에러 메시지를 필드 바로 아래에 표시 |
+| **사용자 행동** | 도시(최대 5개, Google Places Autocomplete) + 각 도시 체류 일수 + 여행 월 선택 + 사진 업로드(선택) 입력. Cloudflare Turnstile 위젯 통과. |
+| **UI 요소** | - `CitySearchInput`: Google Places Autocomplete, 2글자부터 추천, `(cities)` 타입 필터<br>- `MonthPicker`: 12개월 그리드 (현재 월 기본 선택)<br>- `PhotoUpload`: 드래그앤드롭 + 파일 선택, "Optional -- helps personalize your looks" 라벨<br>- `Turnstile Widget`: 입력 폼 하단, 비침입적 CAPTCHA<br>- 프로그레스 표시: Step 1/3 -> 2/3 -> 3/3<br>- 가격 고지: 폼 상단 "Free preview first, $5 to unlock" 상시 노출 |
+| **이탈 위험 포인트** | 1) 도시 검색이 안 되거나 느리면 좌절<br>2) 사진 업로드가 필수로 느껴지면 진입 장벽<br>3) 폼이 복잡하게 보이면 이탈 (특히 모바일)<br>4) Turnstile이 반복 실패하면 이탈 |
+| **대응 전략** | 1) Google Places API로 2글자부터 즉시 추천, 한국어/영어 도시명 모두 지원<br>2) 사진 업로드 영역에 "(Optional)" 명확히 표시, 건너뛰기 가능<br>3) 3단계 스텝 방식으로 한 번에 하나만 집중, 모바일 풀스크린 모드<br>4) Turnstile 실패 시 자동 재시도 + "새로고침" 안내 |
 | **핵심 KPI** | 폼 시작률 > 30%, 폼 완료율 > 60% |
 
-#### 단계 3: AI 처리 중 (로딩/대기 화면)
+**데이터 수집 시점:**
 
-| 항목 | 설명 |
-|------|------|
-| **사용자 행동** | 폼 제출 후 대기. 진행 상태 확인. 평균 대기 시간: 60-120초 (기후 조회 + 스타일 프롬프트 + 이미지 생성 + 캡슐 워드로브). |
-| **감정 상태** | 불안 + 궁금증 ("제대로 되고 있는 건가?") → 진행 표시가 있으면 참을성 증가 |
-| **이탈 위험 요소** | (1) 2분 이상 아무 피드백 없이 대기하면 탭 닫기 (2) 에러 발생 시 재시도 안내가 없으면 이탈 (3) 다른 탭으로 이동 후 돌아오지 않음 |
-| **대응 전략** | (1) 멀티 스텝 프로그레스 바: "기후 분석 중..." → "스타일 생성 중..." → "이미지 생성 중..." → "캡슐 완성 중..." (2) 각 단계 예상 시간 표시 (3) "이 탭을 닫지 마세요" 안내 (4) generation_jobs 상태를 5초 간격으로 폴링 (GET /api/trips/:tripId) (5) 에러 시 자동 재시도 안내 + "고객센터 문의" 링크 |
-| **핵심 KPI** | 대기 중 이탈률 < 15%, 평균 대기 시간 < 90초 |
-
-#### 단계 4: 미리보기 (1장 공개 + 3장 블러)
-
-| 항목 | 설명 |
-|------|------|
-| **사용자 행동** | AI 생성 완료 후 미리보기 페이지 이동. 첫 번째 이미지를 선명하게 확인. 나머지 3장은 블러 처리된 상태로 확인. 캡슐 워드로브 아이템 이름만 공개 (상세 블러). |
-| **감정 상태** | 놀라움 + 강한 호기심 ("나머지도 보고 싶다!") → 결제 의지 형성 |
-| **이탈 위험 요소** | (1) 첫 이미지 품질이 기대 이하면 결제 의지 소멸 (2) 블러 이미지가 매력적이지 않으면 궁금하지 않음 (3) $5가 가치에 비해 비싸게 느껴짐 |
-| **대응 전략** | (1) 첫 이미지는 가장 매력적인 무드(golden-hour 등) 선택 (2) 블러 이미지에 살짝 보이는 의상 실루엣으로 호기심 자극 (3) "Unlock all 4 looks + your complete capsule wardrobe" 카피 (4) 가격 앵커링: "$5 = less than a coffee, saves hours of packing stress" (5) 캡슐 워드로브 아이템 이름만 리스트로 보여주고, versatility_score와 why는 블러 |
-| **핵심 KPI** | 미리보기 → 결제 전환율 > 25% |
-
-#### 단계 5: 결제 ($5 Polar 결제)
-
-| 항목 | 설명 |
-|------|------|
-| **사용자 행동** | "Unlock" 버튼 클릭 → Polar 결제 페이지 리다이렉트 → 카드/애플페이 결제 → 완료 후 콜백. |
-| **감정 상태** | 결단 → 결제 완료 시 만족감 + 기대감 |
-| **이탈 위험 요소** | (1) 결제 페이지 리다이렉트 중 로딩 지연 (2) 결제 수단이 제한적 (3) 결제 실패 시 재시도 방법 불명확 (4) 환불 정책이 보이지 않으면 불안 |
-| **대응 전략** | (1) Polar Custom Checkout: 빠른 리다이렉트 + 깔끔한 UI (2) 카드/애플페이/구글페이 지원 확인 (3) 결제 실패 시 에러 메시지 + "Try Again" 버튼 (4) 결제 버튼 아래 "100% money-back if not satisfied" 문구 (5) Webhook으로 주문 상태 실시간 확인 (polar_order_id UNIQUE로 멱등성 보장) |
-| **핵심 KPI** | 결제 전환율 > 70% (미리보기에서 결제 진입한 사용자 중), 결제 실패율 < 5% |
-
-#### 단계 6: 갤러리 수령 (이메일 + 웹 갤러리)
-
-| 항목 | 설명 |
-|------|------|
-| **사용자 행동** | 결제 완료 → Polar Webhook(order.paid) → Orchestrator 파이프라인 실행 → 완료 후 이메일 수신 (갤러리 링크). 웹 갤러리에서 모든 이미지 + 캡슐 워드로브 + 데일리 플랜 확인. |
-| **감정 상태** | 만족 + 감탄 ("$5 치고 이 정도면 대박") 또는 실망 (품질 미달 시) |
-| **이탈 위험 요소** | (1) 이메일이 스팸함으로 가서 못 찾음 (2) 갤러리 로딩이 느림 (이미지 다수) (3) 결과물 품질에 대한 기대 불일치 |
-| **대응 전략** | (1) 결제 완료 화면에서 즉시 갤러리 링크 제공 (이메일 의존도 낮춤) (2) R2 CDN으로 이미지 빠른 로딩 (3) 이메일 발신자: "Travel Capsule AI <hello@travelcapsule.ai>" (SPF/DKIM 설정) (4) 이미지 lazy loading + WebP 최적화 (5) 갤러리 하단에 "Not satisfied? Reply to this email" 안내 |
-| **핵심 KPI** | 이메일 오픈율 > 60%, 갤러리 조회율 > 80%, NPS > 40 |
-
-#### 단계 7: 공유 (바이럴 루프)
-
-| 항목 | 설명 |
-|------|------|
-| **사용자 행동** | 갤러리에서 공유 버튼 클릭 → SNS(Instagram, Twitter/X, KakaoTalk) 또는 링크 복사. UTM 태그된 링크를 통해 친구가 랜딩 페이지로 유입. |
-| **감정 상태** | 자랑하고 싶음 + "친구도 해봐" → 자연스러운 바이럴 |
-| **이탈 위험 요소** | (1) 공유할 만큼 매력적이지 않으면 공유 안 함 (2) 공유 버튼이 눈에 안 띄면 인지 못함 (3) 링크 클릭 시 랜딩 페이지가 매력적이지 않으면 2차 전환 실패 |
-| **대응 전략** | (1) 공유 시 미리 작성된 카피 제공 (한국어/영어 이중 지원) (2) UTM 파라미터: `utm_source=share&utm_medium=user&utm_campaign=trip_share` (3) 친구 할인 코드 또는 리워드 (2차 전환 유도) (4) Instagram Story 최적화 세로형 이미지 (768x1024 = 3:4) (5) "Share & get $1 off your next trip" 인센티브 |
-| **핵심 KPI** | 공유율 > 15%, 공유 링크 CTR > 5%, 2차 전환율 > 10% |
-
-### 3.3 사용자 여정 종합 퍼널
-
-```
-랜딩 페이지 방문자     100%
-     │
-     ▼
-폼 입력 시작           30%  ← 히어로 + 소셜 프루프 + 샘플 보기
-     │
-     ▼
-폼 완료 제출           18%  ← 프로그레스 스텝 + 인라인 검증
-     │
-     ▼
-AI 처리 완료 대기      15%  ← 멀티스텝 프로그레스 + 상태 폴링
-     │
-     ▼
-미리보기 확인          14%  ← 첫 이미지 품질 + 블러 호기심
-     │
-     ▼
-결제 완료             10%  ← 가격 앵커링 + Polar 결제 UX
-     │
-     ▼
-갤러리 확인            8%  ← 이메일 + 웹 직접 접근
-     │
-     ▼
-공유                  1.2%  ← 공유 카피 + SNS 버튼 + 인센티브
-```
-
----
-
-## 4. 페이지별 상세 스펙 (Page-by-Page Specifications)
-
-### 4.1 Landing Page (`/`)
-
-**파일 위치**: `apps/web/app/page.tsx`
-
-#### 4.1.1 페이지 구성 (섹션 순서)
-
-| 순번 | 섹션 | 컴포넌트 | 목적 |
-|------|------|----------|------|
-| 1 | Header | `Header` | 로고 + 네비게이션 + CTA 버튼 |
-| 2 | Hero Section | `HeroSection` | 핵심 가치 전달 + 메인 CTA |
-| 3 | Social Proof | `SocialProof` | 사용자 수 + 별점 리뷰 |
-| 4 | How It Works | `HowItWorksSection` | 3단계 작동 방식 설명 |
-| 5 | Photo Comparison | `PhotoComparison` | Before/After 비교 |
-| 6 | Preview Explainer | `PreviewExplainer` | 미리보기 + 결제 흐름 설명 |
-| 7 | Form Section | `FormSection` | 인라인 폼 (도시/월/사진) |
-| 8 | Sample Output | `SampleOutputSection` | 실제 결과물 미리보기 |
-| 9 | Capsule Section | `CapsuleSection` | 캡슐 워드로브 개념 설명 |
-| 10 | Pricing Section | `PricingSection` | $5 가격표 + CTA |
-| 11 | FAQ Section | `FaqSection` | 자주 묻는 질문 아코디언 |
-| 12 | Partner Section | `PartnerSection` | 파트너/미디어 로고 |
-| 13 | Footer | `Footer` | 링크 + 법적 고지 |
-
-#### 4.1.2 Hero Section 상세
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                      [Header Bar]                        │
-│  Logo                           [Get Started] [Sign In]  │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│     Pack Like a Style Editor                            │
-│     ─────────────────────────                            │
-│     AI-powered capsule wardrobe for your next trip.      │
-│     8-12 versatile pieces. Daily outfit plans.           │
-│     All for just $5.                                     │
-│                                                          │
-│     [Start My Trip →]     [See a Sample]                │
-│                                                          │
-│     ★★★★★ "Best $5 I ever spent" — 2,847 travelers     │
-│                                                          │
-│     [Hero Image: AI-generated outfit editorial]          │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
-
-**헤드라인 규칙:**
-- 메인 헤드라인: 6단어 이내, 감성적 + 실용적
-- 서브헤드라인: 2줄 이내, 구체적 혜택 나열
-- 가격: 헤드라인 근처에 항상 노출
-
-**CTA 버튼:**
-- Primary: "Start My Trip" → FormSection으로 스크롤
-- Secondary: "See a Sample" → SampleOutputSection으로 스크롤
-- 색상: Primary = terracotta (#C4613A), Secondary = ghost/outline
-
-#### 4.1.3 Social Proof 섹션
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  ★★★★★ 4.9/5 from 2,847 travelers                      │
-│                                                          │
-│  [Avatar] "..."  [Avatar] "..."  [Avatar] "..."         │
-│  — Sarah, NYC    — Mina, Seoul   — Leo, Berlin          │
-│                                                          │
-│  [Trusted by travelers from 47 countries]                │
-└─────────────────────────────────────────────────────────┘
-```
-
-- 리뷰 카드: 최소 3개, 최대 5개
-- 각 리뷰: 이름, 도시, 별점, 한 줄 코멘트
-- 국가 카운터: 실시간 업데이트 (향후)
-
-#### 4.1.4 How It Works 섹션
-
-| Step | 아이콘 | 제목 | 설명 |
-|------|--------|------|------|
-| 1 | 지구본 | Tell Us Where | Pick your cities and travel month |
-| 2 | 카메라 | Upload a Photo (Optional) | Add a selfie for personalized styling |
-| 3 | 옷걸이 | Get Your Capsule | Receive your AI-curated wardrobe + outfit plan |
-
-#### 4.1.5 FAQ 섹션
-
-아코디언 형태, 최소 6개 항목:
-
-| 질문 | 답변 요지 |
-|------|-----------|
-| What do I get for $5? | 3-4 outfit images per city + 8-12 item capsule wardrobe + daily plan |
-| How long does it take? | 1-2 minutes after form submission |
-| Is the photo required? | Optional. Without photo, generic model used. With photo, your face is preserved. |
-| What about my privacy? | Your photo is deleted immediately after image generation. Never shared or used for training. |
-| Can I get a refund? | 100% money-back if not satisfied. Reply to the email. |
-| Which cities are supported? | Any city worldwide. We use AI to analyze any destination. |
-
-#### 4.1.6 변환 전략 및 카피 원칙
-
-**카피 원칙:**
-- FOMO: "2,847 travelers styled this month" (사용자 수)
-- 가격 앵커링: "Less than a coffee" / "Skip one latte, pack like a pro"
-- 리스크 제거: "100% money-back guarantee"
-- 구체성: "$5", "8-12 items", "3-4 looks per city"
-- 긴급성: "Your trip is coming. Don't stress about packing."
-
-**디자인 토큰:**
-
-```
-Colors:
-  terracotta: #C4613A  (Primary CTA)
-  ink:        #1A1410  (Text)
-  sand:       #F5EFE6  (Background Alt)
-  cream:      #FDF8F3  (Background Main)
-  gold:       #C8A96E  (Accent/Stars)
-  muted:      #8A7B6E  (Secondary Text)
-
-Fonts:
-  serif:  Playfair Display (Headings)
-  sans:   DM Sans (Body)
-```
-
----
-
-### 4.2 Trip Form (`/trip/new`)
-
-**참고**: 현재 구현에서는 랜딩 페이지 내 인라인 폼(`FormSection` 컴포넌트)으로 존재. 향후 독립 페이지(`/trip/new`)로 분리 가능.
-
-#### 4.2.1 폼 구성
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Step 1 of 3: Where are you going?                      │
-│  ────────────────────────────────                        │
-│                                                          │
-│  🔍 [Search cities...            ]  ← Google Places AC  │
-│                                                          │
-│  Selected cities:                                        │
-│  ┌──────────────────────────────────┐                   │
-│  │ 🏙 Paris, France     [4 days] ✕  │                   │
-│  │ 🏙 Barcelona, Spain  [3 days] ✕  │                   │
-│  └──────────────────────────────────┘                   │
-│  (Add up to 3 cities)                                    │
-│                                                          │
-│                                          [Next →]        │
-├─────────────────────────────────────────────────────────┤
-│  Step 2 of 3: When are you traveling?                    │
-│  ────────────────────────────────                        │
-│                                                          │
-│  [Jan] [Feb] [Mar] [Apr] [May] [Jun]                    │
-│  [Jul] [Aug] [Sep] [Oct] [Nov] [Dec]                    │
-│                                                          │
-│  Selected: September 2026                                │
-│                                                          │
-│                              [← Back]  [Next →]         │
-├─────────────────────────────────────────────────────────┤
-│  Step 3 of 3: Almost done!                               │
-│  ────────────────────────────────────                    │
-│                                                          │
-│  📷 Upload a photo (optional)                            │
-│  ┌─────────────────────────────────┐                    │
-│  │                                 │                    │
-│  │   Drag & drop or click to       │                    │
-│  │   upload your photo              │                    │
-│  │   JPEG, PNG, WebP — Max 10 MB   │                    │
-│  │                                 │                    │
-│  └─────────────────────────────────┘                    │
-│  Your photo is used only for styling and deleted         │
-│  immediately after generation. We never store or         │
-│  share your photos.                                      │
-│                                                          │
-│  📧 Email address                                        │
-│  [your@email.com                    ]                    │
-│  We'll send your gallery link here.                      │
-│                                                          │
-│                   [← Back]  [Get My Capsule for $5 →]   │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### 4.2.2 도시 입력 (Google Places Autocomplete)
-
-| 속성 | 규칙 |
-|------|------|
-| **검색 시작** | 최소 2글자 입력 후 자동완성 시작 |
-| **검색 최대 길이** | 100자 이하 |
-| **API 필터** | `types: '(cities)'` (도시만 검색) |
-| **최대 도시 수** | 3개 |
-| **최소 도시 수** | 1개 |
-| **각 도시 일수** | 1일 이상, 기본값 3일 |
-| **디바운스** | 300ms |
-| **프록시** | Worker API `GET /api/cities/search?input=` 경유 (API 키 서버 보호) |
-| **응답 형식** | `{ predictions: [{ place_id, description, city, country }] }` |
-
-**에러 상태:**
-- 도시 0개: "Please add at least one city"
-- 도시 4개 이상: "Maximum 3 cities allowed" (추가 버튼 비활성화)
-- 검색 실패: "City search unavailable. Please try again."
-- 중복 도시: "This city is already added"
-
-#### 4.2.3 여행월 선택
-
-| 속성 | 규칙 |
-|------|------|
-| **UI** | 12개 월 버튼 그리드 (3x4 또는 6x2) |
-| **기본 선택** | 다음 달 (현재 2월이면 3월 기본 선택) |
-| **값 범위** | 1-12 (정수) |
-| **필수 여부** | 필수 |
-
-#### 4.2.4 사진 업로드
-
-| 속성 | 규칙 |
-|------|------|
-| **필수 여부** | 선택 (Optional) |
-| **허용 형식** | JPEG, PNG, WebP |
-| **최대 크기** | 10 MB |
-| **파일 확장자 검증** | MIME type과 확장자 일치 확인 |
-| **업로드 엔드포인트** | `POST /api/uploads/face` (multipart/form-data) |
-| **저장 경로** | R2: `faces/tmp/{uuid}.{ext}` |
-| **프라이버시** | 이미지 생성 후 즉시 R2에서 삭제 + DB face_url NULL 처리 |
-| **미리보기** | 업로드 후 썸네일 미리보기 + 삭제 버튼 |
-
-**검증 에러 메시지:**
-
-| 에러 | 메시지 |
-|------|--------|
-| 파일 없음 | "Missing file field" |
-| 10MB 초과 | "File too large. Maximum size is 10 MB." |
-| 잘못된 형식 | "Only JPEG, PNG, WEBP are allowed" |
-| 확장자 불일치 | "File extension does not match declared content type" |
-
-#### 4.2.5 이메일 입력
-
-| 속성 | 규칙 |
-|------|------|
-| **필수 여부** | 필수 (갤러리 링크 발송용) |
-| **검증 패턴** | `/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/` |
-| **최대 길이** | 254자 |
-| **인라인 에러** | "Please enter a valid email address" |
-
-#### 4.2.6 폼 검증 규칙 전체
-
-| 필드 | 타입 | 필수 | 검증 규칙 |
-|------|------|------|-----------|
-| `cities` | `CityInput[]` | 필수 | 1-3개, 각 도시에 `name`, `country`, `days`(>= 1) 포함 |
-| `month` | `number` | 필수 | 1-12 정수 |
-| `face_url` | `string` | 선택 | 유효한 R2 URL, 512자 이하 |
-| `email` | `string` | 필수 | RFC-5322 호환, 254자 이하 |
-| `session_id` | `string` | 자동 | 클라이언트 생성 UUID, 128자 이하 |
-
-#### 4.2.7 에러 상태 처리
-
-| 에러 유형 | UI 처리 |
-|-----------|---------|
-| 필드별 유효성 에러 | 해당 필드 아래 빨간 텍스트 + 필드 테두리 빨간색 |
-| 네트워크 에러 | 토스트 알림 "Network error. Please check your connection." |
-| 서버 에러 (500) | 토스트 알림 "Something went wrong. Please try again." + 재시도 버튼 |
-| 도시 검색 API 에러 | 검색 필드 아래 "City search unavailable" + 수동 입력 안내 |
-| 파일 업로드 실패 | 업로드 영역에 에러 메시지 + "Try Again" 링크 |
-
----
-
-### 4.3 Preview Page (`/trip/[tripId]/preview`)
-
-**접근 조건**: Trip 생성 완료 + AI 처리 완료 (status: `completed` 또는 generation_jobs에 이미지 존재)
-
-#### 4.3.1 레이아웃
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  [Header]                                                │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  Your Paris & Barcelona Preview                          │
-│  ─────────────────────────────                           │
-│                                                          │
-│  ┌──────────────┐  ┌──────────────┐                     │
-│  │              │  │ ░░░░░░░░░░░░ │                     │
-│  │  [Image 1]   │  │  [BLURRED]   │                     │
-│  │  (Clear)     │  │   🔒 Locked  │                     │
-│  │              │  │              │                     │
-│  └──────────────┘  └──────────────┘                     │
-│  ┌──────────────┐  ┌──────────────┐                     │
-│  │ ░░░░░░░░░░░░ │  │ ░░░░░░░░░░░░ │                     │
-│  │  [BLURRED]   │  │  [BLURRED]   │                     │
-│  │   🔒 Locked  │  │   🔒 Locked  │                     │
-│  │              │  │              │                     │
-│  └──────────────┘  └──────────────┘                     │
-│                                                          │
-│  ─── Your Capsule Wardrobe (8 items) ───                │
-│                                                          │
-│  ✓ White linen button-down shirt                         │
-│  ✓ Navy chino trousers                                   │
-│  ✓ Beige linen blazer                                    │
-│  ░ ░░░░░░░░░░░░░░░░░░░░                                 │
-│  ░ ░░░░░░░░░░░░░░░░░░░░                                 │
-│  ░ ░░░░░░░░░░░░░░░░░░░░                                 │
-│  ░ ░░░░░░░░░░░░░░░░░░░░                                 │
-│  ░ ░░░░░░░░░░░░░░░░░░░░                                 │
-│                                                          │
-│  ┌───────────────────────────────────────┐              │
-│  │  Unlock all 4 looks + full capsule    │              │
-│  │  wardrobe + daily outfit plan         │              │
-│  │                                       │              │
-│  │       [$5 — Unlock My Capsule]        │              │
-│  │                                       │              │
-│  │  💳 Secure checkout via Polar          │              │
-│  │  🔒 100% money-back guarantee          │              │
-│  └───────────────────────────────────────┘              │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
-```
-
-#### 4.3.2 이미지 표시 규칙
-
-| 이미지 | 표시 상태 | 설명 |
-|--------|-----------|------|
-| 1번째 | **선명** | 가장 매력적인 무드 (golden-hour 우선) |
-| 2번째 | **블러** | CSS `filter: blur(20px)` + 잠금 아이콘 |
-| 3번째 | **블러** | CSS `filter: blur(20px)` + 잠금 아이콘 |
-| 4번째 | **블러** | CSS `filter: blur(20px)` + 잠금 아이콘 |
-
-**블러 이미지 CSS:**
-```css
-.blurred-image {
-  filter: blur(20px);
-  pointer-events: none;
-  user-select: none;
+```typescript
+// POST /api/preview request body
+{
+  cities: [
+    { name: "Paris", country: "France", days: 4, lat: 48.856, lon: 2.352 },
+    { name: "Barcelona", country: "Spain", days: 3, lat: 41.385, lon: 2.173 }
+  ],
+  month: 6,
+  faceUrl?: "r2://tmp/{uuid}.jpg",  // 업로드 완료 시에만
+  turnstileToken: "cf-turnstile-response-xxx",
+  sessionId: "sess_xxx"
 }
-.blurred-overlay {
+```
+
+---
+
+### Stage 2: Free 리워드 (Free Reward)
+
+| 항목 | 설명 |
+|------|------|
+| **사용자 행동** | 입력 제출 후 30~60초 대기. ProgressChecklist가 단계별로 완료 상태 업데이트. 날씨 카드, 바이브 카드, 캡슐 추정기가 순차적으로 표시됨. |
+| **UI 요소** | - `ProgressChecklist`: 4단계 체크리스트 (step 1~3 완료, step 4 잠금)<br>- `WeatherCard`: 도시별 날씨 리포트<br>- `VibeCard`: 무드 네이밍 + 컬러 팔레트<br>- `CapsuleEstimator`: 아이템 수 + 레이어링 3원칙<br>- 각 카드 등장 시 fade-in + slide-up 애니메이션 |
+| **이탈 위험 포인트** | 1) 대기 시간이 길면 (2분+) 탭 닫기<br>2) 진행 상황이 보이지 않으면 불안<br>3) Free 리워드 품질이 낮으면 결제 의지 소멸 |
+| **대응 전략** | 1) 멀티 스텝 프로그레스: "Analyzing weather..." -> "Matching vibe..." -> "Generating looks..." (5초 폴링)<br>2) 각 단계 완료 시 즉시 카드 표시 (전체 완료 대기 X)<br>3) Free 리워드 자체가 가치 있도록 설계 (날씨 인사이트, 무드 네이밍 = 공유 가능 콘텐츠) |
+| **핵심 KPI** | 대기 중 이탈률 < 15%, Free 리워드 도달률 > 85% |
+
+**ProgressChecklist 상태 전이:**
+
+```
+[1] pending  -> loading -> done   "Weather analyzed for Paris, Barcelona"
+[2] pending  -> loading -> done   "City vibe matched -- Rainy Chic"
+[3] pending  -> loading -> done   "4 looks generated (1 unlocked)"
+[4] locked   -> locked  -> locked "Full capsule (9 items) + Day-by-day plan"
+```
+
+---
+
+### Stage 3: 티저 (Teaser)
+
+| 항목 | 설명 |
+|------|------|
+| **사용자 행동** | 이미지 생성 완료 후 2x2 그리드 확인. 첫 번째 이미지만 선명, 나머지 3장은 블러+틴트. 만료 타이머 확인. |
+| **UI 요소** | - `TeaserGrid`: 2x2 그리드 레이아웃<br>&nbsp;&nbsp;- `[0]` 선명 이미지 (실제 NanoBanana 생성 1장) + 워터마크<br>&nbsp;&nbsp;- `[1][2][3]` 동일 이미지 + `filter: blur(8px)` + tint overlay (#000 opacity 0.3) + 🔒 lock 아이콘 중앙 배치<br>- `ExpiresTimer`: "Expires in HH:MM:SS" 실시간 카운트다운 (`trips.expires_at` 기준)<br>- 하단 카피: "3 more looks waiting -- Unlock now" |
+| **이탈 위험 포인트** | 1) 첫 이미지 품질이 기대 이하면 결제 의지 소멸<br>2) 블러 이미지가 매력적이지 않으면 궁금하지 않음<br>3) 만료 타이머가 압박으로 느껴지면 반감 |
+| **대응 전략** | 1) teaserAgent: 가장 매력적인 무드(golden-hour 등) 프롬프트 최적화<br>2) blur(8px)는 실루엣은 보이되 디테일은 숨기는 최적 수준<br>3) 타이머는 시각적 urgency만, 카피는 부드럽게: "Your looks are reserved" |
+| **핵심 KPI** | 티저 조회 -> 페이월 진입 > 50% |
+
+**TeaserGrid CSS 스펙:**
+
+```css
+.teaser-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  max-width: 600px;
+}
+
+.teaser-image--blurred {
+  filter: blur(8px);
+  position: relative;
+}
+
+.teaser-image--blurred::after {
+  content: '';
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.1);
+}
+
+.teaser-watermark {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  pointer-events: none;
 }
 ```
 
-#### 4.3.3 캡슐 워드로브 힌트
+---
 
-- 처음 3개 아이템: 이름만 공개 (예: "White linen button-down shirt")
-- 나머지 5-9개: 블러 처리 (텍스트 자체를 블러)
-- `category`, `why`, `versatility_score`는 모두 블러
-- 아이템 총 개수만 공개 (예: "8 items")
+### Stage 4: 이메일 캡처 (Email Capture)
 
-#### 4.3.4 결제 유도 CTA
+| 항목 | 설명 |
+|------|------|
+| **사용자 행동** | "무드 카드 이메일 전송" CTA 클릭. 이메일 입력 후 제출. 마이크로 컨버전 완료. |
+| **UI 요소** | - `EmailCapture` 컴포넌트: TeaserGrid 하단 배치<br>- 헤딩: "Get your {City} mood card in your inbox"<br>- 이메일 입력 필드 + "Send Free" 버튼<br>- 하단 소인: "No spam. Just your travel mood." + 프라이버시 링크<br>- 성공 상태: 체크마크 + "Sent! Check your inbox" |
+| **이탈 위험 포인트** | 1) 이메일 입력이 강제로 느껴지면 반감<br>2) 스팸 우려로 이메일 제출 거부<br>3) 이메일 캡처가 페이월 진입을 방해하면 역효과 |
+| **대응 전략** | 1) 이메일 캡처는 optional, 건너뛰기 가능 ("Skip" 텍스트 링크)<br>2) "No spam" 문구 명시 + Resend 발송 (신뢰 도메인)<br>3) 이메일 입력 후에도 바로 페이월로 이동 가능, 흐름 차단 X |
+| **핵심 KPI** | 이메일 캡처율 > 20% (전체 Free 리워드 도달 사용자 대비) |
 
-**위치**: 블러 이미지 영역 직후 + 페이지 하단 고정 바
+**이메일 발송 내용:**
 
-**카피 옵션:**
-- "Unlock all 4 looks + your complete capsule wardrobe — $5"
-- "Get your full packing guide for less than a coffee"
-- "Don't pack blind. Get your AI-curated capsule now."
-
-**CTA 버튼:**
-- 텍스트: "$5 — Unlock My Capsule"
-- 색상: terracotta (#C4613A)
-- 클릭 시: `POST /api/checkout` → Polar 결제 페이지 리다이렉트
-
-**신뢰 요소:**
-- "Secure checkout via Polar" + 잠금 아이콘
-- "100% money-back guarantee"
-- Polar/Visa/Mastercard/Apple Pay 로고
+```
+Subject: Your {City} Travel Mood -- {MoodName}
+Body:
+- 무드 카드 이미지 (vibeAgent 결과)
+- 날씨 요약 1줄
+- "Unlock your full capsule wardrobe" CTA 버튼 -> /preview/{tripId}
+```
 
 ---
 
-### 4.4 Result Gallery (`/result/[tripId]`)
+### Stage 5: 페이월 (Paywall)
 
-**파일 위치**: `apps/web/app/result/[tripId]/page.tsx`
-**접근 조건**: 결제 완료 (orders 테이블에 status: `paid` 레코드 존재) + trip status: `completed`
+| 항목 | 설명 |
+|------|------|
+| **사용자 행동** | PaywallModal 확인. 3개 플랜 비교. 플랜 선택 후 결제 버튼 클릭. Polar 결제 페이지로 리다이렉트. |
+| **UI 요소** | - `PaywallModal`: fixed 모달, backdrop-blur 배경<br>- 3-column 플랜 카드 (모바일: 스와이프 캐러셀)<br>- Pro 카드에 "Best Value" 배지<br>- 각 플랜 CTA 버튼 (아래 [3. 가격 플랜 상세](#3-가격-플랜-상세) 참조)<br>- 하단 공통 소인: "No subscription - Secure payment via Polar"<br>- 만료 타이머 재표시: "Your looks expire in HH:MM:SS" |
+| **이탈 위험 포인트** | 1) 플랜 차이가 명확하지 않으면 결정 장애<br>2) 결제 페이지 리다이렉트 시 로딩 지연<br>3) 환불 정책이 보이지 않으면 불안<br>4) 모바일에서 3개 플랜 비교가 어려움 |
+| **대응 전략** | 1) 플랜별 feature 체크리스트로 차이 시각화<br>2) Polar Custom Checkout 빠른 리다이렉트<br>3) "100% money-back if not satisfied" 문구 CTA 하단에 표시<br>4) 모바일: 스와이프 캐러셀 + Pro 카드 기본 선택 상태 |
+| **핵심 KPI** | 페이월 -> 결제 전환율 > 25%, 모바일 전환율 > 20% |
 
-#### 4.4.1 레이아웃
+---
+
+### Stage 6: 결제 + 업셀 (Payment + Upsell)
+
+| 항목 | 설명 |
+|------|------|
+| **사용자 행동** | Polar 결제 완료 -> 콜백. Standard 결제자에게 UpgradeModal 표시. Pro/Annual 결제자는 바로 결과 페이지로 이동. |
+| **UI 요소** | - Polar 결제 페이지 (외부): 카드/Apple Pay/Google Pay<br>- 결제 완료 콜백 -> 결과 페이지 리다이렉트<br>- Standard 결제자 전용: `UpgradeModal` (아래 [5. Post-결제 업셀 스펙](#5-post-결제-업셀-스펙) 참조) |
+| **이탈 위험 포인트** | 1) 결제 실패 시 재시도 방법 불명확<br>2) 콜백 로딩 중 이탈<br>3) 업셀이 강압적으로 느껴지면 부정적 경험 |
+| **대응 전략** | 1) 결제 실패 시 에러 메시지 + "Try Again" 버튼<br>2) 콜백 시 즉시 "Payment confirmed!" 표시 후 결과 로딩<br>3) UpgradeModal은 "No thanks" 한 번 클릭으로 즉시 닫힘, 재표시 없음 |
+| **핵심 KPI** | 결제 완료율 > 70%, 업셀 전환율 > 8% |
+
+**결제 흐름 시퀀스:**
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  [Header]          Travel Capsule AI                     │
-├─────────────────────────────────────────────────────────┤
-│                                                          │
-│  Your Trip to Paris & Barcelona                          │
-│  September 2026 — 7 days                                │
-│  ─────────────────────────────                           │
-│                                                          │
-│  ═══ PARIS (4 days) ═══════════════════════════         │
-│                                                          │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐                │
-│  │ Image 1  │ │ Image 2  │ │ Image 3  │                │
-│  │ morning  │ │ golden-  │ │ evening  │                │
-│  │ explore  │ │ hour     │ │ out      │                │
-│  └──────────┘ └──────────┘ └──────────┘                │
-│                                                          │
-│  ═══ BARCELONA (3 days) ══════════════════════          │
-│                                                          │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐                │
-│  │ Image 4  │ │ Image 5  │ │ Image 6  │                │
-│  │ morning  │ │ market   │ │ evening  │                │
-│  └──────────┘ └──────────┘ └──────────┘                │
-│                                                          │
-│  ═══ CAPSULE WARDROBE (8 items) ══════════════         │
-│                                                          │
-│  ┌──────────────────────────────────────────┐           │
-│  │ 👕 White linen button-down shirt          │           │
-│  │    Category: Top                          │           │
-│  │    Why: Breathable base for warm climates │           │
-│  │    Versatility: ████████░░ 8/10           │           │
-│  ├──────────────────────────────────────────┤           │
-│  │ 👖 Navy chino trousers                    │           │
-│  │    Category: Bottom                       │           │
-│  │    Why: Goes with everything, dressy...   │           │
-│  │    Versatility: █████████░ 9/10           │           │
-│  ├──────────────────────────────────────────┤           │
-│  │ ... (6 more items)                        │           │
-│  └──────────────────────────────────────────┘           │
-│                                                          │
-│  ═══ DAILY OUTFIT PLAN ═══════════════════════         │
-│                                                          │
-│  ┌──────────────────────────────────────────┐           │
-│  │ Day 1 — Paris                             │           │
-│  │ Outfit: White linen shirt + Navy chinos   │           │
-│  │         + Leather sneakers                │           │
-│  │ Note: Morning sightseeing to cafe lunch   │           │
-│  ├──────────────────────────────────────────┤           │
-│  │ Day 2 — Paris                             │           │
-│  │ Outfit: ...                               │           │
-│  ├──────────────────────────────────────────┤           │
-│  │ ... (5 more days)                         │           │
-│  └──────────────────────────────────────────┘           │
-│                                                          │
-│  [📥 Download All Images]   [📤 Share My Capsule]       │
-│                                                          │
-└─────────────────────────────────────────────────────────┘
+Client                    Worker                     Polar
+  |                          |                         |
+  |-- POST /api/payment/checkout -->|                  |
+  |                          |-- Create Checkout -->   |
+  |                          |<-- checkout_url -----   |
+  |<-- { checkout_url } -----|                         |
+  |                          |                         |
+  |------ Redirect to Polar checkout_url ----------->  |
+  |                          |                         |
+  |                          |<-- Webhook (order.paid) |
+  |                          |-- Verify HMAC-SHA256    |
+  |                          |-- INSERT orders         |
+  |                          |-- Start pipeline        |
+  |                          |-- (Standard? Generate   |
+  |                          |    upgrade_token)        |
+  |                          |                         |
+  |<------ Callback redirect (success_url) ----------- |
+  |                          |                         |
+  |-- GET /api/result/:tripId -->|                     |
+  |<-- { result + upgradeToken? }|                     |
 ```
 
-#### 4.4.2 이미지 그리드 상세
+---
+
+### Stage 7: 결과 + 공유 (Result + Share)
+
+| 항목 | 설명 |
+|------|------|
+| **사용자 행동** | 전체 갤러리 확인 (선명 이미지 4~6장 + 캡슐 워드로브 + 데일리 플랜). 공유 링크 생성 후 SNS 공유. |
+| **UI 요소** | - 이미지 갤러리: 도시별 탭 or 스크롤 섹션<br>- 캡슐 워드로브 리스트: 아이템명 + 카테고리 + 이유 + versatility score<br>- 데일리 플랜: 날짜별 아웃핏 조합 + 도시 + 활동 노트<br>- 공유 버튼: "Share Your {City} {MoodName} Look" + 링크 복사/인스타/X/카카오 |
+| **이탈 위험 포인트** | 1) 결과 품질이 기대에 못 미치면 부정적 리뷰<br>2) 공유 기능이 불편하면 바이럴 루프 실패 |
+| **대응 전략** | 1) 이미지 고품질 보장 (imageGenAgent 3회 재시도 + 품질 체크)<br>2) 원클릭 공유: 링크 복사 + SNS별 최적화 카피 자동 생성 (growthAgent)<br>3) OG 메타태그 최적화로 공유 시 프리뷰 매력적으로 |
+| **핵심 KPI** | 공유율 > 15%, 공유 링크 클릭 -> 신규 유입 전환 > 10% |
+
+---
+
+## 2. Free 경험 4가지 상세
+
+### 2-a. 날씨 리포트 카드 (WeatherCard)
+
+도시별로 생성되는 기후 정보 카드. weatherAgent가 Open-Meteo API를 호출하여 데이터를 생성한다.
+
+**카드 구성 요소:**
+
+| 요소 | 설명 | 데이터 소스 |
+|------|------|-------------|
+| 주간 온도 | "Daytime: {temp_max}C" | Open-Meteo `temperature_2m_max` 월평균 |
+| 야간 온도 | "Nighttime: {temp_min}C" | Open-Meteo `temperature_2m_min` 월평균 |
+| 강수 확률 바 | 수평 프로그레스 바 (0~100%) + 퍼센트 수치 | Open-Meteo `precipitation_probability_mean` |
+| 일교차 경고 | 일교차 > 10C 시 경고 배지 표시 | `temp_max - temp_min > 10` |
+| 스타일 힌트 | 1~2줄 텍스트. 날씨 기반 의류 조언. | weatherAgent 룰 기반 생성 |
+
+**카드 UI 스펙:**
+
+```
++------------------------------------------+
+|  [SunIcon]  Paris in June                |
+|                                          |
+|  Daytime    24C        [===|====] 35%    |
+|  Nighttime  14C         precipitation    |
+|                                          |
+|  [!] 10C+ day-night gap -- layer up!     |
+|                                          |
+|  Hint: Light layers work best. A linen   |
+|  blazer handles both cafe and evening.   |
++------------------------------------------+
+```
+
+**일교차 경고 로직:**
+
+```typescript
+const tempGap = temp_max - temp_min;
+if (tempGap > 10) {
+  return {
+    show: true,
+    message: `${tempGap}C+ day-night gap -- layer up!`,
+    icon: "warning"
+  };
+}
+```
+
+**스타일 힌트 룰:**
+
+| 조건 | 힌트 예시 |
+|------|-----------|
+| `temp_max > 30` | "Breathable fabrics are essential. Linen and cotton will be your best friends." |
+| `temp_max 20~30, precip < 30%` | "Light layers work best. A linen blazer handles both cafe and evening." |
+| `temp_max 10~20` | "Layer game is key. A versatile jacket covers all your bases." |
+| `temp_max < 10` | "Pack warm but smart. One quality coat plus layers beats three bulky sweaters." |
+| `precip > 60%` | "Rain is likely -- waterproof outer layer is non-negotiable." |
+
+**캐싱 정책:**
+
+- 키: `{city}_{month}` (예: `paris_6`)
+- TTL: 24시간 (`weather_cache` 테이블의 `cached_at` + 24h)
+- 동일 city+month 요청 시 DB 캐시 우선 조회, Open-Meteo API 호출 절약
+
+---
+
+### 2-b. 시티 바이브 카드 (VibeCard)
+
+vibeAgent(Claude API)가 도시+기후 데이터를 기반으로 생성하는 감성 카드. 무드 네이밍은 제품 전체 카피에 사용되는 핵심 브랜딩 요소.
+
+**카드 구성 요소:**
+
+| 요소 | 설명 | 생성 주체 |
+|------|------|-----------|
+| 무드 네이밍 | `"{City} -- {MoodName}"` 형식 | vibeAgent (Claude API) |
+| 바이브 태그 3개 | 해시태그 형태의 분위기 키워드 | vibeAgent |
+| 컬러 팔레트 3~5색 | HEX 코드 + 컬러 스와치 원형 표시 | vibeAgent |
+| 피해야 할 것 1줄 | "Avoid: {anti-recommendation}" | vibeAgent |
+
+**카드 UI 스펙:**
+
+```
++------------------------------------------+
+|                                          |
+|  Paris -- Rainy Chic                     |
+|  (font-family: Playfair Display, italic) |
+|  (color: #D4AF37, text-gold)            |
+|                                          |
+|  #EffortlessElegance  #CafeTerraces     |
+|  #MidnightStrolls                        |
+|                                          |
+|  [#2C3E50] [#8E7CC3] [#F5E6D3]          |
+|  [#C0392B] [#ECF0F1]                     |
+|  (컬러 스와치 원형, 24px)               |
+|                                          |
+|  Avoid: Bright neon athletic wear --     |
+|  it clashes with the city's understated  |
+|  elegance.                               |
+|                                          |
++------------------------------------------+
+```
+
+**무드 네이밍 예시 (vibeAgent 출력):**
+
+| 도시 | 무드 네이밍 | 바이브 태그 |
+|------|-------------|-------------|
+| Paris (June) | Rainy Chic | #EffortlessElegance #CafeTerraces #MidnightStrolls |
+| Tokyo (March) | Urban Minimal | #CleanLines #StreetCulture #CherryBlossom |
+| Bali (August) | Coastal Ease | #BarefootLuxury #TropicalBreeze #SunsetGold |
+| New York (October) | Street Edge | #ConcreteCool #LayerGame #GalleryHopping |
+| Barcelona (July) | Sun-Soaked Bold | #MediterraneanHeat #ColorPop #RooftopVibes |
+| London (November) | Understated Layer | #QuietLuxury #WoolAndTweed #RainyRefinement |
+| Rome (May) | Golden Hour | #DolceVita #WarmNeutrals #PiazzaEvenings |
+| Seoul (April) | Clean Contemporary | #K-MinimalChic #PastelTones #CafeHopping |
+
+**무드 네이밍 스타일 규칙:**
+
+- 폰트: Playfair Display, italic
+- 색상: `#D4AF37` (gold)
+- 형식: 항상 `"{City} -- {MoodName}"` (em dash 사용)
+- 길이: MoodName은 2~3 단어 이내
+
+---
+
+### 2-c. 캡슐 카운트 추정기 (CapsuleEstimator)
+
+capsuleAgent(Claude API)가 Free 단계에서 제공하는 경량 결과. 풀 캡슐 리스트는 결제 후에만 공개.
+
+**표시 내용:**
+
+| 요소 | 설명 | 예시 |
+|------|------|------|
+| 아이템 카운트 | 전체 캡슐에 필요한 의류 수 | "9 items cover your entire trip" |
+| 레이어링 3원칙 | 캡슐 구성의 핵심 원칙 3가지 | 아래 참조 |
+| 잠금 안내 | 풀 리스트는 결제 후 공개 | "Full list + daily plan -- unlock below" |
+
+**카드 UI 스펙:**
+
+```
++------------------------------------------+
+|  [PackageIcon]                           |
+|                                          |
+|  9 items cover your entire trip          |
+|  Paris (4 days) + Barcelona (3 days)     |
+|                                          |
+|  The 3 Capsule Principles:               |
+|  1. Neutral base, bold accent -- mix     |
+|     and match without clashing           |
+|  2. Each piece works in 3+ outfits --    |
+|     maximum versatility per item         |
+|  3. Layer for temperature swings --      |
+|     one jacket replaces two sweaters     |
+|                                          |
+|  --------------------------------        |
+|  [LockIcon] Full list + daily plan       |
+|             Unlock below                 |
++------------------------------------------+
+```
+
+**capsuleAgent Free 모드 프롬프트 (간략):**
+
+```
+Role: Travel capsule wardrobe advisor (estimate mode).
+Input: cities, days, climate data.
+Output: { itemCount: number, principles: string[3] }
+Do NOT generate the full item list. Only the count and 3 principles.
+```
+
+**아이템 카운트 산출 기준:**
+
+| 여행 일수 | 예상 아이템 수 | 비고 |
+|-----------|----------------|------|
+| 3~5일 | 8~10개 | 1 도시 |
+| 6~10일 | 10~12개 | 2~3 도시 |
+| 11~14일 | 12~15개 | 3~5 도시 |
+
+---
+
+### 2-d. 티저 이미지 2x2 (TeaserGrid)
+
+NanoBanana API로 **실제 생성하는 이미지는 1장만**. 나머지 3장은 동일 이미지에 CSS blur + tint overlay를 적용하여 비용을 최소화한다. 첫 번째 도시만 대상.
+
+**구성:**
+
+| 슬롯 | 처리 방식 | 표시 상태 |
+|-------|-----------|-----------|
+| `[0]` 좌상단 | NanoBanana 실제 생성 1장 | 선명 + 워터마크 ("TravelCapsule.com") |
+| `[1]` 우상단 | `[0]` 이미지 + CSS `blur(8px)` + `hue-rotate(15deg)` | 블러 + 틴트 + 🔒 아이콘 |
+| `[2]` 좌하단 | `[0]` 이미지 + CSS `blur(8px)` + `brightness(1.1) saturate(0.8)` | 블러 + 틴트 + 🔒 아이콘 |
+| `[3]` 우하단 | `[0]` 이미지 + CSS `blur(8px)` + `sepia(0.2)` | 블러 + 틴트 + 🔒 아이콘 |
+
+**비용 최적화 효과:**
+
+```
+Before (old spec): 4장 실제 생성 = 4x NanoBanana API call
+After (new spec):  1장 실제 생성 + 3장 CSS 변형 = 1x NanoBanana API call
+Cost savings:      75% per free preview
+```
+
+**워터마크 스펙:**
+
+- 텍스트: "TravelCapsule.com"
+- 위치: 이미지 우하단 (bottom: 8px, right: 8px)
+- 스타일: `font-size: 10px; color: rgba(255, 255, 255, 0.5); pointer-events: none;`
+- 선명 이미지 `[0]`에만 적용 (블러 이미지는 blur가 워터마크 역할)
+
+**teaserAgent 프롬프트 최적화:**
+
+```
+첫 번째 도시 + 가장 매력적인 시간대 (golden hour 선호) 기준으로 프롬프트 생성.
+NanoBanana: 768x1024, style: "editorial fashion photography", negative: "text, watermark, logo"
+```
+
+---
+
+## 3. 가격 플랜 상세
+
+### 플랜 비교표
+
+| | Standard | Pro | Annual |
+|---|---|---|---|
+| **가격** | **$5** (일회성) | **$12** (일회성) | **$29/년** (12회 제한) |
+| **월 환산** | - | - | **$2.42/month** |
+| **원가** | ~$0.10/trip | ~$0.30/trip | 최대 $3.60/년 |
+| **이미지** | 선명 4장 (블러 해제) | 전 도시 4~6장 **실제 생성** | Pro와 동일 |
+| **이미지 품질** | 표준 (768x1024) | **고화질** (1024x1536) | 고화질 |
+| **재생성** | 불가 | **1회 재생성** 가능 | 1회 재생성 |
+| **캡슐 리스트** | O | O | O |
+| **데일리 플랜** | O | O | O |
+| **결제 방식** | 단일 결제 | 단일 결제 | 연간 구독 |
+| **CTA 텍스트** | "Unlock Your {City} Looks" | "Get Pro -- Best Value" | 아래 참조 |
+| **CTA 스타일** | `bg-primary text-white` | `bg-primary text-white ring-2 ring-gold` | `bg-secondary text-white` |
+
+### Standard ($5)
+
+```
++------------------------------------------+
+|  Standard                                |
+|  $5                one-time              |
+|                                          |
+|  [check] 4 looks unlocked (blur removed) |
+|  [check] Complete capsule wardrobe list  |
+|  [check] Day-by-day outfit plan          |
+|                                          |
+|  [ Unlock Your Paris Looks ]             |
+|  (bg-primary text-white rounded-full)    |
++------------------------------------------+
+```
+
+**Standard 상세:**
+
+- 선명 이미지 4장: 티저 생성된 1장의 블러 해제 + 동일 이미지의 CSS 변형 3장 (실제 추가 생성 없음)
+- 캡슐 리스트: capsuleAgent full 모드 실행 (8~12개 아이템 상세)
+- 데일리 플랜: 날짜별 아웃핏 조합
+- CTA 동적 치환: `{City}`는 첫 번째 도시명으로 치환
+
+### Pro ($12)
+
+```
++------------------------------------------+
+|  Pro               [Best Value badge]    |
+|  $12               one-time              |
+|                                          |
+|  [check] All cities, 4-6 looks EACH     |
+|  [check] High-resolution images          |
+|  [check] 1x regeneration if unsatisfied  |
+|  [check] Complete capsule wardrobe list  |
+|  [check] Day-by-day outfit plan          |
+|                                          |
+|  [ Get Pro -- Best Value ]               |
+|  (bg-primary text-white ring-2 ring-gold |
+|   rounded-full)                          |
++------------------------------------------+
+```
+
+**Pro 상세:**
+
+- 전 도시 이미지: 도시별 4~6장 **실제 NanoBanana 생성** (최대 5 도시 x 6장 = 30장)
+- 고화질: 1024x1536 해상도
+- 1회 재생성: 결과 불만족 시 1회 전체 재생성 가능 (generation_jobs.attempts 리셋)
+- "Best Value" 배지: gold 배경 (#D4AF37) + white 텍스트
+- CTA에 `ring-2 ring-gold` 외곽선 추가로 시각적 강조
+
+### Annual ($29/년)
+
+```
++------------------------------------------+
+|  Annual                                  |
+|  $29/year          $2.42/month           |
+|                                          |
+|  [check] Everything in Pro               |
+|  [check] 12 trips per year               |
+|  [check] Priority generation queue       |
+|                                          |
+|  "For the traveler who never stops       |
+|   -- $2.42/month"                        |
+|                                          |
+|  [ Start Annual Plan ]                   |
+|  (bg-secondary text-white rounded-full)  |
++------------------------------------------+
+```
+
+**Annual 상세:**
+
+- Pro 혜택 전체 포함
+- 연간 12회 사용 제한: **서버사이드 `usage_records` 테이블에서 검증 필수**
+- 프론트엔드 단독 검증 절대 금지
+- 12회 초과 시: HTTP 429 반환 + 에러 메시지
+- 갱신 조건: 결제 전 명확히 표시 ("Renews annually. Cancel anytime.")
+
+**Annual 서버사이드 검증 로직:**
+
+```typescript
+// apps/worker/src/agents/orchestrator.ts
+async function checkAnnualLimit(email: string, env: Bindings): Promise<boolean> {
+  const { data } = await supabase
+    .from('usage_records')
+    .select('trip_count, period_start, period_end')
+    .eq('user_email', email)
+    .eq('plan', 'annual')
+    .gte('period_end', new Date().toISOString())
+    .single();
+
+  if (!data) return true; // No record = first use
+  return data.trip_count < 12;
+}
+
+// 초과 시 응답
+// HTTP 429
+// { "error": "Annual limit reached", "limit": 12, "used": 12, "renews_at": "2027-02-28T..." }
+```
+
+### 공통 소인
+
+모든 플랜 카드 하단에 표시:
+
+```
+"No subscription - Secure payment via Polar"
+```
+
+- Standard/Pro: 일회성 결제, 자동갱신 없음
+- Annual: 연간 구독이므로 "Renews annually. Cancel anytime." 추가 표시
+
+---
+
+## 4. 전환 심리 장치
+
+### 4-1. ProgressChecklist
+
+사용자의 진행 상태를 시각화하여 sunk cost 효과 + 완성 욕구를 자극하는 핵심 전환 장치.
+
+**4단계 체크리스트:**
+
+| 단계 | 텍스트 | 상태 UI | 조건 |
+|------|--------|---------|------|
+| 1 | `Weather analyzed for {cities}` | `pending` -> `loading` -> `done` | weatherAgent 완료 |
+| 2 | `City vibe matched -- {MoodName}` | `pending` -> `loading` -> `done` | vibeAgent 완료 |
+| 3 | `4 looks generated (1 unlocked)` | `pending` -> `loading` -> `done` | teaserAgent 완료 |
+| 4 | `Full capsule ({N} items) + Day-by-day plan` | `locked` (항상) | 결제 후에만 해제 |
+
+**각 상태별 UI 명세:**
+
+```
+[pending]  | [ ] 회색 원 + 회색 텍스트
+           | color: #9CA3AF (gray-400)
+           | font-weight: normal
+
+[loading]  | [spinner] 회전 애니메이션 + 텍스트 펄스
+           | color: #b8552e (primary)
+           | animation: pulse 1.5s infinite
+
+[done]     | [checkmark] 체크 아이콘 + 텍스트
+           | color: #059669 (emerald-600)
+           | font-weight: medium
+           | checkmark: Material Symbols "check_circle" filled
+
+[locked]   | [lock] 자물쇠 아이콘 + 텍스트
+           | color: #6B7280 (gray-500)
+           | background: #F3F4F6 (gray-100) padding
+           | icon: Material Symbols "lock" outlined
+```
+
+**단계 2 특수 스타일 (MoodName 강조):**
+
+```
+"City vibe matched -- "  (normal)
+"{MoodName}"             (font-family: Playfair Display, italic, color: #D4AF37)
+```
+
+**컴포넌트 Props 인터페이스:**
+
+```typescript
+interface ProgressChecklistProps {
+  steps: {
+    id: number;
+    text: string;
+    status: 'pending' | 'loading' | 'done' | 'locked';
+    highlight?: {
+      text: string;           // e.g., "Rainy Chic"
+      className: string;      // e.g., "font-serif italic text-gold"
+    };
+  }[];
+}
+```
+
+---
+
+### 4-2. 만료 카운트다운
+
+`trips.expires_at` 기준으로 실시간 카운트다운 표시. 시각적 urgency를 생성하되, 실제 만료 시 결과가 삭제되지는 않음 (soft expiry).
+
+**타이머 스펙:**
 
 | 속성 | 값 |
 |------|-----|
-| **레이아웃** | 도시별 그룹핑, 각 도시 3-4장 이미지 |
-| **이미지 사이즈** | 768 x 1024px (3:4 세로형) |
-| **그리드** | 데스크톱: 3열, 태블릿: 2열, 모바일: 1열 |
-| **이미지 소스** | R2 CDN (`{R2_PUBLIC_URL}/{key}`) |
-| **로딩** | Lazy loading (`loading="lazy"`) |
-| **포맷** | WebP 우선, JPEG 폴백 |
-| **무드 라벨** | 이미지 하단에 무드 태그 (예: "morning-exploration", "golden-hour-cafe") |
+| 형식 | `Expires in HH:MM:SS` |
+| 초기값 | trips 생성 시점 + 24시간 |
+| 갱신 간격 | 1초 (setInterval) |
+| 표시 위치 | TeaserGrid 상단 + PaywallModal 내부 |
+| 색상 | 2시간 이상: `text-gray-500`, 2시간 미만: `text-red-500` + pulse 애니메이션 |
+| 만료 시 | "Expired -- generate a new preview" + CTA 버튼 |
 
-#### 4.4.3 캡슐 워드로브 목록
-
-각 아이템 카드:
+**타이머 구현:**
 
 ```typescript
-interface CapsuleItemCard {
-  name: string;           // "White linen button-down shirt"
-  category: string;       // "top" | "bottom" | "outerwear" | "shoes" | "dress/jumpsuit" | "accessory"
-  why: string;            // "Breathable base layer for warm Mediterranean climates"
-  versatility_score: number; // 1-10, 시각적 프로그레스 바로 표시
+function useExpiresTimer(expiresAt: string) {
+  const [remaining, setRemaining] = useState<string>('');
+  const [isUrgent, setIsUrgent] = useState(false);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const diff = new Date(expiresAt).getTime() - Date.now();
+      if (diff <= 0) {
+        setRemaining('Expired');
+        clearInterval(interval);
+        return;
+      }
+      const hours = Math.floor(diff / 3600000);
+      const minutes = Math.floor((diff % 3600000) / 60000);
+      const seconds = Math.floor((diff % 60000) / 1000);
+      setRemaining(
+        `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+      );
+      setIsUrgent(diff < 7200000); // 2 hours
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiresAt]);
+
+  return { remaining, isUrgent };
 }
 ```
-
-**카테고리별 아이콘:**
-
-| 카테고리 | 아이콘 |
-|----------|--------|
-| top | 셔츠 아이콘 |
-| bottom | 바지 아이콘 |
-| outerwear | 재킷 아이콘 |
-| shoes | 신발 아이콘 |
-| dress/jumpsuit | 드레스 아이콘 |
-| accessory | 가방 아이콘 |
-
-#### 4.4.4 데일리 아웃핏 플랜
-
-```typescript
-interface DailyPlanCard {
-  day: number;      // 1, 2, 3, ...
-  city: string;     // "Paris"
-  outfit: string[]; // ["White linen shirt", "Navy chinos", "Leather sneakers"]
-  note: string;     // "Morning sightseeing to evening dinner"
-}
-```
-
-**표시 형식:**
-- 요일별 카드 (세로 스크롤)
-- 도시 전환 지점에 구분선 + 도시명 헤더
-- 각 아웃핏 아이템을 클릭하면 캡슐 워드로브 해당 아이템으로 스크롤
-
-#### 4.4.5 다운로드 기능
-
-| 기능 | 설명 |
-|------|------|
-| **개별 이미지 다운로드** | 각 이미지 우측 상단 다운로드 아이콘 |
-| **전체 다운로드** | ZIP 파일 (향후, 모든 이미지 + capsule-wardrobe.pdf) |
-| **파일명 규칙** | `travel-capsule-{city}-{mood}-{tripId}.webp` |
 
 ---
 
-### 4.5 Share Page
+### 4-3. 업셀 타이밍
 
-**구현 방식**: Result Gallery 페이지 내 공유 모달/섹션 + 별도 공유 미리보기 OG 메타 태그
+Standard 결제 webhook 처리 완료 직후 UpgradeModal을 표시한다. 아래 [5. Post-결제 업셀 스펙](#5-post-결제-업셀-스펙)에서 상세 기술.
 
-#### 4.5.1 바이럴 공유 카피
-
-**영어 (자동 생성):**
-```
-My AI-styled trip to Paris & Barcelona is ready!
-Check out my personalized capsule wardrobe and outfit plan.
-Get yours for just $5 at {share_url}
-```
-
-**한국어 (자동 생성):**
-```
-Paris & Barcelona 여행을 위한 AI 스타일링이 완성됐어요!
-나만을 위한 캡슐 워드로브와 데일리 아웃핏 플랜을 확인해보세요.
-단 $5로 나만의 여행 스타일링 받기: {share_url}
-```
-
-**카피 생성 로직** (`growthAgent.ts`):
-- 도시 1개: "My AI-styled trip to Paris is ready!"
-- 도시 2개: "My AI-styled trip to Paris & Barcelona is ready!"
-- 도시 3개: "My AI-styled trip to Paris, Barcelona & Tokyo is ready!"
-
-#### 4.5.2 UTM 링크 생성
+**타이밍 시퀀스:**
 
 ```
-Base URL: https://travelcapsule.ai/result/{tripId}
-UTM Parameters:
-  utm_source   = share
-  utm_medium   = user
-  utm_campaign = trip_share
-
-Result: https://travelcapsule.ai/result/{tripId}?utm_source=share&utm_medium=user&utm_campaign=trip_share
+1. Polar webhook (order.paid) 수신
+2. HMAC-SHA256 서명 검증
+3. orders 테이블 INSERT (plan: "standard")
+4. growthAgent: upgrade_token 생성 (HMAC, 3분 유효)
+5. 결과 페이지 로드 시 upgrade_token 포함하여 응답
+6. 클라이언트: UpgradeModal 즉시 표시
 ```
 
-**플랫폼별 추가 UTM:**
+---
 
-| 플랫폼 | utm_source | utm_medium |
-|--------|------------|------------|
-| Instagram | instagram | social |
-| Twitter/X | twitter | social |
-| KakaoTalk | kakao | social |
-| 링크 복사 | share | user |
+## 5. Post-결제 업셀 스펙
 
-#### 4.5.3 친구 할인 (2차 전환)
+### 트리거 조건
 
-| 요소 | 설명 |
+| 조건 | 값 |
+|------|-----|
+| 대상 | Standard 결제 완료 사용자만 |
+| 시점 | Polar webhook 처리 완료 직후, 결과 페이지 첫 로드 시 |
+| 횟수 | 1회만 (UpgradeModal dismiss 후 재표시 없음) |
+| Pro/Annual 결제자 | UpgradeModal 미표시, 바로 결과 |
+
+### UpgradeModal UI 스펙
+
+```
++--------------------------------------------------+
+|  (backdrop: bg-black/50 backdrop-blur-sm)        |
+|                                                  |
+|  +--------------------------------------------+ |
+|  |                                            | |
+|  |  Want the full picture?                    | |
+|  |  Upgrade to Pro -- just $7 more            | |
+|  |                                            | |
+|  |  [check] All cities, 4-6 real looks each   | |
+|  |  [check] High-resolution images            | |
+|  |  [check] 1x regeneration included          | |
+|  |                                            | |
+|  |  +--------------------------------------+  | |
+|  |  |                                      |  | |
+|  |  |  Expires in MM:SS                    |  | |
+|  |  |  (countdown, text-red-500 pulse)     |  | |
+|  |  |                                      |  | |
+|  |  +--------------------------------------+  | |
+|  |                                            | |
+|  |  [ Upgrade for $7 ]                        | |
+|  |  (bg-primary text-white rounded-full       | |
+|  |   w-full py-3 font-semibold)               | |
+|  |                                            | |
+|  |  No thanks                                 | |
+|  |  (ghost button, text-gray-400              | |
+|  |   text-sm underline)                       | |
+|  |                                            | |
+|  +--------------------------------------------+ |
+|                                                  |
++--------------------------------------------------+
+```
+
+### 업셀 카피
+
+| 요소 | 텍스트 |
+|------|--------|
+| 헤딩 | "Want the full picture?" |
+| 서브헤딩 | "Upgrade to Pro -- just $7 more" |
+| 혜택 체크리스트 | 1) "All cities, 4-6 real looks each"<br>2) "High-resolution images"<br>3) "1x regeneration included" |
+| CTA (primary) | "Upgrade for $7" |
+| CTA (dismiss) | "No thanks" |
+
+### 타이머 스펙
+
+| 속성 | 값 |
+|------|-----|
+| 형식 | `MM:SS` |
+| 초기값 | 3분 (03:00) |
+| 시각적 urgency | 항상 `text-red-500` + pulse 애니메이션 |
+| 실제 만료 | `upgrade_token` 3분 후 무효화 (서버사이드) |
+| 만료 시 UI | CTA 비활성화 + "Offer expired" 텍스트 |
+
+### upgrade_token 스펙
+
+| 속성 | 값 |
+|------|-----|
+| 생성 주체 | growthAgent |
+| 알고리즘 | HMAC-SHA256 |
+| 페이로드 | `{tripId}:{orderId}:{timestamp}` |
+| 시크릿 키 | `POLAR_WEBHOOK_SECRET` 재사용 |
+| 유효 시간 | 3분 (180초) |
+| 재사용 | 불가 (1회 사용 후 orders.upgrade_from에 기록) |
+
+**토큰 생성:**
+
+```typescript
+// apps/worker/src/agents/growthAgent.ts
+function generateUpgradeToken(
+  tripId: string,
+  orderId: string,
+  secret: string
+): string {
+  const timestamp = Math.floor(Date.now() / 1000);
+  const payload = `${tripId}:${orderId}:${timestamp}`;
+  const signature = hmacSHA256(payload, secret);
+  return btoa(`${payload}:${signature}`);
+}
+```
+
+**토큰 검증:**
+
+```typescript
+// POST /api/payment/upgrade
+function verifyUpgradeToken(token: string, secret: string): {
+  valid: boolean;
+  tripId?: string;
+  orderId?: string;
+} {
+  const decoded = atob(token);
+  const [tripId, orderId, timestamp, signature] = decoded.split(':');
+
+  // 3분 유효성 검사
+  const now = Math.floor(Date.now() / 1000);
+  if (now - parseInt(timestamp) > 180) {
+    return { valid: false }; // Expired
+  }
+
+  // HMAC 검증
+  const payload = `${tripId}:${orderId}:${timestamp}`;
+  const expected = hmacSHA256(payload, secret);
+  if (signature !== expected) {
+    return { valid: false }; // Invalid signature
+  }
+
+  return { valid: true, tripId, orderId };
+}
+```
+
+### orders 테이블 추적
+
+| 컬럼 | 용도 |
 |------|------|
-| **공유자 리워드** | "$1 off your next trip" (쿠폰 코드 생성, 향후) |
-| **수신자 혜택** | "Your friend styled their trip. Get yours for $5" |
-| **레퍼럴 트래킹** | UTM 파라미터 + 쿠폰 코드 기반 |
-| **2차 전환 CTA** | "Start My Trip" 버튼 (랜딩 페이지로 이동) |
+| `upgrade_from` | 원래 Standard 주문의 `order_id` (UUID). 업그레이드 건에만 값 존재. |
+| `plan` | 업그레이드 후 `"pro"`로 변경 |
+| `amount` | 추가 결제 금액: 700 (= $7.00) |
 
-#### 4.5.4 SNS 공유 버튼
+**orders 테이블 업그레이드 예시:**
 
 ```
-┌───────────────────────────────────────────┐
-│  Share your capsule wardrobe              │
-│                                           │
-│  [📋 Copy Link]                           │
-│                                           │
-│  [Instagram]  [Twitter/X]  [KakaoTalk]   │
-│                                           │
-│  Share & get $1 off your next trip!       │
-└───────────────────────────────────────────┘
+-- 원래 Standard 주문
+{ id: "order-1", plan: "standard", amount: 500, upgrade_from: null }
+
+-- 업그레이드 주문
+{ id: "order-2", plan: "pro", amount: 700, upgrade_from: "order-1", trip_id: (same) }
 ```
 
-| 플랫폼 | 공유 방식 | 설명 |
-|--------|-----------|------|
-| **링크 복사** | `navigator.clipboard.writeText(shareUrl)` | 토스트: "Link copied!" |
-| **Instagram** | Instagram Stories deep link (모바일) / 링크 복사 (데스크톱) | 세로형 이미지(768x1024) 최적화 |
-| **Twitter/X** | `https://twitter.com/intent/tweet?text={encodedText}&url={shareUrl}` | 프리필 카피 + URL |
-| **KakaoTalk** | Kakao JavaScript SDK `Kakao.Share.sendDefault()` | OG 메타 태그 기반 미리보기 |
+---
 
-**OG 메타 태그 (공유 시 미리보기):**
+## 6. 공유 루프 스펙
+
+### 공유 링크 구조
+
+```
+https://travelcapsule.com/share/{tripId}?utm_source=share&utm_medium=direct&utm_campaign={moodName}
+```
+
+| 파라미터 | 값 | 예시 |
+|----------|-----|------|
+| `tripId` | trips.id (UUID) | `a1b2c3d4-...` |
+| `utm_source` | 항상 `share` | `share` |
+| `utm_medium` | 공유 채널. 기본 `direct`, SNS별 동적 | `direct`, `instagram`, `twitter`, `kakao` |
+| `utm_campaign` | vibeAgent 생성 moodName (URL-safe 변환) | `rainy-chic`, `urban-minimal` |
+
+### 공유 페이지 (/share/{tripId})
+
+TeaserGrid와 동일한 구조를 재사용. 비결제 사용자에게도 티저 수준의 콘텐츠를 보여주고, "나도 만들기" CTA로 신규 유입을 유도한다.
+
+**페이지 구성:**
+
+```
++--------------------------------------------------+
+|  [TravelCapsule Logo]                            |
+|                                                  |
+|  {SharedUser}'s Travel Look                      |
+|  Paris -- Rainy Chic                             |
+|                                                  |
+|  +--------------------------------------------+ |
+|  |  TeaserGrid (2x2)                          | |
+|  |  [0] 선명   [1] blur+tint                  | |
+|  |  [2] blur   [3] blur+tint                  | |
+|  +--------------------------------------------+ |
+|                                                  |
+|  "See what AI styled for Paris in June"          |
+|                                                  |
+|  [ Create My Travel Capsule ]                    |
+|  (bg-primary text-white rounded-full w-full)     |
+|  -> / (랜딩 페이지 리다이렉트)                   |
+|                                                  |
++--------------------------------------------------+
+```
+
+### OG 메타태그
+
 ```html
-<meta property="og:title" content="My AI-Styled Trip to Paris & Barcelona" />
-<meta property="og:description" content="8-item capsule wardrobe + daily outfit plan, powered by AI. Get yours for $5." />
-<meta property="og:image" content="{first_image_url}" />
-<meta property="og:url" content="{share_url}" />
+<!-- /share/{tripId} -->
+<meta property="og:title" content="Paris -- Rainy Chic | TravelCapsule" />
+<meta property="og:description" content="AI-styled travel looks for Paris in June. Get yours for $5." />
+<meta property="og:image" content="https://assets.travelcapsule.com/{tripId}/teaser-og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:url" content="https://travelcapsule.com/share/{tripId}" />
 <meta property="og:type" content="website" />
 <meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Paris -- Rainy Chic | TravelCapsule" />
+<meta name="twitter:description" content="AI-styled travel looks for Paris in June." />
+<meta name="twitter:image" content="https://assets.travelcapsule.com/{tripId}/teaser-og.jpg" />
+```
+
+**OG 이미지 생성:**
+
+- 소스: 티저 이미지 `[0]` (선명 1장)
+- 리사이즈: 1200x630 (OG 표준)
+- 오버레이: 무드 네이밍 텍스트 + TravelCapsule 로고
+- 저장: R2 `{tripId}/teaser-og.jpg`
+- 생성 시점: teaserAgent 완료 직후 (fulfillmentAgent 담당)
+
+### 소셜 카피 3종
+
+growthAgent가 vibeAgent 결과를 기반으로 3개 채널용 카피를 자동 생성한다.
+
+#### Instagram
+
+```
+My AI travel stylist just nailed it.
+
+Paris -- Rainy Chic
+9 items, 7 days, zero packing stress.
+
+Get yours: {link}
+
+#TravelCapsule #TravelStyle #PackSmart #ParisStyle #CapsuleWardrobe
+```
+
+- 형식: 줄바꿈 활용, 해시태그 5~7개
+- 필수 해시태그: `#TravelCapsule`
+- utm_medium: `instagram`
+
+#### Twitter/X
+
+```
+Thread: How AI packed my Paris trip in 9 items
+
+1/ Just tried @TravelCapsule for my June Paris trip. It analyzed the weather (24C days, 14C nights, 35% rain chance) and created a capsule wardrobe.
+
+2/ The vibe? "Rainy Chic" -- think effortless layers, muted tones, linen blazers.
+
+3/ 9 items. 7 days. Every piece works in 3+ outfits. Mind = blown.
+
+Try it: {link}
+```
+
+- 형식: 스레드 구조 (3~4 파트)
+- 필수 멘션: `@TravelCapsule`
+- utm_medium: `twitter`
+
+#### Kakao (카카오톡)
+
+```
+나 이번 파리 여행 AI 스타일리스트한테 코디 받았는데 대박이야
+
+"Paris -- Rainy Chic" 무드로 9개 아이템이면 7일 다 커버됨
+
+너도 해봐! {link}
+```
+
+- 형식: 친구 대화체
+- 한국어 전용
+- utm_medium: `kakao`
+
+### 공유 루프 흐름
+
+```
+결과 페이지
+    |
+    v  "Share Your {City} {MoodName} Look" 버튼
+    |
+    +-> [링크 복사] -> 클립보드 복사 + "Copied!" 토스트
+    +-> [Instagram] -> 카피 클립보드 복사 + 인스타 앱 열기 안내
+    +-> [Twitter/X] -> intent URL: https://twitter.com/intent/tweet?text={encoded_copy}&url={share_url}
+    +-> [카카오톡] -> Kakao JS SDK share (link message)
+    |
+    v  공유 링크 클릭 (신규 유저)
+    |
+    v  /share/{tripId} (TeaserGrid + "나도 만들기" CTA)
+    |
+    v  / (랜딩 페이지) -> 신규 퍼널 시작
 ```
 
 ---
 
-## 5. Worker API 엔드포인트 목록 (Worker API Endpoints)
+## 7. API 엔드포인트 명세
 
-**Base URL**: `https://api.travelcapsule.ai` (Cloudflare Workers)
-**CORS**: `https://travelcapsule.ai`, `https://www.travelcapsule.ai`
-**Content-Type**: `application/json` (달리 명시하지 않는 한)
+모든 엔드포인트는 Cloudflare Workers (Hono) 기반. Base URL: `https://api.travelcapsule.com`
 
 ---
 
-### 5.1 `POST /api/trips` -- 새 여행 생성
+### GET /api/health
 
-새로운 여행 세션을 생성하고 Supabase `trips` 테이블에 저장한다.
+서버 상태 확인.
 
 **Request:**
 
+```
+GET /api/health
+```
+
+**Response (200):**
+
 ```json
 {
-  "session_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+  "ok": true,
+  "timestamp": "2026-02-28T12:00:00.000Z"
+}
+```
+
+**에러 케이스:** 없음 (항상 200 반환).
+
+---
+
+### POST /api/preview
+
+Free 프리뷰 생성. Turnstile 검증 필수. IP + session_id 기준 일 5회 제한.
+
+**Request:**
+
+```
+POST /api/preview
+Content-Type: application/json
+```
+
+```json
+{
   "cities": [
-    { "name": "Paris", "country": "France", "days": 4, "lat": 48.8566, "lon": 2.3522 },
-    { "name": "Barcelona", "country": "Spain", "days": 3, "lat": 41.3874, "lon": 2.1686 }
+    {
+      "name": "Paris",
+      "country": "France",
+      "days": 4,
+      "lat": 48.856614,
+      "lon": 2.352222
+    },
+    {
+      "name": "Barcelona",
+      "country": "Spain",
+      "days": 3,
+      "lat": 41.385064,
+      "lon": 2.173404
+    }
   ],
-  "month": 9,
-  "face_url": "https://assets.travelcapsule.ai/faces/tmp/uuid.jpg"
+  "month": 6,
+  "faceUrl": "r2://tmp/abc123.jpg",
+  "turnstileToken": "cf-turnstile-response-xxx",
+  "sessionId": "sess_abc123"
 }
 ```
 
-| 필드 | 타입 | 필수 | 검증 규칙 |
-|------|------|------|-----------|
-| `session_id` | `string` | 필수 | 비어있지 않은 문자열, 128자 이하 |
-| `cities` | `CityInput[]` | 필수 | 비어있지 않은 배열, 최대 10개 |
-| `month` | `number` | 필수 | 정수, 1-12 |
-| `face_url` | `string` | 선택 | 유효한 URL, 512자 이하 |
+**Request Body Schema:**
 
-**Response (201):**
+| 필드 | 타입 | 필수 | 제약 |
+|------|------|------|------|
+| `cities` | `CityInput[]` | O | 1~5개, 각 city에 name/country/days/lat/lon |
+| `cities[].name` | `string` | O | 도시명 |
+| `cities[].country` | `string` | O | 국가명 |
+| `cities[].days` | `number` | O | 1~30 |
+| `cities[].lat` | `number` | O | -90 ~ 90 |
+| `cities[].lon` | `number` | O | -180 ~ 180 |
+| `month` | `number` | O | 1~12 |
+| `faceUrl` | `string` | X | R2 임시 경로 |
+| `turnstileToken` | `string` | O | Cloudflare Turnstile 응답 토큰 |
+| `sessionId` | `string` | O | 클라이언트 생성 세션 ID |
 
-```json
-{
-  "trip_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "status": "pending"
-}
-```
-
-**에러 케이스:**
-
-| HTTP | 조건 | 응답 |
-|------|------|------|
-| 400 | JSON 파싱 실패 | `{ "error": "Invalid JSON body" }` |
-| 400 | session_id 누락/빈값 | `{ "error": "session_id is required" }` |
-| 400 | session_id 128자 초과 | `{ "error": "session_id must be 128 characters or fewer" }` |
-| 400 | cities 빈 배열/미배열 | `{ "error": "cities must be a non-empty array" }` |
-| 400 | cities 10개 초과 | `{ "error": "A maximum of 10 cities per trip is allowed" }` |
-| 400 | month 범위 초과 | `{ "error": "month must be an integer 1-12" }` |
-| 400 | face_url 형식 오류 | `{ "error": "Invalid face_url" }` |
-| 500 | DB 저장 실패 | `{ "error": "Failed to create trip", "detail": "..." }` |
-
----
-
-### 5.2 `GET /api/trips/:tripId` -- 여행 상태 조회
-
-Trip 상태와 관련 데이터를 조회한다. `completed` 상태에서는 capsule_results도 포함한다.
-
-**Request:**
-
-```
-GET /api/trips/f47ac10b-58cc-4372-a567-0e02b2c3d479
-```
-
-| 파라미터 | 위치 | 타입 | 검증 |
-|----------|------|------|------|
-| `tripId` | path | UUID v4 | RFC-4122 UUID 형식 필수 |
-
-**Response (200) -- 처리 중:**
+**Response (200):**
 
 ```json
 {
-  "trip": {
-    "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-    "session_id": "a1b2c3d4-...",
-    "cities": [...],
-    "month": 9,
-    "status": "processing",
-    "created_at": "2026-02-28T10:00:00.000Z",
-    "updated_at": "2026-02-28T10:01:00.000Z"
-  },
-  "jobs": [
-    { "city": "Paris", "mood": "morning-exploration", "status": "completed", "image_url": "..." },
-    { "city": "Paris", "mood": "golden-hour-cafe", "status": "processing", "image_url": null },
-    { "city": "Barcelona", "mood": "local-market", "status": "pending", "image_url": null }
-  ]
-}
-```
-
-**Response (200) -- 완료:**
-
-```json
-{
-  "trip": {
-    "id": "f47ac10b-...",
-    "status": "completed",
-    ...
-  },
-  "capsule": {
-    "id": "...",
-    "trip_id": "f47ac10b-...",
-    "items": [
-      { "name": "White linen shirt", "category": "top", "why": "...", "versatility_score": 8 }
-    ],
-    "daily_plan": [
-      { "day": 1, "city": "Paris", "outfit": ["White linen shirt", "Navy chinos"], "note": "..." }
+  "tripId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "expiresAt": "2026-03-01T12:00:00.000Z",
+  "weather": [
+    {
+      "city": "Paris",
+      "month": 6,
+      "temp_min": 14,
+      "temp_max": 24,
+      "precipitation": 35,
+      "vibe_band": "warm",
+      "style_hint": "Light layers work best. A linen blazer handles both cafe and evening."
+    }
+  ],
+  "vibes": [
+    {
+      "city": "Paris",
+      "mood_name": "Rainy Chic",
+      "tags": ["#EffortlessElegance", "#CafeTerraces", "#MidnightStrolls"],
+      "palette": ["#2C3E50", "#8E7CC3", "#F5E6D3", "#C0392B", "#ECF0F1"],
+      "avoid": "Bright neon athletic wear -- it clashes with the city's understated elegance."
+    }
+  ],
+  "capsuleEstimate": {
+    "itemCount": 9,
+    "principles": [
+      "Neutral base, bold accent -- mix and match without clashing",
+      "Each piece works in 3+ outfits -- maximum versatility per item",
+      "Layer for temperature swings -- one jacket replaces two sweaters"
     ]
+  },
+  "teaser": {
+    "imageUrl": "https://assets.travelcapsule.com/a1b2c3d4/teaser-0.jpg",
+    "city": "Paris",
+    "moodName": "Rainy Chic"
   }
 }
 ```
 
 **에러 케이스:**
 
-| HTTP | 조건 | 응답 |
-|------|------|------|
-| 400 | UUID 형식 아님 | `{ "error": "Invalid trip ID" }` |
-| 404 | Trip 미존재 | `{ "error": "Trip not found" }` |
-| 500 | DB 조회 실패 | `{ "error": "Failed to fetch trip" }` |
+| HTTP | 코드 | 조건 | 응답 body |
+|------|------|------|-----------|
+| 400 | `INVALID_INPUT` | cities 누락, month 범위 초과 등 | `{"error": "Invalid input", "details": [...]}` |
+| 403 | `TURNSTILE_FAILED` | Turnstile 토큰 검증 실패 | `{"error": "Bot verification failed"}` |
+| 429 | `RATE_LIMIT_EXCEEDED` | IP+session 일 5회 초과 | `{"error": "Daily limit reached", "limit": 5, "resets_at": "..."}` |
+| 500 | `GENERATION_FAILED` | weatherAgent/vibeAgent/teaserAgent 실패 | `{"error": "Generation failed", "retry": true}` |
 
 ---
 
-### 5.3 `POST /api/uploads/face` -- 사진 업로드
+### POST /api/preview/email
 
-얼굴 사진을 R2에 업로드한다. 이미지 생성 완료 후 자동 삭제된다.
+이메일 캡처 + 무드 카드 이메일 발송 (Resend).
 
 **Request:**
 
 ```
-Content-Type: multipart/form-data
-
-Form field: file (binary)
+POST /api/preview/email
+Content-Type: application/json
 ```
-
-| 필드 | 타입 | 필수 | 검증 규칙 |
-|------|------|------|-----------|
-| `file` | `File` | 필수 | JPEG/PNG/WebP, 최대 10MB, 확장자-MIME 일치 |
-
-**Response (201):**
 
 ```json
 {
-  "face_url": "https://assets.travelcapsule.ai/faces/tmp/a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d.jpg"
+  "tripId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "email": "user@example.com"
 }
 ```
 
-**에러 케이스:**
+**Request Body Schema:**
 
-| HTTP | 조건 | 응답 |
-|------|------|------|
-| 400 | multipart 아님 | `{ "error": "Expected multipart/form-data" }` |
-| 400 | file 필드 누락 | `{ "error": "Missing file field" }` |
-| 413 | 10MB 초과 | `{ "error": "File too large. Maximum size is 10 MB." }` |
-| 415 | 미허용 형식 | `{ "error": "Only JPEG, PNG, WEBP are allowed" }` |
-| 415 | 확장자 불일치 | `{ "error": "File extension does not match declared content type" }` |
-
----
-
-### 5.4 `POST /api/checkout` -- 결제 링크 생성
-
-Polar Custom Checkout 세션을 생성하고 결제 URL을 반환한다.
-
-**Request:**
-
-```json
-{
-  "trip_id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
-  "customer_email": "user@example.com"
-}
-```
-
-| 필드 | 타입 | 필수 | 검증 규칙 |
-|------|------|------|-----------|
-| `trip_id` | `string` | 필수 | UUID v4 형식 |
-| `customer_email` | `string` | 선택 | RFC-5322 호환, 254자 이하 |
+| 필드 | 타입 | 필수 | 제약 |
+|------|------|------|------|
+| `tripId` | `string` (UUID) | O | 존재하는 trip ID |
+| `email` | `string` | O | 유효한 이메일 형식 |
 
 **Response (200):**
 
 ```json
 {
-  "checkout_url": "https://checkout.polar.sh/custom/...",
-  "checkout_id": "chk_..."
+  "ok": true,
+  "message": "Mood card sent to user@example.com"
 }
 ```
 
 **에러 케이스:**
 
-| HTTP | 조건 | 응답 |
-|------|------|------|
-| 400 | trip_id 누락 | `{ "error": "trip_id is required" }` |
-| 400 | UUID 형식 아님 | `{ "error": "trip_id must be a valid UUID" }` |
-| 400 | 이메일 형식 오류 | `{ "error": "customer_email must be a valid email address" }` |
-| 404 | Trip 미존재 | `{ "error": "Trip not found" }` |
-| 500 | DB 조회 실패 | `{ "error": "Failed to fetch trip" }` |
-| 502 | Polar API 에러 | `{ "error": "Failed to create checkout session" }` |
+| HTTP | 코드 | 조건 | 응답 body |
+|------|------|------|-----------|
+| 400 | `INVALID_EMAIL` | 이메일 형식 오류 | `{"error": "Invalid email format"}` |
+| 404 | `TRIP_NOT_FOUND` | tripId 미존재 | `{"error": "Trip not found"}` |
+| 500 | `EMAIL_SEND_FAILED` | Resend API 실패 | `{"error": "Failed to send email", "retry": true}` |
+
+**사이드이펙트:**
+
+- `email_captures` 테이블에 INSERT (tripId + email + captured_at)
+- Resend API로 무드 카드 이메일 발송
 
 ---
 
-### 5.5 `POST /api/webhooks/polar` -- Polar 웹훅 처리
+### POST /api/payment/checkout
 
-Polar 결제 완료 웹훅을 수신하여 주문을 기록하고 AI 파이프라인을 트리거한다.
+Polar 결제 세션 생성. checkout_url 반환.
 
 **Request:**
 
 ```
-Headers:
-  X-Polar-Signature: sha256=abc123...
+POST /api/payment/checkout
+Content-Type: application/json
+```
 
-Body (raw JSON):
+```json
 {
-  "type": "order.paid",
+  "tripId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "plan": "standard"
+}
+```
+
+**Request Body Schema:**
+
+| 필드 | 타입 | 필수 | 제약 |
+|------|------|------|------|
+| `tripId` | `string` (UUID) | O | 존재하는 trip ID, status="pending" |
+| `plan` | `"standard" \| "pro" \| "annual"` | O | 유효한 플랜명 |
+
+**Response (200):**
+
+```json
+{
+  "checkout_url": "https://checkout.polar.sh/xxx..."
+}
+```
+
+**Polar Checkout 생성 로직:**
+
+```typescript
+// plan -> Polar Product ID 매핑
+const productIds: Record<string, string> = {
+  standard: env.POLAR_PRODUCT_ID_STANDARD,
+  pro: env.POLAR_PRODUCT_ID_PRO,
+  annual: env.POLAR_PRODUCT_ID_ANNUAL,
+};
+
+// Polar API call
+const checkout = await fetch('https://api.polar.sh/v1/checkouts/custom', {
+  method: 'POST',
+  headers: {
+    'Authorization': `Bearer ${env.POLAR_ACCESS_TOKEN}`,
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    product_id: productIds[plan],
+    success_url: `https://travelcapsule.com/result/${tripId}?session_id=${sessionId}`,
+    metadata: { tripId, plan, sessionId },
+  }),
+});
+```
+
+**에러 케이스:**
+
+| HTTP | 코드 | 조건 | 응답 body |
+|------|------|------|-----------|
+| 400 | `INVALID_PLAN` | plan 값 오류 | `{"error": "Invalid plan. Must be standard, pro, or annual."}` |
+| 404 | `TRIP_NOT_FOUND` | tripId 미존재 | `{"error": "Trip not found"}` |
+| 409 | `ALREADY_PAID` | 이미 결제된 trip | `{"error": "Trip already paid"}` |
+| 429 | `ANNUAL_LIMIT` | Annual 12회 초과 | `{"error": "Annual limit reached", "limit": 12}` |
+| 500 | `CHECKOUT_FAILED` | Polar API 실패 | `{"error": "Failed to create checkout", "retry": true}` |
+
+---
+
+### POST /api/payment/webhook
+
+Polar 웹훅 수신. HMAC-SHA256 서명 검증 필수.
+
+**Request:**
+
+```
+POST /api/payment/webhook
+Content-Type: application/json
+Webhook-Id: msg_xxx
+Webhook-Timestamp: 1234567890
+Webhook-Signature: v1,base64signature...
+```
+
+```json
+{
+  "type": "checkout.updated",
   "data": {
-    "id": "ord_...",
-    "metadata": { "trip_id": "f47ac10b-..." },
-    "amount": 500,
-    "user": { "email": "user@example.com" }
+    "id": "polar_checkout_xxx",
+    "status": "succeeded",
+    "metadata": {
+      "tripId": "a1b2c3d4-...",
+      "plan": "standard",
+      "sessionId": "sess_abc123"
+    },
+    "customer_email": "user@example.com",
+    "amount": 500
   }
 }
 ```
 
 **서명 검증:**
-- HMAC-SHA256 (`POLAR_WEBHOOK_SECRET` 사용)
-- 포맷: `sha256={hex_digest}`
-- 타이밍 안전 비교 (constant-time comparison)
 
-**처리 흐름:**
-1. 서명 검증
-2. `order.paid` 이벤트 확인
-3. 멱등성 확인 (`polar_order_id` UNIQUE)
-4. `orders` 테이블에 기록
-5. `trips.status` → `processing`으로 변경
-6. `orchestrateTrip()` 비동기 실행 (`waitUntil`)
+```typescript
+// HMAC-SHA256 검증 (Polar Standard Webhooks)
+const webhookId = request.headers.get('webhook-id');
+const webhookTimestamp = request.headers.get('webhook-timestamp');
+const webhookSignature = request.headers.get('webhook-signature');
+
+const signedContent = `${webhookId}.${webhookTimestamp}.${body}`;
+const secret = base64Decode(env.POLAR_WEBHOOK_SECRET.replace('whsec_', ''));
+const expectedSignature = base64Encode(hmacSHA256(signedContent, secret));
+
+// webhook-signature는 "v1,{signature}" 형식
+const signatures = webhookSignature.split(' ').map(s => s.split(',')[1]);
+const isValid = signatures.some(sig => timingSafeEqual(sig, expectedSignature));
+
+if (!isValid) {
+  return c.json({ error: 'Invalid signature' }, 401);
+}
+```
 
 **Response (200):**
 
 ```json
-{ "received": true }
-```
-
-**멱등성 응답:**
-
-```json
-{ "received": true, "idempotent": true }
+{
+  "ok": true
+}
 ```
 
 **에러 케이스:**
 
-| HTTP | 조건 | 응답 |
-|------|------|------|
-| 401 | 서명 불일치 | `{ "error": "Invalid signature" }` |
-| 400 | JSON 파싱 실패 | `{ "error": "Invalid JSON" }` |
-| 400 | trip_id 누락 | `{ "error": "Missing trip_id in order metadata" }` |
-| 400 | trip_id UUID 아님 | `{ "error": "Invalid trip_id in order metadata" }` |
-| 500 | 주문 기록 실패 | `{ "error": "Failed to record order" }` |
+| HTTP | 코드 | 조건 | 응답 body |
+|------|------|------|-----------|
+| 401 | `INVALID_SIGNATURE` | HMAC 서명 불일치 | `{"error": "Invalid signature"}` |
+| 409 | `DUPLICATE_ORDER` | polar_order_id UNIQUE 위반 | `{"error": "Order already processed"}` |
+| 500 | `WEBHOOK_PROCESSING_FAILED` | DB/파이프라인 실패 | `{"error": "Webhook processing failed"}` |
+
+**사이드이펙트 (성공 시):**
+
+1. `orders` 테이블 INSERT
+2. `trips` 상태 -> `"processing"`
+3. Orchestrator 파이프라인 시작 (비동기)
+4. Standard 플랜인 경우 `upgrade_token` 생성
+5. Annual 플랜인 경우 `usage_records.trip_count` 증가
 
 ---
 
-### 5.6 `GET /api/trips/:tripId` (갤러리 결과 조회)
+### POST /api/payment/upgrade
 
-Trip이 `completed` 상태일 때 갤러리 결과를 포함하여 반환한다. (5.2와 동일 엔드포인트, status에 따라 응답 변화)
+Standard -> Pro 업그레이드. upgrade_token 검증 필수.
 
-**완료 시 추가 데이터:**
+**Request:**
+
+```
+POST /api/payment/upgrade
+Content-Type: application/json
+```
 
 ```json
 {
-  "trip": { "...": "...", "status": "completed" },
+  "tripId": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "upgradeToken": "base64encodedtoken..."
+}
+```
+
+**Request Body Schema:**
+
+| 필드 | 타입 | 필수 | 제약 |
+|------|------|------|------|
+| `tripId` | `string` (UUID) | O | 존재하는 trip ID, Standard 결제 완료 상태 |
+| `upgradeToken` | `string` | O | growthAgent 생성 HMAC 토큰, 3분 유효 |
+
+**Response (200):**
+
+```json
+{
+  "checkout_url": "https://checkout.polar.sh/yyy..."
+}
+```
+
+**에러 케이스:**
+
+| HTTP | 코드 | 조건 | 응답 body |
+|------|------|------|-----------|
+| 400 | `INVALID_TOKEN` | 토큰 형식 오류 | `{"error": "Invalid upgrade token"}` |
+| 403 | `TOKEN_EXPIRED` | 3분 초과 | `{"error": "Upgrade offer expired"}` |
+| 404 | `TRIP_NOT_FOUND` | tripId 미존재 | `{"error": "Trip not found"}` |
+| 409 | `ALREADY_UPGRADED` | 이미 Pro로 업그레이드됨 | `{"error": "Already upgraded to Pro"}` |
+| 500 | `UPGRADE_FAILED` | Polar API 실패 | `{"error": "Upgrade checkout failed", "retry": true}` |
+
+---
+
+### GET /api/result/:tripId
+
+결제 확인 후 전체 결과 반환. 결제 미완료 시 403.
+
+**Request:**
+
+```
+GET /api/result/a1b2c3d4-e5f6-7890-abcd-ef1234567890?session_id=sess_abc123
+```
+
+**Query Parameters:**
+
+| 파라미터 | 타입 | 필수 | 설명 |
+|----------|------|------|------|
+| `session_id` | `string` | O | 세션 ID (RLS 검증용) |
+
+**Response (200):**
+
+```json
+{
+  "trip": {
+    "id": "a1b2c3d4-...",
+    "cities": [{"name": "Paris", "days": 4}, {"name": "Barcelona", "days": 3}],
+    "month": 6,
+    "status": "completed"
+  },
+  "order": {
+    "plan": "standard",
+    "amount": 500
+  },
+  "images": [
+    {
+      "city": "Paris",
+      "moodName": "Rainy Chic",
+      "url": "https://assets.travelcapsule.com/a1b2c3d4/paris-0.jpg",
+      "prompt": "..."
+    }
+  ],
   "capsule": {
-    "trip_id": "...",
     "items": [
       {
-        "name": "White linen button-down shirt",
-        "category": "top",
-        "why": "Breathable base layer for warm Mediterranean climates",
-        "versatility_score": 8
+        "name": "Linen Blazer",
+        "category": "outerwear",
+        "why": "Handles 10C+ temperature swings between day and night",
+        "versatility_score": 9
       }
     ],
     "daily_plan": [
       {
         "day": 1,
         "city": "Paris",
-        "outfit": ["White linen shirt", "Navy chinos", "Leather sneakers"],
-        "note": "Morning sightseeing to cafe lunch"
+        "outfit": ["Linen Blazer", "White Tee", "Dark Jeans"],
+        "note": "Cafe-hopping day. Blazer for evening cooling."
       }
     ]
+  },
+  "share": {
+    "url": "https://travelcapsule.com/share/a1b2c3d4?utm_source=share&utm_medium=direct&utm_campaign=rainy-chic",
+    "copies": {
+      "instagram": "My AI travel stylist just nailed it...",
+      "twitter": "Thread: How AI packed my Paris trip...",
+      "kakao": "나 이번 파리 여행 AI 스타일리스트한테..."
+    }
+  },
+  "upgradeToken": "base64token..."
+}
+```
+
+> `upgradeToken`은 Standard 플랜 결제자에게만 포함. Pro/Annual은 `null`.
+
+**에러 케이스:**
+
+| HTTP | 코드 | 조건 | 응답 body |
+|------|------|------|-----------|
+| 403 | `NOT_PAID` | 결제 미완료 | `{"error": "Payment required"}` |
+| 404 | `TRIP_NOT_FOUND` | tripId 미존재 | `{"error": "Trip not found"}` |
+| 202 | `PROCESSING` | 아직 생성 중 | `{"error": "Still generating", "status": "processing", "progress": {...}}` |
+
+---
+
+### GET /api/share/:tripId
+
+공유용 티저 데이터 반환. 결제 여부와 무관하게 접근 가능.
+
+**Request:**
+
+```
+GET /api/share/a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Response (200):**
+
+```json
+{
+  "tripId": "a1b2c3d4-...",
+  "city": "Paris",
+  "moodName": "Rainy Chic",
+  "month": 6,
+  "teaser": {
+    "imageUrl": "https://assets.travelcapsule.com/a1b2c3d4/teaser-0.jpg"
+  },
+  "og": {
+    "title": "Paris -- Rainy Chic | TravelCapsule",
+    "description": "AI-styled travel looks for Paris in June. Get yours for $5.",
+    "image": "https://assets.travelcapsule.com/a1b2c3d4/teaser-og.jpg"
   }
 }
 ```
 
----
-
-### 5.7 `POST /api/trips/:tripId/process` -- AI 파이프라인 수동 트리거
-
-개발/관리자 용도. 결제된 Trip의 AI 파이프라인을 수동으로 실행한다.
-
-**Request:**
-
-```
-POST /api/trips/f47ac10b-58cc-4372-a567-0e02b2c3d479/process
-```
-
-**전제 조건**: `orders` 테이블에 해당 trip_id의 `status: paid` 레코드 존재
-
-**Response (200):**
-
-```json
-{
-  "trip_id": "f47ac10b-...",
-  "status": "processing"
-}
-```
-
 **에러 케이스:**
 
-| HTTP | 조건 | 응답 |
-|------|------|------|
-| 400 | UUID 형식 아님 | `{ "error": "Invalid trip ID" }` |
-| 402 | 결제 미완료 | `{ "error": "No paid order found for this trip" }` |
-| 500 | DB 조회 실패 | `{ "error": "Failed to check order status" }` |
+| HTTP | 코드 | 조건 | 응답 body |
+|------|------|------|-----------|
+| 404 | `TRIP_NOT_FOUND` | tripId 미존재 | `{"error": "Trip not found"}` |
 
 ---
 
-### 5.8 `GET /api/cities/search` -- 도시 검색 (Google Places 프록시)
+## 8. Rate Limit & Abuse Prevention
 
-Google Places Autocomplete API를 프록시하여 도시 검색 결과를 반환한다.
-클라이언트에서 직접 Google API를 호출하지 않아 API 키를 보호한다.
+### 8-1. Cloudflare Turnstile
 
-**Request:**
+| 항목 | 값 |
+|------|-----|
+| 적용 대상 | `POST /api/preview` 모든 요청 |
+| 검증 방식 | 서버사이드 Turnstile siteverify API 호출 |
+| 시크릿 키 | `CLOUDFLARE_TURNSTILE_SECRET_KEY` (Workers Secret) |
+| 사이트 키 | `NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY` (Pages Env) |
+| 로컬 개발 | `SKIP_TURNSTILE=true` (.env.local 전용) |
 
-```
-GET /api/cities/search?input=par
-```
+**서버사이드 검증:**
 
-| 파라미터 | 위치 | 타입 | 검증 규칙 |
-|----------|------|------|-----------|
-| `input` | query | string | 최소 2글자, 최대 100글자 |
-
-**Response (200):**
-
-```json
-{
-  "predictions": [
+```typescript
+// apps/worker/src/middleware/turnstile.ts
+async function verifyTurnstile(token: string, secret: string): Promise<boolean> {
+  const response = await fetch(
+    'https://challenges.cloudflare.com/turnstile/v0/siteverify',
     {
-      "place_id": "ChIJD7fiBh9u5kcRYJSMaMOCCwQ",
-      "description": "Paris, France",
-      "city": "Paris",
-      "country": "France"
-    },
-    {
-      "place_id": "...",
-      "description": "Paramaribo, Suriname",
-      "city": "Paramaribo",
-      "country": "Suriname"
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        secret,
+        response: token,
+      }),
     }
-  ]
+  );
+  const data = await response.json<{ success: boolean }>();
+  return data.success;
 }
 ```
 
-**에러 케이스:**
-
-| HTTP | 조건 | 응답 |
-|------|------|------|
-| 200 | 2글자 미만 | `{ "predictions": [] }` (빈 배열) |
-| 400 | 100글자 초과 | `{ "error": "Search query too long" }` |
-| 502 | Google API 에러 | `{ "error": "Google Places API error" }` |
-
----
-
-### 5.9 `GET /health` -- 헬스 체크
-
-Worker의 상태를 확인한다.
-
-**Response (200):**
+**실패 시 응답:**
 
 ```json
+// HTTP 403
 {
-  "status": "ok",
-  "timestamp": "2026-02-28T10:00:00.000Z"
+  "error": "Bot verification failed",
+  "code": "TURNSTILE_FAILED"
 }
 ```
 
 ---
 
-### API 엔드포인트 요약 표
+### 8-2. IP + Session Rate Limit
 
-| Method | Path | 설명 | 인증 |
+| 항목 | 값 |
+|------|-----|
+| 적용 대상 | `POST /api/preview` |
+| 제한 | 하루 5회 (IP + session_id 조합) |
+| 저장소 | Supabase (rate_limits 테이블) 또는 Workers KV |
+| 리셋 | UTC 0시 기준 일간 리셋 |
+| 카운트 키 | `{IP}:{session_id}:{YYYY-MM-DD}` |
+
+**검증 로직:**
+
+```typescript
+async function checkRateLimit(
+  ip: string,
+  sessionId: string,
+  env: Bindings
+): Promise<{ allowed: boolean; remaining: number; resetsAt: string }> {
+  const today = new Date().toISOString().split('T')[0];
+  const key = `${ip}:${sessionId}:${today}`;
+
+  // Supabase 또는 KV에서 카운트 조회
+  const count = await getRequestCount(key, env);
+
+  if (count >= 5) {
+    const tomorrow = new Date();
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    tomorrow.setUTCHours(0, 0, 0, 0);
+
+    return {
+      allowed: false,
+      remaining: 0,
+      resetsAt: tomorrow.toISOString(),
+    };
+  }
+
+  await incrementRequestCount(key, env);
+
+  return {
+    allowed: true,
+    remaining: 4 - count,
+    resetsAt: `${today}T24:00:00.000Z`,
+  };
+}
+```
+
+**초과 시 응답:**
+
+```json
+// HTTP 429
+{
+  "error": "Daily limit reached",
+  "code": "RATE_LIMIT_EXCEEDED",
+  "limit": 5,
+  "remaining": 0,
+  "resets_at": "2026-03-01T00:00:00.000Z"
+}
+```
+
+---
+
+### 8-3. Annual 12회 서버사이드 검증
+
+| 항목 | 값 |
+|------|-----|
+| 적용 대상 | Annual 플랜 사용자의 `POST /api/preview` + `POST /api/payment/checkout` |
+| 제한 | 구독 기간당 12회 |
+| 저장소 | Supabase `usage_records` 테이블 |
+| 카운트 필드 | `usage_records.trip_count` |
+| 기간 필드 | `usage_records.period_start` ~ `usage_records.period_end` |
+| 검증 위치 | **서버사이드만** (프론트엔드 단독 검증 절대 금지) |
+
+**usage_records 테이블 구조:**
+
+```sql
+CREATE TABLE IF NOT EXISTS usage_records (
+  id           UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_email   TEXT        NOT NULL,
+  plan         TEXT        NOT NULL DEFAULT 'annual' CHECK (plan = 'annual'),
+  trip_count   INTEGER     NOT NULL DEFAULT 0,
+  period_start TIMESTAMPTZ NOT NULL,
+  period_end   TIMESTAMPTZ NOT NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(user_email, period_start)
+);
+```
+
+**검증 로직:**
+
+```typescript
+async function checkAnnualLimit(
+  email: string,
+  env: Bindings
+): Promise<{ allowed: boolean; used: number; limit: number; renewsAt: string }> {
+  const now = new Date().toISOString();
+
+  const { data } = await supabase
+    .from('usage_records')
+    .select('trip_count, period_end')
+    .eq('user_email', email)
+    .eq('plan', 'annual')
+    .gte('period_end', now)
+    .order('period_end', { ascending: false })
+    .limit(1)
+    .single();
+
+  if (!data) {
+    // No active annual subscription found
+    return { allowed: false, used: 0, limit: 12, renewsAt: '' };
+  }
+
+  if (data.trip_count >= 12) {
+    return {
+      allowed: false,
+      used: 12,
+      limit: 12,
+      renewsAt: data.period_end,
+    };
+  }
+
+  return {
+    allowed: true,
+    used: data.trip_count,
+    limit: 12,
+    renewsAt: data.period_end,
+  };
+}
+```
+
+**초과 시 응답:**
+
+```json
+// HTTP 429
+{
+  "error": "Annual limit reached",
+  "code": "ANNUAL_LIMIT",
+  "limit": 12,
+  "used": 12,
+  "renews_at": "2027-02-28T00:00:00.000Z"
+}
+```
+
+---
+
+### 8-4. upgrade_token 보안
+
+| 항목 | 값 |
+|------|-----|
+| 적용 대상 | `POST /api/payment/upgrade` |
+| 알고리즘 | HMAC-SHA256 |
+| 유효 시간 | 3분 (180초) |
+| 재사용 | 불가 (1회 사용 후 orders.upgrade_from에 기록) |
+| 위변조 방지 | 서버사이드 HMAC 검증 |
+
+**보안 체크리스트:**
+
+- [x] 토큰 생성: HMAC-SHA256, `POLAR_WEBHOOK_SECRET` 키 사용
+- [x] 페이로드: `{tripId}:{orderId}:{timestamp}` (예측 불가)
+- [x] 만료 검증: `timestamp + 180 < now` -> 거부
+- [x] 서명 검증: HMAC 재계산 후 timing-safe 비교
+- [x] 재사용 방지: 업그레이드 완료 시 `orders.upgrade_from` 기록, 이후 동일 tripId 업그레이드 거부
+- [x] 대상 검증: Standard 결제자만 (Pro/Annual 업그레이드 시도 거부)
+
+---
+
+### Rate Limit 요약표
+
+| 보호 계층 | 대상 | 제한 | 저장소 | 초과 시 HTTP |
+|-----------|------|------|--------|-------------|
+| Turnstile | `/api/preview` | 봇 차단 | Cloudflare | 403 |
+| IP+Session | `/api/preview` | 일 5회 | Supabase / KV | 429 |
+| Annual | `/api/preview`, `/api/payment/checkout` | 기간당 12회 | Supabase `usage_records` | 429 |
+| upgrade_token | `/api/payment/upgrade` | 3분 1회 | HMAC 검증 | 403 |
+| Polar HMAC | `/api/payment/webhook` | 서명 불일치 차단 | 서버사이드 검증 | 401 |
+
+---
+
+## Appendix: DB 스키마 참조
+
+전체 스키마는 `supabase/migrations/001_initial_schema.sql`에 정의되어 있다.
+
+### 테이블 요약
+
+| 테이블 | 용도 | RLS |
+|--------|------|-----|
+| `trips` | 세션별 여행 데이터 | anon: session_id 매칭 SELECT/INSERT |
+| `orders` | Polar 결제 기록 | anon 접근 불가 (Service Role Only) |
+| `generation_jobs` | 이미지 생성 작업 추적 | anon: trip의 session_id 매칭 SELECT |
+| `capsule_results` | 캡슐 워드로브 + 데일리 플랜 | anon: trip의 session_id 매칭 SELECT |
+| `city_vibes` | 30개 도시 참조 데이터 | 모든 사용자 공개 읽기 |
+| `weather_cache` | 날씨 캐시 (24h TTL) | Service Role Only |
+| `email_captures` | 이메일 수집 기록 | Service Role Only |
+| `usage_records` | Annual 사용 횟수 추적 | Service Role Only |
+
+### 추가 필요 컬럼 (기존 스키마 대비)
+
+| 테이블 | 컬럼 | 타입 | 용도 |
 |--------|------|------|------|
-| `GET` | `/health` | 헬스 체크 | 없음 |
-| `POST` | `/api/trips` | 새 여행 생성 | 없음 (session 기반) |
-| `GET` | `/api/trips/:tripId` | 여행 상태/결과 조회 | 없음 (session 기반) |
-| `POST` | `/api/uploads/face` | 얼굴 사진 업로드 | 없음 |
-| `POST` | `/api/checkout` | Polar 결제 세션 생성 | 없음 |
-| `POST` | `/api/webhooks/polar` | Polar 웹훅 처리 | HMAC-SHA256 서명 |
-| `POST` | `/api/trips/:tripId/process` | AI 파이프라인 수동 트리거 | 결제 확인 (orders) |
-| `GET` | `/api/cities/search` | 도시 검색 (Google Places 프록시) | 없음 |
-
----
-
-## 6. 기능별 인수 기준 (Acceptance Criteria)
-
-### 6.1 도시 검색 기능
-
-- [ ] 사용자가 2글자 이상 입력하면 Google Places Autocomplete 결과가 300ms 이내에 표시된다
-- [ ] 검색 결과에 `city` (도시명)과 `country` (국가명)이 분리되어 표시된다
-- [ ] 결과에서 도시를 클릭하면 선택 목록에 추가되고 검색 필드가 초기화된다
-- [ ] 최대 3개 도시까지 추가할 수 있으며, 3개 도달 시 검색 필드가 비활성화된다
-- [ ] 이미 추가된 도시를 다시 선택하면 "This city is already added" 에러가 표시된다
-- [ ] 각 도시의 일수(days)를 1일 이상으로 설정할 수 있다
-- [ ] 도시 옆 X 버튼을 클릭하면 선택 목록에서 제거된다
-- [ ] Google Places API 에러 시 사용자에게 "City search unavailable" 메시지가 표시된다
-- [ ] API 키가 클라이언트에 노출되지 않는다 (Worker 프록시 경유 확인)
-- [ ] 입력 100자 초과 시 "Search query too long" 에러가 반환된다
-
-### 6.2 여행 폼 제출
-
-- [ ] 필수 필드(cities, month, email) 미입력 시 인라인 에러 메시지가 표시된다
-- [ ] 유효하지 않은 이메일 입력 시 "Please enter a valid email address" 에러가 표시된다
-- [ ] 사진 업로드 없이도 폼 제출이 가능하다 (선택 사항)
-- [ ] 사진 업로드 시 JPEG/PNG/WebP만 허용되며, 10MB 초과 파일은 거부된다
-- [ ] 사진 업로드 후 썸네일 미리보기가 표시되고 삭제 버튼이 작동한다
-- [ ] 폼 제출 시 `POST /api/trips` 호출이 성공하고 `trip_id`가 반환된다
-- [ ] `session_id`가 클라이언트에서 자동 생성되어 전송된다 (128자 이하 UUID)
-- [ ] cities 배열의 각 도시에 `name`, `country`, `days` 필드가 포함된다
-- [ ] month 값이 1-12 사이의 정수로 전송된다
-- [ ] 네트워크 에러 시 토스트 알림이 표시되고 재시도가 가능하다
-- [ ] 폼 제출 중 중복 제출이 방지된다 (버튼 비활성화)
-- [ ] 프로그레스 스텝 UI(Step 1/3, 2/3, 3/3)가 정상 작동한다
-
-### 6.3 AI 이미지 생성
-
-- [ ] Trip 생성 후 Climate Agent가 각 도시의 기후 데이터를 Open-Meteo에서 조회한다
-- [ ] 기후 조회 실패 시 폴백 데이터(temp_min: 15, temp_max: 22)가 사용된다
-- [ ] Style Agent가 도시별 3-4개의 패션 에디토리얼 프롬프트를 생성한다
-- [ ] 프롬프트에 도시 바이브, 기후, 무드가 반영된다
-- [ ] ImageGen Agent가 NanoBanana API를 통해 768x1024 이미지를 생성한다
-- [ ] 이미지 생성 실패 시 최대 3회 재시도(지수 백오프: 1s, 2s, 4s)가 수행된다
-- [ ] 얼굴 사진이 제공된 경우 `face_preservation_strength: 0.8`로 얼굴 보존 생성이 수행된다
-- [ ] 이미지 생성 동시성이 2로 제한된다 (과부하 방지)
-- [ ] 각 generation_job의 상태가 `pending` → `processing` → `completed`/`failed`로 업데이트된다
-- [ ] generation_jobs에 `attempts` 카운트가 기록된다
-- [ ] 모든 이미지 생성 후 Capsule Agent가 8-12개 아이템 캡슐 워드로브를 생성한다
-- [ ] 캡슐 워드로브의 각 아이템에 `name`, `category`, `why`, `versatility_score`가 포함된다
-- [ ] 데일리 아웃핏 플랜이 여행 총 일수만큼 생성된다
-- [ ] 각 daily_plan에 `day`, `city`, `outfit`(아이템 배열), `note`가 포함된다
-- [ ] Negative prompt에 부적절한 콘텐츠 방지 키워드가 포함된다
-- [ ] AI 처리 전체 파이프라인이 5분 이내에 완료된다
-
-### 6.4 결제 처리
-
-- [ ] `POST /api/checkout`이 Polar Custom Checkout URL을 반환한다
-- [ ] 결제 금액이 $5(500 cents)로 고정된다
-- [ ] trip_id가 Polar metadata에 포함되어 Webhook에서 연결 가능하다
-- [ ] Polar Webhook(`order.paid`)이 HMAC-SHA256 서명 검증을 통과해야 처리된다
-- [ ] 서명이 유효하지 않으면 401 응답이 반환된다
-- [ ] `polar_order_id` UNIQUE 제약으로 중복 Webhook이 멱등적으로 처리된다
-- [ ] 중복 Webhook 수신 시 `{ "received": true, "idempotent": true }`가 반환된다
-- [ ] 결제 완료 후 `orders` 테이블에 `status: paid` 레코드가 생성된다
-- [ ] 결제 완료 후 자동으로 AI 파이프라인(`orchestrateTrip`)이 트리거된다
-- [ ] 파이프라인은 `waitUntil`로 비동기 실행되어 Webhook 응답이 즉시 반환된다
-- [ ] 존재하지 않는 trip_id로 결제 시도 시 404 에러가 반환된다
-- [ ] Polar API 에러 시 502 에러가 반환된다
-
-### 6.5 갤러리 접근
-
-- [ ] 결제 완료된 Trip의 갤러리 URL(`/result/{tripId}`)에 접근하면 모든 이미지가 표시된다
-- [ ] 이미지가 도시별로 그룹핑되어 표시된다
-- [ ] 각 이미지에 무드(mood) 라벨이 표시된다
-- [ ] 캡슐 워드로브 8-12개 아이템이 카드 형태로 표시된다
-- [ ] 각 아이템의 `name`, `category`, `why`, `versatility_score`가 모두 표시된다
-- [ ] versatility_score가 시각적 프로그레스 바(1-10)로 표시된다
-- [ ] 데일리 아웃핏 플랜이 요일별로 표시된다
-- [ ] 각 데일리 플랜에 도시, 아웃핏 아이템 목록, 활동 노트가 포함된다
-- [ ] 이미지가 R2 CDN에서 로드되며 lazy loading이 적용된다
-- [ ] 결제하지 않은 Trip의 갤러리 접근 시 Preview 페이지로 리다이렉트된다
-- [ ] 이메일에 포함된 갤러리 링크가 정상 작동한다
-- [ ] Fulfillment 완료 후 원본 얼굴 사진이 R2에서 삭제되고 DB face_url이 NULL이다
-- [ ] 이메일 발송 실패가 비치명적으로 처리된다 (로그만 기록, 파이프라인 계속 진행)
-
-### 6.6 공유 기능
-
-- [ ] 갤러리 페이지에 공유 버튼(링크 복사, Instagram, Twitter/X, KakaoTalk)이 표시된다
-- [ ] 공유 링크에 UTM 파라미터(`utm_source=share&utm_medium=user&utm_campaign=trip_share`)가 포함된다
-- [ ] "Copy Link" 버튼 클릭 시 UTM 링크가 클립보드에 복사되고 토스트 알림이 표시된다
-- [ ] Twitter/X 공유 시 프리필 카피와 URL이 포함된 트윗 작성 창이 열린다
-- [ ] 공유 카피가 영어/한국어 두 버전으로 생성된다
-- [ ] 도시 수에 따라 카피가 적절히 포맷팅된다 (1개: "to Paris", 2개: "to Paris & Barcelona", 3개: "to Paris, Barcelona & Tokyo")
-- [ ] OG 메타 태그가 설정되어 SNS 공유 시 이미지 미리보기가 표시된다
-- [ ] og:image에 첫 번째 생성 이미지 URL이 사용된다
-- [ ] 공유 링크로 접근한 신규 사용자가 랜딩 페이지를 볼 수 있다
-- [ ] UTM 파라미터가 Analytics에서 트래킹 가능하다
-
----
-
-## 부록: 상태 다이어그램
-
-### Trip 상태 전이
-
-```
-┌─────────┐     POST /api/trips     ┌──────────┐
-│  (없음)  │ ─────────────────────► │  pending  │
-└─────────┘                         └──────────┘
-                                         │
-                              Webhook order.paid OR
-                              POST /api/trips/:id/process
-                                         │
-                                         ▼
-                                    ┌────────────┐
-                                    │ processing  │
-                                    └────────────┘
-                                      │        │
-                            성공      │        │  실패
-                                      ▼        ▼
-                               ┌───────────┐  ┌────────┐
-                               │ completed  │  │ failed │
-                               └───────────┘  └────────┘
-```
-
-### Generation Job 상태 전이
-
-```
-┌─────────┐   Orchestrator   ┌────────────┐   성공   ┌───────────┐
-│ pending  │ ──────────────► │ processing  │ ───────► │ completed  │
-└─────────┘                  └────────────┘          └───────────┘
-                                    │
-                              3회 실패
-                                    │
-                                    ▼
-                              ┌────────┐
-                              │ failed │
-                              └────────┘
-```
-
-### Order 상태 전이
-
-```
-              Webhook order.paid      환불 요청 (향후)
-(생성됨) ──────────────────────► paid ───────────────► refunded
-```
+| `trips` | `expires_at` | `TIMESTAMPTZ` | 티저 만료 타이머 기준 (생성 + 24h) |
+| `orders` | `plan` | `TEXT CHECK (plan IN ('standard', 'pro', 'annual'))` | 결제 플랜 구분 |
+| `orders` | `upgrade_from` | `UUID REFERENCES orders(id)` | 업그레이드 원 주문 추적 |
+| `generation_jobs` | `job_type` | `TEXT CHECK (job_type IN ('teaser', 'full'))` | 티저 vs 전체 생성 구분 |
+| `city_vibes` | `mood_name` | `TEXT` | 무드 네이밍 캐시 |
