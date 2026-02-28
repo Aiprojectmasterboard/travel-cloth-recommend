@@ -498,14 +498,8 @@ export default function ResultClient({ tripId }: { tripId: string }) {
       const res = await fetch(`${WORKER_URL}/api/trips/${tripId}`)
       if (!res.ok) { setError(true); setLoading(false); return }
       const data: Trip = await res.json()
-      // Guard: unpaid/incomplete trips belong on the preview page
-      if (data.status !== 'completed' && data.status !== 'processing' && data.status !== 'pending') {
-        router.push(`/preview/${tripId}`)
-        return
-      }
-      // If the trip exists but has never been paid (still pending after load and not actively generating),
-      // send the user back to the preview/paywall page.
-      if (data.status === 'pending') {
+      // Unpaid trips (pending) and truly failed/expired trips belong on the preview page
+      if (data.status === 'pending' || data.status === 'failed') {
         router.push(`/preview/${tripId}`)
         return
       }
@@ -525,7 +519,7 @@ export default function ResultClient({ tripId }: { tripId: string }) {
     return () => { if (pollingRef.current) clearTimeout(pollingRef.current) }
   }, [fetchTrip])
 
-  const isProcessing = trip?.status === 'processing' || trip?.status === 'pending'
+  const isProcessing = trip?.status === 'processing'
 
   return (
     <>

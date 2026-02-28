@@ -313,7 +313,16 @@ export default function TripPage() {
       const startDate = overallStartDate
       const endDate = overallEndDate
 
+      // Persistent session_id for rate limiting (5 previews/day per session)
+      const SESSION_KEY = 'tc_session_id'
+      let sessionId = localStorage.getItem(SESSION_KEY)
+      if (!sessionId) {
+        sessionId = crypto.randomUUID()
+        localStorage.setItem(SESSION_KEY, sessionId)
+      }
+
       const preview = await apiPost<PreviewResponse>('/api/preview', {
+        session_id: sessionId,
         cities: citiesWithDays,
         month: getMonthFromDate(startDate),
         start_date: startDate,

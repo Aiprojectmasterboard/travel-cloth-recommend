@@ -15,6 +15,8 @@ import type { WeatherResult } from './weatherAgent';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface VibeResult {
+  /** City name — injected by orchestrator after generation */
+  city?: string;
   /** e.g. "Paris — Rainy Chic" */
   mood_label: string;
   /** e.g. "Rainy Chic" */

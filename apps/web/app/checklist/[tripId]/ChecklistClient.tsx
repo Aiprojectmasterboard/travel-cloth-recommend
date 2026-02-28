@@ -373,8 +373,13 @@ export default function ChecklistClient({ tripId }: { tripId: string }) {
         setLoading(false)
         return
       }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data: any = await res.json()
+      const data = await res.json() as {
+        cities?: TripData['cities']
+        month?: string
+        vibes?: Array<{ mood_name: string }>
+        weather?: TripData['weather']
+        capsule?: { items?: TripData['capsule_items'] }
+      }
       const mapped: TripData = {
         cities: data.cities ?? DEMO_TRIP.cities,
         month: data.month ?? DEMO_TRIP.month,

@@ -1,6 +1,6 @@
 name = "travel-capsule-worker"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
 [[r2_buckets]]
@@ -15,3 +15,4 @@ R2_ACCOUNT_ID = "d09f688bdaf93852268fe90bbfa41600"
 POLAR_PRODUCT_ID_STANDARD = "2388dd19-949d-401f-8db3-4102de13245e"
 POLAR_PRODUCT_ID_PRO = "95623aa3-5705-407d-9186-0ef019bff80e"
 POLAR_PRODUCT_ID_ANNUAL = "2d848fb2-ff79-40a6-b837-e0fce8779855"
+SKIP_TURNSTILE = "false"

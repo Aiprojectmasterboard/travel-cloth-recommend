@@ -279,7 +279,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                 color: 'var(--ink)',
                 lineHeight: 1.6,
                 resize: 'none',
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'Plus Jakarta Sans, sans-serif',
                 outline: 'none',
               }}
             />
@@ -309,7 +309,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   transition: 'opacity 0.15s, transform 0.15s',
                   fontSize: '0.75rem',
                   fontWeight: 500,
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
                 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.85'; (e.currentTarget as HTMLButtonElement).style.transform = 'translateY(-2px)' }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1'; (e.currentTarget as HTMLButtonElement).style.transform = '' }}
@@ -330,7 +330,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   background: 'var(--ink)', color: 'white',
                   border: 'none', borderRadius: 10,
                   fontSize: '0.88rem', fontWeight: 500,
-                  cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                  cursor: 'pointer', fontFamily: 'Plus Jakarta Sans, sans-serif',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                 }}
               >
@@ -349,7 +349,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   borderRadius: 10,
                   fontSize: '0.88rem', fontWeight: 500,
                   cursor: downloading ? 'wait' : 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'Plus Jakarta Sans, sans-serif',
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                   opacity: downloading ? 0.6 : 1,
                 }}
@@ -396,7 +396,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                 fontWeight: 500,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'Plus Jakarta Sans, sans-serif',
               }}
             >
               {t.share.referralBtn}

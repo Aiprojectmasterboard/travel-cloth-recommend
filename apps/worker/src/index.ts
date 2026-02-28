@@ -137,7 +137,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   '/api/*',
   cors({
-    origin: ['https://travelcapsule.com', 'http://localhost:3000'],
+    origin: ['https://travelcapsule.ai', 'https://travelcapsule.com', 'https://travelscapsule.com', 'http://localhost:3000'],
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
@@ -177,8 +177,8 @@ app.post('/api/preview', async (c) => {
   if (!session_id || typeof session_id !== 'string' || session_id.length > 128) {
     return c.json({ error: 'session_id is required (max 128 chars)' }, 400);
   }
-  if (!Array.isArray(cities) || cities.length === 0 || cities.length > 10) {
-    return c.json({ error: 'cities must be a non-empty array (max 10)' }, 400);
+  if (!Array.isArray(cities) || cities.length === 0 || cities.length > 5) {
+    return c.json({ error: 'cities must be a non-empty array (max 5)' }, 400);
   }
   if (typeof month !== 'number' || month < 1 || month > 12) {
     return c.json({ error: 'month must be 1–12' }, 400);
@@ -284,7 +284,7 @@ app.post('/api/preview/email', async (c) => {
   const teaserUrl = jobs[0]?.image_url ?? '';
 
   // Send mood card email via Resend
-  const galleryPreviewUrl = `https://travelcapsule.com/result/${trip_id}`;
+  const galleryPreviewUrl = `https://travelcapsule.ai/result/${trip_id}`;
   const emailHtml = buildMoodCardEmail(galleryPreviewUrl, teaserUrl);
 
   const emailRes = await fetch('https://api.resend.com/emails', {
@@ -360,7 +360,11 @@ app.post('/api/payment/checkout', async (c) => {
   const productId = polarProductId(typedPlan, c.env);
 
   // return_url: redirect to result page after successful payment
-  const returnUrl = `https://travelcapsule.com/result/${trip_id}`;
+  // Use the request Origin to support both travelcapsule.ai and travelscapsule.com
+  const reqOrigin = c.req.header('origin') ?? 'https://travelcapsule.ai';
+  const allowedOrigins = ['https://travelcapsule.ai', 'https://travelcapsule.com', 'https://travelscapsule.com'];
+  const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelcapsule.ai';
+  const returnUrl = `${returnBase}/result/${trip_id}`;
 
   const checkoutPayload: Record<string, unknown> = {
     // products array is the current non-deprecated field (product_id is deprecated)
@@ -535,7 +539,10 @@ app.post('/api/payment/upgrade', async (c) => {
   const standardOrder = orders[0];
 
   // Create Polar checkout for Pro upgrade
-  const upgradeReturnUrl = `https://travelcapsule.com/result/${trip_id}`;
+  const upgradeReqOrigin = c.req.header('origin') ?? 'https://travelcapsule.ai';
+  const upgradeAllowed = ['https://travelcapsule.ai', 'https://travelcapsule.com', 'https://travelscapsule.com'];
+  const upgradeBase = upgradeAllowed.includes(upgradeReqOrigin) ? upgradeReqOrigin : 'https://travelcapsule.ai';
+  const upgradeReturnUrl = `${upgradeBase}/result/${trip_id}`;
   const checkoutPayload = {
     products: [c.env.POLAR_PRODUCT_ID_PRO],
     metadata: {
@@ -576,6 +583,114 @@ app.post('/api/payment/upgrade', async (c) => {
 // ─────────────────────────────────────────────────────────────────────────────
 // Unified trip data for ResultClient. Requires paid order.
 // Returns trip + generation_jobs + capsule wardrobe + upgrade_token.
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/preview/:tripId
+// ─────────────────────────────────────────────────────────────────────────────
+// Returns free preview data for a trip (weather, vibe, teaser, free capsule).
+// No payment required. Used by PreviewClient when navigating to /preview/[tripId].
+
+app.get('/api/preview/:tripId', async (c) => {
+  const tripId = c.req.param('tripId');
+  if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
+
+  const [tripRows, jobRows] = await Promise.all([
+    supabase(c.env, `/trips?id=eq.${tripId}&limit=1`).then((r) =>
+      r.json() as Promise<Array<Record<string, unknown>>>
+    ),
+    supabase(
+      c.env,
+      `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser&status=eq.completed&select=city,image_url&limit=1`
+    ).then((r) => r.json() as Promise<Array<Record<string, unknown>>>),
+  ]);
+
+  if (tripRows.length === 0) return c.json({ error: 'Trip not found' }, 404);
+
+  const trip = tripRows[0];
+  const teaserJob = jobRows[0] ?? null;
+  const expiresAt = (trip.expires_at as string) ?? new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+
+  // Reconstruct vibes array — ensure city field is present
+  const rawVibes = Array.isArray(trip.vibe_data) ? (trip.vibe_data as Array<Record<string, unknown>>) : [];
+  const rawCities = Array.isArray(trip.cities) ? (trip.cities as Array<Record<string, unknown>>) : [];
+  const vibes = rawVibes.map((v, i) => ({
+    city: (v.city as string) ?? (rawCities[i]?.name as string) ?? '',
+    mood_name: (v.mood_name as string) ?? '',
+    mood_label: (v.mood_label as string) ?? '',
+    vibe_tags: Array.isArray(v.vibe_tags) ? v.vibe_tags : [],
+    color_palette: Array.isArray(v.color_palette) ? v.color_palette : [],
+    avoid_note: (v.avoid_note as string) ?? '',
+  }));
+
+  const weather = Array.isArray(trip.weather_data) ? trip.weather_data : [];
+  const capsuleFree = (trip.capsule_free as Record<string, unknown> | null) ?? { count: 10, principles: [] };
+
+  return c.json({
+    trip_id: tripId,
+    weather,
+    vibes,
+    teaser: {
+      city: (teaserJob?.city as string) ?? (rawCities[0]?.name as string) ?? '',
+      teaser_url: (teaserJob?.image_url as string) ?? '',
+      expires_at: expiresAt,
+      watermark: true,
+    },
+    capsule: capsuleFree,
+    expires_at: expiresAt,
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/upload-photo
+// ─────────────────────────────────────────────────────────────────────────────
+// Accepts multipart/form-data with a "photo" file field.
+// Uploads to R2 at a temp path, returns the face_url for use in /api/preview.
+// SECURITY: No public exposure — temp path is random UUID-keyed.
+
+app.post('/api/upload-photo', async (c) => {
+  const contentType = c.req.header('content-type') ?? '';
+  if (!contentType.includes('multipart/form-data')) {
+    return c.json({ error: 'Expected multipart/form-data' }, 400);
+  }
+
+  let formData: FormData;
+  try {
+    formData = await c.req.formData();
+  } catch {
+    return c.json({ error: 'Failed to parse form data' }, 400);
+  }
+
+  const photo = formData.get('photo');
+  // In Cloudflare Workers, File extends Blob — check for Blob to be safe
+  if (!photo || typeof photo === 'string') {
+    return c.json({ error: 'photo field required' }, 400);
+  }
+  const photoBlob = photo as Blob & { name?: string; type: string; size: number };
+
+  if (photoBlob.size > 5 * 1024 * 1024) {
+    return c.json({ error: 'Photo must be under 5MB' }, 400);
+  }
+
+  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  if (!allowed.includes(photoBlob.type)) {
+    return c.json({ error: 'Only JPEG, PNG, WebP allowed' }, 400);
+  }
+
+  const ext = photoBlob.type === 'image/png' ? 'png' : photoBlob.type === 'image/webp' ? 'webp' : 'jpg';
+  const key = `faces/temp-${crypto.randomUUID()}.${ext}`;
+
+  try {
+    const arrayBuffer = await photoBlob.arrayBuffer();
+    await c.env.R2.put(key, arrayBuffer, {
+      httpMetadata: { contentType: photoBlob.type },
+    });
+    const face_url = `${c.env.R2_PUBLIC_URL}/${key}`;
+    return c.json({ face_url });
+  } catch (err) {
+    console.error('[POST /api/upload-photo] R2 upload error:', (err as Error).message);
+    return c.json({ error: 'Upload failed' }, 500);
+  }
+});
 
 app.get('/api/trips/:tripId', async (c) => {
   const tripId = c.req.param('tripId');
@@ -652,7 +767,7 @@ app.get('/api/result/:tripId', async (c) => {
 
   if (trip.length === 0) return c.json({ error: 'Trip not found' }, 404);
 
-  const shareUrl = `https://travelcapsule.com/share/${tripId}?utm_source=share&utm_medium=direct`;
+  const shareUrl = `https://travelcapsule.ai/share/${tripId}?utm_source=share&utm_medium=direct`;
 
   return c.json({
     trip: trip[0],
@@ -673,7 +788,7 @@ app.get('/api/share/:tripId', async (c) => {
   if (!isValidUUID(tripId)) return c.json({ error: 'Invalid trip ID' }, 400);
 
   const [tripRows, jobRows] = await Promise.all([
-    supabase(c.env, `/trips?id=eq.${tripId}&select=id,cities,month,status&limit=1`).then(
+    supabase(c.env, `/trips?id=eq.${tripId}&select=id,cities,month,status,vibe_data&limit=1`).then(
       (r) => r.json() as Promise<Array<Record<string, unknown>>>
     ),
     supabase(
@@ -684,10 +799,25 @@ app.get('/api/share/:tripId', async (c) => {
 
   if (tripRows.length === 0) return c.json({ error: 'Trip not found' }, 404);
 
+  const trip = tripRows[0];
+  const teaserJob = jobRows[0] ?? null;
+  const vibes = Array.isArray(trip.vibe_data) ? (trip.vibe_data as Array<Record<string, unknown>>) : [];
+  const firstVibe = vibes[0];
+  const cities = Array.isArray(trip.cities) ? (trip.cities as Array<Record<string, unknown>>) : [];
+  const firstCity = (cities[0]?.name as string) ?? '';
+  const moodName = (firstVibe?.mood_label as string) ?? (firstVibe?.mood_name as string) ?? firstCity;
+  const ogTitle = `${moodName} | Travel Capsule AI`;
+  const ogDesc = `AI-generated travel outfit styling for ${firstCity}. See the full capsule wardrobe.`;
+  const shareUrl = `https://travelcapsule.ai/share/${tripId}?utm_source=share&utm_medium=direct`;
+
+  // Returns ShareResult shape as expected by ShareClient
   return c.json({
-    trip: tripRows[0],
-    teaser: jobRows[0] ?? null,
-    cta_url: `https://travelcapsule.com/result/${tripId}`,
+    trip_id: tripId,
+    share_url: shareUrl,
+    og_title: ogTitle,
+    og_description: ogDesc,
+    teaser_url: (teaserJob?.image_url as string) ?? '',
+    mood_name: moodName,
   });
 });
 

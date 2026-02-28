@@ -80,7 +80,7 @@ export async function submitPreview(
  * Enables future style update emails.
  */
 export async function submitEmail(tripId: string, email: string): Promise<void> {
-  await apiPost<{ ok: boolean }>('/api/email', { trip_id: tripId, email })
+  await apiPost<{ ok: boolean }>('/api/preview/email', { trip_id: tripId, email })
 }
 
 /**
@@ -90,7 +90,7 @@ export async function createCheckout(
   tripId: string,
   plan: 'standard' | 'pro' | 'annual'
 ): Promise<CheckoutResponse> {
-  return apiPost<CheckoutResponse>('/api/checkout', { trip_id: tripId, plan })
+  return apiPost<CheckoutResponse>('/api/payment/checkout', { trip_id: tripId, plan })
 }
 
 /**
@@ -107,7 +107,7 @@ export async function upgradeTrip(
   tripId: string,
   upgradeToken: string
 ): Promise<void> {
-  await apiPost<{ ok: boolean }>('/api/upgrade', {
+  await apiPost<{ ok: boolean }>('/api/payment/upgrade', {
     trip_id: tripId,
     upgrade_token: upgradeToken,
   })

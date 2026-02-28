@@ -243,10 +243,13 @@ export async function runPreview(
           style_hint: '',
         };
         try {
-          return await vibeAgent({ city: city.name, country: city.country, weather }, env);
+          const result = await vibeAgent({ city: city.name, country: city.country, weather }, env);
+          // Inject city field so downstream code (PreviewClient, GET endpoint) can use it
+          return { ...result, city: city.name };
         } catch (err) {
           console.warn(`[runPreview] Vibe failed for ${city.name}:`, (err as Error).message);
           return {
+            city: city.name,
             mood_label: `${city.name} — City Style`,
             mood_name: 'City Style',
             vibe_tags: ['versatile', 'travel-ready', 'stylish'],
@@ -304,9 +307,10 @@ export async function runPreview(
     // ── 6. Mark trip as completed (free stage) ───────────────────────────────
     await sbPatch(env, `/trips?id=eq.${trip_id}`, {
       status: 'completed',
-      // Store vibe data on trip row so runResult can use it without re-running vibeAgent
+      // Store preview data on trip row so GET /api/preview/:tripId and runResult can read it
       vibe_data: vibeResults,
       weather_data: weatherResults,
+      capsule_free: capsule,
     });
 
     console.log(`[runPreview] Free preview complete for trip ${trip_id}`);
@@ -377,7 +381,8 @@ export async function runResult(
             climate_band: 'warm' as const,
             style_hint: '',
           };
-          return vibeAgent({ city: city.name, country: city.country, weather }, env);
+          const r = await vibeAgent({ city: city.name, country: city.country, weather }, env);
+          return { ...r, city: city.name };
         })
       );
 
@@ -425,7 +430,7 @@ export async function runResult(
       mood: sp.mood,
       prompt: sp.prompt,
       status: 'pending',
-      job_type: 'pro',
+      job_type: 'full',
     }));
 
     let jobIds: Record<string, string> = {};
@@ -455,12 +460,8 @@ export async function runResult(
       env
     );
   } else {
-    // Standard plan: mark the teaser as "unblurred" (client uses this flag)
-    await sbFetch(env, `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser`, {
-      method: 'PATCH',
-      headers: { Prefer: 'return=minimal' },
-      body: JSON.stringify({ status: 'unblurred' }),
-    });
+    // Standard plan: teaser is already completed — no status change needed.
+    // The result page shows the teaser image directly once payment is verified via orders table.
   }
 
   // ── 4. Full capsule wardrobe ──────────────────────────────────────────────
@@ -493,7 +494,7 @@ export async function runResult(
   }
 
   // ── 5. Fulfillment (email + R2 cleanup) ──────────────────────────────────
-  const galleryUrl = `https://travelcapsule.com/result/${tripId}`;
+  const galleryUrl = `https://travelcapsule.ai/result/${tripId}`;
   await fulfillmentAgent({ tripId, email: userEmail, galleryUrl }, env);
 
   // ── 6. Growth (share copy + upgrade token) ────────────────────────────────
