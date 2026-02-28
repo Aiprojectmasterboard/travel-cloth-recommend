@@ -359,13 +359,19 @@ app.post('/api/payment/checkout', async (c) => {
   const typedPlan = plan as PlanType;
   const productId = polarProductId(typedPlan, c.env);
 
+  // return_url: redirect to result page after successful payment
+  const returnUrl = `https://travelcapsule.com/result/${trip_id}`;
+
   const checkoutPayload: Record<string, unknown> = {
-    product_id: productId,
+    // products array is the current non-deprecated field (product_id is deprecated)
+    products: [productId],
     metadata: { trip_id, plan: typedPlan },
+    return_url: returnUrl,
     ...(customer_email ? { customer_email } : {}),
   };
 
-  const polarRes = await fetch('https://api.polar.sh/v1/checkouts/custom/', {
+  // Use /v1/checkouts/ (not the legacy /v1/checkouts/custom/ endpoint)
+  const polarRes = await fetch('https://api.polar.sh/v1/checkouts/', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${c.env.POLAR_ACCESS_TOKEN}`,
@@ -528,17 +534,19 @@ app.post('/api/payment/upgrade', async (c) => {
 
   const standardOrder = orders[0];
 
-  // Create Polar checkout for Pro upgrade (charge the $2 difference via pro product)
+  // Create Polar checkout for Pro upgrade
+  const upgradeReturnUrl = `https://travelcapsule.com/result/${trip_id}`;
   const checkoutPayload = {
-    product_id: c.env.POLAR_PRODUCT_ID_PRO,
+    products: [c.env.POLAR_PRODUCT_ID_PRO],
     metadata: {
       trip_id,
       plan: 'pro',
       upgrade_from: standardOrder.polar_order_id,
     },
+    return_url: upgradeReturnUrl,
   };
 
-  const polarRes = await fetch('https://api.polar.sh/v1/checkouts/custom/', {
+  const polarRes = await fetch('https://api.polar.sh/v1/checkouts/', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${c.env.POLAR_ACCESS_TOKEN}`,

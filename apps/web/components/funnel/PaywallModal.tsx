@@ -49,7 +49,7 @@ const PLANS: Array<{
     id: 'annual',
     name: 'Annual',
     price: '$29',
-    period: '/ year',
+    period: '/ year · renews annually',
     badge: 'Best Value',
     features: [
       'All Pro features included',
@@ -214,18 +214,22 @@ export default function PaywallModal({ isOpen, onClose, tripId }: PaywallModalPr
         )}
 
         {/* Trust signals */}
-        <div className="px-6 pb-5 pt-1 flex items-center justify-center gap-3 flex-wrap text-xs text-[#9c8c7e]">
+        <div className="px-6 pb-2 pt-1 flex items-center justify-center gap-3 flex-wrap text-xs text-[#9c8c7e]">
           <span className="flex items-center gap-1">
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 0 00-8 0v4h8z" />
             </svg>
-            Secure checkout
+            Secure checkout via Polar
           </span>
           <span aria-hidden="true">·</span>
           <span>24h refund guarantee</span>
           <span aria-hidden="true">·</span>
-          <span>No subscription</span>
+          <span>Standard &amp; Pro: one-time charge</span>
         </div>
+        {/* Annual auto-renewal disclosure — required by Polar ToS */}
+        <p className="px-6 pb-5 text-center text-[10px] text-[#9c8c7e]/60 leading-relaxed">
+          Annual plan automatically renews at $29/year. Cancel at any time before renewal through your account settings. Standard and Pro plans are one-time payments with no auto-renewal.
+        </p>
       </div>
     </div>
   )
