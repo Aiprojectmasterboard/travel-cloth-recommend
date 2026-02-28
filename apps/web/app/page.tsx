@@ -44,6 +44,7 @@ export default function HomePage() {
   const { t } = useLanguage()
   const { user } = useAuth()
   const [scrolled, setScrolled] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   // CTA destination: /trip if logged in, /auth/login if not
   const ctaHref = user ? '/trip' : '/auth/login'
@@ -105,24 +106,79 @@ export default function HomePage() {
           </nav>
 
           {/* Right group */}
-          <div className="flex items-center gap-4 shrink-0">
-            <div className="hidden sm:block">
-              <LanguageSwitcher variant="dropdown" />
-            </div>
-            <div className="hidden sm:block">
-              <AuthButton />
-            </div>
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+            {/* Language switcher — always visible */}
+            <LanguageSwitcher variant="dropdown" />
+            {/* Auth button — always visible */}
+            <AuthButton />
+            {/* CTA — hidden on mobile (hero CTA is enough) */}
             <Link
               href={ctaHref}
-              className="bg-primary hover:bg-primary/90 text-cream text-xs font-bold tracking-widest uppercase py-3 px-5 transition-all"
+              className="hidden sm:inline-flex bg-primary hover:bg-primary/90 text-cream text-xs font-bold tracking-widest uppercase py-3 px-5 transition-all"
               aria-label={t.nav.cta}
             >
               {t.nav.cta}
             </Link>
+            {/* Hamburger — only mobile, for nav links */}
+            <button
+              className="flex md:hidden items-center justify-center w-9 h-9 text-secondary"
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </button>
           </div>
 
         </div>
       </header>
+
+      {/* Mobile nav drawer */}
+      {mobileMenuOpen && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-secondary/40 md:hidden"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <nav
+            className="fixed top-[65px] left-0 right-0 z-50 bg-cream border-b border-sand shadow-xl md:hidden"
+            aria-label="Mobile navigation"
+          >
+            <div className="px-6 py-5 flex flex-col gap-1">
+              {[
+                { label: t.nav.philosophy, href: '#weather' },
+                { label: t.nav.curations, href: '#blueprint' },
+                { label: t.nav.membership, href: '#guide' },
+              ].map(({ label, href }) => (
+                <a
+                  key={href}
+                  href={href}
+                  className="block py-3 text-sm font-medium tracking-widest uppercase text-secondary/70 hover:text-primary transition-colors border-b border-sand last:border-0"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  {label}
+                </a>
+              ))}
+              <Link
+                href={ctaHref}
+                className="mt-3 flex items-center justify-center bg-primary text-cream text-sm font-bold tracking-widest uppercase py-3.5 px-6 transition-all"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                {t.nav.cta}
+              </Link>
+            </div>
+          </nav>
+        </>
+      )}
 
       {/* ─── HERO ────────────────────────────────────────────────────────────── */}
       <section
@@ -153,7 +209,7 @@ export default function HomePage() {
           </div>
 
           {/* Heading */}
-          <h1 className="font-playfair text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-tight text-cream mb-6">
+          <h1 className="font-playfair text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-tight text-cream mb-6">
             {t.hero.heading1}
             <br />
             <em className="italic text-cream/90">{t.hero.heading2}</em>
@@ -190,7 +246,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
           {/* Left — image composition */}
-          <div className="relative">
+          <div className="relative pb-16 md:pb-10">
             {/* Main gray container with trench coat */}
             <div className="relative bg-[#E8E4DF] rounded-none overflow-hidden aspect-[4/5]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -202,7 +258,7 @@ export default function HomePage() {
             </div>
 
             {/* Floating weather card — top right */}
-            <div className="absolute top-6 -right-4 md:top-8 md:-right-6 bg-white shadow-xl p-4 min-w-[160px] z-10">
+            <div className="absolute top-4 right-2 md:top-8 md:-right-6 bg-white shadow-xl p-4 min-w-[160px] z-10">
               <p className="text-xs font-semibold text-secondary/50 uppercase tracking-widest mb-1">
                 {t.weather.forecastLabel}
               </p>
@@ -216,7 +272,7 @@ export default function HomePage() {
 
             {/* Bottom-left polaroid: cashmere */}
             <div
-              className="absolute -bottom-6 left-4 md:-bottom-8 md:left-0 bg-white shadow-lg p-2 z-10"
+              className="absolute bottom-0 left-4 md:-bottom-8 md:left-0 bg-white shadow-lg p-2 z-10"
               style={{ transform: 'rotate(-4deg)', width: 96 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -230,7 +286,7 @@ export default function HomePage() {
 
             {/* Bottom-right polaroid: leather bag */}
             <div
-              className="absolute -bottom-2 left-24 md:-bottom-4 md:left-28 bg-white shadow-lg p-2 z-10"
+              className="absolute bottom-2 left-24 md:-bottom-4 md:left-28 bg-white shadow-lg p-2 z-10"
               style={{ transform: 'rotate(3deg)', width: 88 }}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -299,7 +355,7 @@ export default function HomePage() {
           </div>
 
           {/* Masonry-style grid — 5 images + 1 CTA tile */}
-          <div className="grid grid-cols-3 grid-rows-2 gap-3 h-[520px] md:h-[600px]">
+          <div className="grid grid-cols-3 grid-rows-2 gap-3 h-[280px] sm:h-[400px] md:h-[520px] lg:h-[600px]">
 
             {/* Wool coat — tall left */}
             <div className="col-span-1 row-span-2 relative overflow-hidden bg-secondary group">
@@ -420,7 +476,7 @@ export default function HomePage() {
           </div>
 
           {/* Right — flat-lay photo + floating activity card */}
-          <div className="relative">
+          <div className="relative pb-20 md:pb-0">
             {/* Grayscale → color on hover flat-lay */}
             <div className="group relative overflow-hidden aspect-[4/5]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -432,7 +488,7 @@ export default function HomePage() {
             </div>
 
             {/* Floating activity card — bottom left */}
-            <div className="absolute -bottom-6 -left-4 md:-bottom-8 md:-left-6 bg-white shadow-xl p-5 z-10 min-w-[200px]">
+            <div className="absolute -bottom-4 left-0 md:-bottom-8 md:-left-6 bg-white shadow-xl p-5 z-10 min-w-[200px]">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-primary mb-1">
                 {t.guide.dayLabel}
               </p>
@@ -569,10 +625,10 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-xs text-secondary/40">{t.footer.copyright}</p>
             <div className="flex items-center gap-6">
-              <Link href="/" className="text-xs text-secondary/40 hover:text-primary transition-colors">
+              <Link href="/legal/privacy" className="text-xs text-secondary/40 hover:text-primary transition-colors">
                 {t.footer.privacy}
               </Link>
-              <Link href="/" className="text-xs text-secondary/40 hover:text-primary transition-colors">
+              <Link href="/legal/terms" className="text-xs text-secondary/40 hover:text-primary transition-colors">
                 {t.footer.terms}
               </Link>
             </div>
