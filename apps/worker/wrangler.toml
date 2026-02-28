@@ -3,30 +3,14 @@ main = "src/index.ts"
 compatibility_date = "2024-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-# ─── Plain Variables (non-secret) ────────────────────────────────────────────
-[vars]
-SUPABASE_URL                = "https://xxxx.supabase.co"
-R2_BUCKET_NAME              = "travel-capsule-assets"
-R2_PUBLIC_URL               = "https://assets.yourdomain.ai"
-POLAR_PRODUCT_ID_STANDARD   = "prod_xxxx"
-POLAR_PRODUCT_ID_PRO        = "prod_xxxx"
-POLAR_PRODUCT_ID_ANNUAL     = "prod_xxxx"
-
-# ─── R2 Bucket Binding ───────────────────────────────────────────────────────
-# Native R2 binding — no S3 credentials needed.
-# Create bucket first: `wrangler r2 bucket create travel-capsule-assets`
 [[r2_buckets]]
-binding     = "R2_BUCKET"
-bucket_name = "travel-capsule-assets"
+binding = "R2"
+bucket_name = "travel-capsule"
 
-# ─── Secrets (register via CLI) ──────────────────────────────────────────────
-# Run each command once, then secrets are stored in Cloudflare:
-#
-#   wrangler secret put ANTHROPIC_API_KEY
-#   wrangler secret put NANOBANANA_API_KEY
-#   wrangler secret put POLAR_ACCESS_TOKEN
-#   wrangler secret put POLAR_WEBHOOK_SECRET
-#   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
-#   wrangler secret put RESEND_API_KEY
-#   wrangler secret put GOOGLE_PLACES_API_KEY
-#   wrangler secret put CLOUDFLARE_TURNSTILE_SECRET_KEY
+[vars]
+SUPABASE_URL = ""
+R2_BUCKET_NAME = "travel-capsule"
+R2_PUBLIC_URL = ""
+POLAR_PRODUCT_ID_STANDARD = ""
+POLAR_PRODUCT_ID_PRO = ""
+POLAR_PRODUCT_ID_ANNUAL = ""
