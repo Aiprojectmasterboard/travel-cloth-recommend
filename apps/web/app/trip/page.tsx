@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
+import AuthButton from '@/components/AuthButton'
 import { useTurnstile } from '@/lib/turnstile'
 import { apiPost, uploadPhoto } from '@/lib/api'
 import type { CityInput, PreviewResponse } from '../../../../packages/types'
@@ -49,7 +50,7 @@ function DateSelect({
           return <option key={v} value={v}>{label}</option>
         })}
       </select>
-      <select value={dy} disabled={disabled || !mo} onChange={(e) => commit(yr, mo, e.target.value)} className={`${cls} w-16`}>
+      <select value={dy} disabled={disabled} onChange={(e) => commit(yr, mo, e.target.value)} className={`${cls} w-16`}>
         <option value="">Day</option>
         {Array.from({ length: daysCount }, (_, i) => {
           const d = String(i + 1).padStart(2, '0')
@@ -117,6 +118,7 @@ export default function TripPage() {
   // Step 1 — Cities with per-city dates
   const [cities, setCities] = useState<CityWithDates[]>([])
   const [cityInput, setCityInput] = useState('')
+  const [cityError, setCityError] = useState<string | null>(null)
   const [suggestions, setSuggestions] = useState<typeof CITY_DB>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
@@ -143,6 +145,7 @@ export default function TripPage() {
 
   function onCityInputChange(value: string) {
     setCityInput(value)
+    setCityError(null)
     if (value.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return }
     const q = value.toLowerCase()
     const filtered = CITY_DB.filter(
@@ -164,6 +167,7 @@ export default function TripPage() {
     if (cities.some((c) => c.name.toLowerCase() === s.city.toLowerCase())) return
     setCities((prev) => [...prev, buildNewCity(s.city, s.country, s.lat, s.lon)])
     setCityInput('')
+    setCityError(null)
     setSuggestions([])
     setShowSuggestions(false)
   }
@@ -171,9 +175,24 @@ export default function TripPage() {
   function addCityFreeText() {
     const name = cityInput.trim()
     if (!name || cities.length >= MAX_CITIES) return
-    if (cities.some((c) => c.name.toLowerCase() === name.toLowerCase())) return
-    setCities((prev) => [...prev, buildNewCity(name, '')])
+
+    // Validate against city DB — must match a known city
+    const match = CITY_DB.find(
+      (c) =>
+        c.city.toLowerCase() === name.toLowerCase() ||
+        c.city.toLowerCase().startsWith(name.toLowerCase())
+    )
+    if (!match) {
+      setCityError(`"${name}" is not a supported city. Please search and select from the list.`)
+      return
+    }
+    if (cities.some((c) => c.name.toLowerCase() === match.city.toLowerCase())) {
+      setCityError(`${match.city} is already added.`)
+      return
+    }
+    setCities((prev) => [...prev, buildNewCity(match.city, match.country, match.lat, match.lon)])
     setCityInput('')
+    setCityError(null)
     setSuggestions([])
     setShowSuggestions(false)
   }
@@ -309,27 +328,31 @@ export default function TripPage() {
           Travel <span className="italic text-[#b8552e]">Capsule</span> AI
         </a>
 
-        {/* Step indicator — 2 steps */}
-        <div className="flex items-center gap-2" aria-label="Form progress">
-          {([1, 2] as const).map((s) => (
-            <div
-              key={s}
-              className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
-                s < step
-                  ? 'bg-[#b8552e] text-white'
-                  : s === step
-                  ? 'bg-[#1A1410] text-white scale-110'
-                  : 'bg-[#1A1410]/10 text-[#1A1410]/40'
-              }`}
-              aria-current={s === step ? 'step' : undefined}
-            >
-              {s < step ? (
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-              ) : s}
-            </div>
-          ))}
+        {/* Right group: step indicator + auth button */}
+        <div className="flex items-center gap-3">
+          {/* Step indicator — 2 steps */}
+          <div className="flex items-center gap-2" aria-label="Form progress">
+            {([1, 2] as const).map((s) => (
+              <div
+                key={s}
+                className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold transition-all duration-300 ${
+                  s < step
+                    ? 'bg-[#b8552e] text-white'
+                    : s === step
+                    ? 'bg-[#1A1410] text-white scale-110'
+                    : 'bg-[#1A1410]/10 text-[#1A1410]/40'
+                }`}
+                aria-current={s === step ? 'step' : undefined}
+              >
+                {s < step ? (
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : s}
+              </div>
+            ))}
+          </div>
+          <AuthButton />
         </div>
       </header>
 
@@ -380,6 +403,15 @@ export default function TripPage() {
                     Add
                   </button>
                 </div>
+
+                {cityError && (
+                  <div className="mt-2 flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+                    <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {cityError}
+                  </div>
+                )}
 
                 {showSuggestions && (
                   <div className="absolute z-10 top-full mt-1 w-full bg-white rounded-xl border border-[#F5EFE6] shadow-lg overflow-hidden">

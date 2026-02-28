@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Playfair_Display, DM_Sans } from 'next/font/google'
 import Script from 'next/script'
 import { LanguageProvider } from '@/components/LanguageContext'
+import { AuthProvider } from '@/components/AuthProvider'
 import './globals.css'
 
 export const runtime = 'edge'
@@ -342,9 +343,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <LanguageProvider>
-        {children}
-        </LanguageProvider>
+        <AuthProvider>
+          <LanguageProvider>
+            {children}
+          </LanguageProvider>
+        </AuthProvider>
         {/* Userback — user feedback widget */}
         <Script
           id="userback-init"
