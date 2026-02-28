@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import AuthButton from '@/components/AuthButton'
 import ProgressChecklist from '@/components/funnel/ProgressChecklist'
 import WeatherCard from '@/components/funnel/WeatherCard'
 import VibeCard from '@/components/funnel/VibeCard'
@@ -80,12 +81,15 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
           >
             Travel <span className="italic text-[#b8552e]">Capsule</span> AI
           </a>
-          <button
-            onClick={() => setPaywallOpen(true)}
-            className="bg-[#b8552e] text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-[#a34828] transition-colors"
-          >
-            Unlock Full Results
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setPaywallOpen(true)}
+              className="bg-[#b8552e] text-white px-4 py-2 rounded-full text-sm font-semibold hover:bg-[#a34828] transition-colors"
+            >
+              Unlock Full Results
+            </button>
+            <AuthButton />
+          </div>
         </div>
       </header>
 

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import ShareModal from '@/components/ShareModal'
 import UpgradeModal from '@/components/funnel/UpgradeModal'
+import AuthButton from '@/components/AuthButton'
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
 
@@ -539,9 +540,7 @@ export default function ResultClient({ tripId }: { tripId: string }) {
             <a href="/" className="text-secondary hover:text-primary transition-colors text-sm font-medium">Home</a>
             <a href="/trip" className="text-secondary hover:text-primary transition-colors text-sm font-medium">New Trip</a>
           </nav>
-          <a href="/auth/login" className="flex items-center justify-center rounded-full h-10 px-6 bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-bold shadow-md shadow-primary/20">
-            Sign In
-          </a>
+          <AuthButton />
         </div>
         <button className="md:hidden text-secondary">
           <span className="material-symbols-outlined">menu</span>

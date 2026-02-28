@@ -5,12 +5,13 @@ compatibility_flags = ["nodejs_compat"]
 
 [[r2_buckets]]
 binding = "R2"
-bucket_name = "travel-capsule"
+bucket_name = "travelcapsule"
 
 [vars]
-SUPABASE_URL = ""
-R2_BUCKET_NAME = "travel-capsule"
-R2_PUBLIC_URL = ""
-POLAR_PRODUCT_ID_STANDARD = ""
-POLAR_PRODUCT_ID_PRO = ""
-POLAR_PRODUCT_ID_ANNUAL = ""
+SUPABASE_URL = "https://lmrrawhvjmuexajllint.supabase.co"
+R2_BUCKET_NAME = "travelcapsule"
+R2_PUBLIC_URL = "https://images.travelscapsule.com"
+R2_ACCOUNT_ID = "d09f688bdaf93852268fe90bbfa41600"
+POLAR_PRODUCT_ID_STANDARD = "2388dd19-949d-401f-8db3-4102de13245e"
+POLAR_PRODUCT_ID_PRO = "95623aa3-5705-407d-9186-0ef019bff80e"
+POLAR_PRODUCT_ID_ANNUAL = "2d848fb2-ff79-40a6-b837-e0fce8779855"

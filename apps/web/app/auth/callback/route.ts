@@ -6,6 +6,7 @@ import type { NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
+  const type = requestUrl.searchParams.get('type')
 
   // Validate redirect target against the known site URL to prevent open redirects.
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelcapsule.ai'
@@ -32,6 +33,11 @@ export async function GET(request: NextRequest) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (error) {
       return NextResponse.redirect(`${siteUrl}/auth/login?error=auth_failed`)
+    }
+
+    // Password recovery flow → redirect to account page with reset flag
+    if (type === 'recovery') {
+      return NextResponse.redirect(`${siteUrl}/account?reset=true`)
     }
   }
 

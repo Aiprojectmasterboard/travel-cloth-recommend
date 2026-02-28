@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useLanguage } from '@/components/LanguageContext'
 import LanguageSwitcher from '@/components/LanguageSwitcher'
+import AuthButton from '@/components/AuthButton'
 
 // ─── Image URLs (from code.html reference) ────────────────────────────────────
 
@@ -103,12 +104,9 @@ export default function HomePage() {
             <div className="hidden sm:block">
               <LanguageSwitcher variant="dropdown" />
             </div>
-            <Link
-              href="/auth/login"
-              className="hidden sm:block text-xs font-medium tracking-widest uppercase text-secondary/70 hover:text-primary transition-colors"
-            >
-              {t.nav.signIn}
-            </Link>
+            <div className="hidden sm:block">
+              <AuthButton />
+            </div>
             <Link
               href="/trip"
               className="bg-primary hover:bg-primary/90 text-cream text-xs font-bold tracking-widest uppercase py-3 px-5 transition-all"

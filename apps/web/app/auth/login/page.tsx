@@ -74,7 +74,7 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  const [mode, setMode] = useState<'signin' | 'signup'>('signin')
+  const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -105,6 +105,28 @@ export default function LoginPage() {
       setError('Could not connect to Google. Please try again.')
     } finally {
       setLoadingGoogle(false)
+    }
+  }
+
+  // ─── Forgot password ────────────────────────────────────────────────────
+
+  async function resetPassword() {
+    if (!email) { setError('Please enter your email address.'); return }
+    setLoadingEmail(true)
+    clearMessages()
+    try {
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin}/auth/callback?type=recovery`,
+      })
+      if (resetError) {
+        setError(resetError.message)
+      } else {
+        setMessage('reset-sent')
+      }
+    } catch {
+      setError('Failed to send reset email. Please try again.')
+    } finally {
+      setLoadingEmail(false)
     }
   }
 
@@ -153,7 +175,9 @@ export default function LoginPage() {
   }
 
   function handleSubmit() {
-    if (mode === 'signin') {
+    if (mode === 'forgot') {
+      resetPassword()
+    } else if (mode === 'signin') {
       signInWithEmail()
     } else {
       signUpWithEmail()
@@ -195,39 +219,44 @@ export default function LoginPage() {
               className="text-3xl font-bold italic text-[#1A1410] mb-1"
               style={{ fontFamily: 'Playfair Display, serif' }}
             >
-              {mode === 'signin' ? 'Welcome back.' : 'Create account.'}
+              {mode === 'forgot' ? 'Reset password.' : mode === 'signin' ? 'Welcome back.' : 'Create account.'}
             </h1>
             <p className="text-sm text-[#9c8c7e] mb-7">
-              {mode === 'signin'
-                ? 'Sign in to access your travel capsule'
-                : 'Join to start planning your travel wardrobe'}
+              {mode === 'forgot'
+                ? 'Enter your email to receive a reset link'
+                : mode === 'signin'
+                  ? 'Sign in to access your travel capsule'
+                  : 'Join to start planning your travel wardrobe'}
             </p>
 
-            {/* ─── Social buttons ─────────────────────────────────────────── */}
-            <div className="space-y-3 mb-6">
-              {/* Google */}
-              <button
-                onClick={signInWithGoogle}
-                disabled={anyLoading}
-                className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#b8552e] text-white text-sm font-semibold hover:bg-[#a34828] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label="Continue with Google"
-              >
-                {loadingGoogle ? (
-                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />
-                ) : (
-                  <GoogleIcon />
-                )}
-                Continue with Google
-              </button>
+            {/* ─── Social buttons (hidden in forgot mode) ────────────────── */}
+            {mode !== 'forgot' && (
+              <>
+                <div className="space-y-3 mb-6">
+                  {/* Google */}
+                  <button
+                    onClick={signInWithGoogle}
+                    disabled={anyLoading}
+                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#b8552e] text-white text-sm font-semibold hover:bg-[#a34828] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    aria-label="Continue with Google"
+                  >
+                    {loadingGoogle ? (
+                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                    ) : (
+                      <GoogleIcon />
+                    )}
+                    Continue with Google
+                  </button>
+                </div>
 
-            </div>
-
-            {/* ─── Divider ────────────────────────────────────────────────── */}
-            <div className="flex items-center gap-3 mb-6">
-              <div className="flex-1 h-px bg-[#F5EFE6]" />
-              <span className="text-xs text-[#9c8c7e] whitespace-nowrap">— or continue with email —</span>
-              <div className="flex-1 h-px bg-[#F5EFE6]" />
-            </div>
+                {/* ─── Divider ──────────────────────────────────────────────── */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="flex-1 h-px bg-[#F5EFE6]" />
+                  <span className="text-xs text-[#9c8c7e] whitespace-nowrap">— or continue with email —</span>
+                  <div className="flex-1 h-px bg-[#F5EFE6]" />
+                </div>
+              </>
+            )}
 
             {/* ─── Email form ──────────────────────────────────────────────── */}
             <div className="space-y-4" onKeyDown={handleKeyDown}>
@@ -254,15 +283,28 @@ export default function LoginPage() {
                 disabled={loadingEmail}
               />
 
-              <Field
-                label="Password"
-                type="password"
-                value={password}
-                onChange={setPassword}
-                placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                disabled={loadingEmail}
-              />
+              {mode !== 'forgot' && (
+                <Field
+                  label="Password"
+                  type="password"
+                  value={password}
+                  onChange={setPassword}
+                  placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
+                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                  disabled={loadingEmail}
+                />
+              )}
+
+              {mode === 'signin' && (
+                <div className="text-right">
+                  <button
+                    onClick={() => { setMode('forgot'); clearMessages() }}
+                    className="text-xs text-[#9c8c7e] hover:text-[#b8552e] transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* ─── Error / success messages ────────────────────────────────── */}
@@ -271,11 +313,14 @@ export default function LoginPage() {
                 {error}
               </p>
             )}
-            {message === 'check-email' && (
+            {(message === 'check-email' || message === 'reset-sent') && (
               <div className="mt-4 rounded-xl border border-[#F5EFE6] bg-[#FDF8F3] p-4" role="status">
                 <p className="text-sm font-semibold text-[#1A1410] mb-1">Check your email</p>
                 <p className="text-sm text-[#9c8c7e] leading-snug">
-                  We sent a confirmation link to <strong>{email}</strong>. You can close this tab and click the link in your email to complete signup.
+                  {message === 'reset-sent'
+                    ? <>We sent a password reset link to <strong>{email}</strong>. Click the link in your email to set a new password.</>
+                    : <>We sent a confirmation link to <strong>{email}</strong>. You can close this tab and click the link in your email to complete signup.</>
+                  }
                 </p>
                 <button
                   onClick={() => { setMode('signin'); setMessage(null) }}
@@ -285,7 +330,7 @@ export default function LoginPage() {
                 </button>
               </div>
             )}
-            {message && message !== 'check-email' && (
+            {message && message !== 'check-email' && message !== 'reset-sent' && (
               <p className="mt-4 text-sm text-[#9c8c7e] leading-snug" role="status">
                 {message}
               </p>
@@ -296,13 +341,15 @@ export default function LoginPage() {
               onClick={handleSubmit}
               disabled={anyLoading}
               className="mt-5 w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-[#b8552e] text-white text-sm font-semibold hover:bg-[#a34828] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              aria-label={mode === 'signin' ? 'Sign in' : 'Sign up'}
+              aria-label={mode === 'forgot' ? 'Send reset link' : mode === 'signin' ? 'Sign in' : 'Sign up'}
             >
               {loadingEmail ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />
-                  {mode === 'signin' ? 'Signing in…' : 'Creating account…'}
+                  {mode === 'forgot' ? 'Sending…' : mode === 'signin' ? 'Signing in…' : 'Creating account…'}
                 </>
+              ) : mode === 'forgot' ? (
+                'Send Reset Link'
               ) : mode === 'signin' ? (
                 'Sign In'
               ) : (
@@ -312,7 +359,17 @@ export default function LoginPage() {
 
             {/* ─── Mode toggle ─────────────────────────────────────────────── */}
             <p className="mt-5 text-center text-sm text-[#9c8c7e]">
-              {mode === 'signin' ? (
+              {mode === 'forgot' ? (
+                <>
+                  Remember your password?{' '}
+                  <button
+                    onClick={() => { setMode('signin'); clearMessages() }}
+                    className="font-semibold text-[#b8552e] hover:underline"
+                  >
+                    Sign in
+                  </button>
+                </>
+              ) : mode === 'signin' ? (
                 <>
                   Don&apos;t have an account?{' '}
                   <button
@@ -339,9 +396,9 @@ export default function LoginPage() {
           {/* ─── Trust badges ───────────────────────────────────────────────── */}
           <p className="mt-6 text-center text-xs text-[#9c8c7e]">
             By signing in, you agree to our{' '}
-            <a href="#" className="underline underline-offset-2 hover:text-[#1A1410]">Terms</a>
+            <a href="/legal/terms" className="underline underline-offset-2 hover:text-[#1A1410]">Terms</a>
             {' '}and{' '}
-            <a href="#" className="underline underline-offset-2 hover:text-[#1A1410]">Privacy Policy</a>.
+            <a href="/legal/privacy" className="underline underline-offset-2 hover:text-[#1A1410]">Privacy Policy</a>.
           </p>
         </div>
       </main>
