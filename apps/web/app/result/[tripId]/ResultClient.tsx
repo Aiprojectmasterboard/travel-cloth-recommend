@@ -377,12 +377,13 @@ function GalleryView({ trip, tripId }: { trip: Trip; tripId: string }) {
         <div className="max-w-2xl mx-auto">
           <h2 className="font-playfair text-3xl text-secondary mb-8">Ready to pack this capsule?</h2>
           <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => openShare()}
-              className="bg-primary text-white font-bold h-12 px-8 rounded-full hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
+            <a
+              href={`/checklist/${tripId}`}
+              className="bg-primary text-white font-bold h-12 px-8 rounded-full hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
             >
-              Generate Packing List
-            </button>
+              <span className="material-symbols-outlined !text-sm">checklist</span>
+              View Packing Checklist
+            </a>
             <button
               onClick={() => window.location.reload()}
               className="bg-transparent border border-secondary text-secondary font-bold h-12 px-8 rounded-full hover:bg-secondary hover:text-white transition-colors"
