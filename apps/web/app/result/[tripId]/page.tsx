@@ -11,15 +11,15 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { tripId } = await params
   return {
-    title: '여행 스타일 갤러리',
-    description: 'AI가 생성한 나만의 여행 코디 갤러리. Travel Capsule AI.',
+    title: 'My Travel Style Gallery',
+    description: 'My AI-generated travel outfit gallery. Travel Capsule AI.',
     robots: {
       index: false,
       follow: false,
     },
     openGraph: {
-      title: 'Travel Capsule AI — 여행 스타일 갤러리',
-      description: 'AI가 생성한 나만의 여행 코디 이미지를 확인해보세요.',
+      title: 'Travel Capsule AI — My Travel Style Gallery',
+      description: 'View my AI-generated travel outfit images.',
       url: `https://travelcapsule.ai/result/${tripId}`,
       type: 'website',
     },

@@ -34,24 +34,14 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
 
   title: {
-    default: 'Travel Capsule AI — AI 여행 코디 이미지 생성 | 캡슐 워드로브',
+    default: 'Travel Capsule AI — AI Travel Outfit Styling | Capsule Wardrobe',
     template: '%s | Travel Capsule AI',
   },
 
   description:
-    '여행지 날씨·분위기 분석으로 내 얼굴이 담긴 코디 이미지를 생성합니다. 파리·도쿄·로마·바르셀로나 등 전 세계 도시별 캡슐 워드로브 8–12개 + 데일리 아웃핏 플랜. 단 $5, 구독 없음.',
+    'AI analyzes your destination\'s weather and city vibe to generate personalized outfit images. Capsule wardrobe (8–12 items) + daily outfit plan for Paris, Tokyo, Rome, Barcelona and more. Just $5, no subscription.',
 
   keywords: [
-    // Korean keywords
-    'AI 여행 스타일링',
-    '여행 코디 이미지',
-    '캡슐 워드로브',
-    '여행 패션 AI',
-    '코디 추천',
-    '여행 옷 추천',
-    '파리 코디',
-    '도쿄 여행 패션',
-    // English keywords (GEO: global reach)
     'AI travel outfit',
     'travel capsule wardrobe',
     'AI fashion styling',
@@ -64,6 +54,9 @@ export const metadata: Metadata = {
     'city outfit planner',
     'AI outfit generator',
     'travel wardrobe planner',
+    'packing list AI',
+    'what to wear traveling',
+    'travel fashion AI',
   ],
 
   authors: [{ name: SITE_NAME, url: SITE_URL }],
@@ -87,7 +80,8 @@ export const metadata: Metadata = {
   alternates: {
     canonical: SITE_URL,
     languages: {
-      'ko-KR': SITE_URL,
+      'en': SITE_URL,
+      'ko-KR': `${SITE_URL}/ko`,
       'x-default': SITE_URL,
     },
   },
@@ -95,19 +89,19 @@ export const metadata: Metadata = {
   // ─── Open Graph ──────────────────────────────────────────────────────────────
   openGraph: {
     type: 'website',
-    locale: 'ko_KR',
-    alternateLocale: 'en_US',
+    locale: 'en_US',
+    alternateLocale: 'ko_KR',
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: 'Travel Capsule AI — AI 여행 코디 이미지 생성',
+    title: 'Travel Capsule AI — AI Travel Outfit Styling',
     description:
-      '내 사진으로 파리·도쿄·로마 등 여행지별 AI 코디 이미지를 생성하세요. 캡슐 워드로브 + 데일리 아웃핏 플랜 포함. $5/trip.',
+      'Generate AI outfit images for Paris, Tokyo, Rome and more. Capsule wardrobe + daily outfit plan. $5/trip.',
     images: [
       {
         url: '/og-image.png',
         width: 1200,
         height: 630,
-        alt: 'Travel Capsule AI — AI 여행 코디 이미지 생성',
+        alt: 'Travel Capsule AI — AI Travel Outfit Styling',
       },
     ],
   },
@@ -117,8 +111,8 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     site: '@travelcapsuleai',
     creator: '@travelcapsuleai',
-    title: 'Travel Capsule AI — AI 여행 코디 이미지 생성',
-    description: '내 사진으로 파리·도쿄·로마 AI 코디 이미지 생성. $5/trip, 구독 없음.',
+    title: 'Travel Capsule AI — AI Travel Outfit Styling',
+    description: 'AI outfit images for Paris, Tokyo, Rome and more. $5/trip, no subscription.',
     images: ['/og-image.png'],
   },
 
@@ -130,18 +124,13 @@ export const metadata: Metadata = {
 
   // ─── Additional meta (GEO geographic signals) ────────────────────────────────
   other: {
-    // Geographic meta tags — service origin is Korea, global target
-    'geo.region': 'KR',
-    'geo.placename': 'Seoul, South Korea',
-    'geo.position': '37.5665;126.9780',
-    ICBM: '37.5665, 126.9780',
     // Language / content signals
-    'DC.language': 'ko',
-    'DC.title': 'Travel Capsule AI — AI 여행 코디 이미지 생성',
+    'DC.language': 'en',
+    'DC.title': 'Travel Capsule AI — AI Travel Outfit Styling',
     'DC.description':
-      '여행지별 날씨·바이브 분석 AI 코디 이미지 생성. 캡슐 워드로브 + 데일리 플랜. $5/trip.',
+      'AI analyzes city weather and vibes to generate outfit images. Capsule wardrobe + daily plan. $5/trip.',
     // AI search engine (GEO: Generative Engine Optimization) signals
-    'content-language': 'ko',
+    'content-language': 'en',
     'revisit-after': '7 days',
     rating: 'general',
   },
@@ -183,9 +172,9 @@ const jsonLdOrganization = {
 const jsonLdProduct = {
   '@context': 'https://schema.org',
   '@type': 'Product',
-  name: 'Travel Capsule AI 여행 스타일링',
+  name: 'Travel Capsule AI — AI Travel Outfit Styling',
   description:
-    '여행지별 날씨·바이브 분석 → AI 코디 이미지 3–4장/도시 생성. 캡슐 워드로브 8–12개 + 데일리 아웃핏 플랜 포함. 파리·도쿄·로마·바르셀로나 등 전 세계 지원.',
+    'AI weather & vibe analysis → 3–4 outfit images per city. Capsule wardrobe (8–12 items) + daily outfit plan. Supports Paris, Tokyo, Rome, Barcelona and more worldwide.',
   brand: {
     '@type': 'Brand',
     name: SITE_NAME,
@@ -250,50 +239,50 @@ const jsonLdFaq = {
   mainEntity: [
     {
       '@type': 'Question',
-      name: '사진을 꼭 올려야 하나요?',
+      name: 'Do I have to upload a photo?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '아니요. 사진 없이도 AI 모델 기반으로 생성합니다. 단, 내 얼굴이 담긴 코디 이미지를 원하신다면 업로드를 추천해요.',
+        text: 'No. We can generate outfit images using an AI model without your photo. If you want outfit images featuring your own face, uploading a photo is recommended.',
       },
     },
     {
       '@type': 'Question',
-      name: '사진은 어떻게 처리되나요?',
+      name: 'What happens to my photo?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '이미지 생성에만 사용되며 생성 완료 후 서버에서 즉시 삭제됩니다. 외부 공유, 학습 활용 없습니다.',
+        text: 'Your photo is used only for image generation and deleted from our servers immediately after. It is never shared externally or used for AI training.',
       },
     },
     {
       '@type': 'Question',
-      name: '얼마나 걸리나요?',
+      name: 'How long does it take?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '결제 후 보통 2–4분 내에 완성됩니다. 도시 수가 많을수록 조금 더 걸릴 수 있어요.',
+        text: 'Typically 2–4 minutes after payment. The more cities you include, the slightly longer it may take.',
       },
     },
     {
       '@type': 'Question',
-      name: '도시 수에 제한이 있나요?',
+      name: 'How many cities can I add?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'MVP 기준 최대 5개 도시까지 가능합니다. 이 이상은 곧 지원 예정이에요.',
+        text: 'Up to 5 cities per trip. Support for more cities is coming soon.',
       },
     },
     {
       '@type': 'Question',
-      name: '환불이 되나요?',
+      name: 'Can I get a refund?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '생성된 이미지가 명백히 잘못된 경우 24시간 내 100% 환불해드립니다.',
+        text: 'If the generated images are clearly incorrect, we offer a 100% refund within 24 hours.',
       },
     },
     {
       '@type': 'Question',
-      name: '어떤 여행에도 맞나요?',
+      name: 'Does it work for any type of trip?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: '전 세계 도시 지원, 계절·기후·도시 바이브를 분석해 제안합니다. 비즈니스 트립, 허니문, 배낭여행 모두 OK.',
+        text: 'Yes — worldwide city coverage with seasonal climate and city vibe analysis. Works for business trips, honeymoons, backpacking, and more.',
       },
     },
     {
@@ -319,7 +308,7 @@ const jsonLdFaq = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ko" className={`${playfair.variable} ${dmSans.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${dmSans.variable}`}>
       <head>
         {/* JSON-LD Structured Data */}
         <script
