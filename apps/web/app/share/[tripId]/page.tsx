@@ -4,15 +4,16 @@ import ShareClient from './ShareClient'
 export const runtime = 'edge'
 
 export async function generateMetadata(
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> }
 ): Promise<Metadata> {
+  const { tripId } = await params
   return {
     title: 'My AI Travel Style — Travel Capsule AI',
     description: 'See my AI-curated travel outfit style. Create your own travel capsule wardrobe.',
     openGraph: {
       title: 'My Travel Capsule Style',
       description: 'AI-generated outfit styling for my trip. Create yours free.',
-      url: `https://travelcapsule.ai/share/${params.tripId}`,
+      url: `https://travelcapsule.ai/share/${tripId}`,
       type: 'website',
     },
     twitter: {
@@ -21,6 +22,7 @@ export async function generateMetadata(
   }
 }
 
-export default function SharePage({ params }: { params: { tripId: string } }) {
-  return <ShareClient tripId={params.tripId} />
+export default async function SharePage({ params }: { params: Promise<{ tripId: string }> }) {
+  const { tripId } = await params
+  return <ShareClient tripId={tripId} />
 }
