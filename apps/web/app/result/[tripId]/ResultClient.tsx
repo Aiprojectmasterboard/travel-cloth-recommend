@@ -2,11 +2,10 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import ShareModal from '@/components/ShareModal'
-import { useLanguage } from '@/components/LanguageContext'
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
 
-// ─── Types ───
+// ─── Types ─────────────────────────────────────────────────────────────────────
 
 interface GenerationJob {
   id: string
@@ -20,6 +19,8 @@ interface WardrobeItem {
   emoji: string
   name: string
   cities: string
+  category?: string
+  image_url?: string
 }
 
 interface DailyPlan {
@@ -41,612 +42,394 @@ interface Trip {
   created_at: string
 }
 
-// ─── Sub-components ───
+// ─── Demo images (from design reference) ──────────────────────────────────────
 
-function Spinner() {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4rem' }}>
-      <div
-        style={{
-          width: 48,
-          height: 48,
-          border: '3px solid var(--border)',
-          borderTopColor: 'var(--terracotta)',
-          borderRadius: '50%',
-          animation: 'spin 0.8s linear infinite',
-        }}
-      />
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  )
+const DEMO_OUTFIT_IMAGES = [
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAUkfJti7ncs3Fl2rfEcDXfgUzCOk19d5TmPElax6hp9uCN2ASSMW1GlpG4Y7Qjj1cmkrbcpPV2Q2GdGcLh0Ds3B95gGlIG3xpjZhQubc4vhKwrmIgzEeXceo4N0fOH_UBoSOfrMjpqYdLhHQbVl0KuL5NuJUBJRWIRVxg095dY3SQXbyKWZ4HBM1F6_81emm4gY_kbwhVjpSpH6HjsI4UxGoFTQz4dssuSE22WBdHGbmgIWlDoZ3oGeRVGYZWwVp2Wzbh_p7CwjQ',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAu15YAjFFK3tRmrnKHndUgC_QjkTTUkBlh4b6pg9ZV6v0uvwEPAdfIAuo5571YnV4IpkvU0YUN2QlB_B3I02Cv3z6H4x16Y3YPlWamtHd80VBWpMdxFTkjIy9oZAccBquOs5bgnNKP-RR9M4OnkPJQ2wP1z5glM4fcjM3IH1loz6ehtSpRnb-HmWh1cr0WjsRwgO4Okw1pD3VkhP5lVpRKlgaS3JZ-MTNVhtLn0_R4F7KVum7FRHPcaWXhubWbPAGIeIq07OEchQ',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAPiPONgmq89OGeIiLNBXwWqxlWnHBTBq2eHGGuIgQzHIq9la1irZg2kbL7v_Q_LGSuaImezkm_rdpipofdsn80CrxcEELE2rOvIZU4hUTmkcTsEm8SuTnGyt2HpDdO_mw4L5CrRWbRqXtC-uNs7vTcF0AGn6en2t8QTB8yVEZh_ekW-T6Qbl201cT9iq5gQgsY0cLXNtf1WLhgDiSWkww_dYLgEttnovDm4hspBJvvikgal9UFVXdCdt9vAiyzDj6-yRl8_iDIow',
+]
+
+const DEMO_CAPSULE_IMAGES = [
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuBuDZpw2j1UzGEniy99oLu1dMw8C9pt47t2QTBwGzBqUO_XRCxc7I9tum9gsl3Nwd_sChNDDdALN3nc69GmJlKZZJlEL-TUuCRx0ftUO-VCWwAGqvxcfF9STmKkV9XOwkjEHjpXm880G02H_RZ-VpWkl0wxIq0upTAXu5FSFnKMOjENTyVw2D4WyT79WCZk0bhSr6Dke4weNfyafNMEDuOShal8omWnIFgj7FQH5HphD__CVCRc412NmGpT3k-jnJNQazGQf-mTKA',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuCrzUDy49psS8F5LDzffltmsyM3lJPC-jMI0P93Ftm1ApLbO8nGA0DGWC-PNgS-BbO5NAVmXd7zw3-Qi4PV1lXmWUBItV4SCnN2g9apscIPH45uv-hkBkhgh-IKFhncdI7DisiayLI2f9CU-IwLVLEqowlaZfEJn7KmRSqOM6fLxJx2BDLBmdEHe5cybaadkW6XqeVp4RNNpFgijkhuB1yXdm7Y8FxYaI1RvCDfsHZhh94JbApFULX3M1cx8E6H2P_k6TWuDt0T0A',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuA0x1D60f5ErF5Jk6cFoWsgvDAK2Vb14Axm3UnC05hmaGWTaNIsd7DnFU5K02ZBq8jnOMk4W3x7NyteJ-3ejV1_aU4QAUoIY7uxjOG7bH6q1h_2WEAZoPikB5VeR4_-MW3cBvp2_Z0eat0GiB8chyqwlTZUomAnkMB5GneSPk34BpsZVt2JFooQ3onYImLq45t881S2CeUDs6OOk1-Jr372j4ynsueI5QZ_9xMyo9rM_151WWeftMxDVB5XipQ-xv5bDw10dnE40w',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuAR87ZxegUPUJJnp9F01VL-_HOAT0Vn-CP-gNffgmHBGlJi63ELC9MqNhrlbvbUO613z1Df-lYJdIWAE507RwLEq9UDjJ9pd4Mxg1_nx4rlw2lkcrQC1DJuKWFUm8yGNi6drRevq6Kxjp97z0bzwmkRIFXMkEoSP5-U6aofIZHFTzVBf57Jg6zWdseA8GhMNaHPirCO62FNFcPj7XvhzHWfCs3TucoUozkBkD_jGcHPKliPgTCSp5HzHnXg43-WqPAvPzlY1W4j5A',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuCjiar1RSTcMTXjwc2xX5oukbh6iJ4Sg2tS5kxC741mabKosXVRzJfF8SxvB67YStWc-EVLWesOZI3iR38v8oI-K1qYDh3ECLi150mhQI5rAjI9MSuwgHkfuzug8cN3Gl8xp6gxyGQtCn2Sl2NELCDviWaoRo8LyV9nxwRifihzyFgkX7y5i3SbFJZBTsdctqWu91Arr6IyrfSjdILugo8lHEg6E3C4I7wE2kdfYz13pf8jWdVmrKJuswhBrGViDGj8gI2BiONsPg',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuCmQIJKYrBC4RMHxxOqC7byLE0jXcMdldgl4lnglKhoyt7RLr7VFUP-DgMsiZdHkZIac2FV8zQgnNNY1HBsLX_iDr1NYq4mXUvOylVi-qMd392pa_yRdD5YTb_01rU5tiyPUUufdBNAEe8FmTXsDrlwtEDPhKNze8Z8LDQSNseBLh-pxiQyJSAGagEBJRDmFbHwgICzlTUw93OeQ7F4YpXPqLbR1MEh97mthThsQcnfl_fBclxnEJeBkjreyeqxD6VqIyRI-Pukyw',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDLbZmKMHRseFwsYcffoHcvvUcnvo8ncLnYjnW6JpzewsaJoHb3JegJ24ZzYsGf-IMyANaCuv9OZPR_8JCTmt5pr-AF57qlw4G8TAI9Loj1_cPmVxKtOvY23-EovaeCTDHSB_DR7Tx_jB-SnklGvYh5hCoariDzFrc3WPHPE0L08yIYF0AFvIDqNr5hIjraLGlZqzJ0eDK00j0xFMZbJ7cg2N1bpUIM6wtUUwVBN__vW9PS5J_lDNU0PJ63gEWHdXkGu2mmxbf0qw',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuCiNuv6-6Mr613PqsCBF82iPIkUuVOXf4NfFmsv1mF1pkVhzQADelEo-kswgYBG5BxEzSA2nbpo-2Dv1XLl2b1p_C47xpXp1cQqoJbTurIDJbE1B7tCRPOrEU2QFnVuDzYpTTmgzQE0dzvF6uzswLVG8LulsZYt2FO46bWaThqB0PTm_LjPv98SUWR9qqzrDDxnAVIB7pr6I2s_-3ghWN_uHNg9iP9QaV2j3ayk-ruA25mz0zfZSwXseo7GRotTDIHZ6GxLTQqvRQ',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuA3VACVMKt1VLyiS6LQFplRcRhsEqv-F7TQCfLrifm2prCZQ0zQrXdANosGI5_H8uGwLnf-E8DUYUq1WNKCiWe3xf8x7_KKftALjn--t8nZJ7fcDtezCKhC30l75-dFauuOzxkoOiqSjfjCyVRkM7uDJ7VP5zLm9DepX4fMBIDRTsTdDtT2M9__hsbSVlFKdMyz52xRpLJHEIOg_fln6GgYI7DMZzf-GgQoUjIlzCrYxPXz8ylcG_ixkIqqsdbcZ4lkSzgX6EmV6Q',
+  'https://lh3.googleusercontent.com/aida-public/AB6AXuDuy6UZnX8r4LwBcUQeYMU25MZO0HRF4RnBqF4bwbLiOOa-YeQNoBGYCHCDugoqlv1sZhg-9LQFF36WNTDAQEs9yFSV3YzMh3VM70TVdsldMjKNtbx4k98pQS2r8QHVHIZW-fVGI9JwLchU_tKwEd-bkLL_l1hcAy52yKu6E1w0MtBTnDqh-Squ_8re1WUTCRkRnhfjH3C5p8MRXYbiCYt3KOfzdoQd1p173I9qyXyHKQ8J3jTVQIhZgqd7DJ4-dheDcDrQCms6mA',
+]
+
+const EMOJI_CATEGORY: Record<string, string> = {
+  '🧥': 'Outerwear', '👕': 'Essential', '👖': 'Bottoms', '👗': 'Evening',
+  '👟': 'Footwear', '👠': 'Footwear', '👡': 'Footwear', '👢': 'Footwear',
+  '👜': 'Accessory', '👝': 'Accessory', '🎒': 'Accessory',
+  '🧣': 'Accessory', '🧤': 'Accessory', '🧢': 'Accessory',
 }
+
+const TIME_SLOTS = ['Morning', 'Evening', 'Afternoon', 'Morning', 'Evening', 'Afternoon']
+const WEATHER_SLOTS = [
+  { temp: '14°C', condition: 'Breeze', icon: 'air' },
+  { temp: '16°C', condition: 'Clear', icon: 'nightlight' },
+  { temp: '18°C', condition: 'Sunny', icon: 'wb_sunny' },
+  { temp: '15°C', condition: 'Cloudy', icon: 'cloud' },
+  { temp: '12°C', condition: 'Rainy', icon: 'rainy' },
+  { temp: '20°C', condition: 'Sunny', icon: 'wb_sunny' },
+]
+
+// ─── Processing View ──────────────────────────────────────────────────────────
 
 function ProcessingView({ trip }: { trip: Trip }) {
-  const { t } = useLanguage()
-  const completedJobs = trip.generation_jobs.filter(j => j.status === 'completed').length
-  const totalJobs = trip.generation_jobs.length
-  const progress = totalJobs > 0 ? Math.round((completedJobs / totalJobs) * 100) : 0
-
-  const titleLines = t.result.processing.title.split('\n')
+  const completed = trip.generation_jobs.filter(j => j.status === 'completed').length
+  const total = Math.max(trip.generation_jobs.length, 1)
+  const progress = Math.round((completed / total) * 100)
 
   return (
-    <div style={{ maxWidth: 520, margin: '0 auto', textAlign: 'center', padding: '4rem 2rem' }}>
-      <p
-        style={{
-          fontSize: '0.75rem',
-          letterSpacing: '0.12em',
-          textTransform: 'uppercase',
-          color: 'var(--terracotta)',
-          marginBottom: '1rem',
-        }}
-      >
-        {t.result.processing.label}
-      </p>
-      <h1
-        style={{
-          fontFamily: 'Playfair Display, serif',
-          fontSize: 'clamp(2rem, 4vw, 3rem)',
-          color: 'var(--ink)',
-          marginBottom: '1rem',
-          lineHeight: 1.2,
-        }}
-      >
-        {titleLines.map((line, i) => (
-          <span key={i}>
-            {line}
-            {i < titleLines.length - 1 && <br />}
-          </span>
-        ))}
-      </h1>
-      <p style={{ color: 'var(--muted)', marginBottom: '2.5rem', lineHeight: 1.6 }}>
-        {t.result.processing.sub}
-      </p>
+    <div className="min-h-[60vh] flex items-center justify-center px-6 py-20">
+      <div className="max-w-md w-full text-center">
+        <p className="text-xs uppercase tracking-[0.15em] text-primary font-bold mb-4">Creating Your Capsule</p>
+        <h1 className="font-playfair text-4xl text-secondary mb-3 leading-tight">
+          Styling Your <span className="italic text-primary">Journey</span>
+        </h1>
+        <p className="text-muted mb-8 leading-relaxed">
+          Your personalized travel wardrobe is being crafted by AI.
+        </p>
 
-      <div
-        style={{
-          background: 'var(--sand)',
-          borderRadius: 8,
-          height: 6,
-          marginBottom: '0.8rem',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            height: '100%',
-            background: 'var(--terracotta)',
-            borderRadius: 8,
-            width: `${progress}%`,
-            transition: 'width 0.6s ease',
-          }}
-        />
-      </div>
-      <p style={{ fontSize: '0.82rem', color: 'var(--muted)' }}>
-        {completedJobs} / {totalJobs} {t.result.processing.completed} ({progress}%)
-      </p>
-
-      <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
-        {trip.generation_jobs.map(job => (
+        <div className="bg-sand rounded-full h-1.5 mb-2 overflow-hidden">
           <div
-            key={job.id}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.8rem',
-              padding: '0.7rem 1rem',
-              background: 'var(--warm-white)',
-              borderRadius: 10,
-              border: '1px solid var(--border)',
-              fontSize: '0.88rem',
-            }}
-          >
-            <span
-              style={{
-                width: 20,
-                height: 20,
-                borderRadius: '50%',
-                background:
-                  job.status === 'completed'
-                    ? '#5B8C5A'
-                    : job.status === 'processing'
-                    ? 'var(--terracotta)'
-                    : 'var(--sand)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.65rem',
-                color: 'white',
-                flexShrink: 0,
-                border: job.status === 'processing' ? '2px solid var(--terracotta)' : 'none',
-                animation: job.status === 'processing' ? 'pulse 1.5s infinite' : 'none',
-              }}
-            >
-              {job.status === 'completed' ? '✓' : job.status === 'processing' ? '→' : ''}
-            </span>
-            <span style={{ color: 'var(--ink)' }}>{job.city}</span>
-            <span style={{ color: 'var(--muted)' }}>— {job.mood}</span>
-            <span
-              style={{
-                marginLeft: 'auto',
-                fontSize: '0.72rem',
-                color:
-                  job.status === 'completed'
-                    ? '#5B8C5A'
-                    : job.status === 'processing'
-                    ? 'var(--terracotta)'
-                    : 'var(--muted)',
-              }}
-            >
-              {job.status === 'completed'
-                ? t.result.processing.status.completed
-                : job.status === 'processing'
-                ? t.result.processing.status.processing
-                : t.result.processing.status.waiting}
-            </span>
-          </div>
-        ))}
-      </div>
+            className="h-full bg-primary rounded-full transition-all duration-700"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+        <p className="text-sm text-muted mb-8">{completed} / {total} items generated ({progress}%)</p>
 
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.15); }
-        }
-      `}</style>
+        <div className="space-y-3 text-left">
+          {trip.generation_jobs.map(job => (
+            <div
+              key={job.id}
+              className="flex items-center gap-3 px-4 py-3 bg-cream rounded-xl border border-[#ebdcd5] text-sm"
+            >
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-white text-xs flex-shrink-0 ${
+                job.status === 'completed' ? 'bg-green-600'
+                : job.status === 'processing' ? 'bg-primary animate-pulse'
+                : 'bg-sand'
+              }`}>
+                {job.status === 'completed' ? '✓' : job.status === 'processing' ? '→' : ''}
+              </span>
+              <span className="text-secondary font-medium">{job.city}</span>
+              <span className="text-muted">— {job.mood}</span>
+              <span className={`ml-auto text-xs ${
+                job.status === 'completed' ? 'text-green-600'
+                : job.status === 'processing' ? 'text-primary'
+                : 'text-muted'
+              }`}>
+                {job.status === 'completed' ? 'Done'
+                : job.status === 'processing' ? 'Generating…'
+                : 'Waiting'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }
 
-function GalleryView({ trip }: { trip: Trip }) {
-  const { t } = useLanguage()
-  const completedJobs = trip.generation_jobs.filter(j => j.status === 'completed' && j.image_url)
+// ─── Gallery (Result) View ────────────────────────────────────────────────────
+
+function GalleryView({ trip, tripId }: { trip: Trip; tripId: string }) {
   const [shareOpen, setShareOpen] = useState(false)
   const [sharePreviewUrl, setSharePreviewUrl] = useState<string | undefined>()
-  const cityNames = trip.cities.map(c => c.name)
-  const firstImage = completedJobs[0]?.image_url ?? undefined
+  const carouselRef = useRef<HTMLDivElement>(null)
 
-  function openShare(imageUrl?: string | null) {
-    setSharePreviewUrl(imageUrl ?? firstImage)
+  const cityNames = trip.cities.map(c => c.name)
+  const primaryCity = cityNames[0] ?? 'Your City'
+
+  const completedJobs = trip.generation_jobs.filter(j => j.status === 'completed')
+  const outfitCards = completedJobs.map((job, i) => ({
+    ...job,
+    displayImage: job.image_url ?? DEMO_OUTFIT_IMAGES[i % DEMO_OUTFIT_IMAGES.length],
+    timeLabel: `Day ${i + 1} • ${TIME_SLOTS[i % TIME_SLOTS.length]}`,
+    ...WEATHER_SLOTS[i % WEATHER_SLOTS.length],
+  }))
+
+  const capsuleItems = (trip.wardrobe_items ?? []).map((item, i) => ({
+    ...item,
+    displayImage: item.image_url ?? DEMO_CAPSULE_IMAGES[i % DEMO_CAPSULE_IMAGES.length],
+    displayCategory: item.category ?? EMOJI_CATEGORY[item.emoji] ?? 'Essential',
+  }))
+
+  function openShare(url?: string | null) {
+    setSharePreviewUrl(url ?? completedJobs[0]?.image_url ?? undefined)
     setShareOpen(true)
   }
 
+  function scrollCarousel(dir: 'prev' | 'next') {
+    const el = carouselRef.current
+    if (!el) return
+    const card = el.querySelector<HTMLElement>('[data-outfit-card]')
+    const w = card ? card.offsetWidth + 24 : 424
+    el.scrollBy({ left: dir === 'next' ? w : -w, behavior: 'smooth' })
+  }
+
   return (
-    <div style={{ paddingBottom: '5rem' }}>
-      {/* Hero */}
-      <div
-        style={{
-          background: 'var(--ink)',
-          color: 'white',
-          padding: '5rem 2rem 4rem',
-          textAlign: 'center',
-        }}
-      >
-        <p
-          style={{
-            fontSize: '0.75rem',
-            letterSpacing: '0.15em',
-            textTransform: 'uppercase',
-            color: 'var(--gold)',
-            marginBottom: '1rem',
-          }}
-        >
-          {t.result.gallery.label}
-        </p>
-        <h1
-          style={{
-            fontFamily: 'Playfair Display, serif',
-            fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-            lineHeight: 1.15,
-            marginBottom: '1rem',
-          }}
-        >
-          {t.result.gallery.title}
-        </h1>
-        <p style={{ color: 'rgba(255,255,255,0.6)', marginBottom: '0.5rem' }}>
-          {trip.cities.map(c => `${c.name} ${c.days}박`).join(' + ')} · {trip.month}
-        </p>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '1rem',
-            marginTop: '2rem',
-            flexWrap: 'wrap',
-          }}
-        >
-          <button
-            onClick={() => openShare()}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              background: 'var(--gold)',
-              color: 'var(--ink)',
-              border: 'none',
-              borderRadius: 50,
-              padding: '0.8rem 1.8rem',
-              fontFamily: 'DM Sans, sans-serif',
-              fontSize: '0.95rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              transition: 'opacity 0.2s',
-            }}
-          >
-            {t.result.gallery.shareBtn}
-          </button>
-        </div>
-      </div>
-
-      {/* Image Grid */}
-      {completedJobs.length > 0 && (
-        <section style={{ padding: '4rem 0', background: 'var(--cream)' }}>
-          <div className="container">
-            <p className="section-label">{t.result.wardrobe.label}</p>
-            <h2 className="section-title">{t.result.gallery.title}</h2>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-                gap: '1.2rem',
-                marginTop: '2rem',
-              }}
-            >
-              {completedJobs.map(job => (
-                <div
-                  key={job.id}
-                  style={{
-                    borderRadius: 12,
-                    overflow: 'hidden',
-                    background: 'var(--sand)',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                  }}
-                  onMouseEnter={e => {
-                    const el = e.currentTarget as HTMLDivElement
-                    el.style.transform = 'translateY(-4px)'
-                    el.style.boxShadow = '0 8px 30px rgba(0,0,0,0.12)'
-                  }}
-                  onMouseLeave={e => {
-                    const el = e.currentTarget as HTMLDivElement
-                    el.style.transform = ''
-                    el.style.boxShadow = '0 2px 12px rgba(0,0,0,0.06)'
-                  }}
-                >
-                  <div style={{ aspectRatio: '3/4', position: 'relative', background: '#d4cbc0' }}>
-                    {job.image_url && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={job.image_url}
-                        alt={`${job.city} ${job.mood} travel outfit`}
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    )}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        top: 10,
-                        left: 10,
-                        background: 'rgba(253,250,246,0.9)',
-                        fontSize: '0.65rem',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                        padding: '3px 8px',
-                        borderRadius: 4,
-                        color: 'var(--ink)',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {job.mood}
-                    </div>
-                    <button
-                      onClick={() => openShare(job.image_url)}
-                      title={t.result.gallery.shareBtn}
-                      style={{
-                        position: 'absolute',
-                        bottom: 10,
-                        right: 10,
-                        width: 34,
-                        height: 34,
-                        borderRadius: '50%',
-                        background: 'rgba(253,250,246,0.92)',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '0.95rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-                        transition: 'transform 0.15s',
-                      }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1.12)' }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = '' }}
-                    >
-                      ↗
-                    </button>
-                  </div>
-                  <div style={{ padding: '0.9rem' }}>
-                    <div
-                      style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--muted)',
-                        marginBottom: '0.2rem',
-                        letterSpacing: '0.05em',
-                      }}
-                    >
-                      {job.city}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+    <div>
+      {/* ── Hero / Destination Summary ─────────────────────────────────────────── */}
+      <section className="px-6 py-12 md:px-10 lg:py-20 flex flex-col md:flex-row justify-between items-start gap-10 border-b border-[#ebdcd5]">
+        <div className="flex flex-col gap-4 max-w-2xl">
+          <div className="flex items-center gap-2 text-primary uppercase tracking-widest text-xs font-bold">
+            <span className="material-symbols-outlined !text-sm">location_on</span>
+            {cityNames.join(' · ')}
           </div>
-        </section>
-      )}
-
-      {/* Capsule Wardrobe */}
-      {trip.wardrobe_items && trip.wardrobe_items.length > 0 && (
-        <section style={{ padding: '4rem 0', background: 'var(--warm-white)' }}>
-          <div className="container">
-            <p className="section-label">{t.result.wardrobe.label}</p>
-            <h2 className="section-title">{t.result.wardrobe.title}</h2>
-            <div className="capsule-grid">
-              {trip.wardrobe_items.map((item, i) => (
-                <div key={i} className="capsule-item">
-                  <div className="capsule-emoji">{item.emoji}</div>
-                  <div className="capsule-name">{item.name}</div>
-                  <div className="capsule-cities">{item.cities}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Daily Plan */}
-      {trip.daily_plan && trip.daily_plan.length > 0 && (
-        <section style={{ padding: '4rem 0', background: 'var(--cream)' }}>
-          <div className="container">
-            <p className="section-label">{t.result.dailyPlan.label}</p>
-            <h2 className="section-title">{t.result.dailyPlan.title}</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '2rem' }}>
-              {trip.daily_plan.map(plan => (
-                <div
-                  key={plan.day}
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '80px 1fr',
-                    gap: '1.5rem',
-                    padding: '1.5rem',
-                    background: 'var(--warm-white)',
-                    borderRadius: 12,
-                    border: '1px solid var(--border)',
-                  }}
-                >
-                  <div style={{ textAlign: 'center' }}>
-                    <div
-                      style={{
-                        fontFamily: 'Playfair Display, serif',
-                        fontSize: '1.8rem',
-                        fontWeight: 700,
-                        color: 'var(--terracotta)',
-                        lineHeight: 1,
-                      }}
-                    >
-                      {plan.day}
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)', marginTop: '0.3rem' }}>
-                      {t.result.dailyPlan.day}
-                    </div>
-                    <div style={{ fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.5rem' }}>
-                      {plan.city}
-                    </div>
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: '0.95rem',
-                        fontWeight: 500,
-                        color: 'var(--ink)',
-                        marginBottom: '0.5rem',
-                      }}
-                    >
-                      {plan.outfit}
-                    </div>
-                    {plan.activities && plan.activities.length > 0 && (
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-                        {plan.activities.map((act, i) => (
-                          <span
-                            key={i}
-                            style={{
-                              fontSize: '0.72rem',
-                              background: 'var(--sand)',
-                              color: 'var(--muted)',
-                              padding: '3px 10px',
-                              borderRadius: 50,
-                              border: '1px solid var(--border)',
-                            }}
-                          >
-                            {act}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Share CTA */}
-      <section style={{ padding: '4rem 0', background: 'var(--sand)', textAlign: 'center' }}>
-        <div className="container">
-          <h2 className="section-title">{t.result.shareCta.title}</h2>
-          <p className="section-sub" style={{ margin: '0 auto 2rem' }}>
-            {t.result.shareCta.sub}
+          <h1 className="font-playfair text-5xl md:text-7xl font-medium text-secondary leading-[1.1]">
+            Your {primaryCity}<br />
+            <span className="italic text-primary">{trip.month}</span> Capsule
+          </h1>
+          <p className="text-muted text-lg md:text-xl max-w-xl mt-2 leading-relaxed">
+            Curated for your {primaryCity} adventure. AI-selected pieces to handle every moment — from morning exploration to evening dining.
           </p>
-          <div style={{ display: 'flex', gap: '0.8rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+        </div>
+
+        {/* Weather Widget */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-[#ebdcd5] w-full md:w-auto min-w-[280px] flex-shrink-0">
+          <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100">
+            <div>
+              <p className="text-sm font-bold text-secondary uppercase tracking-wide">{trip.month}</p>
+              <p className="text-xs text-muted">{primaryCity}</p>
+            </div>
+            <span className="material-symbols-outlined text-primary !text-4xl">partly_cloudy_day</span>
+          </div>
+          <div className="flex items-end gap-2 mb-2">
+            <span className="text-4xl font-bold text-secondary">18°</span>
+            <span className="text-lg text-muted mb-1">Avg</span>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">High / Low</span>
+              <span className="font-medium text-secondary">22° / 14°</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Condition</span>
+              <span className="font-medium text-secondary">Partial Sun</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted">Wind</span>
+              <span className="font-medium text-secondary">Breeze</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── AI Style Logic Cards ───────────────────────────────────────────────── */}
+      <section className="px-6 md:px-10 py-12 bg-white/50">
+        <div className="flex items-center gap-2 mb-8">
+          <span className="material-symbols-outlined text-primary">auto_awesome</span>
+          <h3 className="text-sm font-bold uppercase tracking-widest text-muted">AI Style Logic</h3>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {[
+            {
+              icon: 'texture',
+              title: 'Fabric Choice',
+              desc: 'Breathable, packable fabrics selected for your destination\'s climate and activities.',
+            },
+            {
+              icon: 'palette',
+              title: 'Color Palette',
+              desc: 'Neutral bases with accent colors for effortless mix-and-match combinations.',
+            },
+            {
+              icon: 'swap_horiz',
+              title: 'Versatility',
+              desc: 'Every piece transitions from day to night, maximizing outfits with minimal packing.',
+            },
+          ].map(card => (
+            <div
+              key={card.icon}
+              className="flex gap-4 p-5 rounded-xl bg-cream border border-[#ebdcd5] hover:border-primary/30 transition-colors group"
+            >
+              <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-primary shadow-sm group-hover:bg-primary group-hover:text-white transition-colors flex-shrink-0">
+                <span className="material-symbols-outlined">{card.icon}</span>
+              </div>
+              <div>
+                <h4 className="font-playfair text-lg font-medium text-secondary mb-1">{card.title}</h4>
+                <p className="text-sm text-muted leading-relaxed">{card.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Daily Style Guide ─────────────────────────────────────────────────── */}
+      {outfitCards.length > 0 && (
+        <section className="px-6 md:px-10 py-16 border-t border-[#ebdcd5]">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-10 gap-4">
+            <div>
+              <h2 className="font-playfair text-3xl md:text-4xl text-secondary mb-3">Daily Style Guide</h2>
+              <p className="text-muted max-w-md">Pre-styled combinations for your itinerary.</p>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => scrollCarousel('prev')}
+                className="w-10 h-10 rounded-full border border-[#ebdcd5] flex items-center justify-center text-secondary hover:bg-primary hover:text-white hover:border-primary transition-all"
+                aria-label="Previous"
+              >
+                <span className="material-symbols-outlined">arrow_back</span>
+              </button>
+              <button
+                onClick={() => scrollCarousel('next')}
+                className="w-10 h-10 rounded-full border border-[#ebdcd5] flex items-center justify-center text-secondary hover:bg-primary hover:text-white hover:border-primary transition-all"
+                aria-label="Next"
+              >
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={carouselRef}
+            className="flex gap-6 overflow-x-auto pb-8 snap-x snap-mandatory"
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          >
+            {outfitCards.map((card) => (
+              <div
+                key={card.id}
+                data-outfit-card
+                className="min-w-[85vw] md:min-w-[400px] snap-center group cursor-pointer flex-shrink-0"
+              >
+                <div className="relative aspect-[3/4] overflow-hidden rounded-sm mb-4">
+                  <div className="absolute top-4 left-4 bg-white/90 backdrop-blur px-3 py-1 text-xs font-bold uppercase tracking-wider text-secondary rounded-sm z-10">
+                    {card.timeLabel}
+                  </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={card.displayImage}
+                    alt={`${card.city} ${card.mood}`}
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  />
+                  <div className="absolute bottom-4 left-4 right-4 flex gap-2">
+                    <div className="bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg text-white text-xs flex items-center gap-1.5 border border-white/10">
+                      <span className="material-symbols-outlined !text-sm">thermometer</span>
+                      {card.temp}
+                    </div>
+                    <div className="bg-black/40 backdrop-blur-md px-3 py-2 rounded-lg text-white text-xs flex items-center gap-1.5 border border-white/10">
+                      <span className="material-symbols-outlined !text-sm">{card.icon}</span>
+                      {card.condition}
+                    </div>
+                  </div>
+                </div>
+                <h3 className="font-playfair text-2xl text-secondary mb-1 group-hover:text-primary transition-colors">
+                  {card.mood}
+                </h3>
+                <p className="text-muted text-sm">{card.city}</p>
+              </div>
+            ))}
+          </div>
+
+          <style>{`.snap-x::-webkit-scrollbar { display: none; }`}</style>
+        </section>
+      )}
+
+      {/* ── The N-Item Capsule Grid ────────────────────────────────────────────── */}
+      {capsuleItems.length > 0 && (
+        <section className="px-6 md:px-10 py-16 bg-white">
+          <div className="text-center mb-12">
+            <span className="text-primary text-xs font-bold tracking-[0.2em] uppercase mb-2 block">
+              Minimalist Packing
+            </span>
+            <h2 className="font-playfair text-4xl md:text-5xl text-secondary mb-4">
+              The {capsuleItems.length}-Item Capsule
+            </h2>
+            <p className="text-muted max-w-lg mx-auto">
+              Everything you need for your trip, designed to mix and match effortlessly.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-10 gap-x-6">
+            {capsuleItems.map((item, i) => (
+              <div key={i} className="flex flex-col group cursor-pointer">
+                <div className="relative w-full aspect-[4/5] bg-cream rounded-sm overflow-hidden mb-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={item.displayImage}
+                    alt={item.name}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <button className="absolute top-2 right-2 p-1.5 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm text-secondary hover:text-primary">
+                    <span className="material-symbols-outlined !text-lg">favorite</span>
+                  </button>
+                </div>
+                <div className="flex flex-col items-center text-center">
+                  <h4 className="font-sans font-bold text-secondary text-sm md:text-base">{item.name}</h4>
+                  <span className="text-xs text-muted mt-0.5 uppercase tracking-wide">{item.displayCategory}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── CTA ───────────────────────────────────────────────────────────────── */}
+      <section className="py-20 px-6 text-center border-t border-[#ebdcd5]">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-playfair text-3xl text-secondary mb-8">Ready to pack this capsule?</h2>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
             <button
               onClick={() => openShare()}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: 'var(--terracotta)',
-                color: 'white',
-                border: 'none',
-                borderRadius: 50,
-                padding: '0.9rem 2rem',
-                fontFamily: 'DM Sans, sans-serif',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = '#b3582f' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'var(--terracotta)' }}
+              className="bg-primary text-white font-bold h-12 px-8 rounded-full hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
             >
-              📤 {t.result.gallery.shareBtn}
+              Generate Packing List
             </button>
             <button
-              onClick={() => {
-                const citiesStr = cityNames.slice(0, 2).join(' + ')
-                const city0 = cityNames[0] ?? ''
-                // use a neutral tweet for this locale
-                const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(`AI-styled outfits for ${citiesStr} — Travel Capsule AI\n#TravelCapsuleAI`)}&url=${encodeURIComponent(window.location.href)}`
-                window.open(url, '_blank', 'width=600,height=500')
-              }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                background: '#000',
-                color: 'white',
-                border: 'none',
-                borderRadius: 50,
-                padding: '0.9rem 2rem',
-                fontFamily: 'DM Sans, sans-serif',
-                fontSize: '0.95rem',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'opacity 0.2s',
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '0.8' }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = '1' }}
+              onClick={() => window.location.reload()}
+              className="bg-transparent border border-secondary text-secondary font-bold h-12 px-8 rounded-full hover:bg-secondary hover:text-white transition-colors"
             >
-              {t.result.gallery.twitterBtn}
+              Regenerate Options
             </button>
           </div>
         </div>
       </section>
 
-      {/* Sticky mobile share bar */}
-      <div
-        style={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          zIndex: 150,
-          background: 'var(--ink)',
-          padding: '0.9rem 1.4rem calc(0.9rem + env(safe-area-inset-bottom))',
-          display: 'flex',
-          gap: '0.7rem',
-          alignItems: 'center',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.15)',
-        }}
-        className="sticky-share-bar"
-      >
-        <div style={{ flex: 1 }}>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', marginBottom: '0.1rem' }}>
-            {t.result.stickyBar.myStyle}
-          </p>
-          <p style={{ color: 'white', fontSize: '0.85rem', fontWeight: 500 }}>
-            {cityNames.slice(0, 2).join(' + ')} · {trip.month}
-          </p>
-        </div>
-        <button
-          onClick={() => openShare()}
-          style={{
-            background: 'var(--gold)',
-            color: 'var(--ink)',
-            border: 'none',
-            borderRadius: 50,
-            padding: '0.65rem 1.4rem',
-            fontFamily: 'DM Sans, sans-serif',
-            fontSize: '0.9rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >
-          {t.result.stickyBar.shareBtn}
-        </button>
-      </div>
-
       <ShareModal
         isOpen={shareOpen}
         onClose={() => setShareOpen(false)}
-        tripId={trip.id}
+        tripId={tripId}
         cities={cityNames}
         month={trip.month}
         previewImageUrl={sharePreviewUrl}
       />
-
-      <style>{`
-        @media (min-width: 768px) {
-          .sticky-share-bar { display: none !important; }
-        }
-      `}</style>
     </div>
   )
 }
 
+// ─── Error View ───────────────────────────────────────────────────────────────
+
 function ErrorView({ tripId }: { tripId: string }) {
-  const { t } = useLanguage()
   return (
-    <div style={{ textAlign: 'center', padding: '8rem 2rem' }}>
-      <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>😕</p>
-      <h1
-        style={{
-          fontFamily: 'Playfair Display, serif',
-          fontSize: '2rem',
-          color: 'var(--ink)',
-          marginBottom: '1rem',
-        }}
-      >
-        {t.result.error.title}
-      </h1>
-      <p style={{ color: 'var(--muted)', marginBottom: '2rem', lineHeight: 1.6 }}>
+    <div className="text-center py-32 px-6">
+      <p className="text-5xl mb-4">😕</p>
+      <h1 className="font-playfair text-3xl text-secondary mb-3">Trip not found</h1>
+      <p className="text-muted mb-8 leading-relaxed">
         Trip ID: {tripId}
         <br />
-        {t.result.error.sub}
+        This trip may have expired or doesn&apos;t exist.
       </p>
       <a
         href="/"
-        style={{
-          display: 'inline-block',
-          background: 'var(--terracotta)',
-          color: 'white',
-          padding: '0.8rem 1.8rem',
-          borderRadius: 50,
-          textDecoration: 'none',
-          fontFamily: 'DM Sans, sans-serif',
-          fontWeight: 500,
-        }}
+        className="inline-block bg-primary text-white px-8 py-3 rounded-full font-semibold hover:bg-primary/90 transition-colors"
       >
-        {t.result.error.home}
+        Back to Home
       </a>
     </div>
   )
 }
 
-// ─── Main Client Component ────────────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ResultClient({ tripId }: { tripId: string }) {
-  const { t } = useLanguage()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -654,31 +437,33 @@ export default function ResultClient({ tripId }: { tripId: string }) {
 
   const fetchTrip = useCallback(async () => {
     if (!WORKER_URL) {
-      // Demo mode
+      // Demo mode — uses reference design data
       setTrip({
         id: tripId,
         status: 'completed',
         cities: [{ name: 'Paris', days: 4 }, { name: 'Rome', days: 3 }],
-        month: '5월',
+        month: 'Autumn',
         generation_jobs: [
-          { id: '1', city: 'Paris', mood: 'Café Morning', image_url: 'https://images.unsplash.com/photo-1543332164-6e82f355badc?w=400&q=70', status: 'completed' },
-          { id: '2', city: 'Paris', mood: 'Sightseeing', image_url: 'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?w=400&q=70', status: 'completed' },
-          { id: '3', city: 'Rome', mood: 'Evening Walk', image_url: 'https://images.unsplash.com/photo-1523906834658-6e24ef2386f9?w=400&q=70', status: 'completed' },
-          { id: '4', city: 'Rome', mood: 'Street Style', image_url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?w=400&q=70', status: 'completed' },
+          { id: '1', city: 'Paris', mood: 'Louvre Visit', image_url: DEMO_OUTFIT_IMAGES[0], status: 'completed' },
+          { id: '2', city: 'Paris', mood: 'Seine Dinner Cruise', image_url: DEMO_OUTFIT_IMAGES[1], status: 'completed' },
+          { id: '3', city: 'Rome', mood: 'Le Marais Shopping', image_url: DEMO_OUTFIT_IMAGES[2], status: 'completed' },
         ],
         wardrobe_items: [
-          { emoji: '🧥', name: 'Linen Trench', cities: 'Paris · Rome · Travel Days' },
-          { emoji: '👕', name: 'White Tee ×2', cities: 'All Days' },
-          { emoji: '👖', name: 'Tailored Pants', cities: 'Paris · Rome · Evening' },
-          { emoji: '👗', name: 'Midi Slip Dress', cities: 'Rome · Café · Evening' },
-          { emoji: '👟', name: 'White Sneakers', cities: 'All Days · Sightseeing' },
-          { emoji: '👡', name: 'Block Heel Mules', cities: 'Evening · Café' },
+          { emoji: '🧥', name: 'Camel Trench', cities: 'Paris · Rome' },
+          { emoji: '👗', name: 'Silk Slip Dress', cities: 'Paris Evening' },
+          { emoji: '👕', name: 'Cashmere Knit', cities: 'All Days' },
+          { emoji: '👟', name: 'Leather Boots', cities: 'Paris · Rome' },
+          { emoji: '👕', name: 'White Shirt', cities: 'All Days' },
+          { emoji: '👖', name: 'Tailored Trousers', cities: 'Paris · Rome' },
+          { emoji: '🧥', name: 'Wool Blazer', cities: 'Evening' },
+          { emoji: '👡', name: 'Loafers', cities: 'Day Use' },
+          { emoji: '👜', name: 'Crossbody Bag', cities: 'All Days' },
+          { emoji: '🧣', name: 'Statement Scarf', cities: 'Accessory' },
         ],
         daily_plan: [
-          { day: 1, city: 'Paris', outfit: 'Linen Trench + White Tee + Tailored Pants', activities: ['Champs-Élysées', 'Louvre'] },
-          { day: 2, city: 'Paris', outfit: 'Stripe Shirt + Wide Jeans + White Sneakers', activities: ['Eiffel Tower', 'Le Marais'] },
-          { day: 3, city: 'Rome', outfit: 'Midi Slip Dress + Block Heel Mules', activities: ['Colosseum', 'Trevi Fountain'] },
-          { day: 4, city: 'Rome', outfit: 'White Tee + Tailored Pants + Crossbody Bag', activities: ['Vatican Museums', 'Pantheon'] },
+          { day: 1, city: 'Paris', outfit: 'Camel Trench + White Shirt + Tailored Trousers', activities: ['Louvre', 'Champs-Élysées'] },
+          { day: 2, city: 'Paris', outfit: 'Silk Slip Dress + Wool Blazer', activities: ['Seine Dinner Cruise'] },
+          { day: 3, city: 'Rome', outfit: 'Cashmere Knit + Trousers + Loafers', activities: ['Colosseum', 'Shopping'] },
         ],
         created_at: new Date().toISOString(),
       })
@@ -688,17 +473,12 @@ export default function ResultClient({ tripId }: { tripId: string }) {
 
     try {
       const res = await fetch(`${WORKER_URL}/api/trips/${tripId}`)
-      if (!res.ok) {
-        setError(true)
-        setLoading(false)
-        return
-      }
+      if (!res.ok) { setError(true); setLoading(false); return }
       const data: Trip = await res.json()
       setTrip(data)
       setLoading(false)
-
       if (data.status === 'processing' || data.status === 'pending') {
-        pollingRef.current = setTimeout(() => fetchTrip(), 2000)
+        pollingRef.current = setTimeout(fetchTrip, 2000)
       }
     } catch {
       setError(true)
@@ -708,67 +488,63 @@ export default function ResultClient({ tripId }: { tripId: string }) {
 
   useEffect(() => {
     fetchTrip()
-    return () => {
-      if (pollingRef.current) clearTimeout(pollingRef.current)
-    }
+    return () => { if (pollingRef.current) clearTimeout(pollingRef.current) }
   }, [fetchTrip])
 
   const isProcessing = trip?.status === 'processing' || trip?.status === 'pending'
 
   return (
     <>
-      <header
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          zIndex: 100,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '1.2rem 2.5rem',
-          background: 'rgba(253,250,246,0.92)',
-          backdropFilter: 'blur(12px)',
-          borderBottom: '1px solid var(--border)',
-        }}
-      >
-        <a
-          href="/"
-          style={{
-            fontFamily: 'Playfair Display, serif',
-            fontSize: '1.3rem',
-            fontWeight: 700,
-            letterSpacing: '-0.02em',
-            color: 'var(--ink)',
-            textDecoration: 'none',
-          }}
-        >
-          Travel{' '}
-          <span style={{ color: 'var(--terracotta)', fontStyle: 'italic' }}>Capsule</span> AI
-        </a>
-        <a href="/" style={{ fontSize: '0.85rem', color: 'var(--muted)', textDecoration: 'none' }}>
-          {t.result.homeLink}
-        </a>
+      {/* ── Header ────────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 flex items-center justify-between border-b border-[#ebdcd5] bg-cream/95 backdrop-blur-sm px-6 py-4 md:px-10">
+        <div className="flex items-center gap-3 text-secondary">
+          <span className="material-symbols-outlined text-primary !text-[28px]">flight_takeoff</span>
+          <h2 className="font-sans text-lg font-bold leading-tight tracking-tight">Travel Capsule AI</h2>
+        </div>
+        <div className="hidden md:flex flex-1 justify-end gap-8 items-center">
+          <nav className="flex items-center gap-8">
+            <a href="/" className="text-secondary hover:text-primary transition-colors text-sm font-medium">My Trips</a>
+            <a href="#" className="text-primary text-sm font-medium">Lookbooks</a>
+            <a href="/" className="text-secondary hover:text-primary transition-colors text-sm font-medium">Profile</a>
+          </nav>
+          <button className="flex items-center justify-center rounded-full h-10 px-6 bg-primary text-white hover:bg-primary/90 transition-colors text-sm font-bold shadow-md shadow-primary/20">
+            Save Capsule
+          </button>
+        </div>
+        <button className="md:hidden text-secondary">
+          <span className="material-symbols-outlined">menu</span>
+        </button>
       </header>
 
-      <main style={{ paddingTop: 70 }}>
-        {loading && <Spinner />}
+      {/* ── Main ─────────────────────────────────────────────────────────────── */}
+      <main className="w-full max-w-[1440px] mx-auto">
+        {loading && (
+          <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-12 h-12 border-2 border-sand border-t-primary rounded-full animate-spin mx-auto mb-4" />
+              <p className="text-sm text-muted">Preparing your capsule…</p>
+            </div>
+          </div>
+        )}
         {error && <ErrorView tripId={tripId} />}
         {!loading && !error && trip && isProcessing && <ProcessingView trip={trip} />}
-        {!loading && !error && trip && !isProcessing && <GalleryView trip={trip} />}
+        {!loading && !error && trip && !isProcessing && <GalleryView trip={trip} tripId={tripId} />}
       </main>
 
-      <footer
-        style={{
-          background: 'var(--ink)',
-          color: 'rgba(255,255,255,0.4)',
-          padding: '2.5rem 0',
-          textAlign: 'center',
-          fontSize: '0.82rem',
-        }}
-      >
-        <p>{t.footer.copyright}</p>
+      {/* ── Footer ───────────────────────────────────────────────────────────── */}
+      <footer className="bg-white border-t border-[#ebdcd5] py-12 px-6">
+        <div className="max-w-[1440px] mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-2 text-secondary">
+            <span className="material-symbols-outlined text-primary !text-[20px]">flight_takeoff</span>
+            <span className="font-sans font-bold">Travel Capsule AI</span>
+          </div>
+          <div className="flex gap-6 text-sm text-muted">
+            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+            <a href="#" className="hover:text-primary transition-colors">Terms</a>
+            <a href="#" className="hover:text-primary transition-colors">Support</a>
+          </div>
+          <p className="text-xs text-muted">&copy; {new Date().getFullYear()} Travel Capsule AI</p>
+        </div>
       </footer>
     </>
   )
