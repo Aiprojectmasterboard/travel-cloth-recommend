@@ -13,18 +13,13 @@ const MAX_CITIES = 5
 // ─── Style options ─────────────────────────────────────────────────────────────
 
 const STYLE_OPTIONS = [
-  { id: 'casual',       label: 'Casual',          icon: '👕' },
-  { id: 'minimalist',   label: 'Minimalist',       icon: '⬜' },
-  { id: 'business',     label: 'Business Casual',  icon: '👔' },
-  { id: 'streetwear',   label: 'Streetwear',       icon: '🧢' },
-  { id: 'sporty',       label: 'Sporty',           icon: '🏃' },
-  { id: 'bohemian',     label: 'Bohemian',         icon: '🌸' },
-  { id: 'classic',      label: 'Classic',          icon: '🎩' },
-  { id: 'preppy',       label: 'Preppy',           icon: '⚓' },
-  { id: 'romantic',     label: 'Romantic',         icon: '🌹' },
-  { id: 'edgy',         label: 'Edgy / Bold',      icon: '⚡' },
-  { id: 'resort',       label: 'Resort / Vacation',icon: '🌴' },
-  { id: 'smart',        label: 'Smart Casual',     icon: '🧥' },
+  { id: 'casual',      label: 'Casual',         icon: '👕' },
+  { id: 'minimalist',  label: 'Minimalist',      icon: '⬜' },
+  { id: 'streetwear',  label: 'Streetwear',      icon: '🧢' },
+  { id: 'classic',     label: 'Classic',         icon: '🎩' },
+  { id: 'sporty',      label: 'Sporty',          icon: '🏃' },
+  { id: 'bohemian',    label: 'Bohemian',        icon: '🌸' },
+  { id: 'business',    label: 'Business',        icon: '👔' },
 ]
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -71,8 +66,14 @@ export default function TripPage() {
 
   // Step 3 — Profile
   const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null)
+  const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric')
+  // Metric inputs
   const [heightCm, setHeightCm] = useState('')
   const [weightKg, setWeightKg] = useState('')
+  // Imperial inputs
+  const [heightFt, setHeightFt] = useState('')
+  const [heightIn, setHeightIn] = useState('')
+  const [weightLb, setWeightLb] = useState('')
   const [stylePrefs, setStylePrefs] = useState<string[]>([])
 
   // Step 3 — Photo (optional)
@@ -153,6 +154,16 @@ export default function TripPage() {
         face_url = result.face_url
       }
 
+      // Convert to metric for the API
+      const resolvedHeightCm = unitSystem === 'metric'
+        ? (heightCm ? parseInt(heightCm) : undefined)
+        : (heightFt || heightIn
+            ? Math.round((parseInt(heightFt || '0') * 12 + parseInt(heightIn || '0')) * 2.54)
+            : undefined)
+      const resolvedWeightKg = unitSystem === 'metric'
+        ? (weightKg ? parseInt(weightKg) : undefined)
+        : (weightLb ? Math.round(parseInt(weightLb) * 0.453592) : undefined)
+
       const token = turnstileToken ?? 'dev-bypass'
       const preview = await apiPost<PreviewResponse>('/api/preview', {
         cities,
@@ -160,8 +171,8 @@ export default function TripPage() {
         start_date: startDate,
         end_date: endDate,
         gender,
-        ...(heightCm ? { height_cm: parseInt(heightCm) } : {}),
-        ...(weightKg ? { weight_kg: parseInt(weightKg) } : {}),
+        ...(resolvedHeightCm ? { height_cm: resolvedHeightCm } : {}),
+        ...(resolvedWeightKg ? { weight_kg: resolvedWeightKg } : {}),
         ...(stylePrefs.length > 0 ? { style_preferences: stylePrefs } : {}),
         cf_turnstile_token: token,
         ...(face_url ? { face_url } : {}),
@@ -425,36 +436,99 @@ export default function TripPage() {
 
               {/* ── Body info ─── */}
               <section className="mb-7">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-0.5">
-                  Body Info
-                </p>
-                <p className="text-xs text-[#9c8c7e]/70 mb-3">Optional — improves fit & layering recommendations</p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="flex items-center justify-between mb-3">
                   <div>
-                    <label className="block text-xs text-[#9c8c7e] mb-1.5">Height (cm)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 170"
-                      value={heightCm}
-                      min={100}
-                      max={250}
-                      onChange={(e) => setHeightCm(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
-                    />
+                    <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e]">Body Info</p>
+                    <p className="text-xs text-[#9c8c7e]/70 mt-0.5">Optional — improves fit & layering recommendations</p>
                   </div>
-                  <div>
-                    <label className="block text-xs text-[#9c8c7e] mb-1.5">Weight (kg)</label>
-                    <input
-                      type="number"
-                      placeholder="e.g. 65"
-                      value={weightKg}
-                      min={30}
-                      max={200}
-                      onChange={(e) => setWeightKg(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
-                    />
+                  {/* Unit toggle */}
+                  <div className="flex items-center bg-[#F5EFE6] rounded-full p-0.5 gap-0.5">
+                    {(['metric', 'imperial'] as const).map((u) => (
+                      <button
+                        key={u}
+                        onClick={() => setUnitSystem(u)}
+                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                          unitSystem === u
+                            ? 'bg-[#1A1410] text-white shadow-sm'
+                            : 'text-[#9c8c7e] hover:text-[#1A1410]'
+                        }`}
+                      >
+                        {u === 'metric' ? 'cm / kg' : 'ft / lb'}
+                      </button>
+                    ))}
                   </div>
                 </div>
+
+                {unitSystem === 'metric' ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Height (cm)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 170"
+                        value={heightCm}
+                        min={100} max={250}
+                        onChange={(e) => setHeightCm(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Weight (kg)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 65"
+                        value={weightKg}
+                        min={30} max={200}
+                        onChange={(e) => setWeightKg(e.target.value)}
+                        className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Height</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="relative">
+                          <input
+                            type="number"
+                            placeholder="5"
+                            value={heightFt}
+                            min={3} max={8}
+                            onChange={(e) => setHeightFt(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">ft</span>
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            placeholder="7"
+                            value={heightIn}
+                            min={0} max={11}
+                            onChange={(e) => setHeightIn(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-7"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">in</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Weight</label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          placeholder="145"
+                          value={weightLb}
+                          min={66} max={440}
+                          onChange={(e) => setWeightLb(e.target.value)}
+                          className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-7"
+                        />
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">lb</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
 
               {/* ── Style preferences ─── */}
