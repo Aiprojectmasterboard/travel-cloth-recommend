@@ -11,7 +11,7 @@ export default function Footer() {
       <div className="footer-inner">
         {/* Brand */}
         <div className="footer-brand">
-          <a href="#" className="footer-logo" aria-label="Travel Capsule AI Home">
+          <a href="/" className="footer-logo" aria-label="Travel Capsule AI Home">
             Travel <span>Capsule</span> AI
           </a>
           <p className="footer-tagline">{t.footer.tagline}</p>

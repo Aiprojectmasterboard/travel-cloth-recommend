@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Button from '@/components/ui/Button'
 import AuthButton from '@/components/AuthButton'
@@ -136,6 +136,7 @@ export default function TripPage() {
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const photoPreviewUrlRef = useRef<string | null>(null)
 
   // Submit state
   const [submitting, setSubmitting] = useState(false)
@@ -145,7 +146,6 @@ export default function TripPage() {
 
   function onCityInputChange(value: string) {
     setCityInput(value)
-    setCityError(null)
     if (value.trim().length < 2) { setSuggestions([]); setShowSuggestions(false); return }
     const q = value.toLowerCase()
     const filtered = CITY_DB.filter(
@@ -219,13 +219,28 @@ export default function TripPage() {
     })
   }
 
+  // ─── Photo URL cleanup on unmount ────────────────────────────────────────────
+
+  useEffect(() => {
+    return () => {
+      if (photoPreviewUrlRef.current) URL.revokeObjectURL(photoPreviewUrlRef.current)
+    }
+  }, [])
+
   // ─── Photo helper ────────────────────────────────────────────────────────────
 
   function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      setSubmitError('Photo must be under 5MB. Please choose a smaller image.')
+      return
+    }
+    if (photoPreviewUrlRef.current) URL.revokeObjectURL(photoPreviewUrlRef.current)
+    const url = URL.createObjectURL(file)
+    photoPreviewUrlRef.current = url
     setPhoto(file)
-    setPhotoPreview(URL.createObjectURL(file))
+    setPhotoPreview(url)
   }
 
   function toggleStyle(id: string) {
@@ -263,6 +278,13 @@ export default function TripPage() {
     setSubmitting(true)
     setSubmitError(null)
 
+    if (!turnstileToken) {
+      setSubmitError('Security check failed. Please refresh the page and try again.')
+      setSubmitting(false)
+      return
+    }
+    const token = turnstileToken
+
     try {
       let face_url: string | undefined
       if (photo) {
@@ -291,7 +313,6 @@ export default function TripPage() {
       const startDate = overallStartDate
       const endDate = overallEndDate
 
-      const token = turnstileToken ?? 'dev-bypass'
       const preview = await apiPost<PreviewResponse>('/api/preview', {
         cities: citiesWithDays,
         month: getMonthFromDate(startDate),
@@ -498,7 +519,7 @@ export default function TripPage() {
                 </div>
               )}
 
-              <Button onClick={() => setStep(2)} disabled={!step1Valid} size="xl" className="w-full">
+              <Button onClick={() => { setStep(2); window.scrollTo({ top: 0, behavior: 'smooth' }) }} disabled={!step1Valid} size="xl" className="w-full">
                 Continue →
               </Button>
             </div>
@@ -507,7 +528,7 @@ export default function TripPage() {
           {/* ─── Step 2: Profile + Style + Photo ─────────────────── */}
           {step === 2 && (
             <div>
-              <button onClick={() => setStep(1)} className="flex items-center gap-1.5 text-sm text-[#9c8c7e] mb-6 hover:text-[#1A1410] transition-colors">
+              <button onClick={() => { setStep(1); window.scrollTo({ top: 0, behavior: 'smooth' }) }} className="flex items-center gap-1.5 text-sm text-[#9c8c7e] mb-6 hover:text-[#1A1410] transition-colors">
                 ← Back
               </button>
               <p className="text-xs uppercase tracking-widest text-[#b8552e]/70 font-medium mb-2">Step 2 of 2</p>
@@ -596,8 +617,8 @@ export default function TripPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="sm:col-span-2">
                       <label className="block text-xs text-[#9c8c7e] mb-1.5">Height</label>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="relative">

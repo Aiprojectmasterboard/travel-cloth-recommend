@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import ShareModal from '@/components/ShareModal'
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? ''
@@ -431,6 +432,7 @@ function ErrorView({ tripId }: { tripId: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function ResultClient({ tripId }: { tripId: string }) {
+  const router = useRouter()
   const [trip, setTrip] = useState<Trip | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -476,9 +478,20 @@ export default function ResultClient({ tripId }: { tripId: string }) {
       const res = await fetch(`${WORKER_URL}/api/trips/${tripId}`)
       if (!res.ok) { setError(true); setLoading(false); return }
       const data: Trip = await res.json()
+      // Guard: unpaid/incomplete trips belong on the preview page
+      if (data.status !== 'completed' && data.status !== 'processing' && data.status !== 'pending') {
+        router.push(`/preview/${tripId}`)
+        return
+      }
+      // If the trip exists but has never been paid (still pending after load and not actively generating),
+      // send the user back to the preview/paywall page.
+      if (data.status === 'pending') {
+        router.push(`/preview/${tripId}`)
+        return
+      }
       setTrip(data)
       setLoading(false)
-      if (data.status === 'processing' || data.status === 'pending') {
+      if (data.status === 'processing') {
         pollingRef.current = setTimeout(fetchTrip, 2000)
       }
     } catch {

@@ -344,6 +344,7 @@ function SkeletonLoader() {
 export default function ChecklistClient({ tripId }: { tripId: string }) {
   const [trip, setTrip] = useState<TripData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [fetchError, setFetchError] = useState(false)
   const [checked, setChecked] = useState<Set<string>>(new Set())
 
   // ── Fetch trip + restore localStorage ──────────────────────────────────────
@@ -368,7 +369,7 @@ export default function ChecklistClient({ tripId }: { tripId: string }) {
     try {
       const res = await fetch(`${WORKER_URL}/api/result/${tripId}`)
       if (!res.ok) {
-        setTrip(DEMO_TRIP)
+        setFetchError(true)
         setLoading(false)
         return
       }
@@ -383,7 +384,7 @@ export default function ChecklistClient({ tripId }: { tripId: string }) {
       }
       setTrip(mapped)
     } catch {
-      setTrip(DEMO_TRIP)
+      setFetchError(true)
     } finally {
       setLoading(false)
     }
@@ -423,6 +424,18 @@ export default function ChecklistClient({ tripId }: { tripId: string }) {
   }, [tripId])
 
   if (loading) return <SkeletonLoader />
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
+        <div className="text-center p-8">
+          <p className="text-[#1A1410] font-medium mb-2">Trip not found</p>
+          <p className="text-sm text-[#9c8c7e] mb-4">This checklist link may have expired.</p>
+          <a href="/trip" className="text-[#b8552e] text-sm underline">Start a new trip</a>
+        </div>
+      </div>
+    )
+  }
 
   const currentTrip = trip ?? DEMO_TRIP
   const allItems = buildChecklist(currentTrip)

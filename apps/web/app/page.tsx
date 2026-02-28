@@ -104,7 +104,7 @@ export default function HomePage() {
               <LanguageSwitcher variant="dropdown" />
             </div>
             <Link
-              href="/trip"
+              href="/auth/login"
               className="hidden sm:block text-xs font-medium tracking-widest uppercase text-secondary/70 hover:text-primary transition-colors"
             >
               {t.nav.signIn}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { apiGet } from '@/lib/api'
 import type { ShareResult } from '../../../../../packages/types'
 
@@ -8,6 +8,7 @@ export default function ShareClient({ tripId }: { tripId: string }) {
   const [data, setData] = useState<ShareResult | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   useEffect(() => {
     apiGet<ShareResult>(`/api/share/${tripId}`)
@@ -55,11 +56,13 @@ export default function ShareClient({ tripId }: { tripId: string }) {
 
   // ─── Share page ───────────────────────────────────────────────────────────
 
-  function handleCopyLink() {
-    if (typeof navigator !== 'undefined') {
-      navigator.clipboard.writeText(data!.share_url).catch(() => {})
-    }
-  }
+  const handleCopyLink = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(data!.share_url)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch { /* silent */ }
+  }, [data])
 
   return (
     <div className="min-h-screen bg-[#1A1410] text-white flex flex-col">
@@ -118,11 +121,12 @@ export default function ShareClient({ tripId }: { tripId: string }) {
             <button
               onClick={handleCopyLink}
               className="px-4 py-2 rounded-full border border-white/20 text-white/60 text-xs hover:border-white/50 hover:text-white transition-colors flex items-center gap-1.5"
+              aria-label="Copy share link"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
-              Copy link
+              {copied ? 'Copied!' : 'Copy link'}
             </button>
             <a
               href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
