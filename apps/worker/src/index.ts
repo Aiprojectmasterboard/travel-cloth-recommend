@@ -1035,17 +1035,9 @@ app.post('/api/account/delete', async (c) => {
 // Auth: Authorization: Bearer <supabase_access_token>  (optional — anonymous
 //       access is allowed if the order is verified against the trip_id)
 //
-// TODO(migration): generation_jobs.job_type CHECK constraint only allows
-//   'teaser' | 'full'. Add 'regen' to the constraint before removing the
-//   workaround below. Migration needed:
-//     ALTER TABLE generation_jobs DROP CONSTRAINT IF EXISTS generation_jobs_job_type_check;
-//     ALTER TABLE generation_jobs ADD CONSTRAINT generation_jobs_job_type_check
-//       CHECK (job_type IN ('teaser', 'full', 'regen'));
-//
-// Regen job workaround (until migration above is applied):
-//   Regen jobs are stored as job_type='full' with mood='regen-<timestamp>' so
-//   they can be counted separately from the original generation jobs.
-//   Query pattern: mood=like.regen-* identifies regen rows per trip+city.
+// Regen jobs are stored with job_type='regen' (migration 005_add_regen_job_type).
+// Quota is enforced by counting generation_jobs rows where job_type='regen'
+// for the given trip_id + city combination.
 
 app.post('/api/regenerate', async (c) => {
   // ── 1. Parse and validate body ──────────────────────────────────────────
@@ -1102,14 +1094,12 @@ app.post('/api/regenerate', async (c) => {
 
     // ── 4. Check regen quota ───────────────────────────────────────────────
     // Both 'pro' and 'annual' allow exactly 1 regeneration per trip.
-    // Regen jobs are identified by mood starting with 'regen-' (see TODO above
-    // for the permanent solution using job_type='regen' after a DB migration).
+    // Regen jobs are identified by job_type='regen' (migration 005).
     //
     // We count existing regen jobs for this trip_id + city combination.
-    // Using PostgREST `like` filter: mood=like.regen-*
     const regenJobsRes = await supabase(
       c.env,
-      `/generation_jobs?trip_id=eq.${trip_id}&city=eq.${encodeURIComponent(cityTrimmed)}&mood=like.regen-*&select=id`,
+      `/generation_jobs?trip_id=eq.${trip_id}&city=eq.${encodeURIComponent(cityTrimmed)}&job_type=eq.regen&select=id`,
       {
         headers: {
           // Request a count so we can read the total from content-range
@@ -1180,8 +1170,6 @@ app.post('/api/regenerate', async (c) => {
     }
 
     // Build a StylePrompts-compatible object for imageGenAgent
-    const regenMoodKey = `regen-${Date.now()}`;
-
     // If no stored prompt, fall back to a generic style prompt for the city
     const finalPrompt =
       existingPrompt ??
@@ -1192,7 +1180,7 @@ app.post('/api/regenerate', async (c) => {
 
     const stylePrompt = {
       city: cityTrimmed,
-      mood: regenMoodKey,  // 'regen-<timestamp>' doubles as the regen marker key
+      mood: existingMood,
       prompt: finalPrompt,
       negative_prompt:
         'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, ' +
@@ -1200,8 +1188,7 @@ app.post('/api/regenerate', async (c) => {
     };
 
     // ── 6. Call imageGenAgent to generate 1 new image ─────────────────────
-    // TODO: Pass faceUrl if still available (face_url is nulled post-generation
-    //       for privacy). For regen, face photo is not expected to be present.
+    // face_url is nulled after initial generation for privacy; not available for regen.
     const { imageGenAgent } = await import('./agents/imageGenAgent');
 
     const genResult = await imageGenAgent(
@@ -1224,16 +1211,14 @@ app.post('/api/regenerate', async (c) => {
     const imageUrl = firstResult.image_url;
 
     // ── 7. Record the regen job in generation_jobs ─────────────────────────
-    // job_type='full' is used because the DB CHECK constraint does not yet
-    // include 'regen'. The mood='regen-<timestamp>' value serves as the
-    // distinguishing marker. See TODO at the top of this route.
+    // job_type='regen' is now supported by the CHECK constraint
+    // (migration 005_add_regen_job_type).
     const insertRes = await supabase(c.env, '/generation_jobs', {
       method: 'POST',
       body: JSON.stringify({
         trip_id,
         city: cityTrimmed,
-        job_type: 'full',              // TODO: change to 'regen' after migration
-        mood: regenMoodKey,            // 'regen-<timestamp>' identifies this as a regen
+        job_type: 'regen',
         prompt: finalPrompt,
         negative_prompt: stylePrompt.negative_prompt,
         status: 'completed',
