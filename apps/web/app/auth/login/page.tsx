@@ -179,10 +179,11 @@ export default function LoginPage() {
 
   async function signUpWithEmail() {
     if (!email || !password) { setError('Please enter your email and password.'); return }
+    if (password.length < 6) { setError('Password must be at least 6 characters.'); return }
     setLoadingEmail(true)
     clearMessages()
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -190,7 +191,21 @@ export default function LoginPage() {
         },
       })
       if (signUpError) {
-        setError(signUpError.message)
+        const msg = signUpError.message.toLowerCase()
+        // 422: email already registered (Supabase uses this for duplicate signups)
+        if (
+          signUpError.status === 422 ||
+          msg.includes('already registered') ||
+          msg.includes('already in use') ||
+          msg.includes('already been registered')
+        ) {
+          setError('__already_exists__')
+        } else {
+          setError(signUpError.message)
+        }
+      } else if (data.user && (data.user.confirmed_at || data.user.email_confirmed_at)) {
+        // Email confirmations disabled — user is immediately active
+        router.push('/trip')
       } else {
         setMessage('check-email')
       }
@@ -343,15 +358,20 @@ export default function LoginPage() {
               />
 
               {mode !== 'forgot' && (
-                <Field
-                  label="Password"
-                  type="password"
-                  value={password}
-                  onChange={setPassword}
-                  placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
-                  autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                  disabled={loadingEmail}
-                />
+                <div>
+                  <Field
+                    label="Password"
+                    type="password"
+                    value={password}
+                    onChange={setPassword}
+                    placeholder={mode === 'signup' ? 'At least 6 characters' : '••••••••'}
+                    autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                    disabled={loadingEmail}
+                  />
+                  {mode === 'signup' && password.length > 0 && password.length < 6 && (
+                    <p className="mt-1 text-xs text-red-400">Password must be at least 6 characters</p>
+                  )}
+                </div>
               )}
 
               {mode === 'signin' && (
@@ -367,11 +387,34 @@ export default function LoginPage() {
             </div>
 
             {/* ─── Error / success messages ────────────────────────────────── */}
-            {error && (
+            {error === '__already_exists__' ? (
+              <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4" role="alert">
+                <p className="text-sm font-semibold text-amber-800 mb-1">
+                  Email already registered
+                </p>
+                <p className="text-sm text-amber-700 mb-3">
+                  An account with <strong>{email}</strong> already exists. Sign in instead, or reset your password if you forgot it.
+                </p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => { setMode('signin'); setError(null) }}
+                    className="text-xs font-semibold text-[#b8552e] hover:underline"
+                  >
+                    Sign in →
+                  </button>
+                  <button
+                    onClick={() => { setMode('forgot'); setError(null) }}
+                    className="text-xs text-[#9c8c7e] hover:text-[#1A1410] hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              </div>
+            ) : error ? (
               <p className="mt-4 text-sm text-red-500 leading-snug" role="alert">
                 {error}
               </p>
-            )}
+            ) : null}
             {(message === 'check-email' || message === 'reset-sent') && (
               <div className="mt-4 rounded-xl border border-[#F5EFE6] bg-[#FDF8F3] p-4" role="status">
                 <p className="text-sm font-semibold text-[#1A1410] mb-1">Check your email</p>
