@@ -7,7 +7,7 @@
  *   free  → Returns only item count + 3 layering principles (shown on preview page)
  *   paid  → Returns full items (8–12) + daily outfit plan
  *
- * Model: claude-sonnet-4-6-20260219
+ * Model: claude-sonnet-4-6
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -49,7 +49,7 @@ export type CapsuleResult = FreeCapsuleResult | PaidCapsuleResult;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MODEL = 'claude-sonnet-4-6-20260219';
+const MODEL = 'claude-sonnet-4-6';
 
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',

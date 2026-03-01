@@ -5,7 +5,7 @@
  * Output: mood_name, vibe_tags, color_palette, avoid_note — plus a combined
  * `{City} — {mood_name}` label.
  *
- * Model: claude-sonnet-4-6-20260219
+ * Model: claude-sonnet-4-6
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -39,7 +39,7 @@ interface ClaudeVibeResponse {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MODEL = 'claude-sonnet-4-6-20260219';
+const MODEL = 'claude-sonnet-4-6';
 
 // ─── Main Exported Function ───────────────────────────────────────────────────
 

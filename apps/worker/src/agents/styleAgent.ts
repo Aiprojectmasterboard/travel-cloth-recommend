@@ -4,7 +4,7 @@
  * Uses Claude API to generate NanoBanana-ready image prompts for each city.
  * Produces 2 prompts per city (max 6 total for a 3-city trip).
  *
- * Model: claude-sonnet-4-6-20260219
+ * Model: claude-sonnet-4-6
  */
 
 import Anthropic from '@anthropic-ai/sdk';
@@ -33,7 +33,7 @@ interface ClaudeStyleResponse {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MODEL = 'claude-sonnet-4-6-20260219';
+const MODEL = 'claude-sonnet-4-6';
 
 const DEFAULT_NEGATIVE =
   'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, ' +
