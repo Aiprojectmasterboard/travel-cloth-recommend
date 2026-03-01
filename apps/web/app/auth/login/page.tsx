@@ -129,8 +129,8 @@ export default function LoginPage() {
         // Explicitly navigate to the OAuth URL for better mobile compatibility
         window.location.href = data.url
       }
-    } catch {
-      setError('Could not connect to Google. Please try again.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not connect to Google. Please try again.')
     } finally {
       setLoadingGoogle(false)
     }
@@ -151,8 +151,8 @@ export default function LoginPage() {
       } else {
         setMessage('reset-sent')
       }
-    } catch {
-      setError('Failed to send reset email. Please try again.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to send reset email. Please try again.')
     } finally {
       setLoadingEmail(false)
     }
@@ -171,8 +171,8 @@ export default function LoginPage() {
       } else {
         router.push('/trip')
       }
-    } catch {
-      setError('Sign in failed. Please try again.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Sign in failed. Please try again.')
     } finally {
       setLoadingEmail(false)
     }
@@ -210,8 +210,8 @@ export default function LoginPage() {
       } else {
         setMessage('check-email')
       }
-    } catch {
-      setError('Sign up failed. Please try again.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Sign up failed. Please try again.')
     } finally {
       setLoadingEmail(false)
     }
