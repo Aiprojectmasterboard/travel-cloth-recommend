@@ -85,7 +85,7 @@ jobs:
           command: pages deploy apps/web/.vercel/output/static --project-name=travel-cloth-recommend --commit-dirty=true
 
   deploy-worker:
-    name: Deploy Cloudflare Worker
+    name: Deploy Cloudflare Worker + Secrets
     runs-on: ubuntu-latest
     needs: deploy
     permissions:
@@ -112,3 +112,33 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           workingDirectory: apps/worker
           command: deploy
+
+      # ── Set Worker secrets from GitHub repository secrets ──────────────────────
+      # These secrets must be added to GitHub → Settings → Secrets → Actions once.
+      # wrangler secret put is idempotent — safe to run on every deploy.
+      - name: Set Worker secrets
+        working-directory: apps/worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set_secret() {
+            local NAME="$1"
+            local VALUE="$2"
+            if [ -n "$VALUE" ]; then
+              echo "$VALUE" | npx wrangler secret put "$NAME"
+              echo "✅ Secret set: $NAME"
+            else
+              echo "⚠️  Skipping $NAME (not configured in GitHub Secrets)"
+            fi
+          }
+          set_secret ANTHROPIC_API_KEY              "${{ secrets.ANTHROPIC_API_KEY }}"
+          set_secret NANOBANANA_API_KEY             "${{ secrets.NANOBANANA_API_KEY }}"
+          set_secret POLAR_ACCESS_TOKEN             "${{ secrets.POLAR_ACCESS_TOKEN }}"
+          set_secret POLAR_WEBHOOK_SECRET           "${{ secrets.POLAR_WEBHOOK_SECRET }}"
+          set_secret SUPABASE_SERVICE_ROLE_KEY      "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+          set_secret R2_ACCESS_KEY_ID               "${{ secrets.R2_ACCESS_KEY_ID }}"
+          set_secret R2_SECRET_ACCESS_KEY           "${{ secrets.R2_SECRET_ACCESS_KEY }}"
+          set_secret RESEND_API_KEY                 "${{ secrets.RESEND_API_KEY }}"
+          set_secret GOOGLE_PLACES_API_KEY          "${{ secrets.GOOGLE_PLACES_API_KEY }}"
+          set_secret CLOUDFLARE_TURNSTILE_SECRET_KEY "${{ secrets.CLOUDFLARE_TURNSTILE_SECRET_KEY }}"
