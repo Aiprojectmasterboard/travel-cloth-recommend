@@ -461,6 +461,10 @@ app.post('/api/payment/webhook', async (c) => {
       customer?: { email?: string };
       // checkout metadata is the primary carrier for our trip_id + plan
       checkout?: { metadata?: Record<string, string | number | boolean | null> };
+      // subscription-specific fields (for renewal/cancel events)
+      current_period_start?: string;
+      current_period_end?: string;
+      status?: string;
     };
   };
   try {
@@ -541,6 +545,65 @@ app.post('/api/payment/webhook', async (c) => {
         });
       })
     );
+  }
+
+  // ── subscription.active — handles annual subscription renewals ──────────
+  // When Polar renews an annual subscription, reset trip_count for the new period.
+  if (event.type === 'subscription.active') {
+    const customerEmail = event.data.customer?.email;
+    const periodStart = event.data.current_period_start; // ISO date from Polar
+    const periodEnd = event.data.current_period_end;
+
+    if (customerEmail && periodStart && periodEnd) {
+      // Parse Polar dates to DATE strings (YYYY-MM-DD)
+      const pStart = periodStart.slice(0, 10);
+      const pEnd = periodEnd.slice(0, 10);
+
+      // Find existing usage record for this user
+      const usageRes = await supabase(
+        c.env,
+        `/usage_records?user_email=eq.${encodeURIComponent(customerEmail)}&plan=eq.annual&order=period_end.desc&limit=1`
+      );
+      const usageRows = (await usageRes.json()) as Array<{ id: string; period_end: string }>;
+
+      if (usageRows.length > 0 && usageRows[0]) {
+        const existing = usageRows[0];
+        // Only reset if this is a new period (Polar period_start is after existing period_end)
+        if (pStart > existing.period_end) {
+          console.log(`[Webhook] Annual renewal for ${customerEmail}: resetting trip_count`);
+          await supabase(c.env, `/usage_records?id=eq.${existing.id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              trip_count: 0,
+              period_start: pStart,
+              period_end: pEnd,
+            }),
+          });
+        }
+      } else {
+        // No existing record — create one with 0 trips for the new period
+        await supabase(c.env, '/usage_records', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_email: customerEmail,
+            plan: 'annual',
+            trip_count: 0,
+            period_start: pStart,
+            period_end: pEnd,
+          }),
+        });
+      }
+    }
+  }
+
+  // ── subscription.canceled / subscription.revoked ────────────────────────
+  // Log cancellation. The user can still use remaining trips until period_end.
+  if (event.type === 'subscription.canceled' || event.type === 'subscription.revoked') {
+    const customerEmail = event.data.customer?.email;
+    const status = event.data.status ?? event.type.split('.')[1];
+    console.log(`[Webhook] Subscription ${status} for ${customerEmail ?? 'unknown'}`);
+    // No trip_count change — user keeps access until period_end expires.
+    // checkAnnualLimit already validates period_end, so access naturally expires.
   }
 
   return c.json({ received: true });
