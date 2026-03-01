@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { getPreview, createCheckout } from '@/lib/api'
+import AuthButton from '@/components/AuthButton'
 import type { PreviewResponse } from '../../../../../packages/types'
 import type { PlanType } from '../../../../../packages/types'
 
@@ -188,27 +189,8 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
             Travel Capsule AI
           </span>
         </a>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            aria-label="Notifications"
-            style={{
-              width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
-              background: 'rgba(184, 85, 46, 0.05)', color: '#1A1410',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 22 }}>notifications</span>
-          </button>
-          <button
-            aria-label="Account"
-            style={{
-              width: 40, height: 40, borderRadius: '50%', border: 'none', cursor: 'pointer',
-              background: 'rgba(184, 85, 46, 0.05)', color: '#1A1410',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 22 }}>account_circle</span>
-          </button>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+          <AuthButton />
         </div>
       </header>
 
@@ -493,7 +475,7 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
             {[
               { label: 'Privacy Policy', href: '/legal/privacy' },
               { label: 'Terms of Service', href: '/legal/terms' },
-              { label: 'Contact', href: 'mailto:hello@travelcapsule.com' },
+              { label: 'Contact', href: 'mailto:hello@travelscapsule.com' },
             ].map(({ label, href }) => (
               <a
                 key={label}
