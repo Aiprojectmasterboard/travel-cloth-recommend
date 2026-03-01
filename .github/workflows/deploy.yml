@@ -47,7 +47,7 @@ jobs:
       # and node:async_hooks. Without nodejs_compat the Worker silently fails
       # and serves a blank page. We patch the Pages project via API every deploy
       # to guarantee the flag is always present.
-      - name: Set nodejs_compat compatibility flag via Cloudflare API
+      - name: Set nodejs_compat flag + NEXT_PUBLIC env vars via Cloudflare API
         env:
           CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -60,11 +60,25 @@ jobs:
               "deployment_configs": {
                 "production": {
                   "compatibility_flags": ["nodejs_compat"],
-                  "compatibility_date": "2024-09-23"
+                  "compatibility_date": "2024-09-23",
+                  "env_vars": {
+                    "NEXT_PUBLIC_SUPABASE_URL":                  {"value": "https://lmrrawhvjmuexajllint.supabase.co"},
+                    "NEXT_PUBLIC_SUPABASE_ANON_KEY":             {"value": "sb_publishable_3_Vzle5e2GXFtLG5d8F69Q_oznMxXm2"},
+                    "NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY": {"value": "0x4AAAAAACj5TNMi2k0b77UT"},
+                    "NEXT_PUBLIC_WORKER_URL":                    {"value": "https://travel-capsule-worker.netson94.workers.dev"},
+                    "NEXT_PUBLIC_SITE_URL":                      {"value": "https://travelscapsule.com"}
+                  }
                 },
                 "preview": {
                   "compatibility_flags": ["nodejs_compat"],
-                  "compatibility_date": "2024-09-23"
+                  "compatibility_date": "2024-09-23",
+                  "env_vars": {
+                    "NEXT_PUBLIC_SUPABASE_URL":                  {"value": "https://lmrrawhvjmuexajllint.supabase.co"},
+                    "NEXT_PUBLIC_SUPABASE_ANON_KEY":             {"value": "sb_publishable_3_Vzle5e2GXFtLG5d8F69Q_oznMxXm2"},
+                    "NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY": {"value": "0x4AAAAAACj5TNMi2k0b77UT"},
+                    "NEXT_PUBLIC_WORKER_URL":                    {"value": "https://travel-capsule-worker.netson94.workers.dev"},
+                    "NEXT_PUBLIC_SITE_URL":                      {"value": "https://travelscapsule.com"}
+                  }
                 }
               }
             }')

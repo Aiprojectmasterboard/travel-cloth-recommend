@@ -22,7 +22,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const supabase = createClient()
-    if (!supabase) { setLoading(false); return }
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
@@ -40,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function signOut() {
     const supabase = createClient()
-    if (supabase) await supabase.auth.signOut()
+    await supabase.auth.signOut()
     setUser(null)
   }
 
