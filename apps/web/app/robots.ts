@@ -7,30 +7,34 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        // Block API routes and private result pages from indexing
-        disallow: ['/api/', '/result/'],
+        allow: ['/', '/trip', '/share/', '/legal/'],
+        disallow: ['/api/', '/result/', '/preview/', '/checklist/', '/account/', '/auth/'],
       },
+      // AI crawlers (GEO: Generative Engine Optimization)
       {
-        // Allow AI crawlers that respect robots.txt (GEO: Generative Engine Optimization)
         userAgent: 'GPTBot',
-        allow: '/',
-        disallow: ['/api/', '/result/'],
+        allow: ['/', '/trip', '/share/'],
+        disallow: ['/api/', '/result/', '/preview/', '/checklist/', '/account/', '/auth/'],
       },
       {
         userAgent: 'PerplexityBot',
-        allow: '/',
-        disallow: ['/api/', '/result/'],
+        allow: ['/', '/trip', '/share/'],
+        disallow: ['/api/', '/result/', '/preview/', '/checklist/', '/account/', '/auth/'],
       },
       {
         userAgent: 'ClaudeBot',
-        allow: '/',
-        disallow: ['/api/', '/result/'],
+        allow: ['/', '/trip', '/share/'],
+        disallow: ['/api/', '/result/', '/preview/', '/checklist/', '/account/', '/auth/'],
       },
       {
         userAgent: 'anthropic-ai',
-        allow: '/',
-        disallow: ['/api/', '/result/'],
+        allow: ['/', '/trip', '/share/'],
+        disallow: ['/api/', '/result/', '/preview/', '/checklist/', '/account/', '/auth/'],
+      },
+      {
+        userAgent: 'Googlebot-Image',
+        allow: ['/', '/share/'],
+        disallow: ['/api/', '/result/', '/preview/', '/checklist/', '/account/', '/auth/'],
       },
     ],
     sitemap: 'https://travelscapsule.com/sitemap.xml',
