@@ -106,8 +106,8 @@ export async function getResult(tripId: string): Promise<ResultData> {
 export async function upgradeTrip(
   tripId: string,
   upgradeToken: string
-): Promise<void> {
-  await apiPost<{ ok: boolean }>('/api/payment/upgrade', {
+): Promise<{ checkout_url: string }> {
+  return apiPost<{ checkout_url: string }>('/api/payment/upgrade', {
     trip_id: tripId,
     upgrade_token: upgradeToken,
   })

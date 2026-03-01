@@ -58,12 +58,12 @@ export default function UpgradeModal({
     setStatus('loading')
     setError(null)
     try {
-      await upgradeTrip(tripId, upgradeToken)
+      const { checkout_url } = await upgradeTrip(tripId, upgradeToken)
       setStatus('success')
+      // Redirect to Polar checkout for Pro upgrade
       setTimeout(() => {
-        onClose()
-        window.location.reload()
-      }, 1500)
+        window.location.href = checkout_url
+      }, 500)
     } catch {
       setStatus('error')
       setError('Upgrade failed. The offer may have expired.')

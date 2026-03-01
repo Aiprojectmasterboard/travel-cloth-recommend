@@ -61,37 +61,62 @@ export async function supabase(
 
 /**
  * Timing-safe HMAC-SHA256 verification for Polar webhook signatures.
- * Polar sends `webhook-signature` as `sha256=<hex>`.
+ * Polar follows the Standard Webhooks spec:
+ *   - Headers: webhook-id, webhook-timestamp, webhook-signature
+ *   - Signed content: "{msgId}.{timestamp}.{body}"
+ *   - Signature format: "v1,<base64>" (space-delimited for multiple)
+ *   - Secret format: may be prefixed with "whsec_" (base64-encoded)
  */
 async function verifyHmac(
   body: string,
   signature: string,
-  secret: string
+  secret: string,
+  msgId: string,
+  msgTimestamp: string
 ): Promise<boolean> {
-  const encoder = new TextEncoder();
-  const key = await crypto.subtle.importKey(
-    'raw',
-    encoder.encode(secret),
-    { name: 'HMAC', hash: 'SHA-256' },
-    false,
-    ['sign']
-  );
-  const signatureBuffer = await crypto.subtle.sign('HMAC', key, encoder.encode(body));
-  const computedHex = Array.from(new Uint8Array(signatureBuffer))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
+  try {
+    // Strip "whsec_" prefix if present, then base64-decode to raw bytes
+    const rawSecret = secret.startsWith('whsec_') ? secret.slice(6) : secret;
+    let keyBytes: Uint8Array;
+    try {
+      keyBytes = Uint8Array.from(atob(rawSecret), (c) => c.charCodeAt(0));
+    } catch {
+      // If not valid base64, treat as raw UTF-8 (fallback for plain secrets)
+      keyBytes = new TextEncoder().encode(rawSecret);
+    }
 
-  // Polar sends either "sha256=<hex>" or plain "<hex>"
-  const normalized = signature.startsWith('sha256=') ? signature.slice(7) : signature;
+    const key = await crypto.subtle.importKey(
+      'raw',
+      keyBytes,
+      { name: 'HMAC', hash: 'SHA-256' },
+      false,
+      ['sign']
+    );
 
-  if (computedHex.length !== normalized.length) return false;
+    // Standard Webhooks signed content: "{msgId}.{timestamp}.{body}"
+    const signedContent = `${msgId}.${msgTimestamp}.${body}`;
+    const sigBuf = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(signedContent));
+    const computedB64 = btoa(String.fromCharCode(...new Uint8Array(sigBuf)));
 
-  // Constant-time comparison via XOR
-  let mismatch = 0;
-  for (let i = 0; i < computedHex.length; i++) {
-    mismatch |= computedHex.charCodeAt(i) ^ normalized.charCodeAt(i);
+    // signature header: "v1,<b64>" or space-delimited list of "v1,<b64>"
+    const parts = signature.split(' ');
+    for (const part of parts) {
+      const [version, sigB64] = part.split(',');
+      if (version !== 'v1' || !sigB64) continue;
+
+      // Timing-safe comparison of base64 strings
+      if (computedB64.length !== sigB64.length) continue;
+      let mismatch = 0;
+      for (let i = 0; i < computedB64.length; i++) {
+        mismatch |= computedB64.charCodeAt(i) ^ sigB64.charCodeAt(i);
+      }
+      if (mismatch === 0) return true;
+    }
+    return false;
+  } catch (err) {
+    console.error('[verifyHmac] Error:', (err as Error).message);
+    return false;
   }
-  return mismatch === 0;
 }
 
 // ─── Turnstile Verification ───────────────────────────────────────────────────
@@ -384,7 +409,7 @@ app.post('/api/payment/checkout', async (c) => {
     // products array is the current non-deprecated field (product_id is deprecated)
     products: [productId],
     metadata: { trip_id, plan: typedPlan },
-    return_url: returnUrl,
+    success_url: returnUrl,
     ...(customer_email ? { customer_email } : {}),
   };
 
@@ -415,9 +440,12 @@ app.post('/api/payment/checkout', async (c) => {
 
 app.post('/api/payment/webhook', async (c) => {
   const rawBody = await c.req.text();
+  // Standard Webhooks headers from Polar
   const signature = c.req.header('webhook-signature') ?? c.req.header('x-polar-signature') ?? '';
+  const msgId = c.req.header('webhook-id') ?? '';
+  const msgTimestamp = c.req.header('webhook-timestamp') ?? '';
 
-  const isValid = await verifyHmac(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET);
+  const isValid = await verifyHmac(rawBody, signature, c.env.POLAR_WEBHOOK_SECRET, msgId, msgTimestamp);
   if (!isValid) {
     console.warn('[Webhook] Invalid Polar signature');
     return c.json({ error: 'Invalid signature' }, 401);
@@ -427,9 +455,12 @@ app.post('/api/payment/webhook', async (c) => {
     type: string;
     data: {
       id: string;
-      metadata?: { trip_id?: string; plan?: string };
+      metadata?: Record<string, string | number | boolean | null>;
       amount?: number;
-      user?: { email?: string };
+      net_amount?: number;
+      customer?: { email?: string };
+      // checkout metadata is the primary carrier for our trip_id + plan
+      checkout?: { metadata?: Record<string, string | number | boolean | null> };
     };
   };
   try {
@@ -440,10 +471,12 @@ app.post('/api/payment/webhook', async (c) => {
 
   if (event.type === 'order.paid') {
     const polarOrderId = event.data.id;
-    const tripId = event.data.metadata?.trip_id;
-    const plan = (event.data.metadata?.plan ?? 'standard') as PlanType;
-    const amount = event.data.amount ?? 500;
-    const userEmail = event.data.user?.email ?? '';
+    // Polar stores checkout metadata on both data.metadata and data.checkout.metadata
+    const meta = event.data.metadata ?? event.data.checkout?.metadata ?? {};
+    const tripId = (meta.trip_id as string | undefined);
+    const plan = ((meta.plan as string | undefined) ?? 'standard') as PlanType;
+    const amount = event.data.net_amount ?? event.data.amount ?? 500;
+    const userEmail = event.data.customer?.email ?? '';
 
     if (!tripId || !isValidUUID(tripId)) {
       return c.json({ error: 'Missing or invalid trip_id in metadata' }, 400);
@@ -565,7 +598,7 @@ app.post('/api/payment/upgrade', async (c) => {
       plan: 'pro',
       upgrade_from: standardOrder.polar_order_id,
     },
-    return_url: upgradeReturnUrl,
+    success_url: upgradeReturnUrl,
   };
 
   const polarRes = await fetch('https://api.polar.sh/v1/checkouts/', {

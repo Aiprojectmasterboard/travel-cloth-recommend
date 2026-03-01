@@ -83,6 +83,7 @@ async function sbPatch(env: Bindings, path: string, body: Record<string, unknown
  * Throws an error with message "AnnualLimitReached" if the user_email has
  * consumed >= 12 trips in the current annual billing period.
  * Only applies to the "annual" plan.
+ * Checks period_end to ensure the record is still within the active billing cycle.
  */
 async function checkAnnualLimit(
   userEmail: string,
@@ -92,7 +93,7 @@ async function checkAnnualLimit(
 
   const res = await sbFetch(
     env,
-    `/usage_records?user_email=eq.${encodeURIComponent(userEmail)}&plan=eq.annual&limit=1`
+    `/usage_records?user_email=eq.${encodeURIComponent(userEmail)}&plan=eq.annual&order=period_end.desc&limit=1`
   );
 
   if (!res.ok) {
@@ -100,45 +101,58 @@ async function checkAnnualLimit(
     return;
   }
 
-  const rows = (await res.json()) as Array<{ trip_count: number; period_start: string }>;
+  const rows = (await res.json()) as Array<{ trip_count: number; period_start: string; period_end: string }>;
   if (rows.length === 0) return; // no record yet → first trip, allow
 
   const row = rows[0];
-  if (row && row.trip_count >= 12) {
+  if (!row) return;
+
+  // If the billing period has expired, treat as fresh (allow)
+  const today = new Date().toISOString().slice(0, 10);
+  if (row.period_end && today > row.period_end) return;
+
+  if (row.trip_count >= 12) {
     throw new Error('AnnualLimitReached');
   }
 }
 
 /**
  * Increments usage_records.trip_count for an annual-plan user.
- * Uses upsert so the row is created on first trip.
+ * If an active period record exists, increments trip_count.
+ * If no record or period expired, creates a new record with 1-year period.
  */
 async function incrementAnnualUsage(userEmail: string, env: Bindings): Promise<void> {
   if (!userEmail) return;
 
-  // Compute period start (1st of the current month as a proxy for billing cycle)
   const now = new Date();
-  const periodStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}-01`;
+  const todayStr = now.toISOString().slice(0, 10); // YYYY-MM-DD
 
-  // Upsert: if row exists increment, else create with count=1
+  // Find the most recent annual usage record
   const existing = await sbFetch(
     env,
-    `/usage_records?user_email=eq.${encodeURIComponent(userEmail)}&plan=eq.annual&limit=1`
+    `/usage_records?user_email=eq.${encodeURIComponent(userEmail)}&plan=eq.annual&order=period_end.desc&limit=1`
   );
 
   if (existing.ok) {
-    const rows = (await existing.json()) as Array<{ id: string; trip_count: number }>;
+    const rows = (await existing.json()) as Array<{ id: string; trip_count: number; period_end: string }>;
     if (rows.length > 0 && rows[0]) {
-      // Increment existing row
-      await sbPatch(env, `/usage_records?id=eq.${rows[0].id}`, {
-        trip_count: rows[0].trip_count + 1,
-        updated_at: new Date().toISOString(),
-      });
-      return;
+      // If period is still active, increment
+      if (rows[0].period_end && todayStr <= rows[0].period_end) {
+        await sbPatch(env, `/usage_records?id=eq.${rows[0].id}`, {
+          trip_count: rows[0].trip_count + 1,
+        });
+        return;
+      }
+      // Period expired — fall through to create new record
     }
   }
 
-  // Insert first-time row
+  // Create new usage record (first trip or new billing period)
+  const periodStart = todayStr;
+  const nextYear = new Date(now);
+  nextYear.setUTCFullYear(nextYear.getUTCFullYear() + 1);
+  const periodEnd = nextYear.toISOString().slice(0, 10);
+
   await sbFetch(env, '/usage_records', {
     method: 'POST',
     body: JSON.stringify({
@@ -146,6 +160,7 @@ async function incrementAnnualUsage(userEmail: string, env: Bindings): Promise<v
       plan: 'annual',
       trip_count: 1,
       period_start: periodStart,
+      period_end: periodEnd,
     }),
   });
 }

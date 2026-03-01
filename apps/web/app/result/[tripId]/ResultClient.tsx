@@ -496,6 +496,8 @@ export default function ResultClient({ tripId }: { tripId: string }) {
 
     try {
       const res = await fetch(`${WORKER_URL}/api/trips/${tripId}`)
+      // 402 = payment required — redirect to preview/paywall
+      if (res.status === 402) { router.push(`/preview/${tripId}`); return }
       if (!res.ok) { setError(true); setLoading(false); return }
       const data: Trip = await res.json()
       // Unpaid trips (pending) and truly failed/expired trips belong on the preview page
