@@ -102,7 +102,9 @@ export function useTurnstile(): UseTurnstileReturn {
           setToken(null)
         },
         size: 'invisible',
-        appearance: 'interaction-only',
+        // NOTE: do NOT set appearance for invisible widgets —
+        // 'interaction-only' causes the widget to wait for user interaction
+        // which never fires when the widget is hidden, so the token is never generated.
       })
 
       widgetIdRef.current = id
@@ -136,7 +138,6 @@ export function useTurnstile(): UseTurnstileReturn {
           'expired-callback': () => setToken(null),
           'error-callback': () => setToken(null),
           size: 'invisible',
-          appearance: 'interaction-only',
         })
         widgetIdRef.current = id
         setWidgetId(id)
