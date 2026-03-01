@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get('code')
   const type = requestUrl.searchParams.get('type')
+  const oauthError = requestUrl.searchParams.get('error')
 
   // Use the request origin so redirects stay on the same domain the user is on
   // (e.g. pages.dev vs travelscapsule.com). Fall back to env or hardcoded value.
@@ -21,6 +22,11 @@ export async function GET(request: NextRequest) {
   const siteUrl = allowedOrigins.includes(requestOrigin)
     ? requestOrigin
     : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelscapsule.com')
+
+  // Supabase sends ?error=access_denied when user cancels OAuth or provider rejects
+  if (oauthError) {
+    return NextResponse.redirect(`${siteUrl}/auth/login?error=auth_failed`)
+  }
 
   if (code) {
     const cookieStore = await cookies()
