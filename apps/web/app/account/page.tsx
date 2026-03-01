@@ -11,7 +11,8 @@ export default function AccountPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading, signOut } = useAuth()
-  const supabase = createClient()
+  // deploy.yml injects NEXT_PUBLIC_* at build time; non-null assertion is safe
+  const supabase = createClient()!
 
   // Password recovery redirect — auto-open password section
   const isRecovery = searchParams.get('reset') === 'true'

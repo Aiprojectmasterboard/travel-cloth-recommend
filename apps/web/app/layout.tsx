@@ -499,8 +499,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         {/* Theme color */}
         <meta name="theme-color" content="#C4714C" />
-        {/* Google Search Console — add verification code when ready */}
-        {/* <meta name="google-site-verification" content="YOUR_CODE_HERE" /> */}
+        <meta name="google-site-verification" content="RuXip_6tZ1YWju0teoViUlg71HO_-3-P9H2JGfdGZ3I" />
         {/* Material Symbols Outlined — used for icons throughout the UI */}
         <link
           rel="stylesheet"

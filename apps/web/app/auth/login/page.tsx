@@ -86,7 +86,8 @@ function Field({
 
 export default function LoginPage() {
   const router = useRouter()
-  const supabase = createClient()
+  // deploy.yml injects NEXT_PUBLIC_* at build time; non-null assertion is safe
+  const supabase = createClient()!
 
   const [mode, setMode] = useState<'signin' | 'signup' | 'forgot'>('signin')
   const [name, setName] = useState('')
