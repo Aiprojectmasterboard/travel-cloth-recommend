@@ -29,7 +29,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
-  font-family: var(--font-sans), 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-sans), 'Plus Jakarta Sans', var(--font-korean-sans), 'Noto Sans KR', sans-serif;
   background: var(--cream);
   color: var(--ink);
   overflow-x: hidden;
@@ -68,7 +68,7 @@ header {
 }
 
 .hero h1 {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Playfair Display', var(--font-korean-serif), 'Noto Serif KR', serif;
   font-size: clamp(2.8rem, 5vw, 5rem);
   font-weight: 700;
   line-height: 1.1;
@@ -180,7 +180,7 @@ section { padding: 5rem 0; }
   margin-bottom: 0.8rem;
 }
 .section-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Playfair Display', var(--font-korean-serif), 'Noto Serif KR', serif;
   font-size: clamp(1.9rem, 3.5vw, 3rem);
   line-height: 1.15; letter-spacing: -0.025em;
   color: var(--ink);

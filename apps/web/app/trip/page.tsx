@@ -549,13 +549,13 @@ export default function TripPage() {
               <h1 className="text-3xl font-bold text-[#1A1410] mb-1" style={{ fontFamily: 'Playfair Display, serif' }}>
                 Personalize your look
               </h1>
-              <p className="text-[#9c8c7e] mb-4">
+              <p className="text-[#9c8c7e] mb-3">
                 Help the AI style your perfect capsule wardrobe.
               </p>
 
               {/* ── Gender ─── */}
               <section className="mb-3">
-                <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-3">
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-2">
                   Gender <span className="text-[#b8552e]">*</span>
                 </p>
                 <div className="grid grid-cols-3 gap-2">
@@ -567,13 +567,13 @@ export default function TripPage() {
                     <button
                       key={val}
                       onClick={() => setGender(val)}
-                      className={`flex flex-col items-center gap-1.5 py-3.5 rounded-xl text-sm font-medium transition-all duration-200 ${
+                      className={`flex flex-col items-center gap-1 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
                         gender === val
                           ? 'bg-[#1A1410] text-white shadow-md scale-105'
                           : 'bg-white border border-[#F5EFE6] text-[#1A1410] hover:border-[#b8552e]/40 hover:bg-[#FDF8F3]'
                       }`}
                     >
-                      <span className="text-xl">{icon}</span>
+                      <span className="text-lg">{icon}</span>
                       {label}
                     </button>
                   ))}
@@ -581,11 +581,11 @@ export default function TripPage() {
               </section>
 
               {/* ── Body info ─── */}
-              <section className="mb-7">
+              <section className="mb-4">
                 <div className="flex items-center justify-between mb-3">
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e]">Body Info</p>
-                    <p className="text-xs text-[#9c8c7e]/70 mt-0.5">Optional — improves fit & layering recommendations</p>
+                    <p className="text-xs text-[#9c8c7e]/70">Optional — improves fit & layering</p>
                   </div>
                   {/* Unit toggle */}
                   <div className="flex items-center bg-[#F5EFE6] rounded-full p-0.5 gap-0.5">
@@ -608,32 +608,32 @@ export default function TripPage() {
                 {unitSystem === 'metric' ? (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Height (cm)</label>
+                      <label className="block text-xs text-[#9c8c7e] mb-1">Height (cm)</label>
                       <input
                         type="number"
                         placeholder="e.g. 170"
                         value={heightCm}
                         min={100} max={250}
                         onChange={(e) => setHeightCm(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
+                        className="w-full px-3 py-2 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Weight (kg)</label>
+                      <label className="block text-xs text-[#9c8c7e] mb-1">Weight (kg)</label>
                       <input
                         type="number"
                         placeholder="e.g. 65"
                         value={weightKg}
                         min={30} max={200}
                         onChange={(e) => setWeightKg(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
+                        className="w-full px-3 py-2 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm"
                       />
                     </div>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
-                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Height</label>
+                      <label className="block text-xs text-[#9c8c7e] mb-1">Height</label>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="relative">
                           <input
@@ -642,7 +642,7 @@ export default function TripPage() {
                             value={heightFt}
                             min={3} max={8}
                             onChange={(e) => setHeightFt(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-8"
+                            className="w-full px-3 py-2 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-8"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">ft</span>
                         </div>
@@ -653,14 +653,14 @@ export default function TripPage() {
                             value={heightIn}
                             min={0} max={11}
                             onChange={(e) => setHeightIn(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-7"
+                            className="w-full px-3 py-2 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-7"
                           />
                           <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">in</span>
                         </div>
                       </div>
                     </div>
                     <div>
-                      <label className="block text-xs text-[#9c8c7e] mb-1.5">Weight</label>
+                      <label className="block text-xs text-[#9c8c7e] mb-1">Weight</label>
                       <div className="relative">
                         <input
                           type="number"
@@ -668,7 +668,7 @@ export default function TripPage() {
                           value={weightLb}
                           min={66} max={440}
                           onChange={(e) => setWeightLb(e.target.value)}
-                          className="w-full px-4 py-3 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-7"
+                          className="w-full px-3 py-2 rounded-xl border border-[#F5EFE6] bg-white text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors text-sm pr-7"
                         />
                         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">lb</span>
                       </div>
@@ -678,11 +678,11 @@ export default function TripPage() {
               </section>
 
               {/* ── Style preferences ─── */}
-              <section className="mb-7">
+              <section className="mb-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-0.5">
                   Your Style
                 </p>
-                <p className="text-xs text-[#9c8c7e]/70 mb-3">Select all that apply</p>
+                <p className="text-xs text-[#9c8c7e]/70 mb-2">Select all that apply</p>
                 <div className="flex flex-wrap gap-2">
                   {STYLE_OPTIONS.map(({ id, label, icon }) => {
                     const selected = stylePrefs.includes(id)
@@ -705,12 +705,12 @@ export default function TripPage() {
               </section>
 
               {/* ── Photo (optional) ─── */}
-              <section className="mb-6">
+              <section className="mb-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-[#9c8c7e] mb-0.5">
                   Face Photo
                   <span className="ml-1.5 text-[#9c8c7e]/60 font-normal normal-case tracking-normal text-xs">(optional)</span>
                 </p>
-                <p className="text-xs text-[#9c8c7e]/70 mb-3">Upload for AI-personalized outfit images with your face</p>
+                <p className="text-xs text-[#9c8c7e]/70 mb-2">Upload for AI-personalized outfit images with your face</p>
 
                 <input
                   ref={fileInputRef}
@@ -725,7 +725,7 @@ export default function TripPage() {
                   onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
                   role="button"
                   tabIndex={0}
-                  className="mb-3 rounded-2xl border-2 border-dashed border-[#F5EFE6] bg-white cursor-pointer hover:border-[#b8552e]/40 hover:bg-[#FDF8F3] transition-colors flex flex-col items-center justify-center py-8 gap-3"
+                  className="mb-2 rounded-2xl border-2 border-dashed border-[#F5EFE6] bg-white cursor-pointer hover:border-[#b8552e]/40 hover:bg-[#FDF8F3] transition-colors flex flex-col items-center justify-center py-4 gap-2"
                 >
                   {photoPreview ? (
                     <>
@@ -800,8 +800,8 @@ export default function TripPage() {
             </div>
           )}
 
-          {/* Turnstile — always mounted so widget initializes on page load */}
-          <div ref={turnstileRef} className={step === 2 ? 'mb-4' : 'hidden'} />
+          {/* Turnstile — always mounted visibly so invisible widget can initialize */}
+          <div ref={turnstileRef} />
 
         </div>
       </main>

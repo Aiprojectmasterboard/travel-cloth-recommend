@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Plus_Jakarta_Sans } from 'next/font/google'
+import { Playfair_Display, Plus_Jakarta_Sans, Noto_Serif_KR, Noto_Sans_KR } from 'next/font/google'
 import Script from 'next/script'
 import { LanguageProvider } from '@/components/LanguageContext'
 import { AuthProvider } from '@/components/AuthProvider'
@@ -22,6 +22,24 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ['300', '400', '500', '600'],
   variable: '--font-sans',
   display: 'swap',
+})
+
+// Korean serif — for headings (replaces the clunky system serif fallback)
+const notoSerifKR = Noto_Serif_KR({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-korean-serif',
+  display: 'swap',
+  preload: false,
+})
+
+// Korean sans — for body / UI text
+const notoSansKR = Noto_Sans_KR({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-korean-sans',
+  display: 'swap',
+  preload: false,
 })
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -119,7 +137,12 @@ export const metadata: Metadata = {
 
   // ─── Icons ───────────────────────────────────────────────────────────────────
   icons: {
-    icon: '/favicon.ico',
+    icon: [
+      { url: '/favicon.ico' },
+      { url: '/favicon-16x16.png', sizes: '16x16', type: 'image/png' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
     shortcut: '/favicon.ico',
   },
 
@@ -309,7 +332,7 @@ const jsonLdFaq = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${plusJakartaSans.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${plusJakartaSans.variable} ${notoSerifKR.variable} ${notoSansKR.variable}`}>
       <head>
         {/* JSON-LD Structured Data */}
         <script
