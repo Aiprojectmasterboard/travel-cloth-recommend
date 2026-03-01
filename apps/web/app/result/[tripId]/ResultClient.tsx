@@ -877,6 +877,7 @@ function AnnualView({
   const gridJobs = activeCityJobs.length > 0 ? activeCityJobs : completedJobs.slice(0, 4)
   const userName = trip.user_name ?? 'Traveler'
   const tripsRemaining = trip.trips_remaining ?? 11
+  const hasFacePhoto = Boolean(trip.face_url)
 
   const PAST_TRIPS = [
     { title: 'Milan Fashion Week', year: '2023', desc: 'September • Business Chic', days: 5, outfits: 8, img: DEMO_OUTFIT_IMAGES[0] },
@@ -899,9 +900,17 @@ function AnnualView({
             <h1 className="font-playfair text-5xl md:text-6xl font-medium text-secondary mb-3 leading-tight">
               Welcome Back, {userName}
             </h1>
-            <div className="flex items-center gap-2 text-[#D4AF37] font-medium tracking-wide text-sm uppercase">
-              <span className="material-symbols-outlined !text-lg">workspace_premium</span>
-              Annual Member
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2 text-[#D4AF37] font-medium tracking-wide text-sm uppercase">
+                <span className="material-symbols-outlined !text-lg">workspace_premium</span>
+                Annual Member
+              </div>
+              {hasFacePhoto && (
+                <div className="inline-flex items-center gap-1.5 bg-primary text-white px-3 py-1.5 rounded-full text-xs font-bold">
+                  <span className="material-symbols-outlined !text-sm">camera_alt</span>
+                  Styled with Your Photo
+                </div>
+              )}
             </div>
           </div>
           <div className="flex flex-col items-end gap-3">
@@ -941,6 +950,11 @@ function AnnualView({
                 className="absolute inset-0 bg-cover bg-center"
                 style={{ backgroundImage: `url(${heroImage})` }}
               />
+              {hasFacePhoto && (
+                <div className="absolute top-4 left-4 z-20 bg-primary/90 text-white rounded-sm px-2.5 py-1 text-xs font-bold backdrop-blur-sm">
+                  Your Style
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-secondary/90 via-secondary/20 to-transparent" />
               <div className="absolute top-6 right-6 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <button className="bg-white/20 backdrop-blur-md text-white p-2 rounded-full hover:bg-white/30 transition-colors" title="Regenerate Image">
@@ -998,6 +1012,11 @@ function AnnualView({
                 {(gridJobs.length > 0 ? gridJobs : completedJobs).slice(0, 3).map((job, i) => (
                   <div key={job.id} className="group cursor-pointer">
                     <div className="aspect-[3/4] rounded-lg overflow-hidden mb-3 relative">
+                      {hasFacePhoto && (
+                        <div className="absolute top-2 left-2 z-10 bg-primary/90 text-white rounded-sm px-2 py-0.5 text-[10px] font-bold backdrop-blur-sm">
+                          Your Style
+                        </div>
+                      )}
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={job.image_url ?? DEMO_OUTFIT_IMAGES[i % DEMO_OUTFIT_IMAGES.length]}
