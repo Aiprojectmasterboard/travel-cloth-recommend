@@ -2,9 +2,12 @@
 
 ## Migration Files
 - `supabase/migrations/001_initial_schema.sql` — 8-table schema (updated 2026-02-28)
+- `supabase/migrations/002_add_preview_columns.sql` — preview pipeline columns + job_type/status CHECK fixes
+- `supabase/migrations/003_usage_records_period_index.sql` — Annual quota composite index (added 2026-03-01)
+- `supabase/migrations/004_add_client_ip.sql` — trips.client_ip INET + idx_trips_client_ip_created_at for rate limiting (added 2026-03-01)
 
 ## Schema: 8 Tables (v2)
-1. trips — session_id, cities(JSONB), month, face_url, status, gallery_url, expires_at
+1. trips — session_id, cities(JSONB), month, face_url, status, gallery_url, expires_at, client_ip(INET nullable)
 2. orders — polar_order_id(UNIQUE), trip_id, plan, amount, upgrade_from, status, customer_email
 3. generation_jobs — trip_id, city, job_type, prompt, negative_prompt, status, image_url, attempts
 4. capsule_results — trip_id(UNIQUE FK), items(JSONB), daily_plan(JSONB)
@@ -43,14 +46,14 @@
 - RLS Policies: DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 ## Indexes Summary (v2)
-- trips: session_id, status, expires_at (btree), cities (GIN)
+- trips: session_id, status, expires_at (btree), cities (GIN), (client_ip, created_at) composite for rate-limit query
 - orders: trip_id (btree); polar_order_id auto-indexed by UNIQUE
 - generation_jobs: trip_id, status (btree)
 - capsule_results: trip_id (btree), items, daily_plan (GIN)
 - city_vibes: city (btree), style_keywords (GIN)
 - weather_cache: (city, month) composite btree + UNIQUE index
 - email_captures: trip_id (btree)
-- usage_records: (user_email, plan) composite btree
+- usage_records: (user_email, plan) btree + (user_email, plan, period_start, period_end) for Annual quota query
 
 ## JSONB Structures
 - trips.cities: [{"name": "Paris", "country": "France", "days": 4, "lat": 48.8566, "lon": 2.3522}]

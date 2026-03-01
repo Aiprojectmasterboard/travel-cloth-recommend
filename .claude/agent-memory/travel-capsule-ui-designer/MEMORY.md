@@ -140,3 +140,14 @@ Build is confirmed clean (no TypeScript errors, no lint errors) after all UI cha
 - Skeleton: `animate-pulse bg-[#E8DDD2]` rows matching content shape, aria-busy="true"
 - DEMO_TRIP: Paris Oct, 60% rain, mild, 8 capsule items — used when no WORKER_URL or fetch fails
 - ResultClient.tsx CTA changed from `<button onClick={openShare}>` to `<a href="/checklist/${tripId}">` with checklist icon
+
+## ResultClient.tsx Plan-Based Views (Task #5)
+- Three views: `StandardView`, `ProView`, `AnnualView` — selected by `GalleryView` based on `trip.plan`
+- Framer Motion (`motion`) imported for unlock animation in StandardView
+- **Plan Badge Colors** (confirmed):
+  - Standard: stone-100 bg, stone-600 text (silver tone)
+  - Pro: `bg-[#D4AF37]/10 border-[#D4AF37]/30 text-[#C8A055]` (gold)
+  - Annual: `linear-gradient(135deg, rgba(212,175,55,0.2)…)` gradient border+color #C8A055
+- **StandardView unlock animation**: `revealed` state, setTimeout 350ms, motion.img blur(18px)→blur(0px) on first image
+- **StandardView Pro teaser slots**: 3 CSS `blur-xl scale-110 opacity-60` copies of same AI image — NO new AI generation
+- AI images from `generation_jobs[].image_url` or DEMO_OUTFIT_IMAGES fallback

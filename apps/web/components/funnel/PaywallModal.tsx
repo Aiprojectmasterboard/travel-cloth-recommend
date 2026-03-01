@@ -12,7 +12,8 @@ const PLANS: Array<{
   price: string
   period: string
   badge: string | null
-  features: string[]
+  savingLabel: string | null
+  features: Array<{ icon: string; text: string; strong?: boolean }>
   cta: string
   highlight: boolean
 }> = [
@@ -20,45 +21,50 @@ const PLANS: Array<{
     id: 'standard',
     name: 'Standard',
     price: '$5',
-    period: 'one-time',
+    period: '/trip',
     badge: null,
+    savingLabel: null,
     features: [
-      '1 sharp image + 3 blurred unlocked',
-      'Capsule wardrobe list',
-      'Day-by-day outfit plan',
+      { icon: 'check_circle', text: 'Weather & Vibe Analysis' },
+      { icon: 'check_circle', text: 'City Vibe Card' },
+      { icon: 'check_circle', text: '4 AI-Generated Outfits' },
+      { icon: 'check_circle', text: '10-Item Capsule List' },
+      { icon: 'check_circle', text: 'Day-by-Day Itinerary' },
     ],
-    cta: 'Get Started — $5',
+    cta: 'Select Standard',
     highlight: false,
   },
   {
     id: 'pro',
     name: 'Pro',
     price: '$12',
-    period: 'one-time',
+    period: '/trip',
     badge: 'Most Popular',
+    savingLabel: null,
     features: [
-      '4–6 real images per city',
-      'High-resolution output',
-      '1 free regeneration',
-      'Capsule wardrobe list',
-      'Day-by-day outfit plan',
+      { icon: 'auto_awesome', text: 'Everything in Standard', strong: true },
+      { icon: 'check_circle', text: 'Hero images for ALL cities' },
+      { icon: 'check_circle', text: 'Ultra High-Res Visuals' },
+      { icon: 'check_circle', text: '1 Free Style Regeneration' },
+      { icon: 'check_circle', text: 'Multi-city coordination' },
     ],
-    cta: 'Go Pro — $12',
+    cta: 'Unlock Pro Results',
     highlight: true,
   },
   {
     id: 'annual',
     name: 'Annual',
     price: '$29',
-    period: '/ year · renews annually',
-    badge: 'Best Value',
+    period: '/year',
+    badge: null,
+    savingLabel: 'SAVE $115/YEAR',
     features: [
-      'All Pro features included',
-      '12 trips per year',
-      'Priority generation queue',
-      'Early city access',
+      { icon: 'stars', text: 'Full Pro Experience', strong: true },
+      { icon: 'check_circle', text: 'Up to 12 trips per year' },
+      { icon: 'check_circle', text: 'Priority AI processing' },
+      { icon: 'check_circle', text: 'VIP concierge support' },
     ],
-    cta: 'Go Annual — $29/yr',
+    cta: 'Go Annual',
     highlight: false,
   },
 ]
@@ -142,7 +148,7 @@ export default function PaywallModal({ isOpen, onClose, tripId }: PaywallModalPr
               >
                 Choose your plan
               </h2>
-              <p className="text-sm text-[#9c8c7e]">One-time payment. No subscription required.</p>
+              <p className="text-sm text-[#9c8c7e]">Select the plan that best fits your travel style.</p>
             </div>
 
             {/* Plan cards */}
@@ -188,29 +194,40 @@ export default function PaywallModal({ isOpen, onClose, tripId }: PaywallModalPr
                         {plan.period}
                       </span>
                     </div>
+                    {plan.savingLabel && (
+                      <div className="mt-1 text-[10px] font-bold uppercase tracking-wider text-[#b8552e]">
+                        {plan.savingLabel}
+                      </div>
+                    )}
                   </div>
 
                   <ul className="flex-1 space-y-1.5 mb-4">
                     {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2">
-                        <svg
-                          className={`w-3.5 h-3.5 mt-0.5 flex-shrink-0 ${
-                            plan.highlight ? 'text-[#D4AF37]' : 'text-[#b8552e]'
-                          }`}
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          strokeWidth={2.5}
-                        >
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                        </svg>
+                      <li key={f.text} className="flex items-start gap-2">
                         <span
-                          className={`text-xs leading-relaxed ${
-                            plan.highlight ? 'text-white/80' : 'text-[#1A1410]/70'
+                          className={`material-symbols-outlined text-sm mt-0.5 flex-shrink-0 ${
+                            plan.highlight ? 'text-white' : 'text-[#b8552e]'
                           }`}
                         >
-                          {f}
+                          {f.icon}
                         </span>
+                        {f.strong ? (
+                          <strong
+                            className={`text-xs leading-relaxed ${
+                              plan.highlight ? 'text-white' : 'text-[#1A1410]'
+                            }`}
+                          >
+                            {f.text}
+                          </strong>
+                        ) : (
+                          <span
+                            className={`text-xs leading-relaxed ${
+                              plan.highlight ? 'text-white/80' : 'text-[#1A1410]/70'
+                            }`}
+                          >
+                            {f.text}
+                          </span>
+                        )}
                       </li>
                     ))}
                   </ul>

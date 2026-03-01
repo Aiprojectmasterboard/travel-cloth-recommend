@@ -51,9 +51,19 @@ All agents accept `env: Bindings` as last param.
 - Anthropic model: `claude-sonnet-4-6-20260219` (all Claude calls)
 - NanoBanana: polls `/jobs/{id}` every 5s up to 60 attempts (5 min max)
 - Upgrade token format: `"{timestampMs}.{hmacHex}"` — 3 min TTL
-- Polar webhook headers: check both `webhook-signature` AND `x-polar-signature`
+- Polar webhook headers: `webhook-signature`, `webhook-id`, `webhook-timestamp` (Standard Webhooks)
 - Turnstile: `POST https://challenges.cloudflare.com/turnstile/v0/siteverify`
 - Rate limit: `Prefer: count=exact` → parse `content-range: 0-0/N` header
+
+## Polar API Gotchas (CRITICAL — verified 2026-03-01)
+- Checkout: use `success_url` NOT `return_url` — wrong field causes 502
+- Polar follows Standard Webhooks spec for webhook signature verification:
+  - Signed content: `"{webhook-id}.{webhook-timestamp}.{rawBody}"`
+  - Signature header: `"v1,<base64>"` (space-delimited for multiple keys)
+  - Secret may be prefixed with `whsec_` — strip prefix, then base64-decode to bytes
+  - Customer email in event: `event.data.customer?.email` (NOT `event.data.user?.email`)
+  - Metadata in event: `event.data.metadata` (from checkout metadata set at creation)
+  - Amount field: `event.data.net_amount ?? event.data.amount`
 
 ## Supabase REST API Notes
 - Auth headers: `apikey` + `Authorization: Bearer <service_role_key>`
@@ -90,6 +100,18 @@ All agents accept `env: Bindings` as last param.
 - `SKIP_TURNSTILE = "false"` is a plain var — set to "true" locally via .dev.vars override
 - `compatibility_date = "2025-01-01"` (updated from 2024-01-01)
 - Must include SKIP_TURNSTILE in [vars] so `c.env.SKIP_TURNSTILE` resolves without TS errors
+
+## Error Handling / Resilience Patterns (added 2026-03-01)
+- `teaserAgent`: Has 3-attempt exponential backoff (1s/2s/4s) via `generateWithRetry` — same as imageGenAgent
+- `orchestrator runResult`: `capsuleAgent` wrapped in try/catch with `PaidCapsuleResult` fallback
+  so `fulfillmentAgent` ALWAYS runs (guarantees face cleanup + email delivery)
+- `orchestrator runResult`: Pro/Annual — `cleanupFace()` called IMMEDIATELY after `imageGenAgent` returns
+  (success or failure). Standard — face cleanup handled by fulfillmentAgent.
+- `cleanupFace(tripId, faceUrl, env)` in orchestrator: non-throwing helper, R2 delete + DB null face_url
+- Rate limit /api/preview: session_id AND IP (OR조건) 각각 5/day — migration 004 (trips.client_ip 컬럼)
+  - IP: `CF-Connecting-IP` 헤더, fallback `X-Forwarded-For`; IP 없으면 session_id만 체크
+  - trip INSERT에 `client_ip` 저장 (rate limit용, API 응답에 노출 안 함)
+- Turnstile: SKIP_TURNSTILE !== 'true' + 키 미설정 → 503 fail-closed (이전: warn+통과)
 
 ## Business Logic Constraints
 - `/api/preview` cities: max 5 (per CLAUDE.md spec) — enforce `cities.length > 5` in validation

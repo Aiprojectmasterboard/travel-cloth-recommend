@@ -5,6 +5,10 @@ export type TripStatus = 'pending' | 'processing' | 'completed' | 'expired';
 export type JobType = 'teaser' | 'full';
 export type ClimateBand = 'cold' | 'mild' | 'warm' | 'hot' | 'rainy';
 export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type Gender = 'male' | 'female' | 'other';
+export type AestheticStyle =
+  | 'casual' | 'minimalist' | 'streetwear' | 'classic'
+  | 'sporty' | 'bohemian' | 'business';
 
 // ─── Input Types ──────────────────────────────────────────────────────────────
 
@@ -14,6 +18,8 @@ export interface CityInput {
   lat?: number;
   lon?: number;
   days?: number;
+  start_date?: string;  // ISO date e.g. "2026-05-12"
+  end_date?: string;    // ISO date e.g. "2026-05-18"
 }
 
 export interface TripInput {
@@ -21,6 +27,10 @@ export interface TripInput {
   cities: CityInput[];
   month: number;
   face_url?: string;
+  gender?: Gender;
+  height_cm?: number;
+  weight_kg?: number;
+  aesthetic?: AestheticStyle[];
   cf_turnstile_token: string;
 }
 
@@ -144,6 +154,10 @@ export interface Trip {
   cities: CityInput[];
   month: number;
   face_url?: string;
+  gender?: Gender;
+  height_cm?: number;
+  weight_kg?: number;
+  aesthetic?: AestheticStyle[];
   status: TripStatus;
   expires_at: string;
   created_at: string;

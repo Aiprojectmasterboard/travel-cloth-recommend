@@ -21,6 +21,11 @@
 - `viralCopies` and `nativeShareTitle` are function types `(cities, month, city0) => string[]` — never replace with string literals
 - After any translation edit, verify with: `cd /home/user/travel-cloth-recom/apps/web && npx tsc --noEmit`
 - FAQ items are appended to the end of the `faq.items` array — never replace existing items
+- When adding new keys to types.ts, the linter may auto-apply some changes to locale files — always re-read files before editing after a types.ts change
+- New landing page sections added: `weather`, `blueprint`, `guide`, `testimonial`, `cta` (between `partner` and `footer`)
+- New nav keys: `philosophy`, `curations`, `membership`; new hero keys: `badge`, `heading1`, `heading2`, `cta`, `estLabel`, `scrollLabel`, `editionLabel`
+- New footer keys: `journal`, `methodology`, `pricing`, `login`, `instagram`
+- ko.ts strategy: editorial/UI labels stay English, descriptive body text translated to Korean
 
 ## i18n Pattern
 - Locales: `['ko', 'en', 'ja', 'zh', 'fr', 'es']`
@@ -60,9 +65,26 @@
 - Step transitions: always call `window.scrollTo({ top: 0, behavior: 'smooth' })` when changing steps
 
 ## Result / Checklist / Share Patterns
-- ResultClient: redirect to `/preview/${tripId}` if `trip.status === 'pending'` (unpaid)
+- ResultClient: 402 = no order → redirect to `/preview/`. 'pending' or 'processing' = post-payment queue → KEEP POLLING (never redirect on pending!). 'failed' → ErrorView. 'completed' → GalleryView.
+- ResultClient polling: `setTimeout(fetchTrip, 3000)` when status is 'pending' or 'processing'
+- ResultClient plan routing: GalleryView → AnnualView | ProView | StandardView based on `trip.plan`
+- UpgradeModal: shown after 2s delay if `trip.upgrade_token` exists; 3-min (180s) countdown; calls `/api/payment/upgrade` → checkout_url
 - ChecklistClient: show error UI (not DEMO_TRIP) when API returns non-OK or throws; DEMO_TRIP only for `!WORKER_URL` dev mode
 - ShareClient: copy-to-clipboard uses async/await with `copied` state + 2s setTimeout reset
+- Share URL UTM params are set by the backend growthAgent — `data.share_url` already includes UTM params
+
+## next/image Usage Patterns
+- `next.config.js` has `images: { unoptimized: true }` — allows any external URL with next/image
+- Always use `<Image fill>` for images inside positioned containers (aspect-ratio or explicit h/w divs)
+- For fill images: parent must have `position: relative/absolute/fixed` + explicit height/aspect-ratio
+- For blurred images: `<Image fill style={{filter:'blur(Npx)',transform:'scale(1.1)'}} unoptimized />`
+- Always add `priority` to above-fold hero images for LCP
+- Always add `unoptimized` when src is a dynamic external URL (R2 CDN, external APIs)
+
+## framer-motion TypeScript Patterns
+- Import `type { Variants }` from 'framer-motion' and annotate variant objects: `const variants: Variants = {...}`
+- Cubic bezier ease needs explicit tuple type: `ease: [0.25, 0.46, 0.45, 0.94] as [number, number, number, number]`
+- Named easing strings need `as const`: `ease: 'easeOut' as const`
 
 ## Components Inventory
 See `components.md` for full list with props interfaces.

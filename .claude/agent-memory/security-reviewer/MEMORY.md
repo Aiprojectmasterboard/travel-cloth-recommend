@@ -15,6 +15,13 @@
 - CORS locked to `['https://travelcapsule.ai', 'https://www.travelcapsule.ai']` — CORRECT
 - All secrets accessed via `c.env.*` / `env.*` (Hono bindings), never `process.env` — CORRECT
 
+## Recurring Vulnerabilities Found (2026-03-01 review)
+6. HARDCODED SUPABASE CREDENTIALS AS FALLBACK in frontend files
+   - `sb_publishable_3_Vzle5e2GXFtLG5d8F69Q_oznMxXm2` and `https://lmrrawhvjmuexajllint.supabase.co` were hardcoded as `?? fallback` values
+   - Affected: `apps/web/lib/supabase.ts`, `apps/web/lib/supabase-browser.ts`, `apps/web/app/auth/callback/route.ts`
+   - Fixed: Replaced with `?? ''` (empty string) — env vars must be properly configured
+   - Note: Even though `sb_publishable_` is the anon/public key, real credentials MUST NOT be hardcoded in source
+
 ## Recurring Vulnerabilities Found (2026-02-26 review)
 1. MISSING UUID VALIDATION on all Supabase filter path params (`tripId` from URL params and webhook metadata)
    - Fixed in: `index.ts` routes GET/POST `:tripId`, POST `/api/checkout`, POST `/api/webhooks/polar`

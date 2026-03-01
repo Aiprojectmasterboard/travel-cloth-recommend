@@ -63,7 +63,7 @@ const PLANS: Array<{
     id: 'annual',
     name: 'Annual',
     price: '$29',
-    period: '/yr',
+    period: '/year',
     badge: null,
     savingLabel: 'SAVE $115/YEAR',
     features: [
