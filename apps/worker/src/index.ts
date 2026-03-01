@@ -284,9 +284,16 @@ app.post('/api/preview', async (c) => {
     body: JSON.stringify(tripPayload),
   });
   if (!insertRes.ok) {
-    return c.json({ error: 'Failed to create trip', detail: await insertRes.text() }, 500);
+    const detail = await insertRes.text();
+    console.error('[POST /api/preview] Trip insert failed:', insertRes.status, detail);
+    return c.json({ error: 'Failed to create trip', detail }, 500);
   }
-  const [trip] = (await insertRes.json()) as Array<{ id: string }>;
+  const rows = (await insertRes.json()) as Array<{ id: string }>;
+  const trip = rows[0];
+  if (!trip?.id) {
+    console.error('[POST /api/preview] Trip insert returned no row');
+    return c.json({ error: 'Trip insert returned no row' }, 500);
+  }
   const tripId = trip.id;
 
   // Run preview pipeline (async — results written to DB)

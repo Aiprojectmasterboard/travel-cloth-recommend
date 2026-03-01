@@ -23,13 +23,21 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
-  if (!res.ok) throw new Error(`API error ${res.status}: ${path}`)
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as Record<string, unknown>
+    const msg = (data.error as string) ?? (data.detail as string) ?? `API error ${res.status}: ${path}`
+    throw new Error(msg)
+  }
   return res.json() as Promise<T>
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`)
-  if (!res.ok) throw new Error(`API error ${res.status}: ${path}`)
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as Record<string, unknown>
+    const msg = (data.error as string) ?? `API error ${res.status}: ${path}`
+    throw new Error(msg)
+  }
   return res.json() as Promise<T>
 }
 
