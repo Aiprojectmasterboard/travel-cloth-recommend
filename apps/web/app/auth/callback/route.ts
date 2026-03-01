@@ -10,8 +10,17 @@ export async function GET(request: NextRequest) {
   const code = requestUrl.searchParams.get('code')
   const type = requestUrl.searchParams.get('type')
 
-  // Validate redirect target against the known site URL to prevent open redirects.
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelscapsule.com'
+  // Use the request origin so redirects stay on the same domain the user is on
+  // (e.g. pages.dev vs travelscapsule.com). Fall back to env or hardcoded value.
+  const allowedOrigins = [
+    'https://travelscapsule.com',
+    'https://www.travelscapsule.com',
+    'https://travel-cloth-recommend.pages.dev',
+  ]
+  const requestOrigin = requestUrl.origin
+  const siteUrl = allowedOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://travelscapsule.com')
 
   if (code) {
     const cookieStore = await cookies()
@@ -25,7 +34,13 @@ export async function GET(request: NextRequest) {
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, {
+                ...options,
+                // Ensure cookies persist on mobile browsers
+                sameSite: 'lax' as const,
+                secure: true,
+                path: '/',
+              })
             )
           },
         },

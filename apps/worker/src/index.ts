@@ -97,14 +97,20 @@ async function verifyHmac(
 // ─── Turnstile Verification ───────────────────────────────────────────────────
 
 async function verifyTurnstile(token: string, secret: string): Promise<boolean> {
-  const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secret, response: token }),
-  });
-  if (!res.ok) return false;
-  const data = (await res.json()) as { success: boolean };
-  return data.success === true;
+  try {
+    const res = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret, response: token }),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { success: boolean };
+    return data.success === true;
+  } catch (err) {
+    console.error('[verifyTurnstile] Failed:', (err as Error).message);
+    return false;
+  }
 }
 
 // ─── Input Guards ─────────────────────────────────────────────────────────────
@@ -137,7 +143,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   '/api/*',
   cors({
-    origin: ['https://travelscapsule.com', 'https://travel-cloth-recommend.pages.dev', 'http://localhost:3000'],
+    origin: ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev', 'http://localhost:3000'],
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
@@ -241,7 +247,7 @@ app.post('/api/preview', async (c) => {
       return c.json({ error: 'Annual plan trip limit reached (12/year)' }, 429);
     }
     console.error(`[POST /api/preview] Pipeline error for trip ${tripId}:`, msg);
-    return c.json({ error: 'Preview generation failed', trip_id: tripId }, 500);
+    return c.json({ error: `Preview generation failed: ${msg.slice(0, 200)}`, trip_id: tripId }, 500);
   }
 });
 
@@ -299,6 +305,7 @@ app.post('/api/preview/email', async (c) => {
       subject: 'Your Travel Mood Card is Ready',
       html: emailHtml,
     }),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!emailRes.ok) {
@@ -362,7 +369,7 @@ app.post('/api/payment/checkout', async (c) => {
   // return_url: redirect to result page after successful payment
   // Use the request Origin to support both travelscapsule.com and pages.dev
   const reqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
-  const allowedOrigins = ['https://travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
+  const allowedOrigins = ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
   const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelscapsule.com';
   const returnUrl = `${returnBase}/result/${trip_id}`;
 
@@ -382,6 +389,7 @@ app.post('/api/payment/checkout', async (c) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(checkoutPayload),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!polarRes.ok) {
@@ -540,7 +548,7 @@ app.post('/api/payment/upgrade', async (c) => {
 
   // Create Polar checkout for Pro upgrade
   const upgradeReqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
-  const upgradeAllowed = ['https://travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
+  const upgradeAllowed = ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
   const upgradeBase = upgradeAllowed.includes(upgradeReqOrigin) ? upgradeReqOrigin : 'https://travelscapsule.com';
   const upgradeReturnUrl = `${upgradeBase}/result/${trip_id}`;
   const checkoutPayload = {
@@ -560,6 +568,7 @@ app.post('/api/payment/upgrade', async (c) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(checkoutPayload),
+    signal: AbortSignal.timeout(15_000),
   });
 
   if (!polarRes.ok) {

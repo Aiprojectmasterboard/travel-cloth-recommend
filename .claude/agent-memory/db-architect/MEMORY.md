@@ -1,49 +1,80 @@
 # DB Architect Agent Memory — Travel Capsule AI
 
 ## Migration Files
-- `supabase/migrations/001_initial_schema.sql` — initial schema (all 5 tables, reviewed 2026-02-26)
+- `supabase/migrations/001_initial_schema.sql` — 8-table schema (updated 2026-02-28)
 
-## RLS Access Model (v1)
-- No JWT authenticated users in v1. Access is purely session-based (anon role only).
-- Anon access guard: `session_id = current_setting('app.session_id', true)`
-- Worker sets this before anon queries: `SET LOCAL app.session_id = '<value>';`
-- Service role (Worker) bypasses RLS — no explicit service_role policies needed.
-- `orders` table: zero anon policies (no client access to payment data at all).
-- `city_vibes` table: public read for both `anon` and `authenticated`.
+## Schema: 8 Tables (v2)
+1. trips — session_id, cities(JSONB), month, face_url, status, gallery_url, expires_at
+2. orders — polar_order_id(UNIQUE), trip_id, plan, amount, upgrade_from, status, customer_email
+3. generation_jobs — trip_id, city, job_type, prompt, negative_prompt, status, image_url, attempts
+4. capsule_results — trip_id(UNIQUE FK), items(JSONB), daily_plan(JSONB)
+5. city_vibes — city(UNIQUE), country, lat, lon, vibe_cluster, style_keywords(JSONB), mood_name
+6. weather_cache — city, month, data(JSONB), cached_at; UNIQUE(city, month)
+7. email_captures — trip_id FK, email, captured_at
+8. usage_records — user_email, plan, trip_count, period_start(DATE), period_end(DATE)
 
-## Table Decisions
-- `trips.face_url`: nullable TEXT, nulled after image gen (privacy). Comment required.
-- `trips.gallery_url`: populated by fulfillmentAgent after R2 upload.
-- `orders.amount`: INTEGER in cents (500 = $5.00 USD).
-- `orders.customer_email`: TEXT nullable, used by fulfillmentAgent for email.
-- `orders.polar_order_id`: TEXT NOT NULL UNIQUE — Polar webhook idempotency key.
-- `generation_jobs.prompt`: nullable TEXT (not NOT NULL) — built by styleAgent after insert.
-- `generation_jobs.negative_prompt`: TEXT nullable — NanoBanana-specific field.
-- `generation_jobs` and `capsule_results`: FK to trips uses ON DELETE CASCADE.
-- `city_vibes.style_keywords`: TEXT[] (not JSONB) — flat string list, GIN-indexed with && operator.
-- `city_vibes.lat`/`lon`: NUMERIC(9,6) (not DOUBLE PRECISION) — spec requirement.
-- `city_vibes.city`: UNIQUE constraint (not composite UNIQUE with country).
+## RLS Access Model (v2)
+- Service role: explicit ALL USING (true) policy on every table (documents intent).
+- No JWT users in v1. Anon role is the only client-side role.
+- trips/generation_jobs/capsule_results/city_vibes/weather_cache: anon SELECT USING (true).
+  trip_id UUID is the unguessable access token — no session-var check needed for read path.
+- trips: anon INSERT WITH CHECK (true).
+- email_captures: anon INSERT WITH CHECK (true); anon SELECT USING (false).
+- orders/usage_records: anon SELECT USING (false) — never exposed to client.
+
+## Key Table Decisions (v2)
+- trips.status CHECK: ('pending','processing','completed','expired') — not 'failed'.
+- trips.expires_at: NOT NULL DEFAULT (NOW() + INTERVAL '48 hours'). Indexed for expiry sweep.
+- orders.plan: TEXT NOT NULL CHECK ('standard','pro','annual').
+- orders.upgrade_from: UUID REFERENCES orders(id) nullable — plan upgrade chain.
+- orders.amount: INTEGER NOT NULL (no default — explicit on insert). Cents: 500 = $5.00.
+- generation_jobs.job_type: TEXT NOT NULL CHECK ('teaser','full').
+- generation_jobs.prompt: TEXT NOT NULL (required on insert in v2).
+- city_vibes.style_keywords: JSONB (not TEXT[]) — consistent with cities.json source format.
+- city_vibes.mood_name: TEXT NOT NULL — new in v2.
+- weather_cache.data JSONB; cached_at TIMESTAMPTZ DEFAULT NOW().
+- usage_records.period_start/period_end: DATE (calendar-day aligned billing windows).
 
 ## Idempotency Patterns
-- Tables: `CREATE TABLE IF NOT EXISTS`
-- Indexes: `CREATE INDEX IF NOT EXISTS`
-- Functions: `CREATE OR REPLACE FUNCTION`
-- Triggers: `CREATE OR REPLACE TRIGGER` (Postgres 14+)
-- RLS Policies: `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;`
+- Tables: CREATE TABLE IF NOT EXISTS
+- Indexes: CREATE INDEX IF NOT EXISTS
+- Functions: CREATE OR REPLACE FUNCTION
+- Triggers: CREATE OR REPLACE TRIGGER (Postgres 14+)
+- RLS Policies: DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-## Indexes Summary
-- trips: session_id (btree), status (btree), cities (GIN)
-- orders: trip_id (btree); polar_order_id index auto-created by UNIQUE constraint
-- generation_jobs: trip_id (btree), status (btree)
-- capsule_results: trip_id (btree), items (GIN), daily_plan (GIN)
+## Indexes Summary (v2)
+- trips: session_id, status, expires_at (btree), cities (GIN)
+- orders: trip_id (btree); polar_order_id auto-indexed by UNIQUE
+- generation_jobs: trip_id, status (btree)
+- capsule_results: trip_id (btree), items, daily_plan (GIN)
 - city_vibes: city (btree), style_keywords (GIN)
+- weather_cache: (city, month) composite btree + UNIQUE index
+- email_captures: trip_id (btree)
+- usage_records: (user_email, plan) composite btree
 
-## JSONB Structures (documented in migration)
-- `trips.cities`: `[{"name": "Paris", "days": 4}, ...]`
-- `capsule_results.items`: `[{"name": "Linen Blazer", "category": "outerwear", "color": "beige", ...}, ...]`
-- `capsule_results.daily_plan`: `[{"day": 1, "city": "Paris", "outfit": "...", "image_url": "..."}, ...]`
+## JSONB Structures
+- trips.cities: [{"name": "Paris", "country": "France", "days": 4, "lat": 48.8566, "lon": 2.3522}]
+- capsule_results.items: [{"name": "Linen Blazer", "category": "outerwear", "why": "...", "versatility_score": 9}]
+- capsule_results.daily_plan: [{"day": 1, "city": "Paris", "outfit": ["item_a"], "note": "..."}]
+- city_vibes.style_keywords: ["trench coat", "silk scarf", "ballet flat"]
+
+## city-vibes-db (packages/city-vibes-db/cities.json)
+- 30 cities with mood_name field. lat/lon to 6 decimal places (matches NUMERIC(9,6)).
+- Cities: Paris, Tokyo, Bali, New York, Barcelona, London, Rome, Seoul, Sydney, Dubai,
+  Amsterdam, Lisbon, Prague, Marrakech, Kyoto, Singapore, Istanbul, Buenos Aires, Cape Town,
+  Bangkok, Vienna, Mexico City, Berlin, Mumbai, Copenhagen, Ho Chi Minh City, Athens, Zurich,
+  Cairo, Reykjavik.
+
+## Types Package (packages/types/index.ts)
+- Scalar types: PlanType, TripStatus, JobType, ClimateBand, JobStatus
+- Input: CityInput, TripInput
+- Agent results: WeatherResult, VibeResult, TeaserResult, CapsuleItem, DayPlan, CapsuleResult,
+  StylePrompts, GeneratedImage, GeneratedImages, GrowthResult, ShareResult, UsageRecord
+- API responses: PreviewResponse, CheckoutResponse
+- DB rows: Trip, Order, GenerationJob, CityVibe
 
 ## Security Notes
-- Polar webhook: HMAC-SHA256 signature verified at Worker level before any DB write.
-- Raw card data: never stored in DB.
+- Polar webhook: HMAC-SHA256 verified at Worker level before any DB write.
+- Raw card data: never stored. face_url nulled after image generation (privacy).
 - Service role key: Worker env only, never client-side.
+- email_captures: SELECT denied to anon — emails never returned to browser.

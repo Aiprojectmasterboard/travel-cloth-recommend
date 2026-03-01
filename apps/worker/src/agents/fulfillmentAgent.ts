@@ -150,6 +150,7 @@ export async function fulfillmentAgent(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(emailPayload),
+      signal: AbortSignal.timeout(10_000),
     });
 
     if (!emailRes.ok) {

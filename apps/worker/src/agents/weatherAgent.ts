@@ -119,9 +119,11 @@ async function fetchOpenMeteo(
 
   let res: Response;
   try {
-    res = await fetch(url);
+    res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
   } catch (err) {
-    console.error('[weatherAgent] Network error calling Open-Meteo:', (err as Error).message);
+    const message = (err as Error).message;
+    const reason = message.includes('abort') ? 'timeout after 10s' : message;
+    console.error(`[weatherAgent] Network error calling Open-Meteo: ${reason}`);
     return null;
   }
 

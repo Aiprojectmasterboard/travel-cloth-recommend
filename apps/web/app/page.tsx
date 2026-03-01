@@ -64,7 +64,7 @@ export default function HomePage() {
           scrolled ? 'shadow-md' : ''
         }`}
       >
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-2 sm:gap-8">
 
           {/* Logo */}
           <Link
@@ -78,7 +78,7 @@ export default function HomePage() {
             >
               all_inclusive
             </span>
-            <span className="text-sm font-bold tracking-widest uppercase font-playfair text-secondary">
+            <span className="text-xs sm:text-sm font-bold tracking-widest uppercase font-playfair text-secondary">
               Travel Capsule AI
             </span>
           </Link>
@@ -106,7 +106,7 @@ export default function HomePage() {
           </nav>
 
           {/* Right group */}
-          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-4 shrink-0 min-w-0">
             {/* Language switcher — always visible */}
             <LanguageSwitcher variant="dropdown" />
             {/* Auth button — always visible */}
@@ -209,7 +209,7 @@ export default function HomePage() {
           </div>
 
           {/* Heading */}
-          <h1 className="font-playfair text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-bold leading-tight text-cream mb-6">
+          <h1 className="font-playfair text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight text-cream mb-6">
             {t.hero.heading1}
             <br />
             <em className="italic text-cream/90">{t.hero.heading2}</em>
@@ -223,7 +223,7 @@ export default function HomePage() {
           {/* CTA */}
           <Link
             href={ctaHref}
-            className="inline-flex items-center gap-3 bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-10 transition-all shadow-lg hover:shadow-xl"
+            className="inline-flex items-center gap-3 bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-3.5 px-6 sm:px-10 transition-all shadow-lg hover:shadow-xl"
           >
             {t.hero.cta} →
           </Link>
@@ -231,7 +231,7 @@ export default function HomePage() {
 
         {/* Bottom bar */}
         <div className="relative z-10 border-t border-cream/20 py-4 px-6">
-          <div className="max-w-7xl mx-auto flex items-center justify-center gap-8 text-cream/50 text-xs tracking-widest uppercase">
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-4 sm:gap-8 text-cream/50 text-[10px] sm:text-xs tracking-widest uppercase">
             <span>{t.hero.estLabel}</span>
             <span className="w-px h-3 bg-cream/30" aria-hidden="true" />
             <span>{t.hero.scrollLabel}</span>
@@ -562,7 +562,7 @@ export default function HomePage() {
           <div className="flex flex-col items-center gap-3">
             <Link
               href={ctaHref}
-              className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-12 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 w-full sm:w-auto"
+              className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-6 sm:px-12 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 w-full sm:w-auto"
             >
               {t.cta.button}
             </Link>

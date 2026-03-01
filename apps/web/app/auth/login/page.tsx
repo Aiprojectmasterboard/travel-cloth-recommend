@@ -94,13 +94,21 @@ export default function LoginPage() {
     setLoadingGoogle(true)
     clearMessages()
     try {
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      // Use the current origin so the callback stays on the same domain,
+      // which is critical for cookie-based session persistence on mobile.
+      const redirectTo = `${window.location.origin}/auth/callback`
+      const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin}/auth/callback`,
+          redirectTo,
         },
       })
-      if (oauthError) setError(oauthError.message)
+      if (oauthError) {
+        setError(oauthError.message)
+      } else if (data?.url) {
+        // Explicitly navigate to the OAuth URL for better mobile compatibility
+        window.location.href = data.url
+      }
     } catch {
       setError('Could not connect to Google. Please try again.')
     } finally {
@@ -116,7 +124,7 @@ export default function LoginPage() {
     clearMessages()
     try {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin}/auth/callback?type=recovery`,
+        redirectTo: `${window.location.origin}/auth/callback?type=recovery`,
       })
       if (resetError) {
         setError(resetError.message)
@@ -193,7 +201,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
       {/* ─── Header ─────────────────────────────────────────────────────────── */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#FDF8F3]/95 backdrop-blur-sm border-b border-[#F5EFE6] px-6 py-4 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#FDF8F3]/95 backdrop-blur-sm border-b border-[#F5EFE6] px-4 sm:px-6 py-4 flex items-center justify-between">
         <a
           href="/"
           className="font-bold text-[#1A1410] text-lg tracking-tight"

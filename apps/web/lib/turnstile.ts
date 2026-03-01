@@ -122,6 +122,30 @@ export function useTurnstile(): UseTurnstileReturn {
     }
   }, [])
 
+  // Retry initialization if widget wasn't set up (container was null initially)
+  useEffect(() => {
+    if (token || !TURNSTILE_SITE_KEY) return
+    if (widgetIdRef.current) return
+
+    const retryInterval = setInterval(() => {
+      if (containerRef.current && window.turnstile && !widgetIdRef.current) {
+        clearInterval(retryInterval)
+        const id = window.turnstile.render(containerRef.current, {
+          sitekey: TURNSTILE_SITE_KEY,
+          callback: (newToken: string) => setToken(newToken),
+          'expired-callback': () => setToken(null),
+          'error-callback': () => setToken(null),
+          size: 'invisible',
+          appearance: 'interaction-only',
+        })
+        widgetIdRef.current = id
+        setWidgetId(id)
+      }
+    }, 200)
+
+    return () => clearInterval(retryInterval)
+  }, [token])
+
   return { token, widgetId, reset, containerRef }
 }
 

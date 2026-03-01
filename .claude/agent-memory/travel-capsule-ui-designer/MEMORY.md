@@ -85,3 +85,58 @@ Build is confirmed clean (no TypeScript errors, no lint errors) after all UI cha
 - Playfair Display: loaded via next/font, variable `--font-playfair`, class `font-serif`
 - DM Sans: loaded via next/font, variable `--font-dm-sans`, class `font-sans`
 - Both added as class variables on `<html>` in layout.tsx
+
+## code.html (Standalone Landing Page)
+- Located at `/home/user/travel-cloth-recom/code.html` — pure HTML/CSS/JS, no build step
+- Uses Tailwind CDN + custom CSS in `<style>` block (NOT globals.css)
+- DM Sans replaces Plus Jakarta Sans as body font in code.html
+- Color tokens: `--terracotta:#C4613A`, `--ink:#1A1410`, `--sand:#F5EFE6`, `--cream:#FDF8F3`, `--gold:#C8A96E`, `--muted:#8A7B6E`
+- Material Symbols filled stars: class `.star-filled` with `font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24`
+- Material Symbols filled icons: class `.icon-filled` with `font-variation-settings: 'FILL' 1, 'wght' 300`
+- Scroll reveal: `.reveal` opacity:0, `.reveal.visible` triggers `fadeInUp` animation via IntersectionObserver
+- Announcement bar: `#announcement-bar` dismissible with animated collapse (max-height 0 + opacity 0)
+- Hero: `hero-gradient` class with animated gradient + `grain` overlay pseudo-element
+- Hero card: `.hero-img-card` aspect-ratio 3/4, frosted glass `.hero-overlay-card` at bottom
+- Stats bar uses `.stats-bar` dark ink bg with `.stat-number` in Playfair Display + gold color
+- Testimonial: `.testimonial-quote-mark` decorative large `&ldquo;` behind quote text
+- CTA: radial gradient glows via `::before` (terracotta top-right) and `::after` (gold bottom-left)
+- Mobile menu: `#mobile-menu` toggles `.open` class, closes on outside click
+- Dashed step connector: `.steps-grid::before` with `repeating-linear-gradient` in gold
+- Feature card border glow on hover: CSS `-webkit-mask` / `mask-composite: exclude` technique
+- Price anchor displayed in CTA: struck-through "$200+" vs large gold "$5" in Playfair Display
+
+## Landing Page (app/page.tsx) Mobile Patterns
+- Hero h1: `text-4xl sm:text-6xl md:text-7xl lg:text-8xl` — starts at 4xl to prevent 320px overflow
+- Header right group gap: `gap-2 sm:gap-4` — tighter on mobile
+- LanguageSwitcher + AuthButton: always visible (no `hidden sm:block` wrapper)
+- Nav CTA button: `hidden sm:inline-flex` — hidden on mobile (hero section CTA is enough)
+- Hamburger button: `flex md:hidden` — toggles `mobileMenuOpen` useState
+- Mobile drawer: `fixed top-[65px] left-0 right-0 z-50 bg-cream` + `fixed inset-0 z-40` backdrop overlay
+  - Backdrop: `bg-secondary/40`, closes on click, `aria-hidden="true"`
+  - Drawer links: `border-b border-sand last:border-0`, close drawer `onClick`
+  - Drawer CTA: full-width `bg-primary` button, `mt-3`
+- Blueprint masonry grid: `h-[280px] sm:h-[400px] md:h-[520px] lg:h-[600px]`
+- Section 2 floating weather card: `top-4 right-2 md:top-8 md:-right-6` (no negative right on mobile)
+- Section 2 image wrapper: `pb-16 md:pb-10` to absorb polaroid overflow
+- Section 2 polaroids: `bottom-0` / `bottom-2` on mobile (not negative), negative only on `md:`
+- Section 4 flat-lay wrapper: `pb-20 md:pb-0` to absorb floating card overflow
+- Section 4 activity card: `-bottom-4 left-0 md:-bottom-8 md:-left-6` (no negative left on mobile)
+- Footer legal links: `/legal/privacy` and `/legal/terms` (not `/`)
+
+## Checklist Page (`/checklist/[tripId]`)
+- Files: `apps/web/app/checklist/[tripId]/page.tsx` (server, edge runtime) + `ChecklistClient.tsx` (client)
+- Layout: `flex h-screen overflow-hidden pt-20` — left `lg:w-3/5` scrollable + right `lg:w-2/5` sidebar (hidden on mobile)
+- Primary color in checklist: `#b8552e` (not `#C4613A`) — matches `--primary` in globals.css
+- `buildChecklist(trip)` derives ChecklistItem[] from capsule_items + weather + personal basics
+- Weight by category: Outerwear 1.0, Tops/Essential 0.3, Bottoms 0.5, Evening 0.4, Footwear 0.7, Accessory 0.2
+- Weather Essentials: umbrella if precip ≥ 30%, knit layer if cold/mild, sunscreen if warm/hot
+- Basic items: undergarments × totalDays (0.08kg each), toiletries 0.5kg, adapter 0.15kg, charger 0.15kg, passport 0.1kg
+- Checkbox state: `useState<Set<string>>` persisted to `localStorage` key `checklist-${tripId}`
+- Progress: packedCount/totalItems → progressPct; packedWeight/totalWeight displayed
+- `ChecklistRow` sub-component: label wraps thumbnail + name + checkbox; `compact` prop for Personal Basics (no thumbnail)
+- Sidebar: Weather Alert card + Bag Preview suitcase diagram + Pro Tip + CTA button
+- CTA: if progressPct < 100 → "Mark All Packed" (dark bg); if 100% → "I'm All Packed" + flight_takeoff → `/result/${tripId}`
+- Mobile bottom bar: `lg:hidden fixed bottom-0` — shows weight + progress% + CTA
+- Skeleton: `animate-pulse bg-[#E8DDD2]` rows matching content shape, aria-busy="true"
+- DEMO_TRIP: Paris Oct, 60% rain, mild, 8 capsule items — used when no WORKER_URL or fetch fails
+- ResultClient.tsx CTA changed from `<button onClick={openShare}>` to `<a href="/checklist/${tripId}">` with checklist icon

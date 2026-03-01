@@ -341,7 +341,7 @@ export default function TripPage() {
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
       {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-40 bg-[#FDF8F3]/95 backdrop-blur-sm border-b border-[#F5EFE6] px-6 py-4 flex items-center justify-between">
+      <header className="fixed top-0 left-0 right-0 z-40 bg-[#FDF8F3]/95 backdrop-blur-sm border-b border-[#F5EFE6] px-4 sm:px-6 py-4 flex items-center justify-between">
         <a
           href="/"
           className="font-bold text-[#1A1410] text-lg tracking-tight"
@@ -781,9 +781,6 @@ export default function TripPage() {
                 </div>
               </div>
 
-              {/* Turnstile */}
-              <div ref={turnstileRef} className="mb-4" />
-
               {submitError && (
                 <p className="text-sm text-red-500 mb-4 text-center" role="alert">{submitError}</p>
               )}
@@ -802,6 +799,9 @@ export default function TripPage() {
               </p>
             </div>
           )}
+
+          {/* Turnstile — always mounted so widget initializes on page load */}
+          <div ref={turnstileRef} className={step === 2 ? 'mb-4' : 'hidden'} />
 
         </div>
       </main>

@@ -139,13 +139,14 @@ export default function LanguageSwitcher({ variant = 'dropdown' }: LanguageSwitc
           <path d="M2 12h20" />
           <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
         </svg>
-        <span className="lang-current">{current.nativeLabel}</span>
+        <span className="lang-current hidden sm:inline">{current.nativeLabel}</span>
         <svg
           width="10"
           height="10"
           viewBox="0 0 24 24"
           fill="currentColor"
           aria-hidden="true"
+          className="hidden sm:block"
           style={{
             flexShrink: 0,
             opacity: 0.6,

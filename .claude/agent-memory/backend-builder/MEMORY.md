@@ -30,15 +30,17 @@ All agents accept `env: Bindings` as last param.
 - `generateUpgradeToken(tripId, env): Promise<string>` — exported from growthAgent
 - `verifyUpgradeToken(tripId, token, env): Promise<boolean>` — exported from growthAgent
 
-## index.ts Routes (8 API endpoints)
+## index.ts Routes (10 API endpoints)
 1. GET  /api/health
 2. POST /api/preview — Turnstile check (skip if SKIP_TURNSTILE==="true") + 5/day session rate limit
 3. POST /api/preview/email — email_captures upsert + Resend mood card
 4. POST /api/payment/checkout — Polar checkout (3 product IDs)
 5. POST /api/payment/webhook — HMAC verify + order idempotency + runResult in waitUntil
 6. POST /api/payment/upgrade — verifyUpgradeToken (3 min) + Polar Pro checkout
-7. GET  /api/result/:tripId — 402 if no paid order
-8. GET  /api/share/:tripId — public teaser data
+7. GET  /api/trips/:tripId — unified for ResultClient: trip+jobs+capsule+upgrade_token, 402 if no paid order
+8. GET  /api/result/:tripId — legacy route, same auth check, nested {trip,order,capsule,images} shape
+9. GET  /api/share/:tripId — public teaser data
+10. POST /api/account/delete — JWT auth + cascade delete user data
 
 ## Key Patterns
 - Supabase: raw fetch helper (`sbFetch`) in each agent — no @supabase/supabase-js
@@ -79,3 +81,19 @@ All agents accept `env: Bindings` as last param.
 - `parseCities` fix: use `for..of` with `push` instead of `.map().filter()` to avoid null type predicate error
 - TypeScript clean (0 errors) after 2026-02-28 full rewrite — verified with `npx tsc --noEmit`
 - `crypto.subtle` available via `@cloudflare/workers-types` (no import needed)
+
+## CORS Config (index.ts)
+- Allowed origins: `https://travelcapsule.com`, `https://travelcapsule.ai`, `http://localhost:3000`
+- Both production domains must be present — travelcapsule.ai was missing and was added 2026-02-28
+
+## wrangler.toml Notes
+- `SKIP_TURNSTILE = "false"` is a plain var — set to "true" locally via .dev.vars override
+- `compatibility_date = "2025-01-01"` (updated from 2024-01-01)
+- Must include SKIP_TURNSTILE in [vars] so `c.env.SKIP_TURNSTILE` resolves without TS errors
+
+## Business Logic Constraints
+- `/api/preview` cities: max 5 (per CLAUDE.md spec) — enforce `cities.length > 5` in validation
+- `/api/payment/upgrade`: creates Polar checkout for `POLAR_PRODUCT_ID_PRO` (full $12 price)
+  - Known gap: needs separate Polar product for $7 upgrade delta — current impl charges full Pro price
+- Annual plan trip_count reset: does NOT auto-reset on Polar subscription renewal (no renewal webhook yet)
+- NanoBanana is Gemini-based — uses Google generativelanguage.googleapis.com with NANOBANANA_API_KEY as x-goog-api-key header

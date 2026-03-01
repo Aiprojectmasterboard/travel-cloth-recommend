@@ -293,16 +293,30 @@ export async function runPreview(
     }
 
     // ── 5. Capsule — free mode ───────────────────────────────────────────────
-    const capsule = await capsuleAgent(
-      {
-        vibeResults,
-        weather: weatherResults,
+    let capsule: CapsuleResult;
+    try {
+      capsule = await capsuleAgent(
+        {
+          vibeResults,
+          weather: weatherResults,
+          plan: 'free',
+          cities: cities.map((c) => ({ name: c.name, days: c.days })),
+          month,
+        },
+        env
+      );
+    } catch (err) {
+      console.error(`[runPreview] Capsule agent failed for trip ${trip_id}:`, (err as Error).message);
+      capsule = {
         plan: 'free',
-        cities: cities.map((c) => ({ name: c.name, days: c.days })),
-        month,
-      },
-      env
-    );
+        count: 10,
+        principles: [
+          'Layer for temperature swings between cities',
+          'Choose neutral base colors that mix and match',
+          'Pack one versatile outerwear piece',
+        ],
+      };
+    }
 
     // ── 6. Mark trip as completed (free stage) ───────────────────────────────
     await sbPatch(env, `/trips?id=eq.${trip_id}`, {
