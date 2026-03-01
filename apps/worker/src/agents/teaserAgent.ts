@@ -44,11 +44,17 @@ interface GeminiResponse {
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL = 'gemini-3.1-flash-image-preview';
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [1_000, 2_000, 4_000] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /**
- * Calls Gemini Nano Banana 2 to generate a single image.
+ * Calls Gemini Nano Banana 2 once to generate a single image.
  * Returns the raw image buffer (PNG).
  */
 async function generateNanoBanana(
@@ -122,6 +128,33 @@ async function generateNanoBanana(
   return bytes.buffer;
 }
 
+/**
+ * Calls generateNanoBanana with exponential-backoff retry (3 attempts: 1s, 2s, 4s).
+ */
+async function generateWithRetry(
+  prompt: string,
+  apiKey: string,
+  faceUrl?: string
+): Promise<ArrayBuffer> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    if (attempt > 0) {
+      await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
+    }
+    try {
+      return await generateNanoBanana(prompt, apiKey, faceUrl);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.warn(
+        `[teaserAgent] Attempt ${attempt + 1}/${MAX_ATTEMPTS} failed: ${lastError.message}`
+      );
+    }
+  }
+
+  throw lastError ?? new Error(`Teaser generation failed after ${MAX_ATTEMPTS} attempts`);
+}
+
 // ─── Main Exported Function ───────────────────────────────────────────────────
 
 /**
@@ -153,8 +186,8 @@ export async function teaserAgent(
 
   console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);
 
-  // Generate via Nano Banana 2 (returns raw image buffer directly)
-  const imageBuffer = await generateNanoBanana(prompt, env.NANOBANANA_API_KEY, faceUrl);
+  // Generate via Nano Banana 2 with 3-attempt exponential backoff
+  const imageBuffer = await generateWithRetry(prompt, env.NANOBANANA_API_KEY, faceUrl);
 
   // Store in R2
   const r2Key = `temp/${tripId}/teaser.png`;

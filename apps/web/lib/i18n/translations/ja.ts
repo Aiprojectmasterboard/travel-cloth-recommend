@@ -6,6 +6,9 @@ export const ja: Translations = {
     pricing: '料金',
     faq: 'FAQ',
     cta: '今すぐ始める',
+    philosophy: 'PHILOSOPHY',
+    curations: 'CURATIONS',
+    membership: 'MEMBERSHIP',
   },
 
   hero: {
@@ -13,7 +16,7 @@ export const ja: Translations = {
     headline1: 'パリの3月、',
     headline2: '何を着ればいい？',
     headline3: '',
-    sub: 'AIが現地の天気とバイブを分析して、あなたの写真でコーデ画像を生成します。\n荷造りの悩みはもう終わり。',
+    sub: '天気の推測はもう終わり。AIが東京、パリ、世界中の旅先に合わせたパッキングリストを完成させます。',
     highlight: 'パリ・東京・ローマ・バルセロナ',
     ctaPrimary: '無料プレビューを始める',
     ctaSecondary: 'サンプルを見る',
@@ -25,6 +28,13 @@ export const ja: Translations = {
       cities: '都市まで対応',
       price: '1回限りの支払い',
     },
+    badge: 'THE FUTURE OF TRAVEL WARDROBE',
+    heading1: 'The End of',
+    heading2: 'Weather Guesswork.',
+    cta: '旅を始める',
+    estLabel: 'EST. 2025',
+    scrollLabel: 'SCROLL TO EXPLORE',
+    editionLabel: 'GLOBAL EDITION',
   },
 
   how: {
@@ -168,6 +178,62 @@ export const ja: Translations = {
     networkError: 'ネットワークエラーが発生しました。もう一度お試しください。',
   },
 
+  weather: {
+    forecastLabel: 'FORECAST',
+    windyLabel: 'Windy',
+    windNote: '強風が予想されます。しっかりとしたレイヤードと防風素材をおすすめします。',
+    sectionLabel: 'LIVE DATA STYLING',
+    heading1: 'Precision Weather',
+    heading2: 'Mapping.',
+    bodyText: '単なる気温チェックではありません。時間帯別の湿度、風速、体感温度まで分析し、最適な素材を選定します。',
+    windyDayEdit: 'THE WINDY DAY EDIT',
+    thermalTitle: '体感温度',
+    thermalDesc: '実際の体感温度に合わせて生地の厚さを調整します。',
+    humidityTitle: '湿度コントロール',
+    humidityDesc: '高湿度の環境に適した通気性レイヤーを選定します。',
+  },
+
+  blueprint: {
+    sectionLabel: 'THE METHODOLOGY',
+    heading: 'The 10-Item\nBlueprint',
+    desc: '厳選された10アイテムで20通り以上のコーデを実現。最小限の荷物で、最大限のスタイルを。',
+    outerLayerLabel: 'OUTER LAYER',
+    outerLayerName: 'Wool Overcoat',
+    seeAllItems: 'SEE ALL 10 ITEMS →',
+    curatedFor: 'CURATED FOR PARIS · MAY',
+    totalWeight: 'TOTAL WEIGHT: 6.2 KG',
+  },
+
+  guide: {
+    sectionLabel: 'DAILY GUIDANCE',
+    heading1: 'Wear-It-Now',
+    heading2: 'Daily Guide.',
+    bodyText: '朝起きたら、何を着るか迷わない。カレンダー形式で毎日のコーデを表示し、その日の活動と天気に最適化されています。',
+    step1Title: '旅先を入力',
+    step1Desc: '行き先と時期を教えてください。過去の気象パターンとリアルタイム予報を分析します。',
+    step2Title: 'スタイルを設定',
+    step2Desc: '写真をアップロードするか、好みのムードを選択。AIが機能性とあなたの美学を両立させます。',
+    step3Title: 'プランを受け取る',
+    step3Desc: '$5のカプセルプランをお届け。素材の推薦、レイヤリング、デイリーガイドまで。',
+    dayLabel: 'DAY 03',
+    activityTitle: 'Museum & Gallery Tour',
+    activityDetail: 'Indoor visits, comfortable walking shoes recommended',
+  },
+
+  testimonial: {
+    quote: '「念のため」と荷物を詰め込んでも、結局寒くて震えていました。Travel Capsule AIがローマの寒波を予測して、完璧なレイヤリングを提案してくれました。',
+    author: 'Jessica Cole',
+    detail: '11月のイタリア旅行',
+  },
+
+  cta: {
+    heading1: 'Pack Light.',
+    heading2: 'Travel Right.',
+    sub: 'Your next trip deserves better than guesswork. Let AI handle the details.',
+    button: 'BEGIN YOUR CAPSULE →',
+    note: '$5 · NO SUBSCRIPTION · SECURE PAYMENT',
+  },
+
   footer: {
     tagline: 'AIが設計する旅のスタイル、たった$5',
     serviceTitle: 'サービス',
@@ -184,6 +250,11 @@ export const ja: Translations = {
     links: { privacy: 'プライバシーポリシー', terms: '利用規約', contact: 'お問い合わせ' },
     copyright: '© 2026 Travel Capsule AI · Powered by NanoBanana · 決済: Polar',
     trustBadges: ['🔒 Polar安全決済', '⚡ Cloudflareセキュリティ', '🌍 グローバルサービス'],
+    journal: 'JOURNAL',
+    methodology: 'METHODOLOGY',
+    pricing: 'PRICING',
+    login: 'LOGIN',
+    instagram: 'INSTAGRAM',
   },
 
   result: {

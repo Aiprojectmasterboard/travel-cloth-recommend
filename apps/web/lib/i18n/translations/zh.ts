@@ -6,6 +6,9 @@ export const zh: Translations = {
     pricing: '价格',
     faq: '常见问题',
     cta: '立即开始',
+    philosophy: 'PHILOSOPHY',
+    curations: 'CURATIONS',
+    membership: 'MEMBERSHIP',
   },
 
   hero: {
@@ -13,7 +16,7 @@ export const zh: Translations = {
     headline1: '去巴黎，',
     headline2: '不知道穿什么？',
     headline3: '',
-    sub: 'AI分析目的地天气和氛围，用你的照片生成搭配图像。\n再也不用为打包发愁。',
+    sub: '猜天气的时代结束了。AI为东京、巴黎及更多城市打造专属打包清单。',
     highlight: '巴黎·东京·罗马·巴塞罗那',
     ctaPrimary: '免费预览 — 立即开始',
     ctaSecondary: '查看示例',
@@ -25,6 +28,13 @@ export const zh: Translations = {
       cities: '城市支持',
       price: '一次性付款',
     },
+    badge: 'THE FUTURE OF TRAVEL WARDROBE',
+    heading1: 'The End of',
+    heading2: 'Weather Guesswork.',
+    cta: '开始旅程',
+    estLabel: 'EST. 2025',
+    scrollLabel: 'SCROLL TO EXPLORE',
+    editionLabel: 'GLOBAL EDITION',
   },
 
   how: {
@@ -168,6 +178,62 @@ export const zh: Translations = {
     networkError: '网络错误，请重试。',
   },
 
+  weather: {
+    forecastLabel: 'FORECAST',
+    windyLabel: 'Windy',
+    windNote: '预计有强风。建议选择有结构感的层搭和防风面料。',
+    sectionLabel: 'LIVE DATA STYLING',
+    heading1: 'Precision Weather',
+    heading2: 'Mapping.',
+    bodyText: '不仅仅是查看温度。我们的算法会分析逐时湿度、风速和体感温度，为您选择最舒适的面料。',
+    windyDayEdit: 'THE WINDY DAY EDIT',
+    thermalTitle: '体感温度',
+    thermalDesc: '根据实际体感温度调整面料厚度。',
+    humidityTitle: '湿度调控',
+    humidityDesc: '为高湿度环境选择透气层搭。',
+  },
+
+  blueprint: {
+    sectionLabel: 'THE METHODOLOGY',
+    heading: 'The 10-Item\nBlueprint',
+    desc: '精选10件单品，解锁20+种搭配。最少行李，最大风格。',
+    outerLayerLabel: 'OUTER LAYER',
+    outerLayerName: 'Wool Overcoat',
+    seeAllItems: 'SEE ALL 10 ITEMS →',
+    curatedFor: 'CURATED FOR PARIS · MAY',
+    totalWeight: 'TOTAL WEIGHT: 6.2 KG',
+  },
+
+  guide: {
+    sectionLabel: 'DAILY GUIDANCE',
+    heading1: 'Wear-It-Now',
+    heading2: 'Daily Guide.',
+    bodyText: '每天早上醒来就知道穿什么。日历视图展示每日搭配，针对当天活动和天气进行优化。',
+    step1Title: '输入目的地',
+    step1Desc: '告诉我们您要去哪里、什么时候去。我们会分析历史天气模式和实时预报。',
+    step2Title: '定义风格',
+    step2Desc: '上传照片或选择偏好风格。AI将功能性与您的审美完美结合。',
+    step3Title: '获取方案',
+    step3Desc: '获取您的$5胶囊方案。面料推荐、层搭建议和每日指南。',
+    dayLabel: 'DAY 03',
+    activityTitle: 'Museum & Gallery Tour',
+    activityDetail: 'Indoor visits, comfortable walking shoes recommended',
+  },
+
+  testimonial: {
+    quote: '以前总是"以防万一"地塞满行李箱，结果还是冻得发抖。Travel Capsule AI预测了罗马的寒潮，为我准备了完美的层搭方案。',
+    author: 'Jessica Cole',
+    detail: '11月意大利之旅',
+  },
+
+  cta: {
+    heading1: 'Pack Light.',
+    heading2: 'Travel Right.',
+    sub: 'Your next trip deserves better than guesswork. Let AI handle the details.',
+    button: 'BEGIN YOUR CAPSULE →',
+    note: '$5 · NO SUBSCRIPTION · SECURE PAYMENT',
+  },
+
   footer: {
     tagline: 'AI设计旅行风格，只需$5',
     serviceTitle: '服务',
@@ -184,6 +250,11 @@ export const zh: Translations = {
     links: { privacy: '隐私政策', terms: '服务条款', contact: '联系我们' },
     copyright: '© 2026 Travel Capsule AI · Powered by NanoBanana · 支付: Polar',
     trustBadges: ['🔒 Polar安全支付', '⚡ Cloudflare安全防护', '🌍 全球服务'],
+    journal: 'JOURNAL',
+    methodology: 'METHODOLOGY',
+    pricing: 'PRICING',
+    login: 'LOGIN',
+    instagram: 'INSTAGRAM',
   },
 
   result: {

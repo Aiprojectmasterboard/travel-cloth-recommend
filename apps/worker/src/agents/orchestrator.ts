@@ -50,6 +50,32 @@ export interface PreviewResponse {
   weather: WeatherResult[];
 }
 
+// ─── Face Cleanup Helper ──────────────────────────────────────────────────────
+
+/**
+ * Deletes the original face photo from R2 and nulls face_url in the DB.
+ * Called immediately after image generation completes (success or failure).
+ * Non-throwing — any errors are logged and suppressed.
+ */
+async function cleanupFace(tripId: string, faceUrl: string, env: Bindings): Promise<void> {
+  try {
+    const faceKey = faceUrl.startsWith('http')
+      ? new URL(faceUrl).pathname.replace(/^\//, '')
+      : faceUrl;
+    await env.R2.delete(faceKey);
+    console.log(`[orchestrator] Face image deleted from R2 for trip ${tripId}`);
+  } catch (err) {
+    console.error(`[orchestrator] R2 face deletion failed for trip ${tripId}:`, (err as Error).message);
+  }
+  // Always null face_url in DB regardless of R2 outcome
+  try {
+    await sbPatch(env, `/trips?id=eq.${tripId}`, { face_url: null });
+    console.log(`[orchestrator] face_url nulled in DB for trip ${tripId}`);
+  } catch (err) {
+    console.error(`[orchestrator] DB face_url null failed for trip ${tripId}:`, (err as Error).message);
+  }
+}
+
 // ─── Supabase Helper ──────────────────────────────────────────────────────────
 
 async function sbFetch(
@@ -478,7 +504,7 @@ export async function runResult(
       console.warn('[runResult] Failed to insert generation_jobs:', (err as Error).message);
     }
 
-    // c. Generate images
+    // c. Generate images (Promise.allSettled internally — never throws)
     await imageGenAgent(
       {
         prompts: stylePrompts,
@@ -488,25 +514,43 @@ export async function runResult(
       },
       env
     );
+
+    // d. Privacy cleanup: delete face immediately after ALL image generation is done
+    //    (both success and failure paths — imageGenAgent uses Promise.allSettled so always returns)
+    if (faceUrl) {
+      await cleanupFace(tripId, faceUrl, env);
+    }
   } else {
-    // Standard plan: teaser is already completed — no status change needed.
-    // The result page shows the teaser image directly once payment is verified via orders table.
+    // Standard plan: teaser is already completed — no further image generation.
+    // Face cleanup is handled by fulfillmentAgent below.
   }
 
   // ── 4. Full capsule wardrobe ──────────────────────────────────────────────
   const totalDays = cities.reduce((s, c) => s + c.days, 0);
 
-  const capsule = await capsuleAgent(
-    {
-      vibeResults: finalVibes,
-      weather: finalWeather,
+  // Non-fatal: capsule errors use a fallback so fulfillmentAgent always runs
+  let capsule: Awaited<ReturnType<typeof capsuleAgent>>;
+  try {
+    capsule = await capsuleAgent(
+      {
+        vibeResults: finalVibes,
+        weather: finalWeather,
+        plan,
+        cities: cities.map((c) => ({ name: c.name, days: c.days })),
+        month,
+        tripDays: totalDays,
+      },
+      env
+    );
+  } catch (err) {
+    console.error('[runResult] Capsule agent failed — using fallback:', (err as Error).message);
+    // Fallback keeps the pipeline alive so fulfillmentAgent (email + cleanup) always runs
+    capsule = {
       plan,
-      cities: cities.map((c) => ({ name: c.name, days: c.days })),
-      month,
-      tripDays: totalDays,
-    },
-    env
-  );
+      items: [],
+      daily_plan: [],
+    } as Awaited<ReturnType<typeof capsuleAgent>>;
+  }
 
   // Save capsule_results
   try {
@@ -522,7 +566,9 @@ export async function runResult(
     console.error('[runResult] Failed to save capsule_results:', (err as Error).message);
   }
 
-  // ── 5. Fulfillment (email + R2 cleanup) ──────────────────────────────────
+  // ── 5. Fulfillment (email + face cleanup + temp R2 cleanup) ──────────────
+  //       fulfillmentAgent checks face_url; if already nulled above (pro/annual),
+  //       it skips R2 deletion (face_url is null) — safe to call in all cases.
   const galleryUrl = `https://travelscapsule.com/result/${tripId}`;
   await fulfillmentAgent({ tripId, email: userEmail, galleryUrl }, env);
 

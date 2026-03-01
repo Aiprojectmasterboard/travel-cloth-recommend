@@ -6,6 +6,9 @@ export const en: Translations = {
     pricing: 'Pricing',
     faq: 'FAQ',
     cta: 'Start Now',
+    philosophy: 'PHILOSOPHY',
+    curations: 'CURATIONS',
+    membership: 'MEMBERSHIP',
   },
 
   hero: {
@@ -25,6 +28,13 @@ export const en: Translations = {
       cities: 'Cities supported',
       price: 'One-time payment',
     },
+    badge: 'THE FUTURE OF TRAVEL WARDROBE',
+    heading1: 'The End of',
+    heading2: 'Weather Guesswork.',
+    cta: 'CURATE MY CAPSULE',
+    estLabel: 'EST. 2025',
+    scrollLabel: 'SCROLL TO EXPLORE',
+    editionLabel: 'GLOBAL EDITION',
   },
 
   how: {
@@ -180,6 +190,62 @@ export const en: Translations = {
     networkError: 'Network error. Please try again.',
   },
 
+  weather: {
+    forecastLabel: 'FORECAST',
+    windyLabel: 'Windy',
+    windNote: 'High winds expected. Opt for structured layers and wind-resistant fabrics.',
+    sectionLabel: 'LIVE DATA STYLING',
+    heading1: 'Precision Weather',
+    heading2: 'Mapping.',
+    bodyText: 'We don\'t just look at the temperature. Our algorithms analyze hourly humidity, wind speeds, and "feels like" metrics to select the perfect fabrics for your comfort.',
+    windyDayEdit: 'THE WINDY DAY EDIT',
+    thermalTitle: 'Thermal Comfort',
+    thermalDesc: 'Fabric weight adjusted for real-feel temperature.',
+    humidityTitle: 'Humidity Control',
+    humidityDesc: 'Breathable layers selected for high-moisture days.',
+  },
+
+  blueprint: {
+    sectionLabel: 'THE METHODOLOGY',
+    heading: 'The 10-Item\nBlueprint',
+    desc: 'A curated capsule of 10 essential items that unlock 20+ unique outfits. Minimal packing, maximum style.',
+    outerLayerLabel: 'OUTER LAYER',
+    outerLayerName: 'Wool Overcoat',
+    seeAllItems: 'SEE ALL 10 ITEMS →',
+    curatedFor: 'CURATED FOR PARIS · MAY',
+    totalWeight: 'TOTAL WEIGHT: 6.2 KG',
+  },
+
+  guide: {
+    sectionLabel: 'DAILY GUIDANCE',
+    heading1: 'Wear-It-Now',
+    heading2: 'Daily Guide.',
+    bodyText: 'Wake up and know exactly what to put on. A calendar-style view showing your outfit for each day of the trip, optimized for that day\'s specific activities and weather.',
+    step1Title: 'Input Destination',
+    step1Desc: 'Tell us where and when. We pull historical weather patterns and live forecasts.',
+    step2Title: 'Define Your Style',
+    step2Desc: 'Upload a photo or choose a vibe. AI matches functional gear with your aesthetic.',
+    step3Title: 'Get Your Plan',
+    step3Desc: 'Receive your custom $5 Capsule Plan. Fabric recs, layers, and daily guide.',
+    dayLabel: 'DAY 03',
+    activityTitle: 'Museum & Gallery Tour',
+    activityDetail: 'Indoor visits, comfortable walking shoes recommended',
+  },
+
+  testimonial: {
+    quote: 'I used to pack for \'just in case\' and still freeze. Travel Capsule AI predicted the cold snap in Rome and packed me the perfect layers.',
+    author: 'Jessica Cole',
+    detail: 'Traveled to Italy in November',
+  },
+
+  cta: {
+    heading1: 'Pack Light.',
+    heading2: 'Travel Right.',
+    sub: 'Your next trip deserves better than guesswork. Let AI handle the details.',
+    button: 'BEGIN YOUR CAPSULE →',
+    note: '$5 · NO SUBSCRIPTION · SECURE PAYMENT',
+  },
+
   footer: {
     tagline: 'AI-designed travel style, just $5',
     serviceTitle: 'Service',
@@ -196,6 +262,11 @@ export const en: Translations = {
     links: { privacy: 'Privacy Policy', terms: 'Terms of Service', contact: 'Contact' },
     copyright: '© 2026 Travel Capsule AI · Powered by NanoBanana · Payments: Polar',
     trustBadges: ['🔒 Polar Secure Payment', '⚡ Cloudflare Security', '🌍 Global Service'],
+    journal: 'JOURNAL',
+    methodology: 'METHODOLOGY',
+    pricing: 'PRICING',
+    login: 'LOGIN',
+    instagram: 'INSTAGRAM',
   },
 
   result: {

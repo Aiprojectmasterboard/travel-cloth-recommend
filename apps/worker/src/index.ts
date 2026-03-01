@@ -220,39 +220,63 @@ app.post('/api/preview', async (c) => {
     if (!cf_turnstile_token || typeof cf_turnstile_token !== 'string') {
       return c.json({ error: 'Turnstile token required' }, 403);
     }
-    // If the secret key is not configured, log a warning but allow the request
-    // so the service remains functional. Set CLOUDFLARE_TURNSTILE_SECRET_KEY
-    // via `wrangler secret put` to enable full bot protection.
-    if (c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY) {
-      const ok = await verifyTurnstile(cf_turnstile_token, c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY);
-      if (!ok) {
-        return c.json({ error: 'Turnstile verification failed' }, 403);
-      }
-    } else {
-      console.warn('[Turnstile] CLOUDFLARE_TURNSTILE_SECRET_KEY not configured — skipping server-side verification');
+    // Fail closed: if the secret key is not configured, refuse the request.
+    // This prevents bots from bypassing Turnstile in a misconfigured deployment.
+    // Fix: run `wrangler secret put CLOUDFLARE_TURNSTILE_SECRET_KEY` before deploying.
+    if (!c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY) {
+      console.error('[Turnstile] CLOUDFLARE_TURNSTILE_SECRET_KEY not configured — returning 503');
+      return c.json({ error: 'Service temporarily unavailable' }, 503);
+    }
+    const ok = await verifyTurnstile(cf_turnstile_token, c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY);
+    if (!ok) {
+      return c.json({ error: 'Turnstile verification failed' }, 403);
     }
   }
 
-  // Rate limit: 5 previews per session_id per calendar day
+  // Rate limit: 5 previews per session_id OR IP per calendar day.
+  // Both checks are independent — either hitting 5 triggers 429.
+  const clientIp = c.req.header('CF-Connecting-IP') ?? c.req.header('X-Forwarded-For') ?? '';
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
-  const countRes = await supabase(
+  const todayIso = todayStart.toISOString();
+
+  // Check session_id rate limit
+  const sessionCountRes = await supabase(
     c.env,
-    `/trips?session_id=eq.${encodeURIComponent(session_id)}&created_at=gte.${todayStart.toISOString()}&select=id`,
+    `/trips?session_id=eq.${encodeURIComponent(session_id)}&created_at=gte.${todayIso}&select=id`,
     { headers: { Prefer: 'count=exact' } }
   );
-  const countHeader = countRes.headers.get('content-range');
-  const totalCount = countHeader ? parseInt(countHeader.split('/')[1] ?? '0', 10) : 0;
-  if (totalCount >= 5) {
+  const sessionCount = parseInt(
+    sessionCountRes.headers.get('content-range')?.split('/')[1] ?? '0',
+    10
+  );
+  if (sessionCount >= 5) {
     return c.json({ error: 'Daily limit reached', limit: 5 }, 429);
   }
 
-  // Insert trip row
+  // Check IP rate limit (only when IP is available — trips.client_ip column from migration 004)
+  if (clientIp) {
+    const ipCountRes = await supabase(
+      c.env,
+      `/trips?client_ip=eq.${encodeURIComponent(clientIp)}&created_at=gte.${todayIso}&select=id`,
+      { headers: { Prefer: 'count=exact' } }
+    );
+    const ipCount = parseInt(
+      ipCountRes.headers.get('content-range')?.split('/')[1] ?? '0',
+      10
+    );
+    if (ipCount >= 5) {
+      return c.json({ error: 'Daily limit reached', limit: 5 }, 429);
+    }
+  }
+
+  // Insert trip row (client_ip stored for rate limiting; never exposed in API responses)
   const tripPayload = {
     session_id,
     cities,
     month,
     ...(face_url ? { face_url } : {}),
+    ...(clientIp ? { client_ip: clientIp } : {}),
     status: 'pending',
   };
   const insertRes = await supabase(c.env, '/trips', {

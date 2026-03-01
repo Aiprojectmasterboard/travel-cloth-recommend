@@ -1,18 +1,31 @@
 'use client'
 
+import { motion, type Variants } from 'framer-motion'
+
 export interface ProgressChecklistProps {
   /** Number of completed steps (0–4) */
   completedSteps: number
+  /** The AI-generated mood name, e.g. "Paris — Rainy Chic" */
+  moodName?: string
 }
 
 const STEPS = [
-  { label: 'Weather Analysis', icon: '🌤️' },
-  { label: 'Vibe Detection', icon: '✨' },
-  { label: 'Capsule Estimate', icon: '👗' },
-  { label: 'Style Photos', icon: '📸', locked: true },
+  { key: 'weather', label: 'Weather analyzed', icon: '🌤️' },
+  { key: 'vibe', label: 'City vibe matched', icon: '✨' },
+  { key: 'capsule', label: 'Capsule estimated', icon: '👗' },
+  { key: 'photos', label: 'Style photos', icon: '📸', locked: true },
 ]
 
-export default function ProgressChecklist({ completedSteps }: ProgressChecklistProps) {
+const itemVariants: Variants = {
+  hidden: { opacity: 0, x: -8 },
+  visible: (i: number) => ({
+    opacity: 1,
+    x: 0,
+    transition: { delay: i * 0.12, duration: 0.3, ease: 'easeOut' as const },
+  }),
+}
+
+export default function ProgressChecklist({ completedSteps, moodName }: ProgressChecklistProps) {
   return (
     <div
       className="flex flex-col sm:flex-row gap-2 sm:gap-0 sm:items-center"
@@ -21,10 +34,25 @@ export default function ProgressChecklist({ completedSteps }: ProgressChecklistP
     >
       {STEPS.map((step, index) => {
         const isDone = index < completedSteps
-        const isLocked = step.locked && index >= completedSteps
+        const isLocked = !!step.locked && index >= completedSteps
+
+        // For the vibe step, inject the mood name when complete
+        const isVibeStep = step.key === 'vibe'
+        const displayLabel =
+          isDone && isVibeStep && moodName
+            ? { prefix: 'City vibe matched — ', mood: moodName }
+            : null
 
         return (
-          <div key={step.label} className="flex sm:flex-1 items-center" role="listitem">
+          <motion.div
+            key={step.key}
+            className="flex sm:flex-1 items-center"
+            role="listitem"
+            custom={index}
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
+          >
             <div
               className={`
                 flex items-center gap-2 flex-1
@@ -74,18 +102,38 @@ export default function ProgressChecklist({ completedSteps }: ProgressChecklistP
                   <span>{step.icon}</span>
                 )}
               </div>
-              <span className="leading-tight">{step.label}</span>
+
+              {/* Label — vibe step shows mood name in italic gold */}
+              <span className="leading-tight truncate">
+                {displayLabel ? (
+                  <>
+                    <span className="text-[#b8552e]">{displayLabel.prefix}</span>
+                    <em className="text-[#D4AF37] font-semibold not-italic"
+                      style={{ fontFamily: 'Playfair Display, serif', fontStyle: 'italic' }}>
+                      {displayLabel.mood}
+                    </em>
+                  </>
+                ) : (
+                  step.label
+                )}
+              </span>
             </div>
 
             {/* Connector line between steps (not after last) */}
             {index < STEPS.length - 1 && (
-              <div
-                className="hidden sm:block w-6 h-px mx-1 flex-shrink-0 transition-colors duration-500"
-                style={{ background: index < completedSteps ? '#b8552e' : 'rgba(26,20,16,0.12)' }}
+              <motion.div
+                className="hidden sm:block w-6 h-px mx-1 flex-shrink-0"
+                initial={{ scaleX: 0 }}
+                animate={{ scaleX: isDone ? 1 : 0 }}
+                transition={{ delay: index * 0.12 + 0.2, duration: 0.4 }}
+                style={{
+                  background: index < completedSteps ? '#b8552e' : 'rgba(26,20,16,0.12)',
+                  transformOrigin: 'left',
+                }}
                 aria-hidden="true"
               />
             )}
-          </div>
+          </motion.div>
         )
       })}
     </div>

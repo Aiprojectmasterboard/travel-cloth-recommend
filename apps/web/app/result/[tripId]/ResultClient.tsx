@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { motion } from 'framer-motion'
 import ShareModal from '@/components/ShareModal'
 import UpgradeModal from '@/components/funnel/UpgradeModal'
 import AuthButton from '@/components/AuthButton'
@@ -106,7 +107,10 @@ function getCityFlag(city: string): string {
 function PlanBadge({ plan }: { plan?: 'standard' | 'pro' | 'annual' }) {
   if (plan === 'annual') {
     return (
-      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#D4AF37] text-xs font-bold uppercase tracking-wide">
+      <div
+        className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border text-xs font-bold uppercase tracking-wide"
+        style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.2) 0%, rgba(251,191,36,0.15) 100%)', borderColor: 'rgba(212,175,55,0.4)', color: '#C8A055' }}
+      >
         <span className="material-symbols-outlined !text-sm">workspace_premium</span>
         Annual Member
       </div>
@@ -114,7 +118,7 @@ function PlanBadge({ plan }: { plan?: 'standard' | 'pro' | 'annual' }) {
   }
   if (plan === 'pro') {
     return (
-      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wide">
+      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#C8A055] text-xs font-bold uppercase tracking-wide">
         <span className="material-symbols-outlined !text-sm">diamond</span>
         Pro Plan
       </div>
@@ -219,10 +223,17 @@ function StandardView({
   onShare: (url?: string | null) => void
 }) {
   const carouselRef = useRef<HTMLDivElement>(null)
+  const [revealed, setRevealed] = useState(false)
   const cityNames = trip.cities.map(c => c.name)
   const primaryCity = cityNames[0] ?? 'Your City'
   const totalDays = trip.cities.reduce((s, c) => s + c.days, 0)
   const hasFacePhoto = Boolean(trip.face_url)
+
+  // Blur → sharp unlock animation on first page load
+  useEffect(() => {
+    const t = setTimeout(() => setRevealed(true), 350)
+    return () => clearTimeout(t)
+  }, [])
 
   const completedJobs = trip.generation_jobs.filter(j => j.status === 'completed')
   const outfitCards = completedJobs.map((job, i) => ({
@@ -301,12 +312,27 @@ function StandardView({
                       Your Style
                     </div>
                   )}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={card.displayImage}
-                    alt={`${card.city} ${card.mood}`}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
+                  {i === 0 ? (
+                    /* First image — blur→sharp unlock animation */
+                    <motion.img
+                      src={card.displayImage}
+                      alt={`${card.city} ${card.mood}`}
+                      className="w-full h-full object-cover"
+                      initial={{ filter: 'blur(18px)', opacity: 0.5, scale: 1.08 }}
+                      animate={revealed
+                        ? { filter: 'blur(0px)', opacity: 1, scale: 1 }
+                        : { filter: 'blur(18px)', opacity: 0.5, scale: 1.08 }
+                      }
+                      transition={{ duration: 1.1, ease: [0.25, 0.1, 0.25, 1] }}
+                    />
+                  ) : (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={card.displayImage}
+                      alt={`${card.city} ${card.mood}`}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                  )}
                   <div className="absolute bottom-4 left-4 right-4 bg-white/90 backdrop-blur p-3 rounded-lg">
                     <p className="font-playfair italic text-lg text-center text-secondary">&ldquo;{card.mood}&rdquo;</p>
                   </div>
@@ -344,6 +370,50 @@ function StandardView({
               </div>
             </div>
           ))}
+
+          {/* Pro Upgrade Teaser — 3 CSS-blurred slots, no additional AI generation */}
+          {outfitCards.length > 0 && (
+            <div className="bg-[#FDF8F3] rounded-2xl p-6 border border-[#ebdcd5]">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                <div>
+                  <h3 className="font-playfair text-xl font-bold text-secondary">3 More Looks Await</h3>
+                  <p className="text-sm text-muted mt-1">Pro users receive 4–6 fully generated AI images per city</p>
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#C8A055] text-xs font-bold uppercase tracking-wide">
+                  <span className="material-symbols-outlined !text-sm">diamond</span>
+                  Pro Only
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-3 mb-5">
+                {[0, 1, 2].map((idx) => (
+                  <div
+                    key={idx}
+                    className="relative aspect-[3/4] rounded-xl overflow-hidden pointer-events-none"
+                    aria-hidden="true"
+                  >
+                    {/* CSS blur — same source image, no new AI call */}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={outfitCards[0].displayImage}
+                      alt=""
+                      className="w-full h-full object-cover blur-xl scale-110 opacity-60"
+                    />
+                    <div className="absolute inset-0 bg-secondary/50 flex flex-col items-center justify-center gap-2">
+                      <span className="material-symbols-outlined text-white !text-2xl">auto_awesome</span>
+                      <span className="text-white/80 text-xs font-medium tracking-widest uppercase">Pro Look</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <a
+                href="/trip"
+                className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-colors bg-[#D4AF37]/10 hover:bg-[#D4AF37]/20 text-[#C8A055] border border-[#D4AF37]/30"
+              >
+                <span className="material-symbols-outlined !text-sm">diamond</span>
+                Upgrade to Pro — $12 for your next trip
+              </a>
+            </div>
+          )}
 
           {/* Daily Style Guide Carousel */}
           {outfitCards.length > 0 && (
@@ -600,7 +670,7 @@ function ProView({
       <section className="px-6 md:px-10 py-10">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
           <div className="max-w-2xl space-y-4">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-bold uppercase tracking-wider">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#D4AF37]/10 border border-[#D4AF37]/30 text-[#C8A055] text-xs font-bold uppercase tracking-wider">
               <span className="material-symbols-outlined !text-sm">diamond</span>
               Pro Plan Active
             </div>
@@ -914,7 +984,10 @@ function AnnualView({
             </div>
           </div>
           <div className="flex flex-col items-end gap-3">
-            <div className="bg-primary/10 text-primary px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider">
+            <div
+              className="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border"
+              style={{ background: 'linear-gradient(135deg, rgba(212,175,55,0.15) 0%, rgba(251,191,36,0.1) 100%)', borderColor: 'rgba(212,175,55,0.35)', color: '#C8A055' }}
+            >
               {tripsRemaining} Trips Remaining
             </div>
           </div>
@@ -1299,19 +1372,15 @@ export default function ResultClient({ tripId }: { tripId: string }) {
 
     try {
       const res = await fetch(`${WORKER_URL}/api/result/${tripId}`)
-      // 402 = payment required — redirect to preview/paywall
+      // 402 = payment required (no order found) — redirect to preview/paywall
       if (res.status === 402) { router.push(`/preview/${tripId}`); return }
       if (!res.ok) { setError(true); setLoading(false); return }
       const data: Trip = await res.json()
-      // Unpaid trips (pending) and truly failed/expired trips belong on the preview page
-      if (data.status === 'pending' || data.status === 'failed') {
-        router.push(`/preview/${tripId}`)
-        return
-      }
       setTrip(data)
       setLoading(false)
-      if (data.status === 'processing') {
-        pollingRef.current = setTimeout(fetchTrip, 2000)
+      // Keep polling while queued ('pending') or actively generating ('processing')
+      if (data.status === 'pending' || data.status === 'processing') {
+        pollingRef.current = setTimeout(fetchTrip, 3000)
       }
     } catch {
       setError(true)
@@ -1324,7 +1393,8 @@ export default function ResultClient({ tripId }: { tripId: string }) {
     return () => { if (pollingRef.current) clearTimeout(pollingRef.current) }
   }, [fetchTrip])
 
-  const isProcessing = trip?.status === 'processing'
+  const isGenerating = trip?.status === 'pending' || trip?.status === 'processing'
+  const isFailed = trip?.status === 'failed'
 
   return (
     <>
@@ -1358,8 +1428,9 @@ export default function ResultClient({ tripId }: { tripId: string }) {
           </div>
         )}
         {error && <ErrorView tripId={tripId} />}
-        {!loading && !error && trip && isProcessing && <ProcessingView trip={trip} />}
-        {!loading && !error && trip && !isProcessing && <GalleryView trip={trip} tripId={tripId} />}
+        {!loading && !error && trip && isFailed && <ErrorView tripId={tripId} />}
+        {!loading && !error && trip && isGenerating && <ProcessingView trip={trip} />}
+        {!loading && !error && trip && !isGenerating && !isFailed && <GalleryView trip={trip} tripId={tripId} />}
       </main>
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}

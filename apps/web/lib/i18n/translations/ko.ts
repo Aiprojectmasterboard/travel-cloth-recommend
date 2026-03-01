@@ -6,6 +6,9 @@ export const ko: Translations = {
     pricing: 'Pricing',
     faq: 'FAQ',
     cta: '지금 시작하기',
+    philosophy: 'PHILOSOPHY',
+    curations: 'CURATIONS',
+    membership: 'MEMBERSHIP',
   },
 
   hero: {
@@ -13,7 +16,7 @@ export const ko: Translations = {
     headline1: '파리 3월, 뭐 입어야',
     headline2: '할지 모르겠다면?',
     headline3: '',
-    sub: '여행지 날씨·현지 분위기를 AI가 분석해\n당신 사진으로 실제 코디 이미지를 만들어드립니다.\n캐리어 고민 끝.',
+    sub: '날씨를 추측하는 시대는 끝났습니다. AI가 도쿄, 파리, 그 너머를 위한 맞춤 패킹 리스트를 완성합니다.',
     highlight: '파리 · 도쿄 · 로마 · 바르셀로나',
     ctaPrimary: '무료 미리보기 — 지금 바로',
     ctaSecondary: '결과물 먼저 보기',
@@ -25,6 +28,13 @@ export const ko: Translations = {
       cities: '까지 지원',
       price: '단 한 번 결제',
     },
+    badge: 'THE FUTURE OF TRAVEL WARDROBE',
+    heading1: '날씨 걱정의 끝,',
+    heading2: '완벽한 여행 코디.',
+    cta: '여행 시작하기',
+    estLabel: 'EST. 2025',
+    scrollLabel: 'SCROLL TO EXPLORE',
+    editionLabel: 'GLOBAL EDITION',
   },
 
   how: {
@@ -168,6 +178,62 @@ export const ko: Translations = {
     networkError: '네트워크 오류가 발생했습니다. 다시 시도해주세요.',
   },
 
+  weather: {
+    forecastLabel: 'FORECAST',
+    windyLabel: 'Windy',
+    windNote: '강풍이 예상됩니다. 구조감 있는 레이어와 방풍 소재를 추천합니다.',
+    sectionLabel: 'LIVE DATA STYLING',
+    heading1: 'Precision Weather',
+    heading2: 'Mapping.',
+    bodyText: '단순한 기온 확인이 아닙니다. 시간대별 습도, 풍속, 체감온도까지 분석하여 최적의 소재를 선택합니다.',
+    windyDayEdit: 'THE WINDY DAY EDIT',
+    thermalTitle: '체감 온도',
+    thermalDesc: '실제 체감온도에 맞춰 원단 두께를 조절합니다.',
+    humidityTitle: '습도 조절',
+    humidityDesc: '고습도 환경에 적합한 통기성 레이어를 선택합니다.',
+  },
+
+  blueprint: {
+    sectionLabel: 'THE METHODOLOGY',
+    heading: 'The 10-Item\nBlueprint',
+    desc: '엄선된 10개 아이템으로 20가지 이상의 코디를 완성합니다. 최소한의 짐, 최대한의 스타일.',
+    outerLayerLabel: 'OUTER LAYER',
+    outerLayerName: 'Wool Overcoat',
+    seeAllItems: 'SEE ALL 10 ITEMS →',
+    curatedFor: 'CURATED FOR PARIS · MAY',
+    totalWeight: 'TOTAL WEIGHT: 6.2 KG',
+  },
+
+  guide: {
+    sectionLabel: 'DAILY GUIDANCE',
+    heading1: 'Wear-It-Now',
+    heading2: 'Daily Guide.',
+    bodyText: '아침에 눈을 뜨면 바로 뭘 입을지 알 수 있습니다. 캘린더 형식으로 매일의 코디를 보여주며, 그날의 활동과 날씨에 최적화되어 있습니다.',
+    step1Title: '여행지 입력',
+    step1Desc: '어디로, 언제 가는지 알려주세요. 과거 날씨 패턴과 실시간 예보를 분석합니다.',
+    step2Title: '스타일 설정',
+    step2Desc: '사진을 올리거나 원하는 무드를 선택하세요. AI가 기능성과 감성을 동시에 맞춰줍니다.',
+    step3Title: '플랜 받기',
+    step3Desc: '$5 캡슐 플랜을 받아보세요. 소재 추천, 레이어링, 데일리 가이드까지.',
+    dayLabel: 'DAY 03',
+    activityTitle: 'Museum & Gallery Tour',
+    activityDetail: 'Indoor visits, comfortable walking shoes recommended',
+  },
+
+  testimonial: {
+    quote: '\'혹시 몰라서\' 짐을 챙기고도 결국 추위에 떨었던 적 있지 않나요? Travel Capsule AI가 로마의 한파를 예측해 완벽한 레이어링을 준비해줬어요.',
+    author: 'Jessica Cole',
+    detail: '11월 이탈리아 여행',
+  },
+
+  cta: {
+    heading1: 'Pack Light.',
+    heading2: 'Travel Right.',
+    sub: 'Your next trip deserves better than guesswork. Let AI handle the details.',
+    button: 'BEGIN YOUR CAPSULE →',
+    note: '$5 · NO SUBSCRIPTION · SECURE PAYMENT',
+  },
+
   footer: {
     tagline: 'AI가 설계하는 여행 스타일, 단 $5',
     serviceTitle: '서비스',
@@ -184,6 +250,11 @@ export const ko: Translations = {
     links: { privacy: '개인정보처리방침', terms: '이용약관', contact: '문의하기' },
     copyright: '© 2026 Travel Capsule AI · Powered by NanoBanana · 결제: Polar',
     trustBadges: ['🔒 Polar 안전결제', '⚡ Cloudflare 보안', '🌍 글로벌 서비스'],
+    journal: 'JOURNAL',
+    methodology: 'METHODOLOGY',
+    pricing: 'PRICING',
+    login: 'LOGIN',
+    instagram: 'INSTAGRAM',
   },
 
   result: {

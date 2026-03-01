@@ -6,6 +6,9 @@ export const fr: Translations = {
     pricing: 'Tarifs',
     faq: 'FAQ',
     cta: 'Commencer',
+    philosophy: 'PHILOSOPHY',
+    curations: 'CURATIONS',
+    membership: 'MEMBERSHIP',
   },
 
   hero: {
@@ -13,7 +16,7 @@ export const fr: Translations = {
     headline1: 'Paris en mars,',
     headline2: 'quoi porter ?',
     headline3: '',
-    sub: "L'IA analyse la météo et l'ambiance de votre destination, puis génère de vraies tenues avec votre photo.\nFinis les casse-têtes de valise.",
+    sub: 'Fini de deviner la météo. L\'IA crée des listes de voyage sur mesure pour Tokyo, Paris et au-delà.',
     highlight: 'Paris · Tokyo · Rome · Barcelone',
     ctaPrimary: 'Aperçu gratuit — Commencer',
     ctaSecondary: 'Voir les exemples',
@@ -25,6 +28,13 @@ export const fr: Translations = {
       cities: 'Villes supportées',
       price: 'Paiement unique',
     },
+    badge: 'THE FUTURE OF TRAVEL WARDROBE',
+    heading1: 'La fin des',
+    heading2: 'incertitudes météo.',
+    cta: 'Commencer mon voyage',
+    estLabel: 'EST. 2025',
+    scrollLabel: 'SCROLL TO EXPLORE',
+    editionLabel: 'GLOBAL EDITION',
   },
 
   how: {
@@ -168,6 +178,62 @@ export const fr: Translations = {
     networkError: 'Erreur réseau. Veuillez réessayer.',
   },
 
+  weather: {
+    forecastLabel: 'FORECAST',
+    windyLabel: 'Windy',
+    windNote: 'Vents forts attendus. Optez pour des couches structurées et des tissus coupe-vent.',
+    sectionLabel: 'LIVE DATA STYLING',
+    heading1: 'Precision Weather',
+    heading2: 'Mapping.',
+    bodyText: 'Nous ne regardons pas seulement la température. Nos algorithmes analysent l\'humidité horaire, la vitesse du vent et le ressenti pour sélectionner les tissus parfaits.',
+    windyDayEdit: 'THE WINDY DAY EDIT',
+    thermalTitle: 'Confort thermique',
+    thermalDesc: 'Poids du tissu ajusté selon la température ressentie.',
+    humidityTitle: 'Contrôle d\'humidité',
+    humidityDesc: 'Couches respirantes sélectionnées pour les journées humides.',
+  },
+
+  blueprint: {
+    sectionLabel: 'THE METHODOLOGY',
+    heading: 'The 10-Item\nBlueprint',
+    desc: 'Une capsule de 10 pièces essentielles qui débloque plus de 20 tenues uniques. Minimum de bagages, maximum de style.',
+    outerLayerLabel: 'OUTER LAYER',
+    outerLayerName: 'Wool Overcoat',
+    seeAllItems: 'SEE ALL 10 ITEMS →',
+    curatedFor: 'CURATED FOR PARIS · MAY',
+    totalWeight: 'TOTAL WEIGHT: 6.2 KG',
+  },
+
+  guide: {
+    sectionLabel: 'DAILY GUIDANCE',
+    heading1: 'Wear-It-Now',
+    heading2: 'Daily Guide.',
+    bodyText: 'Réveillez-vous en sachant exactement quoi porter. Une vue calendrier montrant votre tenue pour chaque jour, optimisée selon les activités et la météo.',
+    step1Title: 'Entrez votre destination',
+    step1Desc: 'Dites-nous où et quand. Nous analysons les tendances météo historiques et les prévisions en direct.',
+    step2Title: 'Définissez votre style',
+    step2Desc: 'Téléchargez une photo ou choisissez un mood. L\'IA associe fonctionnalité et esthétique.',
+    step3Title: 'Recevez votre plan',
+    step3Desc: 'Recevez votre Capsule Plan à $5. Recommandations tissus, superpositions et guide quotidien.',
+    dayLabel: 'DAY 03',
+    activityTitle: 'Museum & Gallery Tour',
+    activityDetail: 'Indoor visits, comfortable walking shoes recommended',
+  },
+
+  testimonial: {
+    quote: 'Je faisais mes valises « au cas où » et je finissais quand même par geler. Travel Capsule AI a prédit la vague de froid à Rome et m\'a préparé les couches parfaites.',
+    author: 'Jessica Cole',
+    detail: 'Voyage en Italie en novembre',
+  },
+
+  cta: {
+    heading1: 'Pack Light.',
+    heading2: 'Travel Right.',
+    sub: 'Your next trip deserves better than guesswork. Let AI handle the details.',
+    button: 'BEGIN YOUR CAPSULE →',
+    note: '$5 · NO SUBSCRIPTION · SECURE PAYMENT',
+  },
+
   footer: {
     tagline: 'Style de voyage conçu par IA, pour $5 seulement',
     serviceTitle: 'Service',
@@ -184,6 +250,11 @@ export const fr: Translations = {
     links: { privacy: 'Politique de confidentialité', terms: 'Conditions d\'utilisation', contact: 'Contact' },
     copyright: '© 2026 Travel Capsule AI · Propulsé par NanoBanana · Paiements: Polar',
     trustBadges: ['🔒 Paiement sécurisé Polar', '⚡ Sécurité Cloudflare', '🌍 Service mondial'],
+    journal: 'JOURNAL',
+    methodology: 'METHODOLOGY',
+    pricing: 'PRICING',
+    login: 'LOGIN',
+    instagram: 'INSTAGRAM',
   },
 
   result: {
@@ -246,7 +317,7 @@ export const fr: Translations = {
     referralBtn: 'Partager',
     viralCopies: (cities: string, month: string, city0: string) => [
       `Mes tenues pour ${cities} créées par IA 🤩\nFini le stress des valises, que du style ✈️\n\n#TravelCapsuleAI #StyleVoyage #${city0}Voyage`,
-      `Voyage ${month} à ${cities} — valises prêtes ! 🧳\nL\'IA a tout géré : tenues et garde-robe capsule 👗\n\n#ModIA #TravelCapsuleAI #StyleVoyage`,
+      `Voyage ${month} à ${cities} — valises prêtes ! 🧳\nL'IA a tout géré : tenues et garde-robe capsule 👗\n\n#ModIA #TravelCapsuleAI #StyleVoyage`,
       `Travel Capsule AI a stylisé mon voyage à ${cities} ✨\nIncroyable que ça soit possible pour $5\n\n#ModeVoyage #TravelCapsuleAI #GardeRobeCapsule`,
     ],
     nativeShareTitle: (cities: string) => `Mon style de voyage ${cities} — Travel Capsule AI`,

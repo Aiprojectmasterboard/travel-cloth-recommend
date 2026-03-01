@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Image from 'next/image'
 import { getPreview, createCheckout } from '@/lib/api'
 import AuthButton from '@/components/AuthButton'
 import type { PreviewResponse } from '../../../../../packages/types'
@@ -221,10 +222,13 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
         }}>
           {/* Background */}
           {teaserUrl ? (
-            <img
+            <Image
               src={teaserUrl}
               alt="Your travel look teaser"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }}
+              fill
+              style={{ objectFit: 'cover' }}
+              priority
+              unoptimized
             />
           ) : (
             <div style={{
@@ -342,6 +346,18 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
         {/* ─── Pricing Section ──────────────────────────────────────────────── */}
         <section style={{ marginBottom: 96 }}>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            {/* Price anchor — the most important conversion element */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 12,
+              background: '#1A1410', borderRadius: 9999,
+              padding: '6px 20px', marginBottom: 24, flexWrap: 'wrap', justifyContent: 'center',
+            }}>
+              <span style={{ fontSize: 12, color: '#9c8c7e', textDecoration: 'line-through' }}>Personal stylist: $200+</span>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.3)' }}>→</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: '#D4AF37' }}>
+                Travel Capsule AI: from $5
+              </span>
+            </div>
             <h2 style={{ fontFamily: 'Playfair Display, serif', fontSize: 36, color: '#1A1410', marginBottom: 16 }}>
               Choose Your Experience
             </h2>

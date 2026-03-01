@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Plus_Jakarta_Sans, Noto_Serif_KR, Noto_Sans_KR } from 'next/font/google'
+import { Playfair_Display, Plus_Jakarta_Sans, Noto_Serif_KR, Noto_Sans_KR, Noto_Serif_JP, Noto_Sans_JP, Noto_Serif_SC, Noto_Sans_SC } from 'next/font/google'
 import Script from 'next/script'
 import { LanguageProvider } from '@/components/LanguageContext'
 import { AuthProvider } from '@/components/AuthProvider'
@@ -38,6 +38,42 @@ const notoSansKR = Noto_Sans_KR({
   subsets: ['latin'],
   weight: ['300', '400', '500'],
   variable: '--font-korean-sans',
+  display: 'swap',
+  preload: false,
+})
+
+// Japanese serif — for headings
+const notoSerifJP = Noto_Serif_JP({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-japanese-serif',
+  display: 'swap',
+  preload: false,
+})
+
+// Japanese sans — for body / UI text
+const notoSansJP = Noto_Sans_JP({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-japanese-sans',
+  display: 'swap',
+  preload: false,
+})
+
+// Chinese (Simplified) serif — for headings
+const notoSerifSC = Noto_Serif_SC({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-chinese-serif',
+  display: 'swap',
+  preload: false,
+})
+
+// Chinese (Simplified) sans — for body / UI text
+const notoSansSC = Noto_Sans_SC({
+  subsets: ['latin'],
+  weight: ['300', '400', '500'],
+  variable: '--font-chinese-sans',
   display: 'swap',
   preload: false,
 })
@@ -426,7 +462,7 @@ const jsonLdSoftwareApp = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${plusJakartaSans.variable} ${notoSerifKR.variable} ${notoSansKR.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${plusJakartaSans.variable} ${notoSerifKR.variable} ${notoSansKR.variable} ${notoSerifJP.variable} ${notoSansJP.variable} ${notoSerifSC.variable} ${notoSansSC.variable}`}>
       <head>
         {/* JSON-LD Structured Data */}
         <script

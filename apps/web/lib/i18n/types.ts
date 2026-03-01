@@ -7,6 +7,9 @@ export interface Translations {
     pricing: string
     faq: string
     cta: string
+    philosophy: string
+    curations: string
+    membership: string
   }
 
   // Hero
@@ -27,6 +30,13 @@ export interface Translations {
       cities: string
       price: string
     }
+    badge: string
+    heading1: string
+    heading2: string
+    cta: string
+    estLabel: string
+    scrollLabel: string
+    editionLabel: string
   }
 
   // How It Works
@@ -137,6 +147,67 @@ export interface Translations {
     networkError: string
   }
 
+  // Landing page: Weather section
+  weather: {
+    forecastLabel: string
+    windyLabel: string
+    windNote: string
+    sectionLabel: string
+    heading1: string
+    heading2: string
+    bodyText: string
+    windyDayEdit: string
+    thermalTitle: string
+    thermalDesc: string
+    humidityTitle: string
+    humidityDesc: string
+  }
+
+  // Landing page: Blueprint section
+  blueprint: {
+    sectionLabel: string
+    heading: string
+    desc: string
+    outerLayerLabel: string
+    outerLayerName: string
+    seeAllItems: string
+    curatedFor: string
+    totalWeight: string
+  }
+
+  // Landing page: Guide section
+  guide: {
+    sectionLabel: string
+    heading1: string
+    heading2: string
+    bodyText: string
+    step1Title: string
+    step1Desc: string
+    step2Title: string
+    step2Desc: string
+    step3Title: string
+    step3Desc: string
+    dayLabel: string
+    activityTitle: string
+    activityDetail: string
+  }
+
+  // Landing page: Testimonial
+  testimonial: {
+    quote: string
+    author: string
+    detail: string
+  }
+
+  // Landing page: CTA section
+  cta: {
+    heading1: string
+    heading2: string
+    sub: string
+    button: string
+    note: string
+  }
+
   // Footer
   footer: {
     tagline: string
@@ -154,6 +225,11 @@ export interface Translations {
     links: { privacy: string; terms: string; contact: string }
     copyright: string
     trustBadges: string[]
+    journal: string
+    methodology: string
+    pricing: string
+    login: string
+    instagram: string
   }
 
   // Result page

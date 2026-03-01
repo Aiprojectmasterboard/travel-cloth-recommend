@@ -21,10 +21,30 @@ const config: Config = {
         weatherBlue: '#E0F2FE',
       },
       fontFamily: {
-        // Latin headings → Korean serif fallback (replaces ugly system brush font)
-        playfair: ['var(--font-playfair)', 'Playfair Display', 'var(--font-korean-serif)', 'Noto Serif KR', 'serif'],
-        // UI / body → Korean sans fallback
-        sans: ['var(--font-sans)', 'Plus Jakarta Sans', 'var(--font-korean-sans)', 'Noto Sans KR', 'sans-serif'],
+        // Latin headings → Korean → Japanese → Chinese serif fallback chain
+        playfair: [
+          'var(--font-playfair)',
+          'Playfair Display',
+          'var(--font-korean-serif)',
+          'Noto Serif KR',
+          'var(--font-japanese-serif)',
+          'Noto Serif JP',
+          'var(--font-chinese-serif)',
+          'Noto Serif SC',
+          'serif',
+        ],
+        // UI / body → Korean → Japanese → Chinese sans fallback chain
+        sans: [
+          'var(--font-sans)',
+          'Plus Jakarta Sans',
+          'var(--font-korean-sans)',
+          'Noto Sans KR',
+          'var(--font-japanese-sans)',
+          'Noto Sans JP',
+          'var(--font-chinese-sans)',
+          'Noto Sans SC',
+          'sans-serif',
+        ],
       },
     },
   },
