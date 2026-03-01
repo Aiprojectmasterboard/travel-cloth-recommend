@@ -177,7 +177,7 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
       {/* ─── Header ─────────────────────────────────────────────────────────── */}
       <header style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '16px 48px', borderBottom: '1px solid rgba(184, 85, 46, 0.1)',
+        padding: '16px clamp(16px, 4vw, 48px)', borderBottom: '1px solid rgba(184, 85, 46, 0.1)',
         background: 'rgba(253, 248, 243, 0.8)', backdropFilter: 'blur(12px)',
         position: 'sticky', top: 0, zIndex: 50,
       }}>
