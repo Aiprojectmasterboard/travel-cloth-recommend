@@ -2,9 +2,23 @@
 
 export const runtime = 'edge'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase-browser'
+
+// ─── In-app browser detection ─────────────────────────────────────────────────
+
+function isInAppBrowser(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const ua = navigator.userAgent || ''
+  // Known in-app browsers
+  if (/FBAN|FBAV|Instagram|Twitter|Snapchat|Line|NAVER|Kakao|WeChat|MicroMessenger/.test(ua)) return true
+  // iOS WebView: has AppleWebKit but NOT Safari in UA
+  if (/iPhone|iPad|iPod/.test(ua) && /AppleWebKit/.test(ua) && !/Safari/.test(ua)) return true
+  // Android WebView
+  if (/Android/.test(ua) && /wv/.test(ua)) return true
+  return false
+}
 
 // ─── Google SVG ───────────────────────────────────────────────────────────────
 
@@ -82,6 +96,11 @@ export default function LoginPage() {
   const [message, setMessage] = useState<string | null>(null)
   const [loadingEmail, setLoadingEmail] = useState(false)
   const [loadingGoogle, setLoadingGoogle] = useState(false)
+  const [inAppBrowser, setInAppBrowser] = useState(false)
+
+  useEffect(() => {
+    setInAppBrowser(isInAppBrowser())
+  }, [])
 
   function clearMessages() {
     setError(null)
@@ -241,28 +260,60 @@ export default function LoginPage() {
             {mode !== 'forgot' && (
               <>
                 <div className="space-y-3 mb-6">
-                  {/* Google */}
-                  <button
-                    onClick={signInWithGoogle}
-                    disabled={anyLoading}
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#b8552e] text-white text-sm font-semibold hover:bg-[#a34828] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    aria-label="Continue with Google"
-                  >
-                    {loadingGoogle ? (
-                      <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />
-                    ) : (
-                      <GoogleIcon />
-                    )}
-                    Continue with Google
-                  </button>
+                  {/* Google — hidden in in-app browsers */}
+                  {inAppBrowser ? (
+                    <div className="w-full p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-sm font-semibold text-amber-800 mb-1">
+                        Google sign-in unavailable in this browser
+                      </p>
+                      <p className="text-xs text-amber-700 mb-3">
+                        For Google sign-in, please open this page in Safari or Chrome.
+                      </p>
+                      <button
+                        onClick={() => {
+                          const url = window.location.href
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(url).then(() => {
+                              alert('URL copied! Please paste it in Safari or Chrome.')
+                            })
+                          } else {
+                            // iOS deep link to open in Safari
+                            window.location.href = `x-safari-${url}`
+                          }
+                        }}
+                        className="w-full text-center text-xs font-semibold text-amber-800 border border-amber-300 rounded-lg py-2 hover:bg-amber-100 transition-colors"
+                      >
+                        Copy URL to open in Safari / Chrome
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={signInWithGoogle}
+                      disabled={anyLoading}
+                      className="w-full flex items-center justify-center gap-3 px-4 py-3 rounded-xl bg-[#b8552e] text-white text-sm font-semibold hover:bg-[#a34828] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      aria-label="Continue with Google"
+                    >
+                      {loadingGoogle ? (
+                        <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />
+                      ) : (
+                        <GoogleIcon />
+                      )}
+                      Continue with Google
+                    </button>
+                  )}
                 </div>
 
                 {/* ─── Divider ──────────────────────────────────────────────── */}
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-3 mb-2">
                   <div className="flex-1 h-px bg-[#F5EFE6]" />
                   <span className="text-xs text-[#9c8c7e] whitespace-nowrap">— or continue with email —</span>
                   <div className="flex-1 h-px bg-[#F5EFE6]" />
                 </div>
+                {inAppBrowser && (
+                  <p className="text-xs text-center text-[#9c8c7e] mb-4">
+                    Or sign in with email above — works in all browsers.
+                  </p>
+                )}
               </>
             )}
 
