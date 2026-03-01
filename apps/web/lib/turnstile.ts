@@ -102,9 +102,10 @@ export function useTurnstile(): UseTurnstileReturn {
           setToken(null)
         },
         // appearance:'execute' — runs the challenge immediately in the background.
-        // Only shows a visible widget if Cloudflare decides the user needs to solve a challenge.
-        // size:'invisible' is no longer a valid value in the Turnstile API.
+        // Only shows a visible widget if Cloudflare decides a challenge is required.
+        // size:'invisible' is no longer valid; use 'compact' so it's small when shown.
         appearance: 'execute',
+        size: 'compact',
       })
 
       widgetIdRef.current = id
@@ -138,6 +139,7 @@ export function useTurnstile(): UseTurnstileReturn {
           'expired-callback': () => setToken(null),
           'error-callback': () => setToken(null),
           appearance: 'execute',
+          size: 'compact',
         })
         widgetIdRef.current = id
         setWidgetId(id)

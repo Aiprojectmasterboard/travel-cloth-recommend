@@ -195,9 +195,16 @@ app.post('/api/preview', async (c) => {
     if (!cf_turnstile_token || typeof cf_turnstile_token !== 'string') {
       return c.json({ error: 'Turnstile token required' }, 403);
     }
-    const ok = await verifyTurnstile(cf_turnstile_token, c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY);
-    if (!ok) {
-      return c.json({ error: 'Turnstile verification failed' }, 403);
+    // If the secret key is not configured, log a warning but allow the request
+    // so the service remains functional. Set CLOUDFLARE_TURNSTILE_SECRET_KEY
+    // via `wrangler secret put` to enable full bot protection.
+    if (c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY) {
+      const ok = await verifyTurnstile(cf_turnstile_token, c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY);
+      if (!ok) {
+        return c.json({ error: 'Turnstile verification failed' }, 403);
+      }
+    } else {
+      console.warn('[Turnstile] CLOUDFLARE_TURNSTILE_SECRET_KEY not configured — skipping server-side verification');
     }
   }
 

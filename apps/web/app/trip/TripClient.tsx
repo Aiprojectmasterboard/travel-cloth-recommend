@@ -800,8 +800,10 @@ export default function TripClient() {
             </div>
           )}
 
-          {/* Turnstile — always mounted visibly so invisible widget can initialize */}
-          <div ref={turnstileRef} />
+          {/* Turnstile — compact widget, only visible when Cloudflare requires a challenge */}
+          <div className="flex justify-center mt-2">
+            <div ref={turnstileRef} className="overflow-hidden rounded-lg" />
+          </div>
 
         </div>
       </main>
