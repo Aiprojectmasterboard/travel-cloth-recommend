@@ -136,3 +136,17 @@ export async function uploadPhoto(file: File): Promise<{ face_url: string }> {
   if (!res.ok) throw new Error(`Photo upload error ${res.status}`)
   return res.json() as Promise<{ face_url: string }>
 }
+
+/**
+ * Regenerate outfit images for a city. Pro/Annual only.
+ * Returns new image_url for the city.
+ */
+export async function regenerateOutfit(
+  tripId: string,
+  city: string
+): Promise<{ ok: boolean; image_url: string; city: string }> {
+  return apiPost<{ ok: boolean; image_url: string; city: string }>(
+    '/api/regenerate',
+    { trip_id: tripId, city }
+  )
+}

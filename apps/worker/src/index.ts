@@ -1025,6 +1025,249 @@ app.post('/api/account/delete', async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 11. POST /api/regenerate
+// ─────────────────────────────────────────────────────────────────────────────
+// Regenerates one outfit image for a given city in an existing trip.
+// Allowed plans: pro (1 regen lifetime per trip), annual (1 regen per trip).
+// Standard plan is not eligible.
+//
+// Body: { trip_id: string, city: string }
+// Auth: Authorization: Bearer <supabase_access_token>  (optional — anonymous
+//       access is allowed if the order is verified against the trip_id)
+//
+// TODO(migration): generation_jobs.job_type CHECK constraint only allows
+//   'teaser' | 'full'. Add 'regen' to the constraint before removing the
+//   workaround below. Migration needed:
+//     ALTER TABLE generation_jobs DROP CONSTRAINT IF EXISTS generation_jobs_job_type_check;
+//     ALTER TABLE generation_jobs ADD CONSTRAINT generation_jobs_job_type_check
+//       CHECK (job_type IN ('teaser', 'full', 'regen'));
+//
+// Regen job workaround (until migration above is applied):
+//   Regen jobs are stored as job_type='full' with mood='regen-<timestamp>' so
+//   they can be counted separately from the original generation jobs.
+//   Query pattern: mood=like.regen-* identifies regen rows per trip+city.
+
+app.post('/api/regenerate', async (c) => {
+  // ── 1. Parse and validate body ──────────────────────────────────────────
+  let body: unknown;
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'invalid_json' }, 400);
+  }
+
+  if (
+    typeof body !== 'object' ||
+    body === null ||
+    typeof (body as Record<string, unknown>).trip_id !== 'string' ||
+    typeof (body as Record<string, unknown>).city !== 'string'
+  ) {
+    return c.json({ error: 'trip_id and city are required' }, 400);
+  }
+
+  const { trip_id, city } = body as { trip_id: string; city: string };
+
+  if (!isValidUUID(trip_id)) {
+    return c.json({ error: 'invalid_trip_id' }, 400);
+  }
+
+  const cityTrimmed = city.trim();
+  if (!cityTrimmed || cityTrimmed.length > 100) {
+    return c.json({ error: 'city must be a non-empty string (max 100 chars)' }, 400);
+  }
+
+  try {
+    // ── 2. Look up order: must be paid and belong to this trip ─────────────
+    // Note: DB uses status='paid' for fulfilled orders (not 'completed').
+    const orderRes = await supabase(
+      c.env,
+      `/orders?trip_id=eq.${trip_id}&status=eq.paid&limit=1&select=id,plan,customer_email`
+    );
+    const orders = (await orderRes.json()) as Array<{
+      id: string;
+      plan: PlanType;
+      customer_email: string | null;
+    }>;
+
+    if (orders.length === 0) {
+      return c.json({ error: 'no_order' }, 403);
+    }
+
+    const order = orders[0];
+
+    // ── 3. Standard plan is not eligible ──────────────────────────────────
+    if (order.plan === 'standard') {
+      return c.json({ error: 'plan_not_eligible' }, 403);
+    }
+
+    // ── 4. Check regen quota ───────────────────────────────────────────────
+    // Both 'pro' and 'annual' allow exactly 1 regeneration per trip.
+    // Regen jobs are identified by mood starting with 'regen-' (see TODO above
+    // for the permanent solution using job_type='regen' after a DB migration).
+    //
+    // We count existing regen jobs for this trip_id + city combination.
+    // Using PostgREST `like` filter: mood=like.regen-*
+    const regenJobsRes = await supabase(
+      c.env,
+      `/generation_jobs?trip_id=eq.${trip_id}&city=eq.${encodeURIComponent(cityTrimmed)}&mood=like.regen-*&select=id`,
+      {
+        headers: {
+          // Request a count so we can read the total from content-range
+          Prefer: 'count=exact',
+        },
+      }
+    );
+
+    // Parse count from the Content-Range header: "0-0/N" or "*/N"
+    const contentRange = regenJobsRes.headers.get('content-range') ?? '';
+    const totalMatch = contentRange.match(/\/(\d+)$/);
+    const existingRegenCount = totalMatch ? parseInt(totalMatch[1], 10) : 0;
+
+    if (order.plan === 'annual') {
+      // Annual: 1 regen per trip (tracked via generation_jobs, same as Pro)
+      // usage_records.trip_count tracks trip quota; regen quota uses generation_jobs
+      if (existingRegenCount >= 1) {
+        return c.json({ error: 'regen_limit_reached' }, 429);
+      }
+    }
+
+    if (order.plan === 'pro') {
+      // Pro: 1 regen per trip
+      if (existingRegenCount >= 1) {
+        return c.json({ error: 'regen_limit_reached' }, 429);
+      }
+    }
+
+    // ── 5. Fetch existing vibe/prompt data for the city ───────────────────
+    // Pull vibe_data from trips to reconstruct a StylePrompts-compatible object.
+    // If no existing prompt is found we fall back to a generic travel prompt.
+    const tripRes = await supabase(
+      c.env,
+      `/trips?id=eq.${trip_id}&select=vibe_data,cities,month&limit=1`
+    );
+    const tripRows = (await tripRes.json()) as Array<{
+      vibe_data: unknown;
+      cities: unknown;
+      month: number;
+    }>;
+
+    let existingPrompt: string | null = null;
+    let existingMood = 'travel-style';
+
+    if (tripRows.length > 0) {
+      const tripRow = tripRows[0];
+      const vibes = Array.isArray(tripRow.vibe_data)
+        ? (tripRow.vibe_data as Array<Record<string, unknown>>)
+        : [];
+      const cityVibe = vibes.find(
+        (v) =>
+          typeof v.city === 'string' &&
+          v.city.toLowerCase() === cityTrimmed.toLowerCase()
+      );
+      if (cityVibe) {
+        existingMood = (cityVibe.mood_label as string) ?? (cityVibe.mood_name as string) ?? existingMood;
+      }
+    }
+
+    // Also look up the most recent successful full-gen job prompt for this city
+    const promptRes = await supabase(
+      c.env,
+      `/generation_jobs?trip_id=eq.${trip_id}&city=eq.${encodeURIComponent(cityTrimmed)}&job_type=eq.full&status=eq.completed&order=created_at.desc&limit=1&select=prompt`
+    );
+    const promptRows = (await promptRes.json()) as Array<{ prompt: string }>;
+    if (promptRows.length > 0 && promptRows[0].prompt) {
+      existingPrompt = promptRows[0].prompt;
+    }
+
+    // Build a StylePrompts-compatible object for imageGenAgent
+    const regenMoodKey = `regen-${Date.now()}`;
+
+    // If no stored prompt, fall back to a generic style prompt for the city
+    const finalPrompt =
+      existingPrompt ??
+      `High-quality travel fashion editorial photograph. Location: ${cityTrimmed}. ` +
+      `Outfit style: ${existingMood}. Realistic photography, natural lighting, ` +
+      `full-body shot, stylish travel attire appropriate for the destination. ` +
+      `Professional fashion photography quality.`;
+
+    const stylePrompt = {
+      city: cityTrimmed,
+      mood: regenMoodKey,  // 'regen-<timestamp>' doubles as the regen marker key
+      prompt: finalPrompt,
+      negative_prompt:
+        'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, ' +
+        'drawing, 3d render, blurry, low quality, nsfw, watermark, text overlay, logo',
+    };
+
+    // ── 6. Call imageGenAgent to generate 1 new image ─────────────────────
+    // TODO: Pass faceUrl if still available (face_url is nulled post-generation
+    //       for privacy). For regen, face photo is not expected to be present.
+    const { imageGenAgent } = await import('./agents/imageGenAgent');
+
+    const genResult = await imageGenAgent(
+      {
+        prompts: [stylePrompt],
+        tripId: trip_id,
+      },
+      c.env
+    );
+
+    const firstResult = genResult.results[0];
+
+    if (!firstResult || !firstResult.success) {
+      const errorMsg =
+        firstResult && !firstResult.success ? firstResult.error : 'Image generation failed';
+      console.error('[POST /api/regenerate] imageGenAgent failed:', errorMsg);
+      return c.json({ error: 'generation_failed', detail: errorMsg }, 500);
+    }
+
+    const imageUrl = firstResult.image_url;
+
+    // ── 7. Record the regen job in generation_jobs ─────────────────────────
+    // job_type='full' is used because the DB CHECK constraint does not yet
+    // include 'regen'. The mood='regen-<timestamp>' value serves as the
+    // distinguishing marker. See TODO at the top of this route.
+    const insertRes = await supabase(c.env, '/generation_jobs', {
+      method: 'POST',
+      body: JSON.stringify({
+        trip_id,
+        city: cityTrimmed,
+        job_type: 'full',              // TODO: change to 'regen' after migration
+        mood: regenMoodKey,            // 'regen-<timestamp>' identifies this as a regen
+        prompt: finalPrompt,
+        negative_prompt: stylePrompt.negative_prompt,
+        status: 'completed',
+        image_url: imageUrl,
+        attempts: 1,
+      }),
+    });
+
+    if (!insertRes.ok) {
+      // Non-fatal: log the error but don't fail the response — the image was generated.
+      console.error(
+        '[POST /api/regenerate] Failed to insert generation_jobs row:',
+        await insertRes.text()
+      );
+    }
+
+    console.log(
+      `[POST /api/regenerate] trip=${trip_id} city="${cityTrimmed}" plan=${order.plan} url=${imageUrl}`
+    );
+
+    // ── 8. Return the new image URL ────────────────────────────────────────
+    return c.json({
+      ok: true,
+      image_url: imageUrl,
+      city: cityTrimmed,
+    });
+  } catch (err) {
+    const errorMsg = err instanceof Error ? err.message : String(err);
+    console.error('[POST /api/regenerate] Unexpected error:', errorMsg);
+    return c.json({ error: 'internal_error' }, 500);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Legacy compatibility routes (kept for backward compat)
 // ─────────────────────────────────────────────────────────────────────────────
 
