@@ -101,10 +101,10 @@ export function useTurnstile(): UseTurnstileReturn {
         'error-callback': () => {
           setToken(null)
         },
-        size: 'invisible',
-        // NOTE: do NOT set appearance for invisible widgets —
-        // 'interaction-only' causes the widget to wait for user interaction
-        // which never fires when the widget is hidden, so the token is never generated.
+        // appearance:'execute' — runs the challenge immediately in the background.
+        // Only shows a visible widget if Cloudflare decides the user needs to solve a challenge.
+        // size:'invisible' is no longer a valid value in the Turnstile API.
+        appearance: 'execute',
       })
 
       widgetIdRef.current = id
@@ -137,7 +137,7 @@ export function useTurnstile(): UseTurnstileReturn {
           callback: (newToken: string) => setToken(newToken),
           'expired-callback': () => setToken(null),
           'error-callback': () => setToken(null),
-          size: 'invisible',
+          appearance: 'execute',
         })
         widgetIdRef.current = id
         setWidgetId(id)
