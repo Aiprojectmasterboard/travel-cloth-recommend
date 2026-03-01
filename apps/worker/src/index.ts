@@ -425,9 +425,8 @@ app.post('/api/payment/checkout', async (c) => {
   });
 
   if (!polarRes.ok) {
-    const polarErr = await polarRes.text();
-    console.error('[POST /api/payment/checkout] Polar error:', polarErr);
-    return c.json({ error: 'Failed to create checkout session', polar_status: polarRes.status, polar_detail: polarErr }, 502);
+    console.error('[POST /api/payment/checkout] Polar error:', polarRes.status, await polarRes.text());
+    return c.json({ error: 'Failed to create checkout session' }, 502);
   }
 
   const session = (await polarRes.json()) as { url: string; id: string };
