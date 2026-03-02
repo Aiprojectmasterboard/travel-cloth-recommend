@@ -46,8 +46,8 @@ const config: Config = {
         ],
         // UI / body → Korean → Japanese → Chinese sans fallback chain
         sans: [
-          'var(--font-sans)',
-          'Plus Jakarta Sans',
+          'var(--font-body)',
+          'DM Sans',
           'var(--font-korean-sans)',
           'Noto Sans KR',
           'var(--font-japanese-sans)',

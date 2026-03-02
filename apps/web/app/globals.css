@@ -27,6 +27,11 @@
   --font-display: 'Playfair Display', serif;
   --font-body: 'DM Sans', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
+
+  /* Layout & shadow tokens (Figma v15) */
+  --max-w: 1400px;
+  --shadow-card: 0 2px 12px rgba(0,0,0,.06);
+  --shadow-cta: 0 4px 16px rgba(196,97,58,.25);
 }
 
 /* ─── Grain overlay ─── */

@@ -34,6 +34,17 @@ function buildReferralUrl(tripId: string, platform: string): string {
   return `https://travelscapsule.com/?${params.toString()}`
 }
 
+// ─── Viral copy generator (inlined from legacy i18n) ─────────────────────────
+
+function getViralCopies(citiesStr: string, month: string, city0: string): string[] {
+  return [
+    `Just got my AI travel capsule for ${citiesStr} in ${month} ✈️`,
+    `${city0} in ${month} — Travel Capsule AI styled my whole trip 🌍`,
+    `Weather-perfect outfits for ${citiesStr} — powered by AI 👗`,
+    `No more packing anxiety! AI planned my ${citiesStr} wardrobe for ${month} 🧳`,
+  ]
+}
+
 // ─── Platform share openers ───────────────────────────────────────────────────
 
 function shareToTwitter(text: string, url: string) {
@@ -72,7 +83,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
     if (isOpen) {
       const citiesStr = cities.slice(0, 2).join(' + ')
       const city0 = cities[0] ?? ''
-      const copies = t.share.viralCopies(citiesStr, month, city0)
+      const copies = getViralCopies(citiesStr, month, city0)
       const idx = Math.abs(cities.join('').length) % copies.length
       setShareText(copies[idx] ?? copies[0] ?? '')
       setVisible(true)
@@ -80,7 +91,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
       const timer = setTimeout(() => setVisible(false), 300)
       return () => clearTimeout(timer)
     }
-  }, [isOpen, cities, month, t.share])
+  }, [isOpen, cities, month])
 
   const shareUrl = buildShareUrl(tripId, 'direct')
   const referralUrl = buildReferralUrl(tripId, 'result')
@@ -92,16 +103,16 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      alert(`${t.share.copyLink}:\n${shareUrl}`)
+      alert(`${t('share.copyLink')}:\n${shareUrl}`)
     }
-  }, [shareText, shareUrl, t.share.copyLink])
+  }, [shareText, shareUrl, t])
 
   const handleNativeShare = useCallback(async () => {
     if (navigator.share) {
       try {
         const citiesStr = cities.slice(0, 2).join(' + ')
         await navigator.share({
-          title: t.share.nativeShareTitle(citiesStr),
+          title: `${t('share.nativeShareTitle')}: ${citiesStr}`,
           text: shareText,
           url: shareUrl,
         })
@@ -109,7 +120,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
         // cancelled
       }
     }
-  }, [shareText, shareUrl, cities, t.share])
+  }, [shareText, shareUrl, cities, t])
 
   const handleDownload = useCallback(async () => {
     if (!previewImageUrl) return
@@ -168,7 +179,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
       onClick: () => shareToWhatsApp(shareText, buildShareUrl(tripId, 'whatsapp')),
     },
     {
-      label: copied ? t.share.copied : t.share.copyLink,
+      label: copied ? t('share.copied') : t('share.copyLink'),
       icon: copied ? '✓' : '🔗',
       bg: copied ? '#5B8C5A' : 'var(--sand)',
       color: copied ? '#fff' : 'var(--ink)',
@@ -219,10 +230,10 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.2rem' }}>
             <div>
               <p style={{ fontSize: '0.72rem', letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--terracotta)', marginBottom: '0.2rem' }}>
-                {t.share.sub}
+                {t('share.sub')}
               </p>
               <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: '1.4rem', color: 'var(--ink)' }}>
-                {t.share.title}
+                {t('share.title')}
               </h3>
             </div>
             <button
@@ -254,7 +265,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   {cities.slice(0, 3).join(' · ')} · {month}
                 </p>
                 <p style={{ fontSize: '0.88rem', color: 'var(--ink)', lineHeight: 1.5 }}>
-                  {t.share.previewText}
+                  {t('share.previewText')}
                 </p>
               </div>
             </div>
@@ -263,7 +274,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
           {/* Editable viral text */}
           <div style={{ marginBottom: '1.2rem' }}>
             <p style={{ fontSize: '0.72rem', color: 'var(--muted)', marginBottom: '0.4rem', letterSpacing: '0.05em' }}>
-              {t.share.editableLabel}
+              {t('share.editableLabel')}
             </p>
             <textarea
               value={shareText}
@@ -334,7 +345,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
                 }}
               >
-                {t.share.nativeShare}
+                {t('share.nativeShare')}
               </button>
             )}
             {previewImageUrl && (
@@ -354,7 +365,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                   opacity: downloading ? 0.6 : 1,
                 }}
               >
-                {downloading ? t.share.saving : t.share.saveImage}
+                {downloading ? t('share.saving') : t('share.saveImage')}
               </button>
             )}
           </div>
@@ -372,17 +383,17 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
           }}>
             <div>
               <p style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.2rem' }}>
-                {t.share.referralTitle}
+                {t('share.referralTitle')}
               </p>
               <p style={{ fontSize: '0.78rem', opacity: 0.85 }}>
-                {t.share.referralSub}
+                {t('share.referralSub')}
               </p>
             </div>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(referralUrl).catch(() => {})
                 const citiesStr = cities.slice(0, 2).join(' + ')
-                const copies = t.share.viralCopies(citiesStr, month, cities[0] ?? '')
+                const copies = getViralCopies(citiesStr, month, cities[0] ?? '')
                 const tweetText = copies[0] ?? ''
                 window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(`${tweetText}\n\n${referralUrl}`)}`, '_blank')
               }}
@@ -399,7 +410,7 @@ export default function ShareModal({ isOpen, onClose, tripId, cities, month, pre
                 fontFamily: 'Plus Jakarta Sans, sans-serif',
               }}
             >
-              {t.share.referralBtn}
+              {t('share.referralBtn')}
             </button>
           </div>
         </div>

@@ -1,55 +1,31 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react'
-import { type Locale, type Translations, detectLocale, saveLocale, getTranslations } from '@/lib/i18n'
+import {
+  type Locale,
+  detectLocale,
+  saveLocale,
+  getTranslations,
+  getDisplayFont,
+  getBodyFont,
+} from '@/lib/i18n'
 
-// ─── Font helper functions (Figma design system) ─────────────────────────────
-
-/**
- * Returns the CSS font-family string for display/heading text based on locale.
- * CJK locales use system serif stacks; others use Playfair Display.
- */
-export function getDisplayFont(lang: Locale): string {
-  if (lang === 'ja') return "'Noto Serif JP', serif"
-  if (lang === 'zh') return "'Noto Serif SC', serif"
-  if (lang === 'ko') return "'Noto Serif KR', 'Playfair Display', serif"
-  return "var(--font-playfair), 'Playfair Display', serif"
-}
-
-/**
- * Returns the CSS font-family string for body/UI text based on locale.
- * CJK locales use system sans stacks; others use DM Sans.
- */
-export function getBodyFont(lang: Locale): string {
-  if (lang === 'ja') return "'Noto Sans JP', sans-serif"
-  if (lang === 'zh') return "'Noto Sans SC', sans-serif"
-  if (lang === 'ko') return "'Noto Sans KR', 'DM Sans', sans-serif"
-  return "var(--font-dm-sans), 'DM Sans', sans-serif"
-}
-
-/**
- * Returns a Tailwind text-size class token for hero headings based on locale.
- * CJK languages tend to be more compact; English needs larger sizing.
- */
-export function getHeroSize(lang: Locale): string {
-  if (lang === 'ja' || lang === 'zh') return 'text-4xl md:text-5xl'
-  if (lang === 'ko') return 'text-4xl md:text-6xl'
-  return 'text-5xl md:text-7xl'
-}
-
-// ─── Context ─────────────────────────────────────────────────────────────────
+// ─── Context shape ─────────────────────────────────────────────────────────────
 
 interface LanguageContextValue {
   locale: Locale
+  /** Alias for locale — used by Figma v15 components */
+  lang: Locale
   setLocale: (locale: Locale) => void
-  t: Translations
+  /** v15: function-based lookup — t("hero.cta") */
+  t: (key: string) => string
   /** CSS font-family for display/heading text */
   displayFont: string
   /** CSS font-family for body/UI text */
   bodyFont: string
 }
 
-// Alias for Figma-generated component compatibility
+// Alias type export for Figma-generated component compatibility
 export type { Locale as Lang }
 
 const LanguageContext = createContext<LanguageContextValue | null>(null)
@@ -76,7 +52,14 @@ export function LanguageProvider({ children }: LanguageProviderProps) {
   const displayFont = getDisplayFont(locale)
   const bodyFont = getBodyFont(locale)
 
-  const value: LanguageContextValue = { locale, setLocale, t, displayFont, bodyFont }
+  const value: LanguageContextValue = {
+    locale,
+    lang: locale,
+    setLocale,
+    t,
+    displayFont,
+    bodyFont,
+  }
 
   return (
     <LanguageContext.Provider value={value}>
@@ -93,7 +76,7 @@ export function useLanguage(): LanguageContextValue {
   return ctx
 }
 
-/** Alias for Figma-generated components that use useLang() */
+/** Alias for Figma v15 components that use useLang() */
 export function useLang(): LanguageContextValue {
   return useLanguage()
 }

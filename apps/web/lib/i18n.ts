@@ -19,1239 +19,735 @@ export const LOCALE_LABELS: Record<Locale, LocaleInfo> = {
   es: { label: 'Spanish', nativeLabel: 'Español', flag: '🇪🇸' },
 }
 
-// ─── Translation shape ─────────────────────────────────────────────────────────
+// v15 LANGUAGES array for new components
+export const LANGUAGES: Array<{ code: Locale; label: string; nativeLabel: string }> = [
+  { code: 'en', label: 'English', nativeLabel: 'English' },
+  { code: 'ko', label: 'Korean', nativeLabel: '한국어' },
+  { code: 'ja', label: 'Japanese', nativeLabel: '日本語' },
+  { code: 'zh', label: 'Chinese', nativeLabel: '中文' },
+  { code: 'fr', label: 'French', nativeLabel: 'Français' },
+  { code: 'es', label: 'Spanish', nativeLabel: 'Español' },
+]
 
-export interface Translations {
-  nav: {
-    philosophy: string
-    curations: string
-    membership: string
-    signIn: string
-    cta: string
-    // Used by Header.tsx component (separate from landing page nav)
-    howItWorks: string
-    pricing: string
-    faq: string
-  }
-  hero: {
-    badge: string
-    heading1: string
-    heading2: string
-    sub: string
-    cta: string
-    estLabel: string
-    scrollLabel: string
-    editionLabel: string
-    // Used by HeroSection.tsx component
-    tag: string
-    headline1: string
-    headline2: string
-    headline3: string
-    highlight: string
-    socialProof: string
-    ctaPrimary: string
-    ctaSecondary: string
-    trust: {
-      outfitImages: string
-      capsuleWardrobe: string
-      generationTime: string
-      price: string
-    }
-  }
-  weather: {
-    sectionLabel: string
-    heading1: string
-    heading2: string
-    forecastLabel: string
-    windyLabel: string
-    windNote: string
-    windyDayEdit: string
-    thermalTitle: string
-    thermalDesc: string
-    humidityTitle: string
-    humidityDesc: string
-    bodyText: string
-  }
-  blueprint: {
-    sectionLabel: string
-    heading: string
-    desc: string
-    outerLayerLabel: string
-    outerLayerName: string
-    seeAllItems: string
-    curatedFor: string
-    totalWeight: string
-  }
-  guide: {
-    sectionLabel: string
-    heading1: string
-    heading2: string
-    bodyText: string
-    step1Title: string
-    step1Desc: string
-    step2Title: string
-    step2Desc: string
-    step3Title: string
-    step3Desc: string
-    dayLabel: string
-    activityTitle: string
-    activityDetail: string
-  }
-  // ─── How It Works section ────────────────────────────────────────────────────
-  how: {
-    label: string
-    title: string
-    steps: Array<{
-      num: string
-      title: string
-      desc: string
-    }>
-  }
-  // ─── Capsule section ─────────────────────────────────────────────────────────
-  capsule: {
-    label: string
-    title: string
-    sub: string
-    note: string
-  }
-  // ─── Sample output section ───────────────────────────────────────────────────
-  sample: {
-    label: string
-    title: string
-    sub: string
-    moods: string[]
-  }
-  // ─── Pricing section ─────────────────────────────────────────────────────────
-  pricing: {
-    label: string
-    title: string
-    sub: string
-    badge: string
-    period: string
-    features: string[]
-    cta: string
-    guarantee: string
-  }
-  // ─── FAQ section ────────────────────────────────────────────────────────────
-  faq: {
-    label: string
-    title: string
-    items: Array<{ q: string; a: string }>
-  }
-  // ─── Partner section ─────────────────────────────────────────────────────────
-  partner: {
-    label: string
-    title: string
-    sub: string
-    nameLabel: string
-    namePlaceholder: string
-    companyLabel: string
-    companyPlaceholder: string
-    emailLabel: string
-    emailPlaceholder: string
-    typeLabel: string
-    typePlaceholder: string
-    typeOptions: string[]
-    messageLabel: string
-    messagePlaceholder: string
-    submitBtn: string
-    submitting: string
-    successMsg: string
-    errorMsg: string
-    networkError: string
-  }
-  // ─── Form section ────────────────────────────────────────────────────────────
-  form: {
-    label: string
-    title: string
-    sub: string
-    totalDays: string
-    totalCities: string
-    moreCities: string
-    cityLabel: string
-    cityPlaceholder: string
-    cityNights: string
-    cityAdd: string
-    cityMax: string
-    monthLabel: string
-    months: string[]
-    photoLabel: string
-    photoOptional: string
-    photoDrop: string
-    photoDragOver: string
-    photoSub: string
-    photoFormats: string
-    photoFaceRec: string
-    photoUploaded: string
-    photoChange: string
-    photoPrivacy: string
-    previewTitle: string
-    previewCaption: string
-    imageGen: string
-    capsuleWardrobe: string
-    dailyPlan: string
-    shareGallery: string
-    included: string
-    totalLabel: string
-    checkoutBtn: string
-    checkoutSub: string
-    priceNote: string
-    processing: string
-  }
-  // ─── Toast messages ──────────────────────────────────────────────────────────
-  toast: {
-    cityMax: string
-    cityAdded: string
-    imageOnly: string
-    imageTooLarge: string
-    photoUploaded: string
-    cityRequired: string
-    galleryLink: string
-  }
-  // ─── Checkout modal ──────────────────────────────────────────────────────────
-  checkout: {
-    title: string
-    subtitle: string
-    doneTitle: string
-    doneSubtitle: string
-    phases: string[]
-    progressLabel: string
-    steps: string[]
-    stepIcons: string[]
-    processing: string
-    trustBadges: string[]
-    galleryBtn: string
-  }
-  // ─── Share modal ─────────────────────────────────────────────────────────────
-  share: {
-    title: string
-    sub: string
-    previewText: string
-    editableLabel: string
-    copyLink: string
-    copied: string
-    nativeShare: string
-    saveImage: string
-    saving: string
-    referralTitle: string
-    referralSub: string
-    referralBtn: string
-    nativeShareTitle: (cities: string) => string
-    viralCopies: (cities: string, month: string, city0: string) => string
-  }
-  // ─── Result page ─────────────────────────────────────────────────────────────
-  result: {
-    processing: {
-      label: string
-      title: string
-      sub: string
-      completed: string
-      status: {
-        completed: string
-        processing: string
-        waiting: string
-      }
-    }
-    gallery: {
-      label: string
-      title: string
-      shareBtn: string
-      twitterBtn: string
-    }
-    wardrobe: {
-      label: string
-      title: string
-    }
-    dailyPlan: {
-      label: string
-      title: string
-      day: string
-    }
-    shareCta: {
-      title: string
-      sub: string
-    }
-    stickyBar: {
-      myStyle: string
-      shareBtn: string
-    }
-    error: {
-      title: string
-      sub: string
-      home: string
-    }
-    homeLink: string
-  }
-  testimonial: {
-    quote: string
-    author: string
-    detail: string
-  }
-  cta: {
-    heading1: string
-    heading2: string
-    sub: string
-    button: string
-    note: string
-  }
-  footer: {
-    tagline: string
-    journal: string
-    methodology: string
-    pricing: string
-    login: string
-    instagram: string
-    copyright: string
-    privacy: string
-    terms: string
-    // Used by Footer.tsx component
-    serviceTitle: string
-    howItWorks: string
-    startNow: string
-    sampleView: string
-    supportTitle: string
-    faq: string
-    refund: string
-    contact: string
-    legalTitle: string
-    trustBadges: string[]
+// ─── Flat-key translation maps (Figma v15 pattern) ────────────────────────────
+
+const translationsEn: Record<string, string> = {
+  'hero.tagline': 'The End of\nWeather Guesswork.',
+  'hero.pill': 'Algorithm Active',
+  'hero.subtitle': 'AI-Powered Capsule Wardrobe System',
+  'hero.body': 'Weather-adaptive, destination-aware outfit planning that eliminates packing anxiety forever.',
+  'hero.cta': 'Curate My Capsule',
+  'nav.howItWorks': 'How It Works',
+  'nav.pricing': 'Pricing',
+  'nav.examples': 'Examples',
+  'nav.startPlanning': 'Start Planning',
+  'nav.login': 'Sign In',
+  'nav.myCapsules': 'My Capsules',
+  'nav.shop': 'Shop',
+  'nav.account': 'Account',
+  'nav.dashboard': 'Dashboard',
+  'nav.myTrips': 'My Trips',
+  'nav.styleDna': 'Style DNA',
+  'section.intelligence.label': 'Style Intelligence Engine',
+  'section.intelligence.title': 'Fashion Meets\nForecast',
+  'section.intelligence.body1': 'Our algorithm cross-references real-time weather data, cultural dress codes, and your personal style DNA to generate capsule wardrobes that work.',
+  'section.intelligence.body2': 'No more overpacking. No more outfit anxiety. Just curated confidence for every destination.',
+  'section.intelligence.stat1': 'Weather data points analyzed',
+  'section.intelligence.stat2': 'Destination-aware styling',
+  'section.capsules.title': 'Capsules in Motion',
+  'section.darkCta.title': 'Your Personal Stylist.\nOn Demand.',
+  'section.darkCta.cta': 'Start Your Journey',
+  'section.examples.title': 'See It in Action',
+  'section.examples.subtitle': 'Explore real capsule results generated by our AI for different destinations and styles.',
+  'section.examples.viewPro': 'View Pro Example',
+  'section.examples.viewAnnual': 'View Annual Example',
+  'pricing.title': 'Choose Your Experience',
+  'pricing.oneTime': 'one-time',
+  'pricing.perYear': '/year',
+  'pricing.standard.features.1': 'Weather & Vibe Analysis',
+  'pricing.standard.features.2': 'City Vibe Card',
+  'pricing.standard.features.3': '4 AI Full-Body Outfits',
+  'pricing.standard.features.4': '10-Item Capsule',
+  'pricing.standard.features.5': 'Day-by-Day Itinerary',
+  'pricing.pro.badge': 'Most Popular',
+  'pricing.pro.features.1': 'All Standard features',
+  'pricing.pro.features.2': 'Hero images for ALL cities',
+  'pricing.pro.features.3': 'Ultra High-Res exports',
+  'pricing.pro.features.4': '1 Style Regeneration',
+  'pricing.pro.features.5': 'Multi-city planning',
+  'pricing.annual.badge': 'Save $115/yr',
+  'pricing.annual.features.1': 'Full Pro features',
+  'pricing.annual.features.2': 'Up to 12 trips/yr',
+  'pricing.annual.features.3': 'Priority AI processing',
+  'pricing.annual.features.4': 'VIP concierge support',
+  'pricing.standard.cta': 'Get Standard',
+  'pricing.pro.cta': 'Unlock Pro',
+  'pricing.annual.cta': 'Go Annual',
+  'pricing.noAccountNeeded': 'No account needed — instant access',
+  'preview.step': 'Step 4 of 4: Finalizing Your Journey',
+  'preview.title': 'Your story is ready\nto unfold.',
+  'preview.body': "We've analyzed your destination, weather patterns, and style preferences. Choose a plan to unlock your capsule.",
+  'preview.tripSummary': 'Trip Summary',
+  'preview.editDetails': 'Edit Details',
+  'preview.destination': 'Destination',
+  'preview.duration': 'Duration',
+  'preview.aesthetic': 'Aesthetic',
+  'preview.weather': 'Weather Focus',
+  'preview.selectPlan': 'Select the plan that matches your travel ambitions.',
+  'preview.seeSample': 'See Sample Result',
+  'footer.privacy': 'Privacy Policy',
+  'footer.terms': 'Terms of Service',
+  'footer.sustainability': 'Sustainability Report',
+  'footer.contact': 'Contact',
+  'footer.quote': 'Style is a way to say who you are without having to speak.',
+  'footer.quoteAuthor': 'Rachel Zoe',
+  'auth.signIn': 'Sign In',
+  'auth.signInGoogle': 'Continue with Google',
+  'auth.signInSubtitle': 'Access your saved capsules and style profile.',
+  'auth.signUp': 'Create Account',
+  'auth.signUpPrompt': 'Save your capsule & unlock your style profile',
+  'auth.signUpBody': 'Create a free account to save this result, track your style DNA, and get personalized recommendations for future trips.',
+  'auth.maybeLater': 'Maybe Later',
+  'auth.signOut': 'Sign Out',
+  'share.title': 'Share Your Capsule',
+  'share.subtitle': 'Show off your AI-curated travel style',
+  'share.copyLink': 'Copy Link',
+  'share.copied': 'Copied!',
+  'share.sub': 'Share Your Style',
+  'share.previewText': 'AI-curated travel capsule wardrobe for your journey',
+  'share.editableLabel': 'EDIT YOUR MESSAGE',
+  'share.nativeShare': '↑ More Options',
+  'share.saving': 'Saving...',
+  'share.saveImage': 'Save Image',
+  'share.referralTitle': 'Share & Earn',
+  'share.referralSub': 'Friends get $2 off their first capsule',
+  'share.referralBtn': 'Share & Earn',
+  'share.nativeShareTitle': 'My Travel Capsule',
+  'dashboard.savePdf': 'Save PDF',
+  'dashboard.hiResExport': 'Hi-Res Export',
+  'dashboard.planTrip': 'Plan Your Next Trip',
+  'capsule.mediterranean': 'Mediterranean Drift',
+  'capsule.mediterraneanSub': 'Sun-drenched layers for coastal exploration',
+  'capsule.tokyo': 'Tokyo After Dark',
+  'capsule.tokyoSub': 'Structured minimalism for city nights',
+  'capsule.island': 'Island Transition',
+  'capsule.islandSub': 'Resort-ready pieces that travel light',
+  'general.days': 'days',
+  // Legacy keys for backward compatibility
+  'nav.philosophy': 'Philosophy',
+  'nav.curations': 'Curations',
+  'nav.membership': 'Membership',
+  'nav.signIn': 'Sign In',
+  'nav.cta': 'Begin Journey',
+  'nav.faq': 'FAQ',
+}
+
+const translationsKo: Record<string, string> = {
+  'hero.tagline': '날씨 걱정의 끝,\n완벽한 여행 코디.',
+  'hero.pill': '알고리즘 활성화',
+  'hero.subtitle': 'AI 기반 캡슐 워드로브 시스템',
+  'hero.body': '날씨 적응형, 목적지 맞춤 코디 플래닝으로 여행 짐 걱정을 영원히 없애드립니다.',
+  'hero.cta': '나만의 캡슐 만들기',
+  'nav.howItWorks': '이용 방법',
+  'nav.pricing': '가격',
+  'nav.examples': '예시',
+  'nav.startPlanning': '플래닝 시작',
+  'nav.login': '로그인',
+  'nav.myCapsules': '내 캡슐',
+  'nav.shop': '쇼핑',
+  'nav.account': '계정',
+  'nav.dashboard': '대시보드',
+  'nav.myTrips': '내 여행',
+  'nav.styleDna': '스타일 DNA',
+  'section.intelligence.label': '스타일 인텔리전스 엔진',
+  'section.intelligence.title': '패션과\n날씨 예보의 만남',
+  'section.intelligence.body1': '알고리즘이 실시간 날씨 데이터, 문화적 드레스 코드, 개인 스타일 DNA를 교차 분석하여 실용적인 캡슐 워드로브를 생성합니다.',
+  'section.intelligence.body2': '과잉 짐 걱정은 이제 그만. 어디서나 자신감 있는 코디를 완성하세요.',
+  'section.intelligence.stat1': '분석된 날씨 데이터 포인트',
+  'section.intelligence.stat2': '목적지 맞춤 스타일링',
+  'section.capsules.title': '캡슐 인 모션',
+  'section.darkCta.title': '나만의 퍼스널 스타일리스트.\n언제든지.',
+  'section.darkCta.cta': '여행 시작하기',
+  'section.examples.title': '실제 결과 보기',
+  'section.examples.subtitle': 'AI가 다양한 목적지와 스타일로 생성한 실제 캡슐 결과를 탐색하세요.',
+  'section.examples.viewPro': 'Pro 예시 보기',
+  'section.examples.viewAnnual': 'Annual 예시 보기',
+  'pricing.title': '나에게 맞는 플랜 선택',
+  'pricing.oneTime': '1회 결제',
+  'pricing.perYear': '/년',
+  'pricing.standard.features.1': '날씨 & 바이브 분석',
+  'pricing.standard.features.2': '시티 바이브 카드',
+  'pricing.standard.features.3': 'AI 전신 코디 4장',
+  'pricing.standard.features.4': '10가지 캡슐 아이템',
+  'pricing.standard.features.5': '데일리 일정 플랜',
+  'pricing.pro.badge': '인기 플랜',
+  'pricing.pro.features.1': 'Standard 전체 기능',
+  'pricing.pro.features.2': '전 도시 히어로 이미지',
+  'pricing.pro.features.3': '초고화질 내보내기',
+  'pricing.pro.features.4': '1회 스타일 재생성',
+  'pricing.pro.features.5': '멀티시티 플래닝',
+  'pricing.annual.badge': '연 $115 절약',
+  'pricing.annual.features.1': 'Pro 전체 기능',
+  'pricing.annual.features.2': '연 최대 12회 여행',
+  'pricing.annual.features.3': '우선 AI 처리',
+  'pricing.annual.features.4': 'VIP 컨시어지 지원',
+  'pricing.standard.cta': 'Standard 시작',
+  'pricing.pro.cta': 'Pro 잠금 해제',
+  'pricing.annual.cta': 'Annual 가입',
+  'pricing.noAccountNeeded': '계정 불필요 — 즉시 이용',
+  'preview.step': '4단계 중 4: 여행 마무리',
+  'preview.title': '나만의 스토리가\n펼쳐질 준비가 됐습니다.',
+  'preview.body': '목적지, 날씨 패턴, 스타일 취향을 분석했습니다. 캡슐을 잠금 해제할 플랜을 선택하세요.',
+  'preview.tripSummary': '여행 요약',
+  'preview.editDetails': '세부 정보 수정',
+  'preview.destination': '목적지',
+  'preview.duration': '기간',
+  'preview.aesthetic': '스타일',
+  'preview.weather': '날씨 포커스',
+  'preview.selectPlan': '여행 목표에 맞는 플랜을 선택하세요.',
+  'preview.seeSample': '샘플 결과 보기',
+  'footer.privacy': '개인정보처리방침',
+  'footer.terms': '이용약관',
+  'footer.sustainability': '지속가능성 보고서',
+  'footer.contact': '문의하기',
+  'footer.quote': '스타일은 말하지 않고도 자신이 누구인지 말하는 방법입니다.',
+  'footer.quoteAuthor': '레이첼 조',
+  'auth.signIn': '로그인',
+  'auth.signInGoogle': 'Google로 계속하기',
+  'auth.signInSubtitle': '저장된 캡슐과 스타일 프로필에 접근하세요.',
+  'auth.signUp': '계정 만들기',
+  'auth.signUpPrompt': '캡슐 저장 & 스타일 프로필 잠금 해제',
+  'auth.signUpBody': '무료 계정을 만들어 결과를 저장하고, 스타일 DNA를 추적하고, 향후 여행을 위한 맞춤 추천을 받으세요.',
+  'auth.maybeLater': '나중에',
+  'auth.signOut': '로그아웃',
+  'share.title': '내 캡슐 공유하기',
+  'share.subtitle': 'AI가 큐레이션한 여행 스타일을 자랑하세요',
+  'share.copyLink': '링크 복사',
+  'share.copied': '복사됨!',
+  'share.sub': '내 스타일 공유',
+  'share.previewText': 'AI가 큐레이션한 여행 캡슐 워드로브',
+  'share.editableLabel': '메시지 수정',
+  'share.nativeShare': '↑ 더 보기',
+  'share.saving': '저장 중...',
+  'share.saveImage': '이미지 저장',
+  'share.referralTitle': '공유하고 혜택 받기',
+  'share.referralSub': '친구는 첫 캡슐에서 $2 할인',
+  'share.referralBtn': '공유하기',
+  'share.nativeShareTitle': '내 여행 캡슐',
+  'dashboard.savePdf': 'PDF 저장',
+  'dashboard.hiResExport': '고화질 내보내기',
+  'dashboard.planTrip': '다음 여행 계획하기',
+  'capsule.mediterranean': '지중해 드리프트',
+  'capsule.mediterraneanSub': '해안 탐험을 위한 햇살 가득한 레이어링',
+  'capsule.tokyo': '도쿄 애프터 다크',
+  'capsule.tokyoSub': '도시의 밤을 위한 구조적 미니멀리즘',
+  'capsule.island': '아일랜드 트랜지션',
+  'capsule.islandSub': '가볍게 여행하는 리조트 룩',
+  'general.days': '일',
+  // Legacy
+  'nav.philosophy': '철학',
+  'nav.curations': '큐레이션',
+  'nav.membership': '멤버십',
+  'nav.signIn': '로그인',
+  'nav.cta': '여행 시작하기',
+  'nav.faq': 'FAQ',
+}
+
+const translationsJa: Record<string, string> = {
+  'hero.tagline': '天気の心配、\nもう終わり。',
+  'hero.pill': 'アルゴリズム起動中',
+  'hero.subtitle': 'AIパワード カプセルワードローブ システム',
+  'hero.body': '天気適応型・目的地対応のコーディネートプランニングで、旅の荷造り不安を永遠になくします。',
+  'hero.cta': 'カプセルを作る',
+  'nav.howItWorks': '使い方',
+  'nav.pricing': '料金',
+  'nav.examples': '事例',
+  'nav.startPlanning': 'プランニング開始',
+  'nav.login': 'ログイン',
+  'nav.myCapsules': 'マイカプセル',
+  'nav.shop': 'ショップ',
+  'nav.account': 'アカウント',
+  'nav.dashboard': 'ダッシュボード',
+  'nav.myTrips': 'マイトリップ',
+  'nav.styleDna': 'スタイルDNA',
+  'section.intelligence.label': 'スタイル インテリジェンス エンジン',
+  'section.intelligence.title': 'ファッションと\n天気予報の融合',
+  'section.intelligence.body1': 'アルゴリズムがリアルタイム天気データ、文化的ドレスコード、個人スタイルDNAを照合し、機能するカプセルワードローブを生成します。',
+  'section.intelligence.body2': '荷物の詰めすぎはもう終わり。コーディネートの不安もなし。どんな目的地でも自信を持って。',
+  'section.intelligence.stat1': '分析済み天気データポイント',
+  'section.intelligence.stat2': '目的地対応スタイリング',
+  'section.capsules.title': 'カプセル イン モーション',
+  'section.darkCta.title': 'あなただけのパーソナルスタイリスト。\nいつでもそばに。',
+  'section.darkCta.cta': '旅を始める',
+  'section.examples.title': '実際の結果を見る',
+  'section.examples.subtitle': 'AIがさまざまな目的地とスタイルで生成した実際のカプセル結果をご覧ください。',
+  'section.examples.viewPro': 'Pro事例を見る',
+  'section.examples.viewAnnual': 'Annual事例を見る',
+  'pricing.title': 'プランを選択',
+  'pricing.oneTime': '1回払い',
+  'pricing.perYear': '/年',
+  'pricing.standard.features.1': '天気＆バイブ分析',
+  'pricing.standard.features.2': 'シティバイブカード',
+  'pricing.standard.features.3': 'AI全身コーデ4枚',
+  'pricing.standard.features.4': '10点カプセル',
+  'pricing.standard.features.5': 'デイリープラン',
+  'pricing.pro.badge': '人気プラン',
+  'pricing.pro.features.1': 'Standard全機能',
+  'pricing.pro.features.2': '全都市ヒーロー画像',
+  'pricing.pro.features.3': '超高解像度エクスポート',
+  'pricing.pro.features.4': '1回スタイル再生成',
+  'pricing.pro.features.5': 'マルチシティ対応',
+  'pricing.annual.badge': '年$115お得',
+  'pricing.annual.features.1': 'Pro全機能',
+  'pricing.annual.features.2': '年最大12回旅行',
+  'pricing.annual.features.3': 'AI優先処理',
+  'pricing.annual.features.4': 'VIPコンシェルジュ',
+  'pricing.standard.cta': 'Standardを始める',
+  'pricing.pro.cta': 'Proを解除',
+  'pricing.annual.cta': 'Annualに加入',
+  'pricing.noAccountNeeded': 'アカウント不要 — 即時アクセス',
+  'preview.step': '4ステップ中4: 旅の仕上げ',
+  'preview.title': 'あなたのストーリーが\n始まろうとしています。',
+  'preview.body': '目的地、天気パターン、スタイル好みを分析しました。カプセルをアンロックするプランを選んでください。',
+  'preview.tripSummary': '旅行サマリー',
+  'preview.editDetails': '詳細を編集',
+  'preview.destination': '目的地',
+  'preview.duration': '期間',
+  'preview.aesthetic': 'スタイル',
+  'preview.weather': '天気フォーカス',
+  'preview.selectPlan': '旅行の目標に合ったプランを選んでください。',
+  'preview.seeSample': 'サンプル結果を見る',
+  'footer.privacy': 'プライバシーポリシー',
+  'footer.terms': '利用規約',
+  'footer.sustainability': 'サステナビリティレポート',
+  'footer.contact': 'お問い合わせ',
+  'footer.quote': 'スタイルとは、言葉を使わずに自分が誰かを伝える方法。',
+  'footer.quoteAuthor': 'レイチェル・ゾー',
+  'auth.signIn': 'ログイン',
+  'auth.signInGoogle': 'Googleで続ける',
+  'auth.signInSubtitle': '保存済みカプセルとスタイルプロフィールにアクセス。',
+  'auth.signUp': 'アカウント作成',
+  'auth.signUpPrompt': 'カプセルを保存してスタイルプロフィールを解除',
+  'auth.signUpBody': '無料アカウントを作成して結果を保存し、スタイルDNAを追跡し、今後の旅行のためのパーソナライズされた推薦を受け取りましょう。',
+  'auth.maybeLater': 'あとで',
+  'auth.signOut': 'ログアウト',
+  'share.title': 'カプセルをシェア',
+  'share.subtitle': 'AIキュレーションの旅スタイルを見せびらかして',
+  'share.copyLink': 'リンクをコピー',
+  'share.copied': 'コピーしました！',
+  'share.sub': 'スタイルをシェア',
+  'share.previewText': 'AIキュレーションの旅カプセルワードローブ',
+  'share.editableLabel': 'メッセージを編集',
+  'share.nativeShare': '↑ その他',
+  'share.saving': '保存中...',
+  'share.saveImage': '画像を保存',
+  'share.referralTitle': 'シェアして特典を獲得',
+  'share.referralSub': '友達が初回カプセルで$2割引',
+  'share.referralBtn': 'シェアして獲得',
+  'share.nativeShareTitle': '私のトラベルカプセル',
+  'dashboard.savePdf': 'PDFを保存',
+  'dashboard.hiResExport': '高解像度エクスポート',
+  'dashboard.planTrip': '次の旅を計画する',
+  'capsule.mediterranean': 'メディテラネアン ドリフト',
+  'capsule.mediterraneanSub': '海岸探索のための陽光に満ちたレイヤリング',
+  'capsule.tokyo': 'トーキョー アフター ダーク',
+  'capsule.tokyoSub': '都市の夜のための構造的ミニマリズム',
+  'capsule.island': 'アイランド トランジション',
+  'capsule.islandSub': '身軽に旅するリゾートルック',
+  'general.days': '日',
+  // Legacy
+  'nav.philosophy': '哲学',
+  'nav.curations': 'キュレーション',
+  'nav.membership': 'メンバーシップ',
+  'nav.signIn': 'サインイン',
+  'nav.cta': '旅を始める',
+  'nav.faq': 'FAQ',
+}
+
+const translationsZh: Record<string, string> = {
+  'hero.tagline': '告别\n天气猜测。',
+  'hero.pill': '算法运行中',
+  'hero.subtitle': 'AI驱动胶囊衣橱系统',
+  'hero.body': '天气自适应、目的地感知的穿搭规划，永远消除打包焦虑。',
+  'hero.cta': '创建我的胶囊',
+  'nav.howItWorks': '如何使用',
+  'nav.pricing': '定价',
+  'nav.examples': '案例',
+  'nav.startPlanning': '开始规划',
+  'nav.login': '登录',
+  'nav.myCapsules': '我的胶囊',
+  'nav.shop': '商店',
+  'nav.account': '账户',
+  'nav.dashboard': '仪表盘',
+  'nav.myTrips': '我的旅行',
+  'nav.styleDna': '风格DNA',
+  'section.intelligence.label': '风格智能引擎',
+  'section.intelligence.title': '时尚与\n天气预报的融合',
+  'section.intelligence.body1': '算法交叉参考实时天气数据、文化着装规范和个人风格DNA，生成实用的胶囊衣橱。',
+  'section.intelligence.body2': '不再过度打包，不再穿搭焦虑。每个目的地都从容自信。',
+  'section.intelligence.stat1': '已分析天气数据点',
+  'section.intelligence.stat2': '目的地感知造型',
+  'section.capsules.title': '胶囊动态',
+  'section.darkCta.title': '您的专属私人造型师。\n随时待命。',
+  'section.darkCta.cta': '开始您的旅程',
+  'section.examples.title': '查看实际效果',
+  'section.examples.subtitle': '浏览AI为不同目的地和风格生成的真实胶囊结果。',
+  'section.examples.viewPro': '查看Pro案例',
+  'section.examples.viewAnnual': '查看Annual案例',
+  'pricing.title': '选择您的体验',
+  'pricing.oneTime': '一次性',
+  'pricing.perYear': '/年',
+  'pricing.standard.features.1': '天气与氛围分析',
+  'pricing.standard.features.2': '城市氛围卡',
+  'pricing.standard.features.3': '4套AI全身穿搭',
+  'pricing.standard.features.4': '10件胶囊单品',
+  'pricing.standard.features.5': '每日行程计划',
+  'pricing.pro.badge': '最受欢迎',
+  'pricing.pro.features.1': '全部Standard功能',
+  'pricing.pro.features.2': '所有城市主视觉图',
+  'pricing.pro.features.3': '超高清导出',
+  'pricing.pro.features.4': '1次风格重新生成',
+  'pricing.pro.features.5': '多城市规划',
+  'pricing.annual.badge': '每年节省$115',
+  'pricing.annual.features.1': '完整Pro功能',
+  'pricing.annual.features.2': '每年最多12次旅行',
+  'pricing.annual.features.3': 'AI优先处理',
+  'pricing.annual.features.4': 'VIP礼宾服务',
+  'pricing.standard.cta': '选择Standard',
+  'pricing.pro.cta': '解锁Pro',
+  'pricing.annual.cta': '选择Annual',
+  'pricing.noAccountNeeded': '无需账户 — 即时访问',
+  'preview.step': '第4步（共4步）：完成您的旅程',
+  'preview.title': '您的故事已准备好\n展开。',
+  'preview.body': '我们已分析您的目的地、天气模式和风格偏好。选择一个方案来解锁您的胶囊。',
+  'preview.tripSummary': '旅行摘要',
+  'preview.editDetails': '编辑详情',
+  'preview.destination': '目的地',
+  'preview.duration': '时长',
+  'preview.aesthetic': '美学风格',
+  'preview.weather': '天气重点',
+  'preview.selectPlan': '选择符合您旅行目标的方案。',
+  'preview.seeSample': '查看示例结果',
+  'footer.privacy': '隐私政策',
+  'footer.terms': '服务条款',
+  'footer.sustainability': '可持续发展报告',
+  'footer.contact': '联系我们',
+  'footer.quote': '风格是不用开口就能说出你是谁的方式。',
+  'footer.quoteAuthor': '瑞秋·佐伊',
+  'auth.signIn': '登录',
+  'auth.signInGoogle': '使用Google继续',
+  'auth.signInSubtitle': '访问您保存的胶囊和风格档案。',
+  'auth.signUp': '创建账户',
+  'auth.signUpPrompt': '保存您的胶囊并解锁风格档案',
+  'auth.signUpBody': '创建免费账户以保存此结果、追踪您的风格DNA，并获取未来旅行的个性化推荐。',
+  'auth.maybeLater': '稍后再说',
+  'auth.signOut': '退出登录',
+  'share.title': '分享您的胶囊',
+  'share.subtitle': '展示AI精选的旅行风格',
+  'share.copyLink': '复制链接',
+  'share.copied': '已复制！',
+  'share.sub': '分享您的风格',
+  'share.previewText': 'AI精选旅行胶囊衣橱',
+  'share.editableLabel': '编辑您的消息',
+  'share.nativeShare': '↑ 更多选项',
+  'share.saving': '保存中...',
+  'share.saveImage': '保存图片',
+  'share.referralTitle': '分享并赚取',
+  'share.referralSub': '朋友首次胶囊享$2优惠',
+  'share.referralBtn': '分享并赚取',
+  'share.nativeShareTitle': '我的旅行胶囊',
+  'dashboard.savePdf': '保存PDF',
+  'dashboard.hiResExport': '高清导出',
+  'dashboard.planTrip': '规划下一次旅行',
+  'capsule.mediterranean': '地中海漂流',
+  'capsule.mediterraneanSub': '海岸探索的阳光层叠穿搭',
+  'capsule.tokyo': '东京暗夜',
+  'capsule.tokyoSub': '都市夜晚的结构性极简主义',
+  'capsule.island': '岛屿过渡',
+  'capsule.islandSub': '轻装旅行的度假风格单品',
+  'general.days': '天',
+  // Legacy
+  'nav.philosophy': '理念',
+  'nav.curations': '精选',
+  'nav.membership': '会员',
+  'nav.signIn': '登录',
+  'nav.cta': '开始旅程',
+  'nav.faq': 'FAQ',
+}
+
+const translationsFr: Record<string, string> = {
+  'hero.tagline': 'La fin des\nsuppositions météo.',
+  'hero.pill': 'Algorithme actif',
+  'hero.subtitle': 'Système de garde-robe capsule propulsé par IA',
+  'hero.body': "Une planification tenue adaptée à la météo et à la destination, qui élimine l'anxiété de faire ses valises pour toujours.",
+  'hero.cta': 'Créer ma capsule',
+  'nav.howItWorks': 'Comment ça marche',
+  'nav.pricing': 'Tarifs',
+  'nav.examples': 'Exemples',
+  'nav.startPlanning': 'Commencer',
+  'nav.login': 'Connexion',
+  'nav.myCapsules': 'Mes capsules',
+  'nav.shop': 'Boutique',
+  'nav.account': 'Compte',
+  'nav.dashboard': 'Tableau de bord',
+  'nav.myTrips': 'Mes voyages',
+  'nav.styleDna': 'ADN Style',
+  'section.intelligence.label': 'Moteur d\'intelligence style',
+  'section.intelligence.title': 'La mode rencontre\nla météo',
+  'section.intelligence.body1': 'Notre algorithme croise les données météo en temps réel, les codes vestimentaires culturels et votre ADN style personnel pour générer des garde-robes capsules qui fonctionnent.',
+  'section.intelligence.body2': 'Fini le sur-emballage. Fini l\'anxiété des tenues. Juste de la confiance pour chaque destination.',
+  'section.intelligence.stat1': 'Points météo analysés',
+  'section.intelligence.stat2': 'Stylisme destination-aware',
+  'section.capsules.title': 'Capsules en mouvement',
+  'section.darkCta.title': 'Votre styliste personnel.\nÀ la demande.',
+  'section.darkCta.cta': 'Commencer votre voyage',
+  'section.examples.title': 'Voir en action',
+  'section.examples.subtitle': 'Explorez de vrais résultats de capsules générés par notre IA pour différentes destinations et styles.',
+  'section.examples.viewPro': 'Voir exemple Pro',
+  'section.examples.viewAnnual': 'Voir exemple Annual',
+  'pricing.title': 'Choisissez votre expérience',
+  'pricing.oneTime': 'unique',
+  'pricing.perYear': '/an',
+  'pricing.standard.features.1': 'Analyse météo & ambiance',
+  'pricing.standard.features.2': 'Carte ambiance ville',
+  'pricing.standard.features.3': '4 tenues IA plein corps',
+  'pricing.standard.features.4': 'Capsule 10 pièces',
+  'pricing.standard.features.5': 'Planning jour par jour',
+  'pricing.pro.badge': 'Plus populaire',
+  'pricing.pro.features.1': 'Toutes fonctions Standard',
+  'pricing.pro.features.2': 'Images héro pour TOUTES les villes',
+  'pricing.pro.features.3': 'Exports ultra haute résolution',
+  'pricing.pro.features.4': '1 régénération de style',
+  'pricing.pro.features.5': 'Planning multi-villes',
+  'pricing.annual.badge': 'Économisez 115$/an',
+  'pricing.annual.features.1': 'Fonctions Pro complètes',
+  'pricing.annual.features.2': "Jusqu'à 12 voyages/an",
+  'pricing.annual.features.3': 'Traitement IA prioritaire',
+  'pricing.annual.features.4': 'Support concierge VIP',
+  'pricing.standard.cta': 'Choisir Standard',
+  'pricing.pro.cta': 'Débloquer Pro',
+  'pricing.annual.cta': 'Passer Annual',
+  'pricing.noAccountNeeded': 'Sans compte — accès instantané',
+  'preview.step': 'Étape 4 sur 4 : Finalisation de votre voyage',
+  'preview.title': 'Votre histoire est prête\nà se dévoiler.',
+  'preview.body': 'Nous avons analysé votre destination, les tendances météo et vos préférences de style. Choisissez un plan pour débloquer votre capsule.',
+  'preview.tripSummary': 'Résumé du voyage',
+  'preview.editDetails': 'Modifier les détails',
+  'preview.destination': 'Destination',
+  'preview.duration': 'Durée',
+  'preview.aesthetic': 'Esthétique',
+  'preview.weather': 'Focus météo',
+  'preview.selectPlan': 'Sélectionnez le plan qui correspond à vos ambitions de voyage.',
+  'preview.seeSample': 'Voir un exemple de résultat',
+  'footer.privacy': 'Politique de confidentialité',
+  'footer.terms': "Conditions d'utilisation",
+  'footer.sustainability': 'Rapport développement durable',
+  'footer.contact': 'Contact',
+  'footer.quote': 'Le style est une façon de dire qui vous êtes sans avoir à parler.',
+  'footer.quoteAuthor': 'Rachel Zoe',
+  'auth.signIn': 'Connexion',
+  'auth.signInGoogle': 'Continuer avec Google',
+  'auth.signInSubtitle': 'Accédez à vos capsules sauvegardées et votre profil style.',
+  'auth.signUp': 'Créer un compte',
+  'auth.signUpPrompt': 'Sauvegardez votre capsule & débloquez votre profil style',
+  'auth.signUpBody': 'Créez un compte gratuit pour sauvegarder ce résultat, suivre votre ADN style et obtenir des recommandations personnalisées pour vos prochains voyages.',
+  'auth.maybeLater': 'Peut-être plus tard',
+  'auth.signOut': 'Déconnexion',
+  'share.title': 'Partagez votre capsule',
+  'share.subtitle': 'Montrez votre style voyage IA',
+  'share.copyLink': 'Copier le lien',
+  'share.copied': 'Copié !',
+  'share.sub': 'Partagez votre style',
+  'share.previewText': 'Garde-robe capsule voyage curatée par IA',
+  'share.editableLabel': 'MODIFIER VOTRE MESSAGE',
+  'share.nativeShare': '↑ Plus d\'options',
+  'share.saving': 'Enregistrement...',
+  'share.saveImage': 'Enregistrer l\'image',
+  'share.referralTitle': 'Partagez & Gagnez',
+  'share.referralSub': 'Les amis bénéficient de $2 de réduction',
+  'share.referralBtn': 'Partager & Gagner',
+  'share.nativeShareTitle': 'Ma capsule voyage',
+  'dashboard.savePdf': 'Sauvegarder en PDF',
+  'dashboard.hiResExport': 'Export haute résolution',
+  'dashboard.planTrip': 'Planifier mon prochain voyage',
+  'capsule.mediterranean': 'Dérive Méditerranéenne',
+  'capsule.mediterraneanSub': "Superpositions ensoleillées pour l'exploration côtière",
+  'capsule.tokyo': 'Tokyo After Dark',
+  'capsule.tokyoSub': 'Minimalisme structuré pour les nuits en ville',
+  'capsule.island': 'Island Transition',
+  'capsule.islandSub': 'Pièces resort qui voyagent léger',
+  'general.days': 'jours',
+  // Legacy
+  'nav.philosophy': 'Philosophie',
+  'nav.curations': 'Sélections',
+  'nav.membership': 'Abonnement',
+  'nav.signIn': 'Connexion',
+  'nav.cta': 'Commencer',
+  'nav.faq': 'FAQ',
+}
+
+const translationsEs: Record<string, string> = {
+  'hero.tagline': 'El fin de\nadivinar el tiempo.',
+  'hero.pill': 'Algoritmo activo',
+  'hero.subtitle': 'Sistema de guardarropa cápsula impulsado por IA',
+  'hero.body': 'Planificación de outfits adaptativa al clima y consciente del destino que elimina la ansiedad de hacer la maleta para siempre.',
+  'hero.cta': 'Crear mi cápsula',
+  'nav.howItWorks': 'Cómo funciona',
+  'nav.pricing': 'Precios',
+  'nav.examples': 'Ejemplos',
+  'nav.startPlanning': 'Comenzar',
+  'nav.login': 'Iniciar sesión',
+  'nav.myCapsules': 'Mis cápsulas',
+  'nav.shop': 'Tienda',
+  'nav.account': 'Cuenta',
+  'nav.dashboard': 'Panel',
+  'nav.myTrips': 'Mis viajes',
+  'nav.styleDna': 'ADN de estilo',
+  'section.intelligence.label': 'Motor de inteligencia de estilo',
+  'section.intelligence.title': 'La moda encuentra\nel pronóstico',
+  'section.intelligence.body1': 'Nuestro algoritmo cruza datos meteorológicos en tiempo real, códigos de vestimenta culturales y tu ADN de estilo personal para generar guardarropas cápsula que funcionan.',
+  'section.intelligence.body2': 'No más exceso de equipaje. No más ansiedad de outfits. Solo confianza curada para cada destino.',
+  'section.intelligence.stat1': 'Puntos de datos meteorológicos analizados',
+  'section.intelligence.stat2': 'Estilismo consciente del destino',
+  'section.capsules.title': 'Cápsulas en movimiento',
+  'section.darkCta.title': 'Tu estilista personal.\nA demanda.',
+  'section.darkCta.cta': 'Comenzar tu viaje',
+  'section.examples.title': 'Verlo en acción',
+  'section.examples.subtitle': 'Explora resultados reales de cápsulas generados por nuestra IA para diferentes destinos y estilos.',
+  'section.examples.viewPro': 'Ver ejemplo Pro',
+  'section.examples.viewAnnual': 'Ver ejemplo Annual',
+  'pricing.title': 'Elige tu experiencia',
+  'pricing.oneTime': 'único',
+  'pricing.perYear': '/año',
+  'pricing.standard.features.1': 'Análisis clima y ambiente',
+  'pricing.standard.features.2': 'Tarjeta de ambiente ciudad',
+  'pricing.standard.features.3': '4 outfits IA de cuerpo completo',
+  'pricing.standard.features.4': 'Cápsula de 10 prendas',
+  'pricing.standard.features.5': 'Itinerario día a día',
+  'pricing.pro.badge': 'Más popular',
+  'pricing.pro.features.1': 'Todas las funciones Standard',
+  'pricing.pro.features.2': 'Imágenes hero para TODAS las ciudades',
+  'pricing.pro.features.3': 'Exportaciones ultra alta resolución',
+  'pricing.pro.features.4': '1 regeneración de estilo',
+  'pricing.pro.features.5': 'Planificación multi-ciudad',
+  'pricing.annual.badge': 'Ahorra $115/año',
+  'pricing.annual.features.1': 'Funciones Pro completas',
+  'pricing.annual.features.2': 'Hasta 12 viajes/año',
+  'pricing.annual.features.3': 'Procesamiento IA prioritario',
+  'pricing.annual.features.4': 'Soporte concierge VIP',
+  'pricing.standard.cta': 'Obtener Standard',
+  'pricing.pro.cta': 'Desbloquear Pro',
+  'pricing.annual.cta': 'Ir a Annual',
+  'pricing.noAccountNeeded': 'Sin cuenta — acceso instantáneo',
+  'preview.step': 'Paso 4 de 4: Finalizando tu viaje',
+  'preview.title': 'Tu historia está lista\npara desplegarse.',
+  'preview.body': 'Hemos analizado tu destino, patrones climáticos y preferencias de estilo. Elige un plan para desbloquear tu cápsula.',
+  'preview.tripSummary': 'Resumen del viaje',
+  'preview.editDetails': 'Editar detalles',
+  'preview.destination': 'Destino',
+  'preview.duration': 'Duración',
+  'preview.aesthetic': 'Estética',
+  'preview.weather': 'Enfoque climático',
+  'preview.selectPlan': 'Selecciona el plan que coincide con tus ambiciones de viaje.',
+  'preview.seeSample': 'Ver resultado de muestra',
+  'footer.privacy': 'Política de privacidad',
+  'footer.terms': 'Términos de servicio',
+  'footer.sustainability': 'Informe de sostenibilidad',
+  'footer.contact': 'Contacto',
+  'footer.quote': 'El estilo es una forma de decir quién eres sin tener que hablar.',
+  'footer.quoteAuthor': 'Rachel Zoe',
+  'auth.signIn': 'Iniciar sesión',
+  'auth.signInGoogle': 'Continuar con Google',
+  'auth.signInSubtitle': 'Accede a tus cápsulas guardadas y perfil de estilo.',
+  'auth.signUp': 'Crear cuenta',
+  'auth.signUpPrompt': 'Guarda tu cápsula y desbloquea tu perfil de estilo',
+  'auth.signUpBody': 'Crea una cuenta gratuita para guardar este resultado, rastrear tu ADN de estilo y obtener recomendaciones personalizadas para futuros viajes.',
+  'auth.maybeLater': 'Quizás después',
+  'auth.signOut': 'Cerrar sesión',
+  'share.title': 'Comparte tu cápsula',
+  'share.subtitle': 'Muestra tu estilo de viaje curado por IA',
+  'share.copyLink': 'Copiar enlace',
+  'share.copied': '¡Copiado!',
+  'share.sub': 'Comparte tu estilo',
+  'share.previewText': 'Guardarropa cápsula de viaje curado por IA',
+  'share.editableLabel': 'EDITAR TU MENSAJE',
+  'share.nativeShare': '↑ Más opciones',
+  'share.saving': 'Guardando...',
+  'share.saveImage': 'Guardar imagen',
+  'share.referralTitle': 'Comparte y gana',
+  'share.referralSub': 'Los amigos obtienen $2 de descuento',
+  'share.referralBtn': 'Compartir y ganar',
+  'share.nativeShareTitle': 'Mi cápsula de viaje',
+  'dashboard.savePdf': 'Guardar PDF',
+  'dashboard.hiResExport': 'Exportar alta resolución',
+  'dashboard.planTrip': 'Planear mi próximo viaje',
+  'capsule.mediterranean': 'Deriva Mediterránea',
+  'capsule.mediterraneanSub': 'Capas bañadas por el sol para exploración costera',
+  'capsule.tokyo': 'Tokyo After Dark',
+  'capsule.tokyoSub': 'Minimalismo estructurado para noches en la ciudad',
+  'capsule.island': 'Island Transition',
+  'capsule.islandSub': 'Piezas resort que viajan ligero',
+  'general.days': 'días',
+  // Legacy
+  'nav.philosophy': 'Filosofía',
+  'nav.curations': 'Selecciones',
+  'nav.membership': 'Membresía',
+  'nav.signIn': 'Iniciar sesión',
+  'nav.cta': 'Comenzar viaje',
+  'nav.faq': 'FAQ',
+}
+
+// ─── Registry ─────────────────────────────────────────────────────────────────
+
+const flatTranslations: Record<Locale, Record<string, string>> = {
+  en: translationsEn,
+  ko: translationsKo,
+  ja: translationsJa,
+  zh: translationsZh,
+  fr: translationsFr,
+  es: translationsEs,
+}
+
+// ─── v15 API: getTranslations returns a lookup function ───────────────────────
+
+export function getTranslations(lang: Locale): (key: string) => string {
+  const map = flatTranslations[lang] ?? flatTranslations.en
+  const fallback = flatTranslations.en
+  return (key: string): string => {
+    return map[key] ?? fallback[key] ?? key
   }
 }
 
-// ─── Shared extended sections (used in all locales) ──────────────────────────
+// ─── Font helpers (Figma v15 CSS variable pattern) ────────────────────────────
 
-const enExtended = {
-  how: {
-    label: 'Simple Process',
-    title: 'Your Perfect Wardrobe in 3 Steps',
-    steps: [
-      {
-        num: '01',
-        title: 'Input Destination & Dates',
-        desc: 'Tell us where and when. We pull historical weather patterns and live forecasts instantly.',
-      },
-      {
-        num: '02',
-        title: 'Define Your Style',
-        desc: 'Upload a photo or choose a vibe. Our AI matches functional weather-appropriate gear with your aesthetic.',
-      },
-      {
-        num: '03',
-        title: 'Get Your Weather-Proof Plan',
-        desc: 'Receive your custom $5 Capsule Plan. Includes fabric recommendations, layers, and a daily outfit guide.',
-      },
-    ],
-  },
-  capsule: {
-    label: 'The Capsule',
-    title: 'Your 10-Item Capsule Wardrobe',
-    sub: '10 essential items, 20+ unique outfit combinations. Every piece earns its place.',
-    note: 'Each item is selected for maximum versatility across all your destinations.',
-  },
-  sample: {
-    label: 'Sample Output',
-    title: 'AI-Generated Outfit Previews',
-    sub: 'Real results from our AI styling engine — generated for actual Travel Capsule AI users.',
-    moods: [
-      'Paris — Rainy Chic',
-      'Tokyo — Urban Minimal',
-      'Bali — Coastal Ease',
-      'Rome — Golden Hour',
-      'New York — Street Edge',
-      'Barcelona — Sun-Soaked Bold',
-    ],
-  },
-  pricing: {
-    label: 'Pricing',
-    title: 'One Simple Price',
-    sub: 'One trip, one price. No subscription. No hidden fees. Just your perfect packing list.',
-    badge: 'Most Popular',
-    period: 'per trip',
-    features: [
-      'AI outfit images (3–4 per city)',
-      '10-item capsule wardrobe list',
-      'Day-by-day outfit guide',
-      'Shareable gallery link',
-      'Weather-optimized styling',
-    ],
-    cta: 'Start My $5 Plan',
-    guarantee: '24-hour money-back guarantee if generation fails.',
-  },
-  faq: {
-    label: 'FAQ',
-    title: 'Frequently Asked Questions',
-    items: [
-      {
-        q: 'Do I need to upload a photo?',
-        a: 'No. Without a photo, we generate outfits using AI fashion models. With your photo, we incorporate face-preservation for a more personal result.',
-      },
-      {
-        q: 'How is my photo handled?',
-        a: 'Your photo is used only for image generation and deleted immediately after. We never share or use it for training.',
-      },
-      {
-        q: 'How long does it take?',
-        a: 'Typically 2–4 minutes after payment. More cities may take slightly longer.',
-      },
-      {
-        q: 'How many cities can I add?',
-        a: 'Up to 5 cities per trip in the current version.',
-      },
-      {
-        q: 'Can I get a refund?',
-        a: 'Yes. If the generated images are clearly incorrect, we offer a 100% refund within 24 hours.',
-      },
-    ],
-  },
-  partner: {
-    label: 'Partners',
-    title: 'Partner With Us',
-    sub: 'We work with travel agencies, fashion brands, and lifestyle platforms.\nReach out to discuss collaboration.',
-    nameLabel: 'Full Name',
-    namePlaceholder: 'Your name',
-    companyLabel: 'Company',
-    companyPlaceholder: 'Your company',
-    emailLabel: 'Email',
-    emailPlaceholder: 'you@company.com',
-    typeLabel: 'Partnership Type',
-    typePlaceholder: 'Select a type',
-    typeOptions: ['Travel Agency', 'Fashion Brand', 'Lifestyle Platform', 'Media / Press', 'Other'],
-    messageLabel: 'Message',
-    messagePlaceholder: 'Tell us about the partnership opportunity...',
-    submitBtn: 'Send Inquiry',
-    submitting: 'Sending...',
-    successMsg: "Message sent! We'll be in touch within 2 business days.",
-    errorMsg: 'Failed to send. Please try again.',
-    networkError: 'Network error. Please check your connection.',
-  },
-  form: {
-    label: 'Plan Your Trip',
-    title: 'Where Are You Headed?',
-    sub: 'Tell us your destination and travel month. We handle the rest.',
-    totalDays: ' days',
-    totalCities: ' cities',
-    moreCities: 'Add up to',
-    cityLabel: 'Cities',
-    cityPlaceholder: 'Search city...',
-    cityNights: 'nights',
-    cityAdd: '+ Add City',
-    cityMax: '(max 5)',
-    monthLabel: 'Travel Month',
-    months: [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
-    ],
-    photoLabel: 'Your Photo',
-    photoOptional: 'Optional',
-    photoDrop: 'Drop photo here or click to upload',
-    photoDragOver: 'Drop to upload',
-    photoSub: 'For personalized outfit images',
-    photoFormats: 'JPG, PNG · Max 10MB',
-    photoFaceRec: 'Used for face-preservation only. Deleted after generation.',
-    photoUploaded: 'Photo uploaded',
-    photoChange: 'Click to change',
-    photoPrivacy: 'Deleted after generation · Never shared',
-    previewTitle: 'Your Order Summary',
-    previewCaption: 'Everything included in your $5 plan:',
-    imageGen: 'AI Outfit Images',
-    capsuleWardrobe: 'Capsule Wardrobe List',
-    dailyPlan: 'Day-by-Day Outfit Guide',
-    shareGallery: 'Shareable Gallery',
-    included: 'Included',
-    totalLabel: 'Total',
-    checkoutBtn: 'Continue to Payment — $5',
-    checkoutSub: 'Powered by Polar · Secure checkout',
-    priceNote: 'One-time payment · No subscription',
-    processing: 'Processing...',
-  },
-  toast: {
-    cityMax: 'Maximum 5 cities allowed.',
-    cityAdded: 'City added!',
-    imageOnly: 'Please upload an image file.',
-    imageTooLarge: 'Image must be under 10MB.',
-    photoUploaded: 'Photo uploaded successfully.',
-    cityRequired: 'Please add at least one city.',
-    galleryLink: 'Your gallery link has been copied!',
-  },
-  checkout: {
-    title: 'Generating Your Capsule',
-    subtitle: 'AI is analyzing your destinations and crafting your wardrobe...',
-    doneTitle: 'Your Capsule Is Ready!',
-    doneSubtitle: 'Redirecting to your personal style gallery...',
-    phases: ['Weather Analysis', 'Style Generation', 'Gallery Build'],
-    progressLabel: '%',
-    steps: [
-      'Fetching weather data',
-      'Analyzing city vibes',
-      'Generating outfit images',
-      'Building capsule wardrobe',
-      'Preparing your gallery',
-    ],
-    stepIcons: ['🌤️', '✨', '👗', '🧳', '🎨'],
-    processing: 'Processing',
-    trustBadges: ['Secure Payment', 'Instant Delivery', 'Money-Back Guarantee'],
-    galleryBtn: 'View My Gallery',
-  },
-  share: {
-    title: 'Share Your Style',
-    sub: 'Share your AI-curated travel wardrobe',
-    previewText: 'Preview your share card',
-    editableLabel: 'Edit your caption',
-    copyLink: 'Copy Link',
-    copied: 'Copied!',
-    nativeShare: 'Share',
-    saveImage: 'Save Image',
-    saving: 'Saving...',
-    referralTitle: 'Invite a Friend',
-    referralSub: 'Share Travel Capsule AI and help them pack perfectly.',
-    referralBtn: 'Invite Friends',
-    nativeShareTitle: (cities: string) => `My ${cities} Travel Capsule`,
-    viralCopies: (cities: string, month: string, city0: string) =>
-      `I just built my AI travel wardrobe for ${cities} in ${month}! Check out my ${city0} outfits — Travel Capsule AI nailed the weather and vibe. ✈️`,
-  },
-  result: {
-    processing: {
-      label: 'Generating Your Capsule',
-      title: 'Your AI stylist\nis at work.',
-      sub: 'We\'re analyzing weather, city vibes, and generating your personalized outfit images.',
-      completed: 'looks completed',
-      status: {
-        completed: 'Done',
-        processing: 'Generating...',
-        waiting: 'Waiting',
-      },
-    },
-    gallery: {
-      label: 'Your Style Gallery',
-      title: 'Your Travel Capsule',
-      shareBtn: 'Share My Style',
-      twitterBtn: 'Post on X',
-    },
-    wardrobe: {
-      label: 'Capsule Wardrobe',
-      title: 'Your 10-Item Capsule',
-    },
-    dailyPlan: {
-      label: 'Daily Plan',
-      title: 'Day-by-Day Outfit Guide',
-      day: 'Day',
-    },
-    shareCta: {
-      title: 'Love Your Capsule?',
-      sub: 'Share your AI travel wardrobe and inspire others to pack smarter.',
-    },
-    stickyBar: {
-      myStyle: 'My Travel Style',
-      shareBtn: 'Share',
-    },
-    error: {
-      title: 'Something went wrong',
-      sub: 'We could not load your trip results. Please try again.',
-      home: 'Return Home',
-    },
-    homeLink: 'Back to Home',
-  },
+export function getDisplayFont(lang: Locale): string {
+  if (lang === 'ko') return "'Noto Serif KR', var(--font-display)"
+  if (lang === 'ja') return "'Noto Serif JP', var(--font-display)"
+  if (lang === 'zh') return "'Noto Serif SC', var(--font-display)"
+  return 'var(--font-display)'
 }
 
-// ─── English ───────────────────────────────────────────────────────────────────
-
-const en: Translations = {
-  nav: {
-    philosophy: 'Philosophy',
-    curations: 'Curations',
-    membership: 'Membership',
-    signIn: 'Sign In',
-    cta: 'Begin Journey',
-    howItWorks: 'How It Works',
-    pricing: 'Pricing',
-    faq: 'FAQ',
-  },
-  hero: {
-    badge: 'The Future of Travel Wardrobe',
-    heading1: 'The End of',
-    heading2: 'Weather Guesswork.',
-    sub: 'Stop guessing the weather. Start wearing the right outfits. Bespoke packing lists for Tokyo, Paris, and beyond.',
-    cta: 'Curate My Capsule',
-    estLabel: 'Est. 2025',
-    scrollLabel: 'Scroll to Explore',
-    editionLabel: 'Global Edition',
-    tag: 'AI Travel Styling · $5/trip',
-    headline1: 'The End of',
-    headline2: 'Weather Guesswork.',
-    headline3: '',
-    highlight: 'AI-curated outfits',
-    socialProof: 'for every city on your itinerary.',
-    ctaPrimary: 'Curate My Capsule — $5',
-    ctaSecondary: 'See Sample Output',
-    trust: {
-      outfitImages: 'AI Outfit Images',
-      capsuleWardrobe: 'Capsule Wardrobe',
-      generationTime: '~3 Min Delivery',
-      price: '$5 / Trip',
-    },
-  },
-  weather: {
-    sectionLabel: 'Live Data Styling',
-    heading1: 'Precision Weather',
-    heading2: 'Mapping.',
-    forecastLabel: 'Forecast',
-    windyLabel: 'Windy',
-    windNote: 'High winds expected. Opt for structured layers and wind-resistant fabrics.',
-    windyDayEdit: 'The Windy Day Edit',
-    thermalTitle: 'Thermal Comfort',
-    thermalDesc: 'Fabric weight adjusted for real-feel temperature.',
-    humidityTitle: 'Humidity Control',
-    humidityDesc: 'Breathable layers selected for high-moisture days.',
-    bodyText:
-      "We don't just look at the temperature. Our algorithms analyze hourly humidity, wind speeds, and \"feels like\" metrics to select the perfect fabrics for your comfort.",
-  },
-  blueprint: {
-    sectionLabel: 'The Methodology',
-    heading: 'The 10-Item Blueprint',
-    desc: 'A curated capsule of 10 essential items that unlock 20+ unique outfits. Minimal packing, maximum style.',
-    outerLayerLabel: '01. The Outer Layer',
-    outerLayerName: 'Italian Wool Overcoat',
-    seeAllItems: 'See all 10 items',
-    curatedFor: 'Curated for: 12-Day European Tour',
-    totalWeight: 'Total Weight: 7.2kg',
-  },
-  guide: {
-    sectionLabel: 'Daily Guidance',
-    heading1: 'Wear-It-Now',
-    heading2: 'Daily Guide.',
-    bodyText:
-      "Wake up and know exactly what to put on. A calendar-style view showing your outfit for each day of the trip, optimized for that day's specific activities and weather.",
-    step1Title: 'Input Destination',
-    step1Desc: 'Tell us where and when. We pull historical weather patterns and live forecasts.',
-    step2Title: 'Define Your Style',
-    step2Desc: 'Upload a photo or choose a vibe. AI matches functional gear with your aesthetic.',
-    step3Title: 'Get Your Plan',
-    step3Desc: 'Receive your custom $5 Capsule Plan. Fabric recs, layers, and daily guide.',
-    dayLabel: 'Day 03',
-    activityTitle: 'Museum Hopping',
-    activityDetail: 'Indoor/Outdoor · 22°C',
-  },
-  testimonial: {
-    quote:
-      "I used to pack for 'just in case' and still freeze. Travel Capsule AI predicted the cold snap in Rome and packed me the perfect layers.",
-    author: 'Jessica Cole',
-    detail: 'Traveled to Italy in November',
-  },
-  cta: {
-    heading1: 'Never Check the',
-    heading2: 'Weather App Again.',
-    sub: 'Stop stress-packing. Get your personalized packing list and day-by-day outfit guide today.',
-    button: 'Start My $5 Plan',
-    note: 'One-time payment · No subscription',
-  },
-  footer: {
-    tagline: 'Data-driven styling for the modern traveler. Look effortless, anywhere in the world.',
-    journal: 'Journal',
-    methodology: 'Methodology',
-    pricing: 'Pricing',
-    login: 'Login',
-    instagram: 'Instagram',
-    copyright: '© 2025 Travel Capsule AI. All rights reserved.',
-    privacy: 'Privacy',
-    terms: 'Terms',
-    serviceTitle: 'Service',
-    howItWorks: 'How It Works',
-    startNow: 'Start Now',
-    sampleView: 'See Sample',
-    supportTitle: 'Support',
-    faq: 'FAQ',
-    refund: 'Refund Policy',
-    contact: 'Contact Us',
-    legalTitle: 'Legal',
-    trustBadges: ['Secure Payment', 'Instant Delivery', 'Money-Back Guarantee'],
-  },
-  ...enExtended,
+export function getBodyFont(lang: Locale): string {
+  if (lang === 'ko') return "'Noto Sans KR', var(--font-body)"
+  if (lang === 'ja') return "'Noto Sans JP', var(--font-body)"
+  if (lang === 'zh') return "'Noto Sans SC', var(--font-body)"
+  return 'var(--font-body)'
 }
 
-// ─── Korean ────────────────────────────────────────────────────────────────────
-
-const ko: Translations = {
-  nav: {
-    philosophy: '철학',
-    curations: '큐레이션',
-    membership: '멤버십',
-    signIn: '로그인',
-    cta: '여행 시작하기',
-    howItWorks: '이용 방법',
-    pricing: '가격',
-    faq: 'FAQ',
-  },
-  hero: {
-    badge: '당신의 여행을 스타일링하는 AI',
-    heading1: '날씨 걱정의 끝,',
-    heading2: '완벽한 여행 코디.',
-    sub: '날씨를 추측하는 시대는 끝났습니다. AI가 도쿄, 파리, 그 너머를 위한 맞춤 패킹 리스트를 완성합니다.',
-    cta: '나만의 캡슐 만들기',
-    estLabel: '설립 2025',
-    scrollLabel: '스크롤하여 탐색',
-    editionLabel: '글로벌 에디션',
-    tag: 'AI 여행 스타일링 · $5/트립',
-    headline1: '날씨 걱정의 끝,',
-    headline2: '완벽한 여행 코디.',
-    headline3: '',
-    highlight: 'AI 맞춤 코디',
-    socialProof: '여행지마다 완벽하게.',
-    ctaPrimary: '나만의 캡슐 만들기 — $5',
-    ctaSecondary: '샘플 보기',
-    trust: {
-      outfitImages: 'AI 코디 이미지',
-      capsuleWardrobe: '캡슐 워드로브',
-      generationTime: '~3분 배송',
-      price: '$5 / 트립',
-    },
-  },
-  weather: {
-    sectionLabel: '실시간 데이터 스타일링',
-    heading1: '정밀 날씨',
-    heading2: '맵핑.',
-    forecastLabel: '예보',
-    windyLabel: '바람',
-    windNote: '강한 바람이 예상됩니다. 구조적인 레이어와 방풍 소재를 선택하세요.',
-    windyDayEdit: '바람 부는 날의 코디',
-    thermalTitle: '체온 최적화',
-    thermalDesc: '체감 온도에 맞게 조정된 원단 무게.',
-    humidityTitle: '습도 관리',
-    humidityDesc: '고습도 환경을 위한 통기성 레이어 선택.',
-    bodyText:
-      '단순히 온도만 보는 것이 아닙니다. 시간별 습도, 풍속, 체감온도를 분석해 최적의 소재를 추천합니다.',
-  },
-  blueprint: {
-    sectionLabel: '방법론',
-    heading: '10가지 아이템으로 완성하는 여행 스타일',
-    desc: '10가지 필수 아이템으로 20가지 이상의 코디를 완성합니다. 최소한의 짐, 최대한의 스타일.',
-    outerLayerLabel: '01. 아우터 레이어',
-    outerLayerName: '이탈리아 울 오버코트',
-    seeAllItems: '10가지 아이템 모두 보기',
-    curatedFor: '큐레이션: 12일 유럽 여행',
-    totalWeight: '총 무게: 7.2kg',
-  },
-  guide: {
-    sectionLabel: '데일리 가이드',
-    heading1: '지금 바로 입는',
-    heading2: '데일리 가이드.',
-    bodyText:
-      '매일 아침 무엇을 입을지 정확히 알 수 있습니다. 여행의 각 일정과 날씨에 최적화된 코디를 달력 형식으로 제공합니다.',
-    step1Title: '목적지 입력',
-    step1Desc: '어디로, 언제 가는지 알려주세요. 과거 날씨 패턴과 실시간 예보를 가져옵니다.',
-    step2Title: '스타일 정의',
-    step2Desc: '사진을 업로드하거나 분위기를 선택하세요. AI가 기능성과 미적 감각을 매칭합니다.',
-    step3Title: '플랜 받기',
-    step3Desc: '$5 캡슐 플랜을 받으세요. 소재 추천, 레이어링, 데일리 가이드가 포함됩니다.',
-    dayLabel: '3일차',
-    activityTitle: '박물관 투어',
-    activityDetail: '실내/실외 · 22°C',
-  },
-  testimonial: {
-    quote:
-      "항상 '혹시 모르니'로 짐을 싸도 추위에 떨었어요. Travel Capsule AI가 로마의 갑작스러운 한파를 예측하고 완벽한 레이어링을 챙겨줬습니다.",
-    author: '제시카 콜',
-    detail: '11월 이탈리아 여행',
-  },
-  cta: {
-    heading1: '날씨 앱을',
-    heading2: '다시는 확인하지 마세요.',
-    sub: '스트레스 없는 패킹. 오늘 바로 맞춤 패킹 리스트와 데일리 코디 가이드를 받으세요.',
-    button: '$5 플랜 시작하기',
-    note: '일회성 결제 · 구독 없음',
-  },
-  footer: {
-    tagline: '현대 여행자를 위한 데이터 기반 스타일링. 전 세계 어디서나 자연스럽게.',
-    journal: '저널',
-    methodology: '방법론',
-    pricing: '가격',
-    login: '로그인',
-    instagram: '인스타그램',
-    copyright: '© 2025 Travel Capsule AI. 모든 권리 보유.',
-    privacy: '개인정보처리방침',
-    terms: '이용약관',
-    serviceTitle: '서비스',
-    howItWorks: '이용 방법',
-    startNow: '지금 시작',
-    sampleView: '샘플 보기',
-    supportTitle: '지원',
-    faq: 'FAQ',
-    refund: '환불 정책',
-    contact: '문의하기',
-    legalTitle: '법적 정보',
-    trustBadges: ['안전한 결제', '즉시 배송', '환불 보장'],
-  },
-  ...enExtended,
+export function getHeroSize(lang: Locale): string {
+  if (lang === 'ko' || lang === 'ja' || lang === 'zh') return 'clamp(40px, 6vw, 80px)'
+  return 'clamp(48px, 7vw, 96px)'
 }
 
-// ─── Japanese ─────────────────────────────────────────────────────────────────
-
-const ja: Translations = {
-  nav: {
-    philosophy: '哲学',
-    curations: 'キュレーション',
-    membership: 'メンバーシップ',
-    signIn: 'サインイン',
-    cta: '旅を始める',
-    howItWorks: '使い方',
-    pricing: '料金',
-    faq: 'FAQ',
-  },
-  hero: {
-    badge: '旅のスタイルを、AIが変える',
-    heading1: '天気の心配、',
-    heading2: 'もう終わり。',
-    sub: '天気を推測する時代は終わりました。AIが東京、パリ、そしてその先のためのパッキングリストを作ります。',
-    cta: 'カプセルを作る',
-    estLabel: '設立 2025',
-    scrollLabel: 'スクロールして探す',
-    editionLabel: 'グローバル版',
-    tag: 'AIトラベルスタイリング · $5/旅',
-    headline1: '天気の心配、',
-    headline2: 'もう終わり。',
-    headline3: '',
-    highlight: 'AIキュレーションコーデ',
-    socialProof: '旅程のすべての都市で。',
-    ctaPrimary: 'カプセルを作る — $5',
-    ctaSecondary: 'サンプルを見る',
-    trust: {
-      outfitImages: 'AIコーデ画像',
-      capsuleWardrobe: 'Capsule Wardrobe',
-      generationTime: '最短3分で完成',
-      price: '$5 / 旅',
-    },
-  },
-  weather: {
-    sectionLabel: 'ライブデータスタイリング',
-    heading1: '精密天気',
-    heading2: 'マッピング。',
-    forecastLabel: '予報',
-    windyLabel: '風',
-    windNote: '強風が予想されます。構造的なレイヤーと防風素材を選びましょう。',
-    windyDayEdit: '風の日のコーディネート',
-    thermalTitle: '体感温度の快適さ',
-    thermalDesc: '体感温度に合わせた生地の重さ調整。',
-    humidityTitle: '湿度コントロール',
-    humidityDesc: '高湿度の日のための通気性レイヤー選択。',
-    bodyText:
-      '気温だけを見るのではありません。時間ごとの湿度、風速、体感温度を分析して最適な素材を推薦します。',
-  },
-  blueprint: {
-    sectionLabel: '方法論',
-    heading: '10着で叶える旅スタイル',
-    desc: '10のアイテムで20以上のコーディネートを完成させます。最小限の荷物、最大限のスタイル。',
-    outerLayerLabel: '01. アウターレイヤー',
-    outerLayerName: 'イタリアン・ウールオーバーコート',
-    seeAllItems: '10アイテムすべて見る',
-    curatedFor: 'キュレーション: 12日間ヨーロッパツアー',
-    totalWeight: '総重量: 7.2kg',
-  },
-  guide: {
-    sectionLabel: 'デイリーガイド',
-    heading1: '今すぐ着る',
-    heading2: 'デイリーガイド。',
-    bodyText:
-      '毎朝、何を着るかを正確に知ることができます。旅行の各日のスケジュールと天気に最適化されたコーデをカレンダー形式で提供します。',
-    step1Title: '目的地を入力',
-    step1Desc: 'どこへ、いつ行くかを教えてください。過去の天気パターンとライブ予報を取得します。',
-    step2Title: 'スタイルを定義',
-    step2Desc: '写真をアップロードするか雰囲気を選んでください。AIが機能性と美的感覚をマッチングします。',
-    step3Title: 'プランを受け取る',
-    step3Desc: '$5のカプセルプランを受け取ります。素材のレコメンド、レイヤリング、デイリーガイドが含まれます。',
-    dayLabel: '3日目',
-    activityTitle: 'ミュージアム巡り',
-    activityDetail: '室内/屋外 · 22°C',
-  },
-  testimonial: {
-    quote:
-      '「念のため」と荷物を詰めても凍えていました。Travel Capsule AIがローマの寒波を予測して、完璧なレイヤリングを提案してくれました。',
-    author: 'ジェシカ・コール',
-    detail: '11月にイタリアを旅行',
-  },
-  cta: {
-    heading1: '天気アプリを',
-    heading2: 'もう開かなくていい。',
-    sub: 'ストレスのないパッキング。今日からパーソナライズされたパッキングリストとデイリーコーデガイドを手に入れましょう。',
-    button: 'まず$5で試してみる',
-    note: '1回限りの支払い・サブスクなし',
-  },
-  footer: {
-    tagline: '現代の旅行者のためのデータ駆動スタイリング。世界中どこでも自然に。',
-    journal: 'ジャーナル',
-    methodology: '方法論',
-    pricing: '価格',
-    login: 'ログイン',
-    instagram: 'インスタグラム',
-    copyright: '© 2025 Travel Capsule AI. All rights reserved.',
-    privacy: 'プライバシー',
-    terms: '利用規約',
-    serviceTitle: 'サービス',
-    howItWorks: '使い方',
-    startNow: '今すぐ始める',
-    sampleView: 'サンプルを見る',
-    supportTitle: 'サポート',
-    faq: 'FAQ',
-    refund: '返金ポリシー',
-    contact: 'お問い合わせ',
-    legalTitle: '法的情報',
-    trustBadges: ['安全な決済', '即時配信', '返金保証'],
-  },
-  ...enExtended,
-}
-
-// ─── Chinese (simplified — stub, falls back to English) ───────────────────────
-
-const zh: Translations = {
-  nav: {
-    philosophy: '理念',
-    curations: '精选',
-    membership: '会员',
-    signIn: '登录',
-    cta: '开始旅程',
-    howItWorks: '如何使用',
-    pricing: '定价',
-    faq: 'FAQ',
-  },
-  hero: {
-    badge: 'AI 为你搭配旅行穿搭',
-    heading1: '告别',
-    heading2: '天气猜测。',
-    sub: '停止猜测天气。开始穿对衣服。为东京、巴黎及更多目的地提供定制打包清单。',
-    cta: '创建我的胶囊',
-    estLabel: '成立于 2025',
-    scrollLabel: '滚动探索',
-    editionLabel: '全球版',
-    tag: 'AI旅行造型 · $5/行程',
-    headline1: '告别',
-    headline2: '天气猜测。',
-    headline3: '',
-    highlight: 'AI精选搭配',
-    socialProof: '为您行程中的每个城市。',
-    ctaPrimary: '创建我的胶囊 — $5',
-    ctaSecondary: '查看示例',
-    trust: {
-      outfitImages: 'AI穿搭图片',
-      capsuleWardrobe: 'Capsule Wardrobe',
-      generationTime: '约3分钟交付',
-      price: '$5 / 行程',
-    },
-  },
-  weather: {
-    sectionLabel: '实时数据造型',
-    heading1: '精准解读',
-    heading2: '每日天气。',
-    forecastLabel: '预报',
-    windyLabel: '有风',
-    windNote: '预计大风。选择有结构的层次感和防风面料。',
-    windyDayEdit: '大风日穿搭',
-    thermalTitle: '热舒适度',
-    thermalDesc: '根据体感温度调整面料重量。',
-    humidityTitle: '湿度控制',
-    humidityDesc: '为高湿度天气选择透气层次。',
-    bodyText: '我们不只看温度。我们的算法分析每小时湿度、风速和体感温度，为您选择完美面料。',
-  },
-  blueprint: {
-    sectionLabel: '方法论',
-    heading: '10件单品，20+套穿搭',
-    desc: '10件精选单品解锁20+独特搭配。最少行李，最大风格。',
-    outerLayerLabel: '01. 外层',
-    outerLayerName: '意大利羊毛大衣',
-    seeAllItems: '查看全部10件',
-    curatedFor: '精选：12天欧洲之旅',
-    totalWeight: '总重量：7.2kg',
-  },
-  guide: {
-    sectionLabel: '每日指南',
-    heading1: '即穿',
-    heading2: '每日指南。',
-    bodyText: '每天早上精确知道穿什么。以日历形式展示旅行每天的穿搭，针对当天活动和天气优化。',
-    step1Title: '输入目的地',
-    step1Desc: '告诉我们去哪里、什么时候。我们获取历史天气模式和实时预报。',
-    step2Title: '定义风格',
-    step2Desc: '上传照片或选择氛围。AI将功能性装备与您的美学匹配。',
-    step3Title: '获取计划',
-    step3Desc: '获得定制$5胶囊计划。面料推荐、层次搭配和每日指南。',
-    dayLabel: '第03天',
-    activityTitle: '博物馆游览',
-    activityDetail: '室内/室外 · 22°C',
-  },
-  testimonial: {
-    quote: '我以前"以防万一"打包却还是受冻。Travel Capsule AI预测了罗马的寒流，为我准备了完美的层次搭配。',
-    author: '杰西卡·科尔',
-    detail: '11月前往意大利旅行',
-  },
-  cta: {
-    heading1: '再也不用查',
-    heading2: '天气应用了。',
-    sub: '告别焦虑打包。今天就获取您的个性化打包清单和每日穿搭指南。',
-    button: '立即体验 — $5',
-    note: '一次性付款 · 无订阅',
-  },
-  footer: {
-    tagline: '为现代旅行者提供数据驱动的造型。在世界任何地方都能从容自如。',
-    journal: '日志',
-    methodology: '方法论',
-    pricing: '定价',
-    login: '登录',
-    instagram: 'Instagram',
-    copyright: '© 2025 Travel Capsule AI. 保留所有权利。',
-    privacy: '隐私政策',
-    terms: '服务条款',
-    serviceTitle: '服务',
-    howItWorks: '如何使用',
-    startNow: '立即开始',
-    sampleView: '查看示例',
-    supportTitle: '支持',
-    faq: 'FAQ',
-    refund: '退款政策',
-    contact: '联系我们',
-    legalTitle: '法律信息',
-    trustBadges: ['安全支付', '即时配送', '退款保证'],
-  },
-  ...enExtended,
-}
-
-// ─── French (stub) ────────────────────────────────────────────────────────────
-
-const fr: Translations = {
-  nav: {
-    philosophy: 'Philosophie',
-    curations: 'Sélections',
-    membership: 'Abonnement',
-    signIn: 'Connexion',
-    cta: 'Commencer',
-    howItWorks: 'Comment ça marche',
-    pricing: 'Tarifs',
-    faq: 'FAQ',
-  },
-  hero: {
-    badge: "Le stylisme de voyage, réinventé par l'AI",
-    heading1: 'La fin des',
-    heading2: 'suppositions météo.',
-    sub: 'Arrêtez de deviner la météo. Commencez à porter les bons vêtements. Listes de bagages sur mesure pour Tokyo, Paris et au-delà.',
-    cta: 'Créer ma capsule',
-    estLabel: 'Fondé en 2025',
-    scrollLabel: 'Défiler pour explorer',
-    editionLabel: 'Édition mondiale',
-    tag: 'Stylisme IA · 5 $/voyage',
-    headline1: 'La fin des',
-    headline2: 'suppositions météo.',
-    headline3: '',
-    highlight: 'tenues IA personnalisées',
-    socialProof: 'pour chaque ville de votre itinéraire.',
-    ctaPrimary: 'Créer ma capsule — 5 $',
-    ctaSecondary: 'Voir un exemple',
-    trust: {
-      outfitImages: 'Images de tenues IA',
-      capsuleWardrobe: 'Capsule Wardrobe',
-      generationTime: '~3 min de livraison',
-      price: '5 $ / voyage',
-    },
-  },
-  weather: {
-    sectionLabel: 'Stylisme par la data',
-    heading1: 'Cartographie météo',
-    heading2: 'de précision.',
-    forecastLabel: 'Prévisions',
-    windyLabel: 'Venteux',
-    windNote: 'Vents forts attendus. Optez pour des couches structurées et des tissus résistants au vent.',
-    windyDayEdit: "La sélection jour de vent",
-    thermalTitle: 'Confort thermique',
-    thermalDesc: 'Poids du tissu ajusté pour la température ressentie.',
-    humidityTitle: "Contrôle de l'humidité",
-    humidityDesc: 'Couches respirantes sélectionnées pour les jours humides.',
-    bodyText:
-      "Nous ne regardons pas seulement la température. Nos algorithmes analysent l'humidité horaire, les vitesses du vent et les métriques \"ressenti\" pour sélectionner les tissus parfaits.",
-  },
-  blueprint: {
-    sectionLabel: 'La méthodologie',
-    heading: 'La Capsule en 10 pièces',
-    desc: 'Une capsule de 10 essentiels qui débloquent 20+ tenues uniques. Bagages minimaux, style maximal.',
-    outerLayerLabel: '01. La couche extérieure',
-    outerLayerName: 'Manteau en laine italienne',
-    seeAllItems: 'Voir les 10 pièces',
-    curatedFor: 'Sélectionné pour : Tour européen 12 jours',
-    totalWeight: 'Poids total : 7,2 kg',
-  },
-  guide: {
-    sectionLabel: 'Guide quotidien',
-    heading1: 'Guide quotidien',
-    heading2: 'à porter maintenant.',
-    bodyText:
-      "Réveillez-vous et sachez exactement quoi mettre. Une vue calendrier montrant votre tenue pour chaque jour du voyage, optimisée pour les activités et la météo.",
-    step1Title: 'Entrer la destination',
-    step1Desc: 'Dites-nous où et quand. Nous récupérons les données météo historiques et les prévisions en direct.',
-    step2Title: 'Définir votre style',
-    step2Desc: 'Téléchargez une photo ou choisissez une ambiance. L\'IA associe l\'équipement fonctionnel à votre esthétique.',
-    step3Title: 'Obtenir votre plan',
-    step3Desc: 'Recevez votre plan capsule personnalisé à 5 $. Recommandations de tissus, couches et guide quotidien.',
-    dayLabel: 'Jour 03',
-    activityTitle: 'Visite de musées',
-    activityDetail: 'Intérieur/Extérieur · 22°C',
-  },
-  testimonial: {
-    quote:
-      "J'avais l'habitude de faire ma valise 'au cas où' et d'avoir quand même froid. Travel Capsule AI a prédit la vague de froid à Rome et m'a préparé les couches parfaites.",
-    author: 'Jessica Cole',
-    detail: "Voyagé en Italie en novembre",
-  },
-  cta: {
-    heading1: "Ne vérifiez plus jamais",
-    heading2: "l'application météo.",
-    sub: 'Fini le stress des valises. Obtenez votre liste de bagages personnalisée et votre guide tenue jour par jour.',
-    button: 'Créer ma Capsule — 5 $',
-    note: 'Paiement unique · Sans abonnement',
-  },
-  footer: {
-    tagline: 'Stylisme piloté par les données pour le voyageur moderne. Soyez impeccable, partout dans le monde.',
-    journal: 'Journal',
-    methodology: 'Méthodologie',
-    pricing: 'Tarifs',
-    login: 'Connexion',
-    instagram: 'Instagram',
-    copyright: '© 2025 Travel Capsule AI. Tous droits réservés.',
-    privacy: 'Confidentialité',
-    terms: 'Conditions',
-    serviceTitle: 'Service',
-    howItWorks: 'Comment ça marche',
-    startNow: 'Commencer',
-    sampleView: 'Voir un exemple',
-    supportTitle: 'Assistance',
-    faq: 'FAQ',
-    refund: 'Politique de remboursement',
-    contact: 'Nous contacter',
-    legalTitle: 'Mentions légales',
-    trustBadges: ['Paiement sécurisé', 'Livraison instantanée', 'Garantie remboursement'],
-  },
-  ...enExtended,
-}
-
-// ─── Spanish (stub) ───────────────────────────────────────────────────────────
-
-const es: Translations = {
-  nav: {
-    philosophy: 'Filosofía',
-    curations: 'Selecciones',
-    membership: 'Membresía',
-    signIn: 'Iniciar sesión',
-    cta: 'Comenzar viaje',
-    howItWorks: 'Cómo funciona',
-    pricing: 'Precios',
-    faq: 'FAQ',
-  },
-  hero: {
-    badge: 'Tu estilo de viaje, creado por AI',
-    heading1: 'El fin de',
-    heading2: 'adivinar el tiempo.',
-    sub: 'Deja de adivinar el tiempo. Empieza a vestir correctamente. Listas de equipaje a medida para Tokio, París y más allá.',
-    cta: 'Crear mi cápsula',
-    estLabel: 'Fundado en 2025',
-    scrollLabel: 'Desplázate para explorar',
-    editionLabel: 'Edición global',
-    tag: 'Estilismo IA · $5/viaje',
-    headline1: 'El fin de',
-    headline2: 'adivinar el tiempo.',
-    headline3: '',
-    highlight: 'conjuntos IA personalizados',
-    socialProof: 'para cada ciudad de tu itinerario.',
-    ctaPrimary: 'Crear mi cápsula — $5',
-    ctaSecondary: 'Ver ejemplo',
-    trust: {
-      outfitImages: 'Imágenes de conjuntos IA',
-      capsuleWardrobe: 'Capsule Wardrobe',
-      generationTime: '~3 min de entrega',
-      price: '$5 / viaje',
-    },
-  },
-  weather: {
-    sectionLabel: 'Estilismo con data real',
-    heading1: 'Mapeo meteorológico',
-    heading2: 'de precisión.',
-    forecastLabel: 'Pronóstico',
-    windyLabel: 'Ventoso',
-    windNote: 'Se esperan vientos fuertes. Opta por capas estructuradas y tejidos resistentes al viento.',
-    windyDayEdit: 'La selección para días de viento',
-    thermalTitle: 'Confort térmico',
-    thermalDesc: 'Peso del tejido ajustado para la temperatura real.',
-    humidityTitle: 'Control de humedad',
-    humidityDesc: 'Capas transpirables seleccionadas para días de alta humedad.',
-    bodyText:
-      'No solo miramos la temperatura. Nuestros algoritmos analizan la humedad horaria, velocidades del viento y métricas de "sensación térmica" para seleccionar los tejidos perfectos.',
-  },
-  blueprint: {
-    sectionLabel: 'La metodología',
-    heading: 'Tu Capsule: 10 prendas, 20+ looks',
-    desc: 'Una cápsula de 10 esenciales que desbloquean 20+ conjuntos únicos. Equipaje mínimo, estilo máximo.',
-    outerLayerLabel: '01. La capa exterior',
-    outerLayerName: 'Abrigo de lana italiana',
-    seeAllItems: 'Ver las 10 prendas',
-    curatedFor: 'Seleccionado para: Tour europeo de 12 días',
-    totalWeight: 'Peso total: 7,2 kg',
-  },
-  guide: {
-    sectionLabel: 'Guía diaria',
-    heading1: 'Guía diaria',
-    heading2: 'para vestir ahora.',
-    bodyText:
-      'Despiértate y sabe exactamente qué ponerte. Una vista de calendario mostrando tu conjunto para cada día del viaje, optimizado para las actividades y el tiempo.',
-    step1Title: 'Ingresa el destino',
-    step1Desc: 'Dinos dónde y cuándo. Obtenemos patrones meteorológicos históricos y pronósticos en vivo.',
-    step2Title: 'Define tu estilo',
-    step2Desc: 'Sube una foto o elige un ambiente. La IA combina equipo funcional con tu estética.',
-    step3Title: 'Obtén tu plan',
-    step3Desc: 'Recibe tu plan cápsula personalizado de $5. Recomendaciones de tejidos, capas y guía diaria.',
-    dayLabel: 'Día 03',
-    activityTitle: 'Visita a museos',
-    activityDetail: 'Interior/Exterior · 22°C',
-  },
-  testimonial: {
-    quote:
-      "Solía hacer la maleta 'por si acaso' y aun así pasaba frío. Travel Capsule AI predijo la ola de frío en Roma y me preparó las capas perfectas.",
-    author: 'Jessica Cole',
-    detail: 'Viajó a Italia en noviembre',
-  },
-  cta: {
-    heading1: 'Nunca más consultes',
-    heading2: 'la app del tiempo.',
-    sub: 'Deja de hacer maletas con estrés. Obtén tu lista de equipaje personalizada y guía de conjuntos día a día hoy.',
-    button: 'Crear mi Capsule — $5',
-    note: 'Pago único · Sin suscripción',
-  },
-  footer: {
-    tagline: 'Estilismo basado en datos para el viajero moderno. Luce sin esfuerzo, en cualquier parte del mundo.',
-    journal: 'Diario',
-    methodology: 'Metodología',
-    pricing: 'Precios',
-    login: 'Iniciar sesión',
-    instagram: 'Instagram',
-    copyright: '© 2025 Travel Capsule AI. Todos los derechos reservados.',
-    privacy: 'Privacidad',
-    terms: 'Términos',
-    serviceTitle: 'Servicio',
-    howItWorks: 'Cómo funciona',
-    startNow: 'Empezar ahora',
-    sampleView: 'Ver ejemplo',
-    supportTitle: 'Soporte',
-    faq: 'FAQ',
-    refund: 'Política de reembolso',
-    contact: 'Contáctanos',
-    legalTitle: 'Legal',
-    trustBadges: ['Pago seguro', 'Entrega instantánea', 'Garantía de reembolso'],
-  },
-  ...enExtended,
-}
-
-// ─── Registry & helpers ────────────────────────────────────────────────────────
-
-const translations: Record<Locale, Translations> = { en, ko, ja, zh, fr, es }
-
-export function getTranslations(locale: Locale): Translations {
-  return translations[locale] ?? translations.en
-}
+// ─── Locale detection & persistence ──────────────────────────────────────────
 
 export function detectLocale(): Locale {
   if (typeof window === 'undefined') return 'en'
-  const saved = localStorage.getItem('tc-locale') as Locale | null
-  if (saved && saved in translations) return saved
+  const saved = localStorage.getItem('tc-lang') as Locale | null
+  if (saved && saved in flatTranslations) return saved
+  // Also check legacy key
+  const legacy = localStorage.getItem('tc-locale') as Locale | null
+  if (legacy && legacy in flatTranslations) return legacy
   const lang = navigator.language.toLowerCase()
   if (lang.startsWith('ko')) return 'ko'
   if (lang.startsWith('ja')) return 'ja'
@@ -1263,6 +759,6 @@ export function detectLocale(): Locale {
 
 export function saveLocale(locale: Locale): void {
   if (typeof window !== 'undefined') {
-    localStorage.setItem('tc-locale', locale)
+    localStorage.setItem('tc-lang', locale)
   }
 }

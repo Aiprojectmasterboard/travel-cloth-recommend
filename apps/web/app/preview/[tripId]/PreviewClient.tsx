@@ -1,111 +1,76 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { getPreview, createCheckout } from '@/lib/api'
-import AuthButton from '@/components/AuthButton'
+import { useLang } from '@/components/LanguageContext'
+import { Icon } from '@/components/travel-capsule/Icon'
+import { LanguageSelector } from '@/components/travel-capsule/LanguageSelector'
+import { BtnPrimary, BtnSecondary, BtnDark } from '@/components/travel-capsule/Buttons'
+import { CheckItem } from '@/components/travel-capsule/CheckItem'
 import type { PreviewResponse } from '../../../../../packages/types'
 import type { PlanType } from '../../../../../packages/types'
 
-const MONTH_NAMES = [
-  '', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+// ─── Static outfit previews ───────────────────────────────────────────────────
+
+const OUTFIT_PREVIEWS = [
+  {
+    label: 'Day 1 · Arrival',
+    // eslint-disable-next-line @next/next/no-img-element
+    img: 'https://images.unsplash.com/photo-1583744946564-b52ac1c389c8?w=600',
+    style: 'Classic Layering',
+  },
+  {
+    label: 'Day 2 · Explore',
+    // eslint-disable-next-line @next/next/no-img-element
+    img: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600',
+    style: 'Smart Casual',
+  },
+  {
+    label: 'Day 3 · Culture',
+    // eslint-disable-next-line @next/next/no-img-element
+    img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600',
+    style: 'Cozy Intellectual',
+  },
+  {
+    label: 'Day 4 · Dinner',
+    // eslint-disable-next-line @next/next/no-img-element
+    img: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600',
+    style: 'Evening Elegance',
+  },
 ]
 
-// ─── Outfit images (static demo for preview grid) ─────────────────────────────
+// ─── Plan feature key sets ─────────────────────────────────────────────────────
 
-const OUTFIT_IMAGES = [
-  {
-    src: 'https://images.unsplash.com/photo-1677592737288-5ffcf72770d1?q=80&w=600',
-    day: 'Day 1',
-    label: 'Arrival',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1746730921292-bd6be2c256d5?q=80&w=600',
-    day: 'Day 2',
-    label: 'Galleries',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1570298529069-2ca77646dd89?q=80&w=600',
-    day: 'Day 3',
-    label: 'Museums',
-  },
-  {
-    src: 'https://images.unsplash.com/photo-1587137276455-d0e42050e533?q=80&w=600',
-    day: 'Day 4',
-    label: 'Dinner',
-  },
+const STANDARD_FEATURE_KEYS = [
+  'pricing.standard.features.1',
+  'pricing.standard.features.2',
+  'pricing.standard.features.3',
+  'pricing.standard.features.4',
+  'pricing.standard.features.5',
 ]
 
-// ─── Plan definitions ─────────────────────────────────────────────────────────
+const PRO_FEATURE_KEYS = [
+  'pricing.pro.features.1',
+  'pricing.pro.features.2',
+  'pricing.pro.features.3',
+  'pricing.pro.features.4',
+  'pricing.pro.features.5',
+]
 
-const PLANS: Array<{
-  id: PlanType
-  name: string
-  price: string
-  period: string
-  badge: string | null
-  savingLabel: string | null
-  features: string[]
-  cta: string
-  highlight: boolean
-}> = [
-  {
-    id: 'standard',
-    name: 'Standard',
-    price: '$5',
-    period: '/trip',
-    badge: null,
-    savingLabel: null,
-    features: [
-      'Weather & Vibe Analysis',
-      'City Vibe Card',
-      '4 AI-Generated Outfits',
-      '10-Item Capsule List',
-      'Day-by-Day Itinerary',
-    ],
-    cta: 'Select Standard',
-    highlight: false,
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: '$12',
-    period: '/trip',
-    badge: 'Most Popular',
-    savingLabel: null,
-    features: [
-      'Everything in Standard',
-      'Hero images for ALL cities',
-      'Ultra High-Res Visuals',
-      '1 Free Style Regeneration',
-      'Multi-city coordination',
-    ],
-    cta: 'Unlock Pro Results',
-    highlight: true,
-  },
-  {
-    id: 'annual',
-    name: 'Annual',
-    price: '$29',
-    period: '/year',
-    badge: null,
-    savingLabel: 'Save $115/year',
-    features: [
-      'Full Pro Experience',
-      'Up to 12 trips per year',
-      'Priority AI processing',
-      'VIP concierge support',
-      'Early access to new features',
-    ],
-    cta: 'Go Annual',
-    highlight: false,
-  },
+const ANNUAL_FEATURE_KEYS = [
+  'pricing.annual.features.1',
+  'pricing.annual.features.2',
+  'pricing.annual.features.3',
+  'pricing.annual.features.4',
 ]
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function PreviewClient({ tripId }: { tripId: string }) {
+  const router = useRouter()
+  const { t, displayFont, bodyFont } = useLang()
+
   const [data, setData] = useState<PreviewResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -135,34 +100,19 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
 
   if (loading) {
     return (
-      <div className="preview-loading">
-        <div className="preview-spinner" />
-        <p className="preview-loading-text">Analyzing your trip...</p>
-        <style jsx>{`
-          .preview-loading {
-            min-height: 100vh;
-            background: #FDF8F3;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-          }
-          .preview-spinner {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            border: 2px solid #F5EFE6;
-            border-top-color: #C4613A;
-            animation: spin 0.8s linear infinite;
-          }
-          .preview-loading-text {
-            font-size: 14px;
-            color: #9c8c7e;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ background: '#FDF8F3' }}
+      >
+        <div
+          className="w-11 h-11 rounded-full border-2 border-[#F5EFE6] border-t-[#C4613A] animate-spin"
+        />
+        <p
+          className="text-sm text-[#9c8c7e]"
+          style={{ fontFamily: bodyFont }}
+        >
+          Analyzing your trip...
+        </p>
       </div>
     )
   }
@@ -171,804 +121,479 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
 
   if (error || !data) {
     return (
-      <div className="preview-error-wrap">
-        <h1 className="preview-error-h1">Preview not found</h1>
-        <p className="preview-error-p">This preview may have expired. Start a new trip to try again.</p>
-        <a href="/trip" className="preview-error-cta">Start New Trip</a>
-        <style jsx>{`
-          .preview-error-wrap {
-            min-height: 100vh;
-            background: #FDF8F3;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 0 24px;
-            text-align: center;
-            gap: 16px;
-          }
-          .preview-error-h1 {
-            font-family: 'Playfair Display', serif;
-            font-size: 28px;
-            color: #1A1410;
-          }
-          .preview-error-p {
-            color: #9c8c7e;
-            font-size: 15px;
-            max-width: 360px;
-          }
-          .preview-error-cta {
-            display: inline-block;
-            background: #C4613A;
-            color: #fff;
-            padding: 12px 28px;
-            border-radius: 9999px;
-            font-weight: 600;
-            font-size: 14px;
-            text-decoration: none;
-            margin-top: 8px;
-          }
-        `}</style>
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 text-center"
+        style={{ background: '#FDF8F3' }}
+      >
+        <h1
+          className="text-[28px] text-[#1A1410]"
+          style={{ fontFamily: displayFont }}
+        >
+          Preview not found
+        </h1>
+        <p className="text-[15px] text-[#9c8c7e] max-w-[360px]">
+          This preview may have expired. Start a new trip to try again.
+        </p>
+        <BtnPrimary href="/trip" className="mt-2 rounded-full">
+          Start New Trip
+        </BtnPrimary>
       </div>
     )
   }
 
+  // ─── Derived display values ────────────────────────────────────────────────
+
   const firstVibe = data.vibes[0]
   const firstWeather = data.weather[0]
-  const teaserUrl = data.teaser?.teaser_url || null
+  const teaserUrl = data.teaser?.teaser_url ?? null
 
-  const destinationLabel = data.vibes.map((v) => v.city).join(', ')
+  const destinationLabel = data.vibes.map((v) => v.city).join(', ') || '—'
   const aestheticLabel = firstVibe?.mood_name?.split('—')[1]?.trim() ?? '—'
   const weatherFocusLabel = firstWeather?.climate_band
-    ? firstWeather.climate_band.charAt(0).toUpperCase() + firstWeather.climate_band.slice(1) + ' Layers'
+    ? firstWeather.climate_band.charAt(0).toUpperCase() +
+      firstWeather.climate_band.slice(1) +
+      ' Layers'
     : '—'
-  const expiresDate = data.expires_at ? new Date(data.expires_at) : null
-  const monthLabel = firstWeather?.style_hint
-    ? firstWeather.style_hint.split(' ')[0]
-    : expiresDate
-      ? (MONTH_NAMES[expiresDate.getMonth() + 1] ?? '')
-      : ''
   const durationLabel = firstWeather?.climate_band
-    ? firstWeather.climate_band.charAt(0).toUpperCase() + firstWeather.climate_band.slice(1) + ' climate'
-    : monthLabel || '—'
+    ? firstWeather.climate_band.charAt(0).toUpperCase() +
+      firstWeather.climate_band.slice(1) +
+      ' climate'
+    : '—'
+
+  const summaryStats = [
+    { key: 'preview.destination', value: destinationLabel },
+    { key: 'preview.duration', value: durationLabel },
+    { key: 'preview.aesthetic', value: aestheticLabel },
+    { key: 'preview.weather', value: weatherFocusLabel },
+  ]
+
+  // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="preview-root">
-      {/* ─── Header ─────────────────────────────────────────────────────────── */}
-      <header className="preview-header">
-        <a href="/" className="preview-logo">
-          <svg width="22" height="22" fill="none" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-            <path d="M4 4H17.3334V17.3334H30.6666V30.6666H44V44H4V4Z" fill="currentColor" />
-          </svg>
-          <span className="preview-logo-text">Travel Capsule AI</span>
-        </a>
-        <div className="preview-header-right">
-          <AuthButton />
+    <div className="min-h-screen" style={{ background: '#FDF8F3', fontFamily: bodyFont, color: '#1A1410' }}>
+
+      {/* ─── Header ──────────────────────────────────────────────────────────── */}
+      <header
+        className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50"
+        style={{ backgroundColor: 'rgba(253,248,243,0.8)', backdropFilter: 'blur(16px)' }}
+      >
+        <div
+          className="mx-auto flex items-center justify-between px-6 py-4"
+          style={{ maxWidth: 'var(--max-w)' }}
+        >
+          <div
+            className="flex items-center gap-2 cursor-pointer"
+            onClick={() => router.push('/')}
+            role="link"
+            aria-label="Go to home"
+          >
+            <Icon name="luggage" size={28} className="text-[#C4613A]" />
+            <span
+              className="text-[20px] tracking-tight text-[#1A1410]"
+              style={{ fontFamily: displayFont, fontWeight: 700 }}
+            >
+              Travel Capsule
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <LanguageSelector />
+          </div>
         </div>
       </header>
 
-      <main className="preview-main">
-        {/* ─── Step indicator + hero copy ───────────────────────────────────── */}
-        <div className="preview-hero-copy">
-          <span className="preview-step-label">Step 4 of 4: Finalizing Your Journey</span>
-          <h1 className="preview-h1">Your story is ready to unfold.</h1>
-          <p className="preview-hero-p">
-            We&apos;ve analyzed your destination, weather patterns, and style preferences to curate your perfect travel wardrobe. Review your personalized preview below.
-          </p>
-        </div>
+      {/* ─── Main ────────────────────────────────────────────────────────────── */}
+      <main className="mx-auto px-6 py-12" style={{ maxWidth: 1200 }}>
 
-        {/* ─── Banner image (21:9) ──────────────────────────────────────────── */}
-        <div className="preview-banner">
+        {/* ─── Step label + hero copy ─────────────────────────────────────── */}
+        <span
+          className="text-[10px] uppercase tracking-[0.15em] text-[#C4613A] block"
+          style={{ fontFamily: bodyFont, fontWeight: 600 }}
+        >
+          {t('preview.step')}
+        </span>
+        <h1
+          className="mt-4 text-[#292524] italic whitespace-pre-line"
+          style={{ fontSize: 'clamp(40px, 5vw, 72px)', fontFamily: displayFont, lineHeight: 1.05 }}
+        >
+          {t('preview.title')}
+        </h1>
+        <p
+          className="mt-4 text-[18px] text-[#57534e] max-w-[600px]"
+          style={{ fontFamily: bodyFont, fontWeight: 300 }}
+        >
+          {t('preview.body')}
+        </p>
+
+        {/* ─── Preview hero card (21:9) ────────────────────────────────────── */}
+        <div
+          className="mt-10 relative rounded-2xl overflow-hidden shadow-2xl"
+          style={{ aspectRatio: '21/9' }}
+        >
           {teaserUrl ? (
-            <Image
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
               src={teaserUrl}
               alt="Your travel look teaser"
-              fill
-              style={{ objectFit: 'cover' }}
-              priority
-              unoptimized
+              className="w-full h-full object-cover"
             />
           ) : (
-            <div className="preview-banner-fallback" />
+            <div
+              className="absolute inset-0"
+              style={{ background: 'linear-gradient(135deg, #1A1410 0%, #3d2b1f 50%, #1A1410 100%)' }}
+            />
           )}
-          {/* Gradient overlay */}
-          <div className="preview-banner-overlay" />
-          {/* Lookbook UI */}
-          <div className="preview-banner-card">
-            <p className="preview-banner-card-label">Lookbook Preview</p>
-            <div className="preview-banner-progress-track">
-              <div className="preview-banner-progress-fill" />
+          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
+          {/* Glass card overlay */}
+          <div
+            className="absolute bottom-6 left-6 right-6 sm:right-auto sm:w-[380px] p-6 rounded-2xl"
+            style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(20px)' }}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#C4613A] flex items-center justify-center flex-shrink-0">
+                <Icon name="auto_awesome" size={20} className="text-white" />
+              </div>
+              <span
+                className="text-[20px] text-white italic"
+                style={{ fontFamily: displayFont }}
+              >
+                Lookbook Preview
+              </span>
             </div>
-            <p className="preview-banner-card-mood">
-              {firstVibe?.mood_name ?? 'Your Travel Style'}
-            </p>
+            <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
+              <div className="h-full w-[75%] bg-[#C4613A] rounded-full" />
+            </div>
+            <span
+              className="mt-2 block text-[10px] uppercase tracking-[0.12em] text-white/70"
+              style={{ fontFamily: 'var(--font-mono)' }}
+            >
+              {firstVibe?.mood_name ?? '75% AI Analysis Complete'}
+            </span>
             {firstVibe?.vibe_tags && firstVibe.vibe_tags.length > 0 && (
-              <div className="preview-banner-tags">
-                {firstVibe.vibe_tags.slice(0, 3).map((tag) => (
-                  <span key={tag} className="preview-banner-tag">{tag}</span>
+              <div className="flex gap-2 flex-wrap mt-3">
+                {firstVibe.vibe_tags.slice(0, 3).map((tag: string) => (
+                  <span
+                    key={tag}
+                    className="bg-white/15 border border-white/28 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-[0.08em] uppercase text-white/90"
+                  >
+                    {tag}
+                  </span>
                 ))}
               </div>
             )}
           </div>
         </div>
 
-        {/* ─── AI Outfit Preview Grid (2×4) ────────────────────────────────── */}
-        <section className="preview-outfits-section">
-          <div className="preview-section-header">
-            <h2 className="preview-section-title">AI Outfit Preview</h2>
-            <span className="preview-section-badge">4 looks curated</span>
-          </div>
-          <div className="preview-outfit-grid">
-            {OUTFIT_IMAGES.map((outfit, i) => (
-              <div key={i} className="preview-outfit-card">
-                <div className="preview-outfit-img-wrap">
-                  <Image
-                    src={outfit.src}
-                    alt={`${outfit.day} — ${outfit.label}`}
-                    fill
-                    style={{ objectFit: 'cover', transition: 'transform 0.4s ease' }}
-                    unoptimized
-                    className="preview-outfit-img"
+        {/* ─── AI Outfit Preview grid ──────────────────────────────────────── */}
+        <section className="mt-12">
+          <h2
+            className="text-[#292524] mb-6"
+            style={{ fontSize: 'clamp(24px, 3vw, 36px)', fontFamily: displayFont }}
+          >
+            AI Outfit Preview
+          </h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {OUTFIT_PREVIEWS.map((outfit, i) => (
+              <div key={i} className="group">
+                <div
+                  className="relative rounded-xl overflow-hidden bg-[#E8DDD4]"
+                  style={{ aspectRatio: '3/4' }}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={outfit.img}
+                    alt={outfit.label}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                   />
-                  <div className="preview-outfit-img-overlay" />
-                </div>
-                <div className="preview-outfit-info">
-                  <span className="preview-outfit-day">{outfit.day}</span>
-                  <span className="preview-outfit-label">{outfit.label}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ─── Trip Summary ─────────────────────────────────────────────────── */}
-        <section className="preview-summary-section">
-          <div className="preview-summary-header">
-            <h2 className="preview-section-title">Trip Summary</h2>
-            <a href="/trip" className="preview-edit-link">EDIT DETAILS ✏</a>
-          </div>
-          <div className="preview-summary-grid">
-            {[
-              { label: 'Destination', value: destinationLabel || '—' },
-              { label: 'Duration', value: durationLabel },
-              { label: 'Aesthetic', value: aestheticLabel },
-              { label: 'Weather Focus', value: weatherFocusLabel },
-            ].map(({ label, value }) => (
-              <div key={label} className="preview-summary-cell">
-                <span className="preview-summary-label">{label}</span>
-                <p className="preview-summary-value">{value}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ─── Pricing ──────────────────────────────────────────────────────── */}
-        <section className="preview-pricing-section">
-          <div className="preview-pricing-header">
-            <div className="preview-price-anchor">
-              <span className="preview-price-anchor-old">Personal stylist: $200+</span>
-              <span className="preview-price-anchor-arrow">→</span>
-              <span className="preview-price-anchor-new">Travel Capsule AI: from $5</span>
-            </div>
-            <h2 className="preview-pricing-title">Choose Your Experience</h2>
-            <p className="preview-pricing-sub">Select the plan that best fits your travel style.</p>
-          </div>
-
-          {paymentError && (
-            <p className="preview-payment-error" role="alert">{paymentError}</p>
-          )}
-
-          <div className="preview-plan-grid">
-            {PLANS.map((plan) => (
-              <div
-                key={plan.id}
-                className={`preview-plan-card${plan.highlight ? ' preview-plan-card--highlight' : ''}`}
-              >
-                {plan.badge && (
-                  <span className="preview-plan-badge">{plan.badge}</span>
-                )}
-                {plan.savingLabel && (
-                  <span className="preview-plan-saving">{plan.savingLabel}</span>
-                )}
-
-                <div className="preview-plan-price-block">
-                  <h3 className="preview-plan-name">{plan.name}</h3>
-                  <div className="preview-plan-price-row">
-                    <span className="preview-plan-price">{plan.price}</span>
-                    <span className="preview-plan-period">{plan.period}</span>
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute bottom-3 left-3 right-3">
+                    <span
+                      className="text-white/70 text-[10px] uppercase tracking-[0.1em] block"
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                    >
+                      {outfit.label}
+                    </span>
+                    <span
+                      className="text-white text-[15px] italic"
+                      style={{ fontFamily: displayFont }}
+                    >
+                      {outfit.style}
+                    </span>
                   </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        </section>
 
-                <ul className="preview-plan-features">
-                  {plan.features.map((feat, i) => (
-                    <li key={i} className="preview-plan-feat">
-                      <span className="preview-plan-feat-dot" />
-                      {feat}
+        {/* ─── Trip Summary ────────────────────────────────────────────────── */}
+        <section className="mt-12 pt-8 border-t border-[#C4613A]/10">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#C4613A]/8">
+            <h2
+              className="text-[#1A1410]"
+              style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontFamily: displayFont }}
+            >
+              {t('preview.tripSummary')}
+            </h2>
+            <button
+              onClick={() => router.push('/trip')}
+              className="text-[12px] font-bold tracking-[0.08em] text-[#C4613A] uppercase hover:opacity-70 transition-opacity"
+              aria-label="Edit trip details"
+            >
+              {t('preview.editDetails')} ✏
+            </button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {summaryStats.map(({ key, value }) => (
+              <div key={key} className="flex flex-col gap-1.5">
+                <span
+                  className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#C4613A]"
+                  style={{ fontFamily: bodyFont }}
+                >
+                  {t(key)}
+                </span>
+                <p
+                  className="text-[20px] font-medium text-[#1A1410]"
+                  style={{ fontFamily: bodyFont }}
+                >
+                  {value}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── Pricing ─────────────────────────────────────────────────────── */}
+        <section className="mt-20 mb-20">
+          {/* Price anchor pill */}
+          <div className="flex justify-center mb-6">
+            <div
+              className="inline-flex items-center gap-3 rounded-full px-5 py-1.5 flex-wrap justify-center"
+              style={{ background: '#1A1410' }}
+            >
+              <span className="text-[12px] text-[#9c8c7e] line-through">Personal stylist: $200+</span>
+              <span className="text-[12px] text-white/30">→</span>
+              <span className="text-[12px] font-bold text-[#D4AF37]">Travel Capsule AI: from $5</span>
+            </div>
+          </div>
+
+          <h2
+            className="text-center text-[#1A1410] mb-3"
+            style={{ fontSize: 'clamp(28px, 3vw, 36px)', fontFamily: displayFont }}
+          >
+            {t('pricing.title')}
+          </h2>
+          <p
+            className="text-center text-[16px] text-[#1A1410]/60 mb-10"
+            style={{ fontFamily: bodyFont }}
+          >
+            {t('preview.selectPlan')}
+          </p>
+
+          {paymentError && (
+            <p className="text-center text-red-600 text-sm mb-4" role="alert">
+              {paymentError}
+            </p>
+          )}
+
+          {/* Plan cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto items-stretch">
+
+            {/* Standard */}
+            <div className="flex flex-col bg-white border border-[#C4613A]/12 rounded-[20px] p-8 relative overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="flex flex-col flex-1">
+                <p
+                  className="text-[15px] font-bold text-[#1A1410] mb-2"
+                  style={{ fontFamily: bodyFont }}
+                >
+                  Standard
+                </p>
+                <div className="flex items-baseline gap-1 mb-7">
+                  <span className="text-[40px] font-bold text-[#1A1410]">$5</span>
+                  <span className="text-[14px] text-[#1A1410]/50">/trip</span>
+                </div>
+                <ul className="flex flex-col gap-3 mb-8 flex-1">
+                  {STANDARD_FEATURE_KEYS.map((key) => (
+                    <CheckItem key={key}>{t(key)}</CheckItem>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-col gap-2 mt-auto">
+                <BtnSecondary
+                  onClick={() => handleSelectPlan('standard')}
+                  disabled={paymentLoading !== null}
+                  className={`w-full rounded-xl justify-center${paymentLoading !== null && paymentLoading !== 'standard' ? ' opacity-60' : ''}`}
+                >
+                  {paymentLoading === 'standard' ? 'Redirecting...' : t('pricing.standard.cta')}
+                </BtnSecondary>
+                <button
+                  onClick={() => router.push('/trip')}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#C4613A] border border-dashed border-[#C4613A]/40 hover:border-[#C4613A] transition-colors"
+                  style={{ fontFamily: bodyFont }}
+                  aria-label="See sample result"
+                >
+                  {t('preview.seeSample')}
+                </button>
+              </div>
+            </div>
+
+            {/* Pro — highlighted */}
+            <div
+              className="flex flex-col rounded-[20px] p-8 relative overflow-hidden md:scale-[1.03]"
+              style={{ background: '#C4613A', boxShadow: '0 20px 48px rgba(196,97,58,0.35)' }}
+            >
+              {/* Most Popular badge */}
+              <span
+                className="absolute top-4 right-4 text-[10px] font-bold uppercase tracking-[0.1em] text-white px-3 py-1 rounded-full"
+                style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)' }}
+              >
+                {t('pricing.pro.badge')}
+              </span>
+              <div className="flex flex-col flex-1">
+                <p
+                  className="text-[15px] font-bold text-white mb-2"
+                  style={{ fontFamily: bodyFont }}
+                >
+                  Pro
+                </p>
+                <div className="flex items-baseline gap-1 mb-7">
+                  <span className="text-[40px] font-bold text-white">$12</span>
+                  <span className="text-[14px] text-white/65">/trip</span>
+                </div>
+                <ul className="flex flex-col gap-3 mb-8 flex-1">
+                  {PRO_FEATURE_KEYS.map((key) => (
+                    <li key={key} className="flex items-start gap-2.5">
+                      <span
+                        className="material-symbols-outlined shrink-0 text-white/80 mt-0.5"
+                        style={{ fontSize: 16 }}
+                      >
+                        check_circle
+                      </span>
+                      <span className="text-sm leading-relaxed text-white/88">{t(key)}</span>
                     </li>
                   ))}
                 </ul>
-
+              </div>
+              <div className="flex flex-col gap-2 mt-auto">
                 <button
-                  onClick={() => handleSelectPlan(plan.id)}
+                  onClick={() => handleSelectPlan('pro')}
                   disabled={paymentLoading !== null}
-                  aria-label={`Select ${plan.name} plan`}
-                  className={`preview-plan-cta${plan.highlight ? ' preview-plan-cta--highlight' : ''}`}
-                  style={{ opacity: paymentLoading !== null && paymentLoading !== plan.id ? 0.6 : 1 }}
+                  className="w-full py-4 rounded-xl text-sm font-bold uppercase tracking-wide bg-white text-[#C4613A] hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                  style={{ fontFamily: bodyFont, opacity: paymentLoading !== null && paymentLoading !== 'pro' ? 0.6 : 1 }}
+                  aria-label="Select Pro plan"
                 >
-                  {paymentLoading === plan.id ? 'Redirecting...' : plan.cta}
+                  {paymentLoading === 'pro' ? 'Redirecting...' : t('pricing.pro.cta')}
+                </button>
+                <button
+                  onClick={() => router.push('/trip')}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-white/80 border border-dashed border-white/30 hover:border-white/60 transition-colors"
+                  style={{ fontFamily: bodyFont }}
+                  aria-label="See sample result"
+                >
+                  {t('preview.seeSample')}
                 </button>
               </div>
-            ))}
+            </div>
+
+            {/* Annual */}
+            <div className="flex flex-col bg-white border border-[#C4613A]/12 rounded-[20px] p-8 relative overflow-hidden hover:shadow-lg transition-shadow">
+              {/* Gold savings badge */}
+              <span
+                className="inline-block mb-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#C4613A] px-2.5 py-1 rounded-full"
+                style={{ background: 'rgba(212,175,55,0.15)', color: '#B8920A' }}
+              >
+                {t('pricing.annual.badge')}
+              </span>
+              <div className="flex flex-col flex-1">
+                <p
+                  className="text-[15px] font-bold text-[#1A1410] mb-2"
+                  style={{ fontFamily: bodyFont }}
+                >
+                  Annual
+                </p>
+                <div className="flex items-baseline gap-1 mb-7">
+                  <span className="text-[40px] font-bold text-[#1A1410]">$29</span>
+                  <span className="text-[14px] text-[#1A1410]/50">{t('pricing.perYear')}</span>
+                </div>
+                <ul className="flex flex-col gap-3 mb-8 flex-1">
+                  {ANNUAL_FEATURE_KEYS.map((key) => (
+                    <CheckItem key={key}>{t(key)}</CheckItem>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex flex-col gap-2 mt-auto">
+                <BtnDark
+                  onClick={() => handleSelectPlan('annual')}
+                  disabled={paymentLoading !== null}
+                  className={`w-full rounded-xl justify-center${paymentLoading !== null && paymentLoading !== 'annual' ? ' opacity-60' : ''}`}
+                >
+                  {paymentLoading === 'annual' ? 'Redirecting...' : t('pricing.annual.cta')}
+                </BtnDark>
+                <button
+                  onClick={() => router.push('/trip')}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#C4613A] border border-dashed border-[#C4613A]/40 hover:border-[#C4613A] transition-colors"
+                  style={{ fontFamily: bodyFont }}
+                  aria-label="See sample result"
+                >
+                  {t('preview.seeSample')}
+                </button>
+              </div>
+            </div>
+
           </div>
 
           {/* Trust signals */}
-          <div className="preview-trust">
-            <span className="preview-trust-item">
-              <span className="material-symbols-outlined" style={{ fontSize: 15 }}>lock</span>
+          <div className="flex justify-center gap-6 mt-7 flex-wrap">
+            <span className="flex items-center gap-1.5 text-[12px] text-[#9c8c7e]">
+              <Icon name="lock" size={15} />
               Secure checkout via Polar
             </span>
-            <span className="preview-trust-item">24h refund guarantee</span>
-            <span className="preview-trust-item">Standard &amp; Pro: one-time charge</span>
+            <span className="text-[12px] text-[#9c8c7e]">24h refund guarantee</span>
+            <span className="text-[12px] text-[#9c8c7e]">Standard &amp; Pro: one-time charge</span>
           </div>
-          <p className="preview-renewal-note">
-            Annual plan automatically renews at $29/year. Cancel anytime before renewal. Standard and Pro plans are one-time payments with no auto-renewal.
+          <p className="text-center text-[10px] text-[#9c8c7e]/65 mt-4 leading-relaxed max-w-[560px] mx-auto">
+            Annual plan automatically renews at $29/year. Cancel anytime before renewal.
+            Standard and Pro plans are one-time payments with no auto-renewal.
+          </p>
+          <p
+            className="text-center text-[12px] text-[#9c8c7e] mt-3"
+            style={{ fontFamily: bodyFont }}
+          >
+            {t('pricing.noAccountNeeded')}
           </p>
         </section>
 
-        {/* ─── Footer quote ─────────────────────────────────────────────────── */}
-        <footer className="preview-footer">
-          <blockquote className="preview-quote">
-            &ldquo;Style is a way to say who you are without having to speak.&rdquo;
+        {/* ─── Footer quote ────────────────────────────────────────────────── */}
+        <footer className="text-center pt-16 pb-10 border-t border-[#C4613A]/10">
+          <blockquote
+            className="text-[26px] italic text-[#1A1410]/78 mb-5 leading-relaxed"
+            style={{ fontFamily: displayFont }}
+          >
+            &ldquo;{t('footer.quote')}&rdquo;
           </blockquote>
-          <p className="preview-quote-attr">&mdash; Rachel Zoe</p>
-          <div className="preview-footer-links">
-            {[
-              { label: 'Privacy Policy', href: '/legal/privacy' },
-              { label: 'Terms of Service', href: '/legal/terms' },
-              { label: 'Contact', href: 'mailto:hello@travelscapsule.com' },
-            ].map(({ label, href }) => (
-              <a key={label} href={href} className="preview-footer-link">{label}</a>
+          <p
+            className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#C4613A] mb-12"
+            style={{ fontFamily: bodyFont }}
+          >
+            &mdash; {t('footer.quoteAuthor')}
+          </p>
+          <div className="flex justify-center gap-8 flex-wrap">
+            {([
+              { key: 'footer.privacy', href: '/legal/privacy' },
+              { key: 'footer.terms', href: '/legal/terms' },
+              { key: 'footer.contact', href: 'mailto:hello@travelscapsule.com' },
+            ] as const).map(({ key, href }) => (
+              <a
+                key={key}
+                href={href}
+                className="text-[10px] font-bold tracking-[0.14em] uppercase text-[#1A1410]/40 no-underline hover:text-[#C4613A] transition-colors"
+              >
+                {t(key)}
+              </a>
             ))}
           </div>
         </footer>
+
       </main>
-
-      <style jsx global>{`
-        .preview-root {
-          min-height: 100vh;
-          background: #FDF8F3;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          color: #1A1410;
-        }
-
-        /* ── Header ── */
-        .preview-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 16px clamp(16px, 4vw, 48px);
-          border-bottom: 1px solid rgba(196, 97, 58, 0.12);
-          background: rgba(253, 248, 243, 0.85);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
-          position: sticky;
-          top: 0;
-          z-index: 50;
-        }
-        .preview-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          text-decoration: none;
-          color: #C4613A;
-        }
-        .preview-logo-text {
-          font-size: 17px;
-          font-weight: 700;
-          color: #1A1410;
-          letter-spacing: 0.04em;
-          text-transform: uppercase;
-        }
-        .preview-header-right {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-
-        /* ── Main ── */
-        .preview-main {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 56px clamp(16px, 4vw, 48px) 80px;
-        }
-
-        /* ── Hero copy ── */
-        .preview-hero-copy {
-          text-align: center;
-          margin-bottom: 56px;
-        }
-        .preview-step-label {
-          display: block;
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: #C4613A;
-          margin-bottom: 20px;
-        }
-        .preview-h1 {
-          font-family: 'Playfair Display', serif;
-          font-style: italic;
-          font-size: clamp(36px, 6vw, 64px);
-          color: #1A1410;
-          line-height: 1.1;
-          margin-bottom: 20px;
-        }
-        .preview-hero-p {
-          font-size: 17px;
-          color: rgba(26, 20, 16, 0.65);
-          max-width: 600px;
-          margin: 0 auto;
-          line-height: 1.75;
-        }
-
-        /* ── Banner ── */
-        .preview-banner {
-          position: relative;
-          width: 100%;
-          aspect-ratio: 21/9;
-          border-radius: 16px;
-          overflow: hidden;
-          margin-bottom: 80px;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.22);
-        }
-        .preview-banner-fallback {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, #1A1410 0%, #3d2b1f 50%, #1A1410 100%);
-        }
-        .preview-banner-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to top, rgba(26, 20, 16, 0.75) 0%, rgba(26, 20, 16, 0.15) 60%, transparent 100%);
-        }
-        .preview-banner-card {
-          position: absolute;
-          bottom: 32px;
-          left: 50%;
-          transform: translateX(-50%);
-          background: rgba(255, 255, 255, 0.12);
-          backdrop-filter: blur(20px);
-          -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255, 255, 255, 0.22);
-          border-radius: 14px;
-          padding: 24px 32px;
-          min-width: 280px;
-          text-align: center;
-          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
-        }
-        .preview-banner-card-label {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.7);
-          margin-bottom: 10px;
-        }
-        .preview-banner-progress-track {
-          height: 2px;
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 9999px;
-          overflow: hidden;
-          margin-bottom: 14px;
-        }
-        .preview-banner-progress-fill {
-          height: 100%;
-          width: 75%;
-          background: #C4613A;
-          border-radius: 9999px;
-        }
-        .preview-banner-card-mood {
-          font-family: 'Playfair Display', serif;
-          font-size: 20px;
-          color: #fff;
-          margin-bottom: 12px;
-        }
-        .preview-banner-tags {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        .preview-banner-tag {
-          background: rgba(255, 255, 255, 0.15);
-          border: 1px solid rgba(255, 255, 255, 0.28);
-          padding: 3px 10px;
-          border-radius: 9999px;
-          font-size: 10px;
-          font-weight: 600;
-          letter-spacing: 0.08em;
-          text-transform: uppercase;
-          color: rgba(255, 255, 255, 0.9);
-        }
-
-        /* ── Section shared ── */
-        .preview-section-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 24px;
-        }
-        .preview-section-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 28px;
-          color: #1A1410;
-        }
-        .preview-section-badge {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: #C4613A;
-          background: rgba(196, 97, 58, 0.08);
-          padding: 4px 12px;
-          border-radius: 9999px;
-        }
-
-        /* ── Outfit grid ── */
-        .preview-outfits-section {
-          margin-bottom: 80px;
-        }
-        .preview-outfit-grid {
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-        }
-        .preview-outfit-card {
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-          cursor: pointer;
-        }
-        .preview-outfit-img-wrap {
-          position: relative;
-          aspect-ratio: 3/4;
-          border-radius: 12px;
-          overflow: hidden;
-          background: #E8E0D5;
-        }
-        .preview-outfit-img-wrap:hover .preview-outfit-img {
-          transform: scale(1.04);
-        }
-        .preview-outfit-img-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(to top, rgba(26, 20, 16, 0.4) 0%, transparent 60%);
-          pointer-events: none;
-        }
-        .preview-outfit-info {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .preview-outfit-day {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          color: #C4613A;
-        }
-        .preview-outfit-label {
-          font-size: 14px;
-          font-weight: 500;
-          color: #1A1410;
-        }
-        @media (max-width: 640px) {
-          .preview-outfit-grid {
-            grid-template-columns: repeat(2, 1fr);
-          }
-        }
-
-        /* ── Trip summary ── */
-        .preview-summary-section {
-          margin-bottom: 80px;
-          padding-top: 8px;
-          border-top: 1px solid rgba(196, 97, 58, 0.1);
-        }
-        .preview-summary-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-bottom: 32px;
-          padding-bottom: 16px;
-          border-bottom: 1px solid rgba(196, 97, 58, 0.08);
-        }
-        .preview-edit-link {
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.08em;
-          color: #C4613A;
-          text-decoration: none;
-        }
-        .preview-summary-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-          gap: 32px;
-        }
-        .preview-summary-cell {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .preview-summary-label {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.16em;
-          text-transform: uppercase;
-          color: #C4613A;
-        }
-        .preview-summary-value {
-          font-size: 20px;
-          font-weight: 500;
-          color: #1A1410;
-        }
-
-        /* ── Pricing ── */
-        .preview-pricing-section {
-          margin-bottom: 80px;
-        }
-        .preview-pricing-header {
-          text-align: center;
-          margin-bottom: 48px;
-        }
-        .preview-price-anchor {
-          display: inline-flex;
-          align-items: center;
-          gap: 12px;
-          background: #1A1410;
-          border-radius: 9999px;
-          padding: 6px 20px;
-          margin-bottom: 24px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }
-        .preview-price-anchor-old {
-          font-size: 12px;
-          color: #9c8c7e;
-          text-decoration: line-through;
-        }
-        .preview-price-anchor-arrow {
-          font-size: 12px;
-          color: rgba(255, 255, 255, 0.3);
-        }
-        .preview-price-anchor-new {
-          font-size: 12px;
-          font-weight: 700;
-          color: #D4AF37;
-        }
-        .preview-pricing-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 36px;
-          color: #1A1410;
-          margin-bottom: 12px;
-        }
-        .preview-pricing-sub {
-          color: rgba(26, 20, 16, 0.6);
-          font-size: 16px;
-        }
-        .preview-payment-error {
-          text-align: center;
-          color: #dc2626;
-          font-size: 14px;
-          margin-bottom: 16px;
-        }
-        .preview-plan-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 24px;
-          align-items: stretch;
-        }
-        @media (max-width: 767px) {
-          .preview-plan-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-        .preview-plan-card {
-          display: flex;
-          flex-direction: column;
-          background: #fff;
-          border: 1px solid rgba(196, 97, 58, 0.12);
-          border-radius: 20px;
-          padding: 32px;
-          position: relative;
-          overflow: hidden;
-          transition: box-shadow 0.2s;
-        }
-        .preview-plan-card:hover {
-          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
-        }
-        .preview-plan-card--highlight {
-          background: #C4613A;
-          border: none;
-          box-shadow: 0 20px 48px rgba(196, 97, 58, 0.35);
-          transform: scale(1.03);
-        }
-        @media (max-width: 767px) {
-          .preview-plan-card--highlight {
-            transform: none;
-          }
-        }
-        .preview-plan-badge {
-          position: absolute;
-          top: 16px;
-          right: 16px;
-          background: rgba(255, 255, 255, 0.22);
-          backdrop-filter: blur(8px);
-          padding: 4px 12px;
-          border-radius: 9999px;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #fff;
-        }
-        .preview-plan-saving {
-          display: inline-block;
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #C4613A;
-          background: rgba(196, 97, 58, 0.1);
-          padding: 3px 10px;
-          border-radius: 9999px;
-          margin-bottom: 12px;
-        }
-        .preview-plan-price-block {
-          margin-bottom: 28px;
-        }
-        .preview-plan-name {
-          font-size: 15px;
-          font-weight: 700;
-          margin-bottom: 8px;
-        }
-        .preview-plan-card--highlight .preview-plan-name {
-          color: #fff;
-        }
-        .preview-plan-card:not(.preview-plan-card--highlight) .preview-plan-name {
-          color: #1A1410;
-        }
-        .preview-plan-price-row {
-          display: flex;
-          align-items: baseline;
-          gap: 4px;
-        }
-        .preview-plan-price {
-          font-size: 40px;
-          font-weight: 700;
-        }
-        .preview-plan-card--highlight .preview-plan-price { color: #fff; }
-        .preview-plan-card:not(.preview-plan-card--highlight) .preview-plan-price { color: #1A1410; }
-        .preview-plan-period {
-          font-size: 14px;
-        }
-        .preview-plan-card--highlight .preview-plan-period { color: rgba(255,255,255,0.65); }
-        .preview-plan-card:not(.preview-plan-card--highlight) .preview-plan-period { color: rgba(26,20,16,0.5); }
-        .preview-plan-features {
-          list-style: none;
-          padding: 0;
-          margin: 0 0 28px 0;
-          flex: 1;
-          display: flex;
-          flex-direction: column;
-          gap: 14px;
-        }
-        .preview-plan-feat {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          font-size: 14px;
-        }
-        .preview-plan-card--highlight .preview-plan-feat { color: rgba(255,255,255,0.88); }
-        .preview-plan-card:not(.preview-plan-card--highlight) .preview-plan-feat { color: rgba(26,20,16,0.75); }
-        .preview-plan-feat-dot {
-          flex-shrink: 0;
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-        }
-        .preview-plan-card--highlight .preview-plan-feat-dot { background: rgba(255,255,255,0.6); }
-        .preview-plan-card:not(.preview-plan-card--highlight) .preview-plan-feat-dot { background: #C4613A; }
-        .preview-plan-cta {
-          width: 100%;
-          padding: 15px 0;
-          border-radius: 10px;
-          font-weight: 700;
-          font-size: 14px;
-          letter-spacing: 0.03em;
-          cursor: pointer;
-          transition: opacity 0.2s, background 0.2s;
-          font-family: 'Plus Jakarta Sans', sans-serif;
-          border: none;
-        }
-        .preview-plan-cta--highlight {
-          background: #fff;
-          color: #C4613A;
-        }
-        .preview-plan-cta:not(.preview-plan-cta--highlight) {
-          background: transparent;
-          color: #C4613A;
-          border: 1.5px solid #C4613A;
-        }
-        .preview-plan-cta:not(:disabled):hover {
-          opacity: 0.85;
-        }
-        .preview-plan-cta:disabled {
-          cursor: wait;
-        }
-        .preview-trust {
-          display: flex;
-          justify-content: center;
-          gap: 24px;
-          margin-top: 28px;
-          flex-wrap: wrap;
-        }
-        .preview-trust-item {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          font-size: 12px;
-          color: #9c8c7e;
-        }
-        .preview-renewal-note {
-          text-align: center;
-          font-size: 10px;
-          color: rgba(156, 140, 126, 0.65);
-          margin-top: 16px;
-          line-height: 1.6;
-        }
-
-        /* ── Footer ── */
-        .preview-footer {
-          text-align: center;
-          padding: 72px 0 40px;
-          border-top: 1px solid rgba(196, 97, 58, 0.1);
-        }
-        .preview-quote {
-          font-family: 'Playfair Display', serif;
-          font-style: italic;
-          font-size: 26px;
-          color: rgba(26, 20, 16, 0.78);
-          margin-bottom: 20px;
-          line-height: 1.5;
-        }
-        .preview-quote-attr {
-          font-size: 11px;
-          font-weight: 700;
-          letter-spacing: 0.18em;
-          text-transform: uppercase;
-          color: #C4613A;
-          margin-bottom: 48px;
-        }
-        .preview-footer-links {
-          display: flex;
-          justify-content: center;
-          gap: 32px;
-          flex-wrap: wrap;
-        }
-        .preview-footer-link {
-          font-size: 10px;
-          font-weight: 700;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          color: rgba(26, 20, 16, 0.4);
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-        .preview-footer-link:hover {
-          color: #C4613A;
-        }
-      `}</style>
     </div>
   )
 }
