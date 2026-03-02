@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Image from 'next/image'
 import { useAuth } from '@/components/AuthProvider'
+import { useLanguage } from '@/components/LanguageContext'
 import { useTurnstile } from '@/lib/turnstile'
 import { apiPost, uploadPhoto } from '@/lib/api'
 import type { CityInput, PreviewResponse } from '../../../../packages/types'
@@ -21,34 +23,83 @@ interface CityWithDates extends CityInput {
   end_date: string
 }
 
+// ─── City image map ────────────────────────────────────────────────────────────
+
+const CITY_IMAGES: Record<string, string> = {
+  Paris:     'https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?q=80&w=200',
+  Tokyo:     'https://images.unsplash.com/photo-1583915223588-7d88ebf23414?q=80&w=200',
+  Barcelona: 'https://images.unsplash.com/photo-1745516314491-55ba68a55008?q=80&w=200',
+  Milan:     'https://images.unsplash.com/photo-1599804932675-f458d37ea3fc?q=80&w=200',
+  London:    'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?q=80&w=200',
+  'New York':'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=200',
+}
+
 // ─── Style options ────────────────────────────────────────────────────────────
 
 const STYLE_OPTIONS = [
-  { id: 'casual',     label: 'Casual',     sub: 'Relaxed & Easy' },
-  { id: 'minimalist', label: 'Minimalist', sub: 'Clean Lines' },
-  { id: 'streetwear', label: 'Streetwear', sub: 'Urban Edge' },
-  { id: 'classic',    label: 'Classic',    sub: 'Timeless Pieces' },
-  { id: 'sporty',     label: 'Sporty',     sub: 'Active' },
-  { id: 'bohemian',   label: 'Bohemian',   sub: 'Eclectic' },
-  { id: 'business',   label: 'Business',   sub: 'Professional' },
+  {
+    id: 'casual',
+    label: 'Casual',
+    sub: 'Relaxed & Easy',
+    img: 'https://images.unsplash.com/photo-1661099508870-5f959f1e151a?q=80&w=300',
+  },
+  {
+    id: 'minimalist',
+    label: 'Minimalist',
+    sub: 'Clean Lines',
+    img: 'https://images.unsplash.com/photo-1615453590051-9cc24146d6ae?q=80&w=300',
+  },
+  {
+    id: 'streetwear',
+    label: 'Streetwear',
+    sub: 'Urban Edge',
+    img: 'https://images.unsplash.com/photo-1766830423628-b4b636d0d907?q=80&w=300',
+  },
+  {
+    id: 'classic',
+    label: 'Classic',
+    sub: 'Timeless Pieces',
+    img: 'https://images.unsplash.com/photo-1560233144-905d47165782?q=80&w=300',
+  },
+  {
+    id: 'sporty',
+    label: 'Sporty',
+    sub: 'Active',
+    img: 'https://images.unsplash.com/photo-1759476532333-b392aec13318?q=80&w=300',
+  },
+  {
+    id: 'bohemian',
+    label: 'Bohemian',
+    sub: 'Eclectic',
+    img: 'https://images.unsplash.com/photo-1650623206556-fc1a59dd6c96?q=80&w=300',
+  },
 ]
 
 // ─── Step metadata ────────────────────────────────────────────────────────────
 
 const STEP_META: Record<Step, { label: string; subtitle: string; pct: number }> = {
   1: { label: 'Step 1 of 4', subtitle: 'Setting the scene',    pct: 25 },
-  2: { label: 'Step 2 of 4', subtitle: 'Personalizing your look', pct: 50 },
-  3: { label: 'Step 3 of 4', subtitle: 'Defining your look',   pct: 75 },
-  4: { label: 'Final Step',  subtitle: 'Ready for Departure',  pct: 100 },
+  2: { label: 'Step 2 of 4', subtitle: 'Defining your style',  pct: 50 },
+  3: { label: 'Step 3 of 4', subtitle: 'Adding your photo',    pct: 75 },
+  4: { label: 'Step 4 of 4', subtitle: 'Final review',         pct: 100 },
 }
 
-// ─── Right-panel quotes per step ──────────────────────────────────────────────
+// ─── Sidebar images per step ──────────────────────────────────────────────────
+
+const SIDEBAR_IMAGES: Record<Step, string> = {
+  1: 'https://images.unsplash.com/photo-1762883691346-0bf3da20c4b7?q=80&w=600',
+  2: 'https://images.unsplash.com/photo-1753161025583-06f2a298d622?q=80&w=600',
+  3: 'https://images.unsplash.com/photo-1769084701646-eb49280dae4e?q=80&w=600',
+  4: 'https://images.unsplash.com/photo-1762883691346-0bf3da20c4b7?q=80&w=600',
+}
+
+// ─── Quotes per step ──────────────────────────────────────────────────────────
 
 const QUOTES: Record<Step, { text: string; author: string }> = {
-  1: { text: '"The world is a book and those who do not travel read only one page."', author: 'St. Augustine' },
-  2: { text: '"Style is a way to say who you are without having to speak."', author: 'Rachel Zoe' },
-  3: { text: '"The joy of dressing is an art."', author: 'John Galliano' },
-  4: { text: '"The journey of a thousand miles begins with a single step."', author: 'Lao Tzu' },
+  1: { text: 'The world is a book and those who do not travel read only one page.', author: 'St. Augustine' },
+  2: { text: 'Style is a way to say who you are without having to speak.', author: 'Rachel Zoe' },
+  3: { text: 'The joy of dressing is an art.', author: 'John Galliano' },
+  4: { text: 'The journey of a thousand miles begins with a single step.', author: 'Lao Tzu' },
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -92,8 +143,35 @@ function DateSelect({
       max={MAX_DATE}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value)}
-      className="w-full px-3 py-2 rounded-lg border border-[#F5EFE6] bg-[#FDF8F3] text-[#1A1410] text-sm focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-colors disabled:opacity-40 cursor-pointer"
+      className="w-full px-3 py-2 rounded-lg border border-[#E8DDD4] bg-[#FDF8F3] text-[#292524] text-sm focus:outline-none focus:ring-2 focus:ring-[#C4613A]/30 focus:border-[#C4613A] transition-colors disabled:opacity-40 cursor-pointer"
     />
+  )
+}
+
+// ─── ProgressBar sub-component ────────────────────────────────────────────────
+
+function ProgressBar({ step }: { step: Step }) {
+  const meta = STEP_META[step]
+  return (
+    <div className="mb-10">
+      <div className="flex justify-between items-end mb-2">
+        <span className="text-[#C4613A] font-semibold text-sm uppercase tracking-widest">
+          {meta.label}
+        </span>
+        <span className="text-[#57534e] text-xs font-medium uppercase tracking-wider">
+          {meta.pct}%
+        </span>
+      </div>
+      <div className="h-1.5 w-full bg-[#C4613A]/10 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-[#C4613A] rounded-full transition-all duration-700"
+          style={{ width: `${meta.pct}%` }}
+        />
+      </div>
+      <p className="mt-1.5 text-[#C4613A]/60 text-xs font-medium uppercase italic tracking-wide">
+        {meta.subtitle}
+      </p>
+    </div>
   )
 }
 
@@ -102,6 +180,7 @@ function DateSelect({
 export default function TripClient() {
   const router = useRouter()
   const { user, loading: authLoading } = useAuth()
+  const { t, displayFont } = useLanguage()
   const { token: turnstileToken, containerRef: turnstileRef, reset: resetTurnstile } = useTurnstile()
 
   // Auth guard
@@ -121,21 +200,15 @@ export default function TripClient() {
   const [suggestions, setSuggestions] = useState<typeof CITY_DB>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
 
-  // ── Step 2: Profile ──
-  const [gender, setGender] = useState<'male' | 'female' | 'other' | null>(null)
-  const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric')
-  const [heightCm, setHeightCm] = useState('')
-  const [weightKg, setWeightKg] = useState('')
-  const [heightFt, setHeightFt] = useState('')
-  const [heightIn, setHeightIn] = useState('')
-  const [weightLb, setWeightLb] = useState('')
+  // ── Step 2: Aesthetics ──
+  const [aesthetics, setAesthetics] = useState<string[]>([])
 
-  // ── Step 3: Style + Photo ──
-  const [stylePrefs, setStylePrefs] = useState<string[]>([])
+  // ── Step 3: Photo ──
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const photoPreviewUrlRef = useRef<string | null>(null)
+  const dropZoneRef = useRef<HTMLDivElement>(null)
 
   // ── Submit ──
   const [submitting, setSubmitting] = useState(false)
@@ -186,11 +259,11 @@ export default function TripClient() {
         c.city.toLowerCase().startsWith(name.toLowerCase())
     )
     if (!match) {
-      setCityError(`"${name}" is not a supported city. Please search and select from the list.`)
+      setCityError(t.toast.cityRequired)
       return
     }
     if (cities.some((c) => c.name.toLowerCase() === match.city.toLowerCase())) {
-      setCityError(`${match.city} is already added.`)
+      setCityError(t.toast.cityAdded)
       return
     }
     setCities((prev) => [...prev, buildNewCity(match.city, match.country, match.lat, match.lon)])
@@ -220,13 +293,17 @@ export default function TripClient() {
     })
   }
 
-  // ─── Photo helper ──────────────────────────────────────────────────────────
+  // ─── Aesthetic helper ──────────────────────────────────────────────────────
 
-  function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
+  function toggleAesthetic(id: string) {
+    setAesthetics((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id])
+  }
+
+  // ─── Photo helpers ─────────────────────────────────────────────────────────
+
+  function applyPhotoFile(file: File) {
     if (file.size > 5 * 1024 * 1024) {
-      setSubmitError('Photo must be under 5MB. Please choose a smaller image.')
+      setSubmitError(t.toast.imageTooLarge)
       return
     }
     if (photoPreviewUrlRef.current) URL.revokeObjectURL(photoPreviewUrlRef.current)
@@ -234,10 +311,22 @@ export default function TripClient() {
     photoPreviewUrlRef.current = url
     setPhoto(file)
     setPhotoPreview(url)
+    setSubmitError(null)
   }
 
-  function toggleStyle(id: string) {
-    setStylePrefs((prev) => prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id])
+  function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) applyPhotoFile(file)
+  }
+
+  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith('image/')) applyPhotoFile(file)
+  }
+
+  function onDragOver(e: React.DragEvent<HTMLDivElement>) {
+    e.preventDefault()
   }
 
   // ─── Validation ────────────────────────────────────────────────────────────
@@ -273,12 +362,12 @@ export default function TripClient() {
   // ─── Submit ────────────────────────────────────────────────────────────────
 
   async function handleSubmit() {
-    if (!step1Valid || !gender) return
+    if (!step1Valid) return
     setSubmitting(true)
     setSubmitError(null)
 
     if (!turnstileToken) {
-      setSubmitError('Security check failed. Please refresh the page and try again.')
+      setSubmitError('Security check not ready. Please wait a moment and try again.')
       setSubmitting(false)
       return
     }
@@ -290,15 +379,6 @@ export default function TripClient() {
         const result = await uploadPhoto(photo)
         face_url = result.face_url
       }
-
-      const resolvedHeightCm = unitSystem === 'metric'
-        ? (heightCm ? parseInt(heightCm) : undefined)
-        : (heightFt || heightIn
-            ? Math.round((parseInt(heightFt || '0') * 12 + parseInt(heightIn || '0')) * 2.54)
-            : undefined)
-      const resolvedWeightKg = unitSystem === 'metric'
-        ? (weightKg ? parseInt(weightKg) : undefined)
-        : (weightLb ? Math.round(parseInt(weightLb) * 0.453592) : undefined)
 
       const citiesWithDays: CityInput[] = cities.map((c) => ({
         name: c.name,
@@ -321,10 +401,7 @@ export default function TripClient() {
         month: getMonthFromDate(overallStartDate),
         start_date: overallStartDate,
         end_date: overallEndDate,
-        gender,
-        ...(resolvedHeightCm ? { height_cm: resolvedHeightCm } : {}),
-        ...(resolvedWeightKg ? { weight_kg: resolvedWeightKg } : {}),
-        ...(stylePrefs.length > 0 ? { style_preferences: stylePrefs } : {}),
+        ...(aesthetics.length > 0 ? { style_preferences: aesthetics } : {}),
         cf_turnstile_token: token,
         ...(face_url ? { face_url } : {}),
       })
@@ -343,34 +420,61 @@ export default function TripClient() {
   if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[#b8552e]/30 border-t-[#b8552e] rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" />
       </div>
     )
   }
 
-  const meta = STEP_META[step]
   const quote = QUOTES[step]
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-screen">
+    <div className="min-h-screen bg-[#FDF8F3] grid grid-cols-1 lg:grid-cols-[2fr_3fr]">
 
-      {/* ═══ LEFT PANEL ═══════════════════════════════════════════════════════ */}
-      <main className="flex-1 lg:w-3/5 flex flex-col bg-[#FDF8F3] overflow-y-auto">
+      {/* ═══ LEFT SIDEBAR (desktop only) ══════════════════════════════════════ */}
+      <div className="relative hidden lg:block bg-[#1A1410]">
+        <Image
+          src={SIDEBAR_IMAGES[step]}
+          alt=""
+          fill
+          className="object-cover opacity-60 transition-opacity duration-700"
+          unoptimized
+          priority={step === 1}
+          aria-hidden="true"
+        />
+        {/* Gradient overlay for readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+
+        {/* Quote block */}
+        <div className="absolute bottom-8 left-8 right-8 z-10">
+          <p
+            className="text-white text-xl leading-relaxed mb-3"
+            style={{ fontFamily: displayFont, fontStyle: 'italic' }}
+          >
+            &ldquo;{quote.text}&rdquo;
+          </p>
+          <span className="text-white/50 text-xs mt-2 block tracking-widest uppercase">
+            &mdash; {quote.author}
+          </span>
+        </div>
+      </div>
+
+      {/* ═══ RIGHT FORM PANEL ═════════════════════════════════════════════════ */}
+      <div className="px-8 py-12 lg:px-16 overflow-y-auto">
 
         {/* Logo row */}
-        <header className="flex items-center justify-between px-8 pt-8 pb-4">
+        <header className="flex items-center justify-between mb-10">
           <a href="/" className="flex items-center gap-2" aria-label="Travel Capsule AI home">
             <span
-              className="material-symbols-outlined text-3xl text-[#b8552e]"
+              className="material-symbols-outlined text-3xl text-[#C4613A]"
               aria-hidden="true"
             >
               luggage
             </span>
             <span
-              className="text-xl font-extrabold tracking-tight italic text-[#1A1410]"
-              style={{ fontFamily: 'Playfair Display, serif' }}
+              className="text-xl font-extrabold tracking-tight text-[#292524]"
+              style={{ fontFamily: displayFont, fontStyle: 'italic' }}
             >
               Travel Capsule AI
             </span>
@@ -378,736 +482,506 @@ export default function TripClient() {
         </header>
 
         {/* Progress bar */}
-        <div className="px-8 mb-10">
-          <div className="flex justify-between items-end mb-2">
-            <span className="text-[#b8552e] font-semibold text-sm uppercase tracking-widest">
-              {meta.label}
-            </span>
-            <span className="text-[#9c8c7e] text-xs font-medium uppercase tracking-wider">
-              {meta.pct}% Complete
-            </span>
-          </div>
-          <div className="h-1.5 w-full bg-[#b8552e]/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[#b8552e] rounded-full transition-all duration-700"
-              style={{ width: `${meta.pct}%` }}
-            />
-          </div>
-          <p className="mt-1.5 text-[#b8552e]/60 text-xs font-medium uppercase italic">
-            {meta.subtitle}
-          </p>
-        </div>
+        <ProgressBar step={step} />
 
-        {/* Step content */}
-        <div className="flex-1 px-8 pb-8">
+        {/* ─── STEP 1: Destinations ─────────────────────────────────────────── */}
+        {step === 1 && (
+          <div>
+            <h1
+              className="text-4xl md:text-5xl text-[#292524] leading-tight mb-3"
+              style={{ fontFamily: displayFont }}
+            >
+              Where are you heading?
+            </h1>
+            <p className="text-[#57534e] text-base max-w-xl leading-relaxed mb-8">
+              {t.form.sub}
+            </p>
 
-          {/* ─── STEP 1: Destinations ──────────────────────────────────────── */}
-          {step === 1 && (
-            <div>
-              <h1
-                className="text-5xl md:text-6xl text-[#1A1410] leading-tight mb-4"
-                style={{ fontFamily: 'Playfair Display, serif' }}
-              >
-                Where are you heading?
-              </h1>
-              <p className="text-[#1A1410]/60 text-lg max-w-xl leading-relaxed mb-10">
-                Our AI will analyze the destination's unique vibe and real-time weather to curate your perfect wardrobe.
-              </p>
-
-              {/* City search */}
-              <div className="relative mb-6">
-                <div className="flex flex-col md:flex-row gap-3">
-                  <div className="flex-1 relative group">
-                    <span
-                      className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#b8552e]/40 group-focus-within:text-[#b8552e] transition-colors select-none"
-                      aria-hidden="true"
-                    >
-                      location_on
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Search city... (e.g. Paris, Tokyo)"
-                      value={cityInput}
-                      onChange={(e) => onCityInputChange(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault()
-                          suggestions.length > 0 ? addCityFromSuggestion(suggestions[0]) : addCityFreeText()
-                        }
-                        if (e.key === 'Escape') setShowSuggestions(false)
-                      }}
-                      onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
-                      onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
-                      disabled={cities.length >= MAX_CITIES}
-                      className="w-full pl-12 pr-4 py-4 bg-white border-2 border-[#b8552e]/10 rounded-xl text-[#1A1410] placeholder:text-[#9c8c7e] focus:outline-none focus:border-[#b8552e] transition-all text-base disabled:opacity-50"
-                    />
-                  </div>
-                  <button
-                    onClick={addCityFreeText}
-                    disabled={!cityInput.trim() || cities.length >= MAX_CITIES}
-                    className="px-8 py-4 bg-[#b8552e] text-white font-bold rounded-xl shadow-lg shadow-[#b8552e]/20 hover:bg-[#a34828] transition-all flex items-center justify-center gap-2 group disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+            {/* City search */}
+            <div className="relative mb-6">
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="flex-1 relative group">
+                  <span
+                    className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-[#C4613A]/40 group-focus-within:text-[#C4613A] transition-colors select-none"
+                    aria-hidden="true"
                   >
-                    <span>Add Destination</span>
-                    <span
-                      className="material-symbols-outlined text-lg group-hover:translate-x-1 transition-transform"
-                      aria-hidden="true"
-                    >
-                      arrow_forward
-                    </span>
-                  </button>
+                    location_on
+                  </span>
+                  <input
+                    type="text"
+                    placeholder={t.form.cityPlaceholder}
+                    value={cityInput}
+                    onChange={(e) => onCityInputChange(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        suggestions.length > 0 ? addCityFromSuggestion(suggestions[0]) : addCityFreeText()
+                      }
+                      if (e.key === 'Escape') setShowSuggestions(false)
+                    }}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                    onFocus={() => suggestions.length > 0 && setShowSuggestions(true)}
+                    disabled={cities.length >= MAX_CITIES}
+                    className="w-full pl-12 pr-4 py-4 bg-white border-2 border-[#E8DDD4] rounded-xl text-[#292524] placeholder:text-[#57534e]/60 focus:outline-none focus:border-[#C4613A] transition-all text-base disabled:opacity-50"
+                  />
                 </div>
-
-                {cityError && (
-                  <p className="mt-2 text-xs text-red-500 flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-sm" aria-hidden="true">error</span>
-                    {cityError}
-                  </p>
-                )}
-
-                {showSuggestions && (
-                  <div className="absolute z-10 top-full mt-1 w-full bg-white rounded-xl border border-[#F5EFE6] shadow-lg overflow-hidden">
-                    {suggestions.map((s) => (
-                      <button
-                        key={`${s.city}-${s.country}`}
-                        onMouseDown={() => addCityFromSuggestion(s)}
-                        className="w-full text-left px-4 py-3 hover:bg-[#FDF8F3] flex items-start gap-3 border-b border-[#F5EFE6] last:border-0 transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[#b8552e]/40 text-base mt-0.5" aria-hidden="true">location_on</span>
-                        <div>
-                          <span className="font-medium text-[#1A1410] text-sm">{s.city}</span>
-                          <span className="text-[#9c8c7e] text-sm ml-1.5">{s.country}</span>
-                          <p className="text-xs text-[#b8552e]/70 italic mt-0.5">{s.mood_name}</p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* City list */}
-              {cities.length > 0 && (
-                <div className="space-y-4 mb-8">
-                  <h3 className="text-[#1A1410] font-bold text-sm uppercase tracking-wider flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#b8552e] text-lg" aria-hidden="true">list_alt</span>
-                    Current Itinerary
-                  </h3>
-                  {cities.map((city, i) => {
-                    const nights = getNightCount(city.start_date, city.end_date)
-                    const prevCityEnd = i > 0 ? cities[i - 1].end_date : ''
-                    const minStart = i === 0 ? TODAY : (prevCityEnd || TODAY)
-
-                    return (
-                      <div
-                        key={city.name}
-                        className="bg-white p-5 rounded-xl border border-[#b8552e]/10 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-5"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-[#b8552e]/10 flex items-center justify-center flex-shrink-0">
-                            <span className="material-symbols-outlined text-[#b8552e] text-lg" aria-hidden="true">location_city</span>
-                          </div>
-                          <div>
-                            <p className="font-bold text-[#1A1410] text-sm">{city.name}, {city.country}</p>
-                            {nights > 0 && (
-                              <p className="text-[#9c8c7e] text-xs">{nights} night{nights !== 1 ? 's' : ''}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-3 flex-wrap">
-                          <div className="flex flex-col">
-                            <label className="text-[10px] uppercase font-bold text-[#9c8c7e] mb-1">From</label>
-                            <DateSelect
-                              value={city.start_date}
-                              onChange={(v) => updateCityDate(i, 'start_date', v)}
-                              min={minStart}
-                            />
-                          </div>
-                          <span className="material-symbols-outlined text-[#9c8c7e]/50 mt-4" aria-hidden="true">arrow_right_alt</span>
-                          <div className="flex flex-col">
-                            <label className="text-[10px] uppercase font-bold text-[#9c8c7e] mb-1">To</label>
-                            <DateSelect
-                              value={city.end_date}
-                              onChange={(v) => updateCityDate(i, 'end_date', v)}
-                              disabled={!city.start_date}
-                              min={city.start_date ? (() => {
-                                const d = new Date(city.start_date + 'T00:00:00')
-                                d.setDate(d.getDate() + 1)
-                                return d.toISOString().split('T')[0]
-                              })() : TODAY}
-                            />
-                          </div>
-                          <button
-                            onClick={() => removeCity(city.name)}
-                            className="mt-4 p-2 text-[#9c8c7e]/50 hover:text-red-500 transition-colors"
-                            aria-label={`Remove ${city.name}`}
-                          >
-                            <span className="material-symbols-outlined" aria-hidden="true">delete</span>
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-
-              {/* Total summary */}
-              {step1Valid && cities.length > 0 && (
-                <div className="mb-8 px-5 py-4 bg-white rounded-xl border border-[#b8552e]/10 flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-[#1A1410]">
-                      {formatDateDisplay(overallStartDate)} → {formatDateDisplay(overallEndDate)}
-                    </p>
-                    <p className="text-xs text-[#9c8c7e] mt-0.5">
-                      {totalNights} night{totalNights !== 1 ? 's' : ''}
-                      {cities.length > 1 && ` · ${cities.length} destinations`}
-                    </p>
-                  </div>
-                  <span className="material-symbols-outlined text-[#b8552e] text-2xl" aria-hidden="true">flight</span>
-                </div>
-              )}
-
-              {/* Nav footer */}
-              <div className="mt-12 flex justify-between items-center border-t border-[#b8552e]/10 pt-8">
-                <a
-                  href="/"
-                  className="text-[#9c8c7e] font-bold hover:text-[#b8552e] transition-colors flex items-center gap-2 text-sm"
-                >
-                  <span className="material-symbols-outlined" aria-hidden="true">west</span>
-                  Back
-                </a>
                 <button
-                  onClick={() => goTo(2)}
-                  disabled={!step1Valid}
-                  className="bg-[#b8552e] text-white px-10 py-4 rounded-full font-bold shadow-xl shadow-[#b8552e]/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+                  onClick={addCityFreeText}
+                  disabled={!cityInput.trim() || cities.length >= MAX_CITIES}
+                  className="px-7 py-4 bg-[#C4613A] text-white font-semibold rounded-xl hover:bg-[#a34828] transition-colors flex items-center justify-center gap-2 flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  Continue to Style Profile
+                  Add
+                  <span className="material-symbols-outlined text-base" aria-hidden="true">add</span>
                 </button>
               </div>
-            </div>
-          )}
 
-          {/* ─── STEP 2: Personalize ───────────────────────────────────────── */}
-          {step === 2 && (
-            <div>
-              <h1
-                className="text-5xl md:text-6xl text-[#1A1410] leading-tight mb-4"
-                style={{ fontFamily: 'Playfair Display, serif' }}
-              >
-                Personalize your look
-              </h1>
-              <p className="text-[#1A1410]/60 text-lg max-w-xl leading-relaxed mb-12">
-                Sharing your preferences helps our AI tailor silhouette suggestions and fit recommendations for your unique profile.
-              </p>
+              {cityError && (
+                <p className="mt-2 text-xs text-red-500 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-sm" aria-hidden="true">error</span>
+                  {cityError}
+                </p>
+              )}
 
-              {/* Gender selection */}
-              <div className="space-y-6 mb-12">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#1A1410]/80 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-base" aria-hidden="true">person</span>
-                  Gender Selection
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {([
-                    { val: 'male' as const, label: 'Male', icon: (
-                      <svg fill="none" height="40" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="40">
-                        <circle cx="10" cy="14" r="5" />
-                        <path d="M19 5L13.5 10.5M19 5V9M19 5H15" />
-                      </svg>
-                    )},
-                    { val: 'female' as const, label: 'Female', icon: (
-                      <svg fill="none" height="40" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="40">
-                        <circle cx="12" cy="9" r="5" />
-                        <path d="M12 14V22M9 19H15" />
-                      </svg>
-                    )},
-                    { val: 'other' as const, label: 'Non-binary', icon: (
-                      <svg fill="none" height="40" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" viewBox="0 0 24 24" width="40">
-                        <circle cx="12" cy="12" r="3" />
-                        <path d="M12 15v5M15 18h-6M12 4v5M9 7h6" />
-                      </svg>
-                    )},
-                  ]).map(({ val, label, icon }) => (
+              {showSuggestions && (
+                <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-[#E8DDD4] shadow-lg overflow-hidden">
+                  {suggestions.map((s) => (
                     <button
-                      key={val}
-                      onClick={() => setGender(val)}
-                      className={`flex flex-col items-center justify-center p-8 border-2 rounded-xl cursor-pointer transition-all ${
-                        gender === val
-                          ? 'border-[#b8552e] bg-white shadow-lg shadow-[#b8552e]/10'
-                          : 'border-[#F5EFE6] hover:border-[#b8552e]/30'
-                      }`}
+                      key={`${s.city}-${s.country}`}
+                      onMouseDown={() => addCityFromSuggestion(s)}
+                      className="w-full text-left px-4 py-3 hover:bg-[#FDF8F3] flex items-start gap-3 border-b border-[#E8DDD4] last:border-0 transition-colors"
                     >
-                      <span className={`mb-4 transition-colors ${gender === val ? 'text-[#b8552e]' : 'text-[#1A1410]/30'}`}>
-                        {icon}
-                      </span>
-                      <span className="font-medium text-[#1A1410]">{label}</span>
+                      <span className="material-symbols-outlined text-[#C4613A]/40 text-base mt-0.5" aria-hidden="true">location_on</span>
+                      <div>
+                        <span className="font-medium text-[#292524] text-sm">{s.city}</span>
+                        <span className="text-[#57534e] text-sm ml-1.5">{s.country}</span>
+                        <p className="text-xs text-[#C4613A]/70 italic mt-0.5">{s.mood_name}</p>
+                      </div>
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Body info */}
-              <div className="space-y-6 mb-12">
-                <h3 className="text-sm font-bold uppercase tracking-widest text-[#1A1410]/80 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-base" aria-hidden="true">info</span>
-                  Body Info (Optional)
-                </h3>
-
-                {/* Unit toggle */}
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center bg-[#F5EFE6] rounded-full p-0.5 gap-0.5">
-                    {(['metric', 'imperial'] as const).map((u) => (
-                      <button
-                        key={u}
-                        onClick={() => setUnitSystem(u)}
-                        className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
-                          unitSystem === u
-                            ? 'bg-[#1A1410] text-white shadow-sm'
-                            : 'text-[#9c8c7e] hover:text-[#1A1410]'
-                        }`}
-                      >
-                        {u === 'metric' ? 'cm / kg' : 'ft / lb'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {unitSystem === 'metric' ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-[#1A1410]/50 uppercase" htmlFor="height-cm">
-                        Height (cm)
-                      </label>
-                      <input
-                        id="height-cm"
-                        type="number"
-                        placeholder="e.g. 175"
-                        value={heightCm}
-                        min={100} max={250}
-                        onChange={(e) => setHeightCm(e.target.value)}
-                        className="w-full bg-white border border-[#F5EFE6] rounded-xl p-4 text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-all"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-[#1A1410]/50 uppercase" htmlFor="weight-kg">
-                        Weight (kg)
-                      </label>
-                      <input
-                        id="weight-kg"
-                        type="number"
-                        placeholder="e.g. 65"
-                        value={weightKg}
-                        min={30} max={200}
-                        onChange={(e) => setWeightKg(e.target.value)}
-                        className="w-full bg-white border border-[#F5EFE6] rounded-xl p-4 text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-all"
-                      />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                    <div className="sm:col-span-2 space-y-2">
-                      <label className="block text-xs font-semibold text-[#1A1410]/50 uppercase">Height</label>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="relative">
-                          <input
-                            type="number" placeholder="5" value={heightFt} min={3} max={8}
-                            onChange={(e) => setHeightFt(e.target.value)}
-                            className="w-full bg-white border border-[#F5EFE6] rounded-xl p-4 pr-9 text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-all"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">ft</span>
-                        </div>
-                        <div className="relative">
-                          <input
-                            type="number" placeholder="7" value={heightIn} min={0} max={11}
-                            onChange={(e) => setHeightIn(e.target.value)}
-                            className="w-full bg-white border border-[#F5EFE6] rounded-xl p-4 pr-8 text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-all"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">in</span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <label className="block text-xs font-semibold text-[#1A1410]/50 uppercase">Weight</label>
-                      <div className="relative">
-                        <input
-                          type="number" placeholder="145" value={weightLb} min={66} max={440}
-                          onChange={(e) => setWeightLb(e.target.value)}
-                          className="w-full bg-white border border-[#F5EFE6] rounded-xl p-4 pr-9 text-[#1A1410] placeholder:text-[#9c8c7e]/50 focus:outline-none focus:ring-2 focus:ring-[#b8552e]/30 focus:border-[#b8552e] transition-all"
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#9c8c7e]">lb</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Nav footer */}
-              <div className="pt-8 border-t border-[#F5EFE6] flex flex-col sm:flex-row items-center justify-between gap-6">
-                <button
-                  onClick={() => goTo(1)}
-                  className="flex items-center gap-2 text-[#9c8c7e] hover:text-[#1A1410] font-medium transition-colors"
-                >
-                  <span className="material-symbols-outlined" aria-hidden="true">arrow_back</span>
-                  Back
-                </button>
-                <button
-                  onClick={() => goTo(3)}
-                  disabled={!gender}
-                  className="w-full sm:w-auto px-10 py-4 bg-[#b8552e] hover:bg-[#a34828] text-white rounded-full font-semibold flex items-center justify-center gap-3 transition-all shadow-lg shadow-[#b8552e]/20 disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  Continue to Style Profile
-                  <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
-                </button>
-              </div>
+              )}
             </div>
-          )}
 
-          {/* ─── STEP 3: Style Profile ─────────────────────────────────────── */}
-          {step === 3 && (
-            <div>
-              <h1
-                className="text-5xl md:text-6xl text-[#1A1410] leading-tight mb-4"
-                style={{ fontFamily: 'Playfair Display, serif' }}
-              >
-                Your Style Profile
-              </h1>
-              <p className="text-[#1A1410]/60 text-lg max-w-xl leading-relaxed mb-12">
-                Select the aesthetics that define your travel vibe and let our AI personalise your recommendations.
-              </p>
+            {/* City list */}
+            {cities.length > 0 && (
+              <div className="space-y-3 mb-8">
+                {cities.map((city, i) => {
+                  const nights = getNightCount(city.start_date, city.end_date)
+                  const prevCityEnd = i > 0 ? cities[i - 1].end_date : ''
+                  const minStart = i === 0 ? TODAY : (prevCityEnd || TODAY)
+                  const cityImg = CITY_IMAGES[city.name]
 
-              {/* Aesthetic grid */}
-              <section className="mb-12">
-                <div className="mb-6">
-                  <h3
-                    className="text-2xl text-[#1A1410] mb-1"
-                    style={{ fontFamily: 'Playfair Display, serif' }}
-                  >
-                    Select Your Aesthetic
-                  </h3>
-                  <p className="text-[#9c8c7e] text-sm">Choose the looks that best represent your travel personality.</p>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {STYLE_OPTIONS.map(({ id, label, sub }) => {
-                    const selected = stylePrefs.includes(id)
-                    return (
-                      <button
-                        key={id}
-                        onClick={() => toggleStyle(id)}
-                        className="group cursor-pointer text-left"
-                      >
-                        <div className={`relative aspect-[4/5] mb-2 overflow-hidden rounded-xl border-2 transition-all duration-300 ${
-                          selected
-                            ? 'border-[#b8552e] shadow-lg shadow-[#b8552e]/10'
-                            : 'border-transparent group-hover:border-[#b8552e]'
-                        } bg-gradient-to-br ${STYLE_BG[id]}`}>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-4xl" aria-hidden="true">{STYLE_EMOJI[id]}</span>
-                          </div>
-                          {selected && (
-                            <div className="absolute top-2 right-2 bg-[#b8552e] text-white rounded-full p-1">
-                              <span className="material-symbols-outlined text-xs font-bold block" aria-hidden="true">check</span>
+                  return (
+                    <div
+                      key={city.name}
+                      className="bg-white p-4 rounded-xl border border-[#E8DDD4] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center gap-3">
+                        {/* City image or fallback */}
+                        <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#E8DDD4] relative">
+                          {cityImg ? (
+                            <Image
+                              src={cityImg}
+                              alt={city.name}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="material-symbols-outlined text-[#C4613A] text-lg" aria-hidden="true">location_city</span>
                             </div>
                           )}
                         </div>
-                        <p className="font-bold text-sm text-center text-[#1A1410]">{label}</p>
-                        <p className="text-[10px] text-[#9c8c7e] text-center uppercase tracking-widest">{sub}</p>
-                      </button>
-                    )
-                  })}
-
-                  {/* Custom card */}
-                  <div className="group cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-[#9c8c7e]/30 rounded-xl hover:border-[#b8552e] transition-colors aspect-[4/5]">
-                    <span className="material-symbols-outlined text-3xl text-[#9c8c7e]/50 group-hover:text-[#b8552e] mb-2" aria-hidden="true">add</span>
-                    <p className="text-xs font-bold text-[#9c8c7e] group-hover:text-[#b8552e]">Custom</p>
-                  </div>
-                </div>
-              </section>
-
-              {/* AI personalization / photo upload */}
-              <section className="mb-12">
-                <div className="bg-white p-8 rounded-2xl border border-[#b8552e]/10 shadow-sm">
-                  <div className="flex flex-col md:flex-row gap-8 items-center">
-                    <div className="flex-1 space-y-4">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#b8552e]/10 text-[#b8552e] rounded-full">
-                        <span className="material-symbols-outlined text-sm" aria-hidden="true">auto_awesome</span>
-                        <span className="text-[10px] font-bold uppercase tracking-widest">AI Personalization</span>
+                        <div>
+                          <p className="font-semibold text-[#292524] text-sm">{city.name}, {city.country}</p>
+                          {nights > 0 && (
+                            <p className="text-[#57534e] text-xs">{nights} night{nights !== 1 ? 's' : ''}</p>
+                          )}
+                        </div>
                       </div>
-                      <h3
-                        className="text-2xl text-[#1A1410]"
-                        style={{ fontFamily: 'Playfair Display, serif' }}
-                      >
-                        Personalize with AI
-                      </h3>
-                      <p className="text-[#9c8c7e] text-sm leading-relaxed">
-                        Upload a photo of yourself to help our AI recommend pieces that complement your unique features.
-                        <span className="ml-1 italic">(optional)</span>
-                      </p>
-                    </div>
 
-                    <div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp"
-                        onChange={onPhotoChange}
-                        className="hidden"
-                        aria-label="Upload face photo"
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <div className="flex flex-col">
+                          <label className="text-[10px] uppercase font-bold text-[#57534e] mb-1">From</label>
+                          <DateSelect
+                            value={city.start_date}
+                            onChange={(v) => updateCityDate(i, 'start_date', v)}
+                            min={minStart}
+                          />
+                        </div>
+                        <span className="material-symbols-outlined text-[#57534e]/50 mt-4" aria-hidden="true">arrow_right_alt</span>
+                        <div className="flex flex-col">
+                          <label className="text-[10px] uppercase font-bold text-[#57534e] mb-1">To</label>
+                          <DateSelect
+                            value={city.end_date}
+                            onChange={(v) => updateCityDate(i, 'end_date', v)}
+                            disabled={!city.start_date}
+                            min={city.start_date ? (() => {
+                              const d = new Date(city.start_date + 'T00:00:00')
+                              d.setDate(d.getDate() + 1)
+                              return d.toISOString().split('T')[0]
+                            })() : TODAY}
+                          />
+                        </div>
+                        <button
+                          onClick={() => removeCity(city.name)}
+                          className="mt-4 p-2 text-[#57534e]/40 hover:text-red-500 transition-colors"
+                          aria-label={`Remove ${city.name}`}
+                        >
+                          <span className="material-symbols-outlined text-lg" aria-hidden="true">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Total summary */}
+            {step1Valid && cities.length > 0 && (
+              <div className="mb-8 px-5 py-4 bg-white rounded-xl border border-[#E8DDD4] flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-[#292524]">
+                    {formatDateDisplay(overallStartDate)} &rarr; {formatDateDisplay(overallEndDate)}
+                  </p>
+                  <p className="text-xs text-[#57534e] mt-0.5">
+                    {totalNights} night{totalNights !== 1 ? 's' : ''}
+                    {cities.length > 1 && ` · ${cities.length} destinations`}
+                  </p>
+                </div>
+                <span className="material-symbols-outlined text-[#C4613A] text-2xl" aria-hidden="true">flight</span>
+              </div>
+            )}
+
+            {/* Nav footer */}
+            <div className="mt-10 flex justify-between items-center border-t border-[#E8DDD4] pt-8">
+              <a
+                href="/"
+                className="text-[#57534e] font-medium hover:text-[#C4613A] transition-colors flex items-center gap-2 text-sm"
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden="true">west</span>
+                Back
+              </a>
+              <button
+                onClick={() => goTo(2)}
+                disabled={!step1Valid}
+                className="bg-[#C4613A] text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-[#a34828] transition-colors flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Continue to Style Profile
+                <span className="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── STEP 2: Aesthetic ────────────────────────────────────────────── */}
+        {step === 2 && (
+          <div>
+            <h1
+              className="text-4xl md:text-5xl text-[#292524] leading-tight mb-3"
+              style={{ fontFamily: displayFont }}
+            >
+              What&apos;s your aesthetic?
+            </h1>
+            <p className="text-[#57534e] text-base max-w-xl leading-relaxed mb-8">
+              Select the styles that define your travel vibe. Choose as many as you like.
+            </p>
+
+            {/* Style card grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-10">
+              {STYLE_OPTIONS.map(({ id, label, sub, img }) => {
+                const selected = aesthetics.includes(id)
+                return (
+                  <button
+                    key={id}
+                    onClick={() => toggleAesthetic(id)}
+                    className={`group relative overflow-hidden rounded-xl border-2 text-left transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-[#C4613A]/50 ${
+                      selected
+                        ? 'border-[#C4613A] shadow-lg shadow-[#C4613A]/10'
+                        : 'border-[#E8DDD4] hover:border-[#C4613A]/50'
+                    }`}
+                    aria-pressed={selected}
+                  >
+                    {/* Image */}
+                    <div className="relative aspect-[3/4]">
+                      <Image
+                        src={img}
+                        alt={label}
+                        fill
+                        className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        unoptimized
                       />
-                      <div
-                        onClick={() => fileInputRef.current?.click()}
-                        onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
-                        role="button"
-                        tabIndex={0}
-                        className="w-full md:w-48 aspect-square relative border-2 border-dashed border-[#9c8c7e]/30 rounded-xl flex flex-col items-center justify-center bg-[#F5EFE6]/30 hover:bg-[#b8552e]/5 hover:border-[#b8552e] transition-all cursor-pointer group"
-                      >
-                        {photoPreview ? (
-                          <>
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={photoPreview}
-                              alt="Selected photo preview"
-                              className="w-full h-full object-cover rounded-xl"
-                            />
-                            <div className="absolute inset-0 bg-black/30 rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                              <span className="text-white text-xs font-bold">Change</span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <span className="material-symbols-outlined text-3xl text-[#9c8c7e]/40 group-hover:text-[#b8552e] transition-colors" aria-hidden="true">add_a_photo</span>
-                            <span className="text-[10px] font-bold text-[#9c8c7e]/60 mt-2 uppercase">Upload Photo</span>
-                          </>
-                        )}
+                      {/* Dark gradient overlay */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+
+                      {/* Check badge */}
+                      {selected && (
+                        <div className="absolute top-2.5 right-2.5 w-6 h-6 bg-[#C4613A] rounded-full flex items-center justify-center shadow-md">
+                          <span className="material-symbols-outlined text-white text-xs font-bold" aria-hidden="true">check</span>
+                        </div>
+                      )}
+
+                      {/* Label overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <p className="font-semibold text-white text-sm leading-tight">{label}</p>
+                        <p className="text-white/70 text-[10px] uppercase tracking-widest">{sub}</p>
                       </div>
                     </div>
-                  </div>
-                </div>
-              </section>
+                  </button>
+                )
+              })}
+            </div>
 
-              {/* Nav footer */}
-              <div className="mt-8 flex justify-between items-center border-t border-[#b8552e]/10 pt-8">
+            {/* Nav footer */}
+            <div className="flex justify-between items-center border-t border-[#E8DDD4] pt-8">
+              <button
+                onClick={() => goTo(1)}
+                className="text-[#57534e] font-medium hover:text-[#C4613A] transition-colors flex items-center gap-2 text-sm"
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden="true">west</span>
+                Back
+              </button>
+              <button
+                onClick={() => goTo(3)}
+                className="bg-[#C4613A] text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-[#a34828] transition-colors flex items-center gap-2"
+              >
+                Continue to Photo
+                <span className="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ─── STEP 3: Photo upload ─────────────────────────────────────────── */}
+        {step === 3 && (
+          <div>
+            <h1
+              className="text-4xl md:text-5xl text-[#292524] leading-tight mb-3"
+              style={{ fontFamily: displayFont }}
+            >
+              {t.form.photoLabel}
+              <span className="block text-2xl md:text-3xl text-[#57534e] font-normal mt-1">({t.form.photoOptional})</span>
+            </h1>
+            <p className="text-[#57534e] text-base max-w-xl leading-relaxed mb-8">
+              {t.form.photoSub}
+            </p>
+
+            {/* Drop zone */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={onPhotoChange}
+              className="hidden"
+              aria-label="Upload photo"
+            />
+
+            <div
+              ref={dropZoneRef}
+              onClick={() => fileInputRef.current?.click()}
+              onDrop={onDrop}
+              onDragOver={onDragOver}
+              onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
+              role="button"
+              tabIndex={0}
+              aria-label="Click or drag to upload a photo"
+              className="relative w-full max-w-sm mx-auto aspect-square border-2 border-dashed border-[#E8DDD4] rounded-2xl flex flex-col items-center justify-center bg-white hover:bg-[#FDF8F3] hover:border-[#C4613A]/50 transition-all cursor-pointer group overflow-hidden mb-6"
+            >
+              {photoPreview ? (
+                <>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photoPreview}
+                    alt="Selected photo preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="material-symbols-outlined text-white text-3xl mb-1" aria-hidden="true">photo_camera</span>
+                    <span className="text-white text-sm font-semibold">{t.form.photoChange}</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="material-symbols-outlined text-4xl text-[#57534e]/30 group-hover:text-[#C4613A] transition-colors mb-3" aria-hidden="true">add_a_photo</span>
+                  <p className="text-sm font-semibold text-[#292524]">{t.form.photoDrop}</p>
+                  <p className="text-[10px] text-[#57534e]/50 mt-3 uppercase tracking-widest">{t.form.photoFormats}</p>
+                </>
+              )}
+            </div>
+
+            {submitError && (
+              <p className="text-sm text-red-500 mb-4 text-center flex items-center justify-center gap-1.5" role="alert">
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">error</span>
+                {submitError}
+              </p>
+            )}
+
+            {/* Nav footer */}
+            <div className="flex justify-between items-center border-t border-[#E8DDD4] pt-8">
+              <button
+                onClick={() => goTo(2)}
+                className="text-[#57534e] font-medium hover:text-[#C4613A] transition-colors flex items-center gap-2 text-sm"
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden="true">west</span>
+                Back
+              </button>
+              <div className="flex items-center gap-4">
                 <button
-                  onClick={() => goTo(2)}
-                  className="text-[#9c8c7e] font-bold hover:text-[#b8552e] transition-colors flex items-center gap-2"
+                  onClick={() => goTo(4)}
+                  className="text-[#57534e] hover:text-[#292524] text-sm font-medium transition-colors"
                 >
-                  <span className="material-symbols-outlined" aria-hidden="true">west</span>
-                  Back
+                  Skip this step
                 </button>
-                <div className="flex items-center gap-6">
-                  <button
-                    onClick={() => goTo(4)}
-                    className="text-[#9c8c7e] hover:text-[#9c8c7e]/60 text-sm font-bold transition-colors"
-                  >
-                    Skip for now
-                  </button>
-                  <button
-                    onClick={() => goTo(4)}
-                    className="bg-[#b8552e] text-white px-10 py-4 rounded-full font-bold shadow-xl shadow-[#b8552e]/20 hover:scale-105 active:scale-95 transition-all"
-                  >
-                    Continue to Summary
-                  </button>
-                </div>
+                <button
+                  onClick={() => goTo(4)}
+                  className="bg-[#C4613A] text-white px-8 py-3.5 rounded-xl font-semibold hover:bg-[#a34828] transition-colors flex items-center gap-2"
+                >
+                  Continue to Review
+                  <span className="material-symbols-outlined text-base" aria-hidden="true">arrow_forward</span>
+                </button>
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {/* ─── STEP 4: Final Summary ─────────────────────────────────────── */}
-          {step === 4 && (
-            <div>
-              <span className="inline-block px-3 py-1 bg-[#b8552e]/10 text-[#b8552e] text-[10px] font-bold rounded-full border border-[#b8552e]/20 uppercase tracking-[0.2em] mb-6">
-                Final Step
-              </span>
-              <h1
-                className="text-5xl md:text-6xl text-[#1A1410] leading-tight mb-4"
-                style={{ fontFamily: 'Playfair Display, serif' }}
-              >
-                Ready for your getaway?
-              </h1>
-              <p className="text-[#1A1410]/60 text-lg max-w-xl leading-relaxed mb-10">
-                Review your trip details before we generate your custom capsule wardrobe.
-              </p>
+        {/* ─── STEP 4: Final review + submit ────────────────────────────────── */}
+        {step === 4 && (
+          <div>
+            <h1
+              className="text-4xl md:text-5xl text-[#292524] leading-tight mb-3"
+              style={{ fontFamily: displayFont }}
+            >
+              Ready to create your capsule?
+            </h1>
+            <p className="text-[#57534e] text-base max-w-xl leading-relaxed mb-8">
+              Review your trip details before we generate your custom capsule wardrobe.
+            </p>
 
-              {/* Trip summary card */}
-              <div className="bg-white rounded-2xl border border-[#b8552e]/10 shadow-sm overflow-hidden mb-10">
-                <div className="h-40 relative overflow-hidden bg-gradient-to-br from-[#1A1410] to-[#3a2820]">
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute bottom-6 left-8">
-                    <span className="px-3 py-1 bg-white/10 backdrop-blur-md text-white text-[10px] font-bold rounded-full border border-white/20 uppercase tracking-[0.2em] mb-2 inline-block">
-                      Trip Summary
-                    </span>
-                    <h3
-                      className="text-white text-3xl font-bold"
-                      style={{ fontFamily: 'Playfair Display, serif' }}
-                    >
-                      {cities.length > 0
-                        ? cities.map((c) => c.name).join(' · ')
-                        : 'Your Trip'}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="p-8 grid grid-cols-2 md:grid-cols-4 gap-6 bg-white">
-                  <div>
-                    <p className="text-[#9c8c7e] text-[10px] font-bold uppercase tracking-widest mb-1">Dates</p>
-                    <p className="text-[#1A1410] font-bold text-base">
-                      {overallStartDate && overallEndDate
-                        ? `${formatDateShort(overallStartDate)} – ${formatDateShort(overallEndDate)}`
-                        : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[#9c8c7e] text-[10px] font-bold uppercase tracking-widest mb-1">Duration</p>
-                    <p className="text-[#1A1410] font-bold text-base">
-                      {totalNights > 0 ? `${totalNights} Night${totalNights !== 1 ? 's' : ''}` : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[#9c8c7e] text-[10px] font-bold uppercase tracking-widest mb-1">Style</p>
-                    <p className="text-[#1A1410] font-bold text-base capitalize">
-                      {stylePrefs.length > 0 ? stylePrefs[0] : '—'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-[#9c8c7e] text-[10px] font-bold uppercase tracking-widest mb-1">Traveler</p>
-                    <p className="text-[#1A1410] font-bold text-base capitalize">
-                      {gender === 'other' ? 'Non-binary' : (gender ?? '—')}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="px-8 py-4 bg-[#FDF8F3] border-t border-[#b8552e]/10 flex justify-between items-center">
-                  <p className="text-sm text-[#9c8c7e] italic">Everything correct?</p>
-                  <button
-                    onClick={() => goTo(1)}
-                    className="text-[#b8552e] text-sm font-bold uppercase tracking-widest hover:underline flex items-center gap-2"
+            {/* Summary card */}
+            <div className="bg-white rounded-2xl border border-[#E8DDD4] shadow-sm overflow-hidden mb-8">
+              {/* Header strip */}
+              <div className="h-32 relative overflow-hidden bg-gradient-to-br from-[#1A1410] to-[#3a2820]">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                <div className="absolute bottom-5 left-6">
+                  <h3
+                    className="text-white text-2xl font-bold"
+                    style={{ fontFamily: displayFont }}
                   >
-                    Edit Details
-                    <span className="material-symbols-outlined text-sm" aria-hidden="true">edit</span>
-                  </button>
+                    {cities.length > 0 ? cities.map((c) => c.name).join(' · ') : 'Your Trip'}
+                  </h3>
                 </div>
               </div>
 
-              {/* Error message */}
-              {submitError && (
-                <p className="text-sm text-red-500 mb-4 text-center" role="alert">{submitError}</p>
-              )}
-
-              {/* Turnstile widget */}
-              <div className="flex justify-center mb-4">
-                <div ref={turnstileRef} className="overflow-hidden rounded-lg" />
-              </div>
-
-              {/* CTA */}
-              <div className="flex flex-col items-center gap-4">
-                <button
-                  onClick={handleSubmit}
-                  disabled={!step1Valid || gender === null || submitting}
-                  className="w-full max-w-md bg-[#b8552e] text-white py-5 rounded-2xl font-bold shadow-2xl shadow-[#b8552e]/30 hover:bg-[#a34828] hover:-translate-y-1 transition-all text-xl tracking-wide disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-3"
-                >
-                  {submitting ? (
-                    <>
-                      <svg className="animate-spin h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                      </svg>
-                      Analyzing...
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
-                      Analyze My Trip
-                    </>
-                  )}
-                </button>
-                <p className="text-[#9c8c7e] text-xs italic flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm" aria-hidden="true">verified</span>
-                  Free preview · Secure processing
-                </p>
-                <p className="text-[10px] text-[#9c8c7e]/60 uppercase tracking-widest">
-                  Your Closet, Curated
-                </p>
-              </div>
-
-              {/* What happens next */}
-              <div className="mt-12 p-6 bg-white rounded-2xl border border-[#b8552e]/10 flex items-start gap-4">
-                <span className="material-symbols-outlined text-[#b8552e]" aria-hidden="true">auto_awesome</span>
+              {/* Stats grid */}
+              <div className="p-6 grid grid-cols-2 md:grid-cols-3 gap-5">
                 <div>
-                  <p className="text-[#1A1410] text-xs font-bold uppercase tracking-widest mb-1">What happens next</p>
-                  <p className="text-[#9c8c7e] text-xs leading-relaxed">
-                    Our AI curates your perfect wardrobe by analyzing the local style scene, weather, and your aesthetic profile. You'll receive a free preview instantly.
+                  <p className="text-[#57534e] text-[10px] font-bold uppercase tracking-widest mb-1">{t.form.totalLabel}</p>
+                  <p className="text-[#292524] font-semibold text-sm">
+                    {overallStartDate && overallEndDate
+                      ? `${formatDateShort(overallStartDate)} – ${formatDateShort(overallEndDate)}`
+                      : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[#57534e] text-[10px] font-bold uppercase tracking-widest mb-1">{t.form.totalDays}</p>
+                  <p className="text-[#292524] font-semibold text-sm">
+                    {totalNights > 0 ? `${totalNights}` : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[#57534e] text-[10px] font-bold uppercase tracking-widest mb-1">{t.form.totalCities}</p>
+                  <p className="text-[#292524] font-semibold text-sm capitalize">
+                    {aesthetics.length > 0 ? aesthetics.slice(0, 2).join(', ') : '—'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[#57534e] text-[10px] font-bold uppercase tracking-widest mb-1">{t.form.photoLabel}</p>
+                  <p className="text-[#292524] font-semibold text-sm">
+                    {photo ? t.form.photoUploaded : t.form.photoOptional}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[#57534e] text-[10px] font-bold uppercase tracking-widest mb-1">{t.form.cityLabel}</p>
+                  <p className="text-[#292524] font-semibold text-sm">
+                    {cities.length} {t.form.totalCities}
                   </p>
                 </div>
               </div>
 
-              {/* Nav footer */}
-              <div className="mt-8 pt-6 border-t border-[#b8552e]/10 flex justify-between items-center">
+              <div className="px-6 py-3 bg-[#FDF8F3] border-t border-[#E8DDD4] flex justify-end">
                 <button
-                  onClick={() => goTo(3)}
-                  className="text-[#9c8c7e] font-bold hover:text-[#b8552e] transition-colors flex items-center gap-2 text-sm"
+                  onClick={() => goTo(1)}
+                  className="text-[#C4613A] text-xs font-bold uppercase tracking-widest hover:underline flex items-center gap-1.5"
                 >
-                  <span className="material-symbols-outlined" aria-hidden="true">west</span>
-                  Back
+                  Edit details
+                  <span className="material-symbols-outlined text-sm" aria-hidden="true">edit</span>
                 </button>
-                <p className="text-[10px] text-[#9c8c7e]/50 uppercase tracking-widest">
-                  Protected by Turnstile
+              </div>
+            </div>
+
+            {/* Error message */}
+            {submitError && (
+              <p className="text-sm text-red-500 mb-4 text-center" role="alert">{submitError}</p>
+            )}
+
+            {/* Turnstile widget */}
+            <div className="flex justify-center mb-6">
+              <div ref={turnstileRef} className="overflow-hidden rounded-lg" />
+            </div>
+
+            {/* CTA */}
+            <div className="flex flex-col items-center gap-4 mb-6">
+              <button
+                onClick={handleSubmit}
+                disabled={!step1Valid || submitting}
+                className="w-full max-w-md bg-[#C4613A] text-white py-4 rounded-2xl font-bold hover:bg-[#a34828] hover:-translate-y-0.5 transition-all text-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-3 shadow-lg shadow-[#C4613A]/20"
+              >
+                {submitting ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                    </svg>
+                    {t.form.processing}
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined" aria-hidden="true">auto_awesome</span>
+                    {t.form.checkoutBtn}
+                  </>
+                )}
+              </button>
+              <p className="text-[#57534e] text-xs flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-sm" aria-hidden="true">verified</span>
+                {t.form.priceNote}
+              </p>
+            </div>
+
+            {/* What happens next */}
+            <div className="p-5 bg-white rounded-xl border border-[#E8DDD4] flex items-start gap-3">
+              <span className="material-symbols-outlined text-[#C4613A] text-xl mt-0.5" aria-hidden="true">auto_awesome</span>
+              <div>
+                <p className="text-[#292524] text-xs font-bold uppercase tracking-widest mb-1">What happens next</p>
+                <p className="text-[#57534e] text-xs leading-relaxed">
+                  Our AI curates your perfect wardrobe by analyzing the local style scene, weather, and your aesthetic profile. You&apos;ll receive a free preview instantly.
                 </p>
               </div>
             </div>
-          )}
-        </div>
-      </main>
 
-      {/* ═══ RIGHT PANEL (hidden on mobile) ══════════════════════════════════ */}
-      <aside className="hidden lg:block lg:w-2/5 relative min-h-screen overflow-hidden bg-[#1A1410]">
-        {/* Gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#3a2820] via-[#1A1410] to-[#0d0a08]" />
-        {/* Decorative texture overlay */}
-        <div
-          className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 30% 20%, #b8552e 0%, transparent 50%), radial-gradient(circle at 70% 80%, #D4AF37 0%, transparent 40%)',
-          }}
-        />
-        {/* Quote overlay */}
-        <div className="absolute bottom-16 left-10 right-10 z-20 text-white">
-          <div className="p-8 backdrop-blur-md bg-black/30 rounded-2xl border border-white/10 shadow-2xl">
-            <p
-              className="italic text-2xl mb-6 leading-relaxed text-white"
-              style={{ fontFamily: 'Playfair Display, serif' }}
-            >
-              {quote.text}
-            </p>
-            <div className="flex items-center gap-3">
-              <div className="h-px w-8 bg-[#b8552e]/60" />
-              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-white/70">
-                {quote.author}
-              </span>
+            {/* Nav footer */}
+            <div className="mt-8 pt-6 border-t border-[#E8DDD4] flex justify-between items-center">
+              <button
+                onClick={() => goTo(3)}
+                className="text-[#57534e] font-medium hover:text-[#C4613A] transition-colors flex items-center gap-2 text-sm"
+              >
+                <span className="material-symbols-outlined text-base" aria-hidden="true">west</span>
+                Back
+              </button>
             </div>
           </div>
-        </div>
-      </aside>
+        )}
+      </div>
     </div>
   )
-}
-
-// ─── Style card visual helpers ────────────────────────────────────────────────
-
-const STYLE_BG: Record<string, string> = {
-  casual:     'from-blue-50 to-sky-100',
-  minimalist: 'from-gray-50 to-slate-100',
-  streetwear: 'from-zinc-800 to-zinc-900',
-  classic:    'from-amber-50 to-yellow-100',
-  sporty:     'from-green-50 to-emerald-100',
-  bohemian:   'from-purple-50 to-fuchsia-100',
-  business:   'from-navy-50 to-slate-200',
-}
-
-const STYLE_EMOJI: Record<string, string> = {
-  casual:     '👕',
-  minimalist: '⬜',
-  streetwear: '🧢',
-  classic:    '🎩',
-  sporty:     '🏃',
-  bohemian:   '🌸',
-  business:   '👔',
 }

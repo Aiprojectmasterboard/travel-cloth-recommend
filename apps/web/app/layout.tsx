@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Plus_Jakarta_Sans, Noto_Serif_KR, Noto_Sans_KR, Noto_Serif_JP, Noto_Sans_JP, Noto_Serif_SC, Noto_Sans_SC } from 'next/font/google'
+import { Playfair_Display, Plus_Jakarta_Sans, DM_Sans, JetBrains_Mono, Noto_Serif_KR, Noto_Sans_KR, Noto_Serif_JP, Noto_Sans_JP, Noto_Serif_SC, Noto_Sans_SC } from 'next/font/google'
 import Script from 'next/script'
 import { LanguageProvider } from '@/components/LanguageContext'
 import { AuthProvider } from '@/components/AuthProvider'
@@ -22,6 +22,21 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   weight: ['300', '400', '500', '600'],
   variable: '--font-sans',
   display: 'swap',
+})
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-dm-sans',
+  display: 'swap',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500'],
+  variable: '--font-mono',
+  display: 'swap',
+  preload: false,
 })
 
 // Korean serif — for headings (replaces the clunky system serif fallback)
@@ -463,7 +478,7 @@ const jsonLdSoftwareApp = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${playfair.variable} ${plusJakartaSans.variable} ${notoSerifKR.variable} ${notoSansKR.variable} ${notoSerifJP.variable} ${notoSansJP.variable} ${notoSerifSC.variable} ${notoSansSC.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${plusJakartaSans.variable} ${dmSans.variable} ${jetbrainsMono.variable} ${notoSerifKR.variable} ${notoSansKR.variable} ${notoSerifJP.variable} ${notoSansJP.variable} ${notoSerifSC.variable} ${notoSansSC.variable}`}>
       <head>
         {/* JSON-LD Structured Data */}
         <script

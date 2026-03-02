@@ -7,47 +7,87 @@ import LanguageSwitcher from '@/components/LanguageSwitcher'
 import AuthButton from '@/components/AuthButton'
 import { useAuth } from '@/components/AuthProvider'
 
-// ─── Image URLs (from code.html reference) ────────────────────────────────────
+// ─── Image URLs (Unsplash — Figma Make design reference) ──────────────────────
 
-const IMG = {
-  heroBg:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuAgSj2pbRT-G9AC9wXIrTmJ_qtjAPln9lte-m5GQCnNY6BeghvVcuAJxbR0yqFWzd45CrW5iHOfir4FwSaQ3522IPMXSwFZ2p2oxvDoQqEyqKLll-Rp4QTVpu31VPLlHB7LWARwMp6cnqlHFH0gymv1isYq66pmSOLSULDiA3t7Szh0rUtZKIaTJtwyigj2H0Sd8JQnsCMFl9t9H9Ii6A_PVWgB-KXu4aqOggSdUr776NRy1BYaWi7p1sGLkN7xhZNZjVsj2sF7DQ',
-  trenchCoat:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuC0QW1uFIdIn5ymdXnw8rO7HWM1yPQErCAHjBF68T8juoSdWGJwqL0FFaG2JJB2j8Jqu2_NkfgzeUj4gQfmOaxk44r9Uldr7TozIuSaKkfAjZFH6va8iZi4Uf5CvvMYwUHpnVPhu5sSOUGsQnePtJ5V8HiUjTvKN3_D7RK1E9oiPDReDv-9LTKUlM4RcqdSO4s_fg3GZLp6B6KLjj7GJqkr-iq1FUfxYiPfk_mf_0fNx9tASiwNv9J0OAi_M1VNPQ8_jQzsa_LjPA',
-  cashmereCard:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCeJuGrlw7axZ0sA0w1EOrNpmTOu0U9Py1lxw1ypIkl_Z7KgEDPtzuOXsUxyOxsX7hV-yj4p3SAYoD5rkxjbXvlergO_tdNN9XZy4cXHSkaEtQJhhe-R_xfxw8gFnbyaF_uLxj4A-xT_egimrQghs6VYiS8szzHCjvRg27A33eYiSOXzByHkY83ROmPyBJEcKYIe8L7u7NaRHVTGtDoChHpEMjuRZhMdbX65EETd348QUhu4a8C6CnutMjb3h5khhE7Pebqn96ynw',
-  leatherBag:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuDdYUdg2gHbupVuXKm1B8gS0Y9n3Nec70OcsYcKvgWJMXiRLgyoqlcFOoG7HHWKEh1uiNAhBWFAZj18DQtrmz7ua1Vx5giyqzoC7ih2xDP5zyvJ3at6uG1hcroTmI5tjQuV4XD8duyt1OEurM5YYTUKs-NyKuQoggR4v20_puOLpaXwwDDDFDSSv_cP4Hvk0ZtqrHd8ZWCb0DSRd4dEanjKa-zfHaqKV5rwlD2dGtNL1qWxQf8mUgqGEKQ-B1fdkMgjbKSJTV0dqg',
-  woolCoat:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCemfaGwdXs2NhShpMv2CMVvtqCTDz2A0UwhvVyFxTr6WqjQwzck75V_uX2RblhR6ANusfEJyy6SRtncFKZfTvq_ActlA7G7DS0dYA_liv1v21bXt_HtxlY404h2aF_uIDahsSamyhtUAbG9V58uyvg4ZGAedl3bwrk16IpCG2tOmuTkuHdfNxxzyvqAFAaOI8IZW-w3UI5C6F3Mr-FHMBGQntOcFATx_u7iMJeEMK6IQL1nmoyadgt-OJ-NxU7s3wE_7BsQH1IgQ',
-  cashmereKnit:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBfwHU5olSEv1NR80ElRhrLBKGhY93BBkEoMWAsjYb1dRCDLI5yJqrIdwbf3ECegNs9TurPi86DBBn-sQoc_4sQZVHhD0fsOwXe2zF4oGZGhBsERriPg13pwIs__ilG9S_-noGqj2nYFzo8gs3Jussvcnc6shtSrGP1dhITC78axKu5jK6EtW-jy8ZQS9SplC6z2LZ2KUn30m4hO8GXM5PgTl0DPJxM766q8y5MdEDZ6PUjXTynIIE5J_cJGLA2v7orMtlrZib8WA',
-  trousers:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuDD9oWWIcIjP-aznFWBd-q3H4He0d0w8UUxDz-qwyEN46tdme1JJ2ExGbRQeMTJWRElXG7ZUdSyyBOxBfst1_FcY2vz3LvXNI9TKEaMWPGihyVoG8GVLlHfFxsc7l5SLl_ZO0C-18l_r_l_iN5f8Ysu-0D0spAwtXyrZ8tsa8O23fjZ1Ebq5GPvHCJpF99-n7AXQpcpPbGRmLc7MuT3Hweum_XQbnsHUuLE7c07AjL_Y7BCpV9Ov3OrpfecBEPsm20UdbPT_u1gGQ',
-  dress:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCY_Z4dVFsqmNG1_NsZRtO1BJH9AhfUhsJF6C4hF4ujNxjazt9_sv0X2koa6W8QROK6vQocJN9FCSUJEpt1Zfrq08AzqFE4xF_mX1X7Ue24hiucdsnspxVw7qAT1FnshghKmpKX3wmhrQshBjr3z2Ca9yLHtP_78L_pLU5TMg7NSNzRcUqn8vFvTzapdUL7h8_FKLJTanJf-lAXWa2jM-vizdCd6qSP1WOQDUoQ_9SDdVHB4JgToWmiA_hCN_sZXTxpM848g7Aspw',
-  scarf:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuB4qAubSHHgBljVm6DOKfqUsoXmdhT6I3-_Kh9PUSOTnxUk-Dmxk6yLOY42ZyyhN1QkPbWr-a_G2pBEh4Vz5DAiPwoutivyQoZm_Wi8zp_YKvjLEF3H9GKClYyYRXcZB-UDBcAm0GugMobPO2c3seNq6DUzwrYfVSwKsHBdeV7ppPAa1SRbxAlONcJYDqXBikK3GTyflJPdfxgMSj7Qippsu2hyJ3tg39gNFEDPHdja-jwz1uHQGjIkabhQ4yo_4-zPvlhsxgJI7Q',
-  flatLay:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuD-togGWB0KZ4ohk08kywsWm96PHZZUAEaDWcDR0wy-aGNGVxOWIasrCcCOa3DowAnQPcpVwiKq2tLPMhUu8d7GD25zaOb5yH1qKx3QrnHLBVGiP27hG2nFIrZf91OkwV4SV_iVGHBFlLmyjulH5216pMSQTRuw8SmYJuK6eO_nzk3AnmwGWTMvF7qQGOWURPwHxg1y8vfe1hvdCFuJ2uYly3tA3EZo9XUugtF1yNRA9CrpkWqHxasE0s8NVb1X2Rioo_m4xd_XAw',
-  activityItem1:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuAceC7ONHZRBP8g3rRB-ipmtUsVdIBIUQykf2Izln-Iwe5lMyCSwK40VL30VVw12Vqv77VEs0mZj3yzonrG1hPoihAdad4xyfK5oi-Yf0bUUWp6uOd2tJp09g_aT3rZ3qfEBmLS4AFPVoJQk6RdJCDLHLMGh2-0f8SSc7bsCjOIUKU6C78Q7cr6dKJDQ-TUOO_pZasf9QZY-tqUgUPXefk6JBnVvWoSotSrzmJLtCiPNdkO_kgPqpTlmaxDAYFos9ARg_wBf8Px_Q',
-  activityItem2:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuBMPmLbVV5AtzdfyvTb_q8jgkC0nFC8WxjVnf3GcGq0xOrqSABYVfxYnzAOuQm0xchHAbbcuGEMlgKY8GacNilLlA653_e8RaKQXaTA8ZOpZ6JmbJf3QiXkUYUKxyYkg9r8GRL8egq_Qd4yULsS0dO7p623cWjpJ-4Qm-Lg933gyFhS2mhafcZGmygG0cVBelxfE-4rvm6LB2AZ1XJGIXvFcP6thwDr7ULfphhHydhJDW0e0ZQXCOIP8Rr4wjvralzoUgfRW0hTxg',
-  activityItem3:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuD-vr6TZ9j8yg4tIOWkU46hGzFd_FSnMI98JlCAIzR7W5T_Bc1NJjEM7dwz_NpOeHekNl6xlz7kRP88WVXnONHJpHiqCTEmXCZp3lavkZUENRm9nM3bo57Lf2jwdFvrNrMQOeB817E_wMXzlvuH4znIw5KmugvMHw0RQIEdhoHfnK0q8ZerR-EBDrAAlFPplKVNP2MCcb7V8Eedvtg93xNB68gikRX4gbZaYaUJlgJ54NOnLL5Kha7IlXKweRxMGWaxED24rZ6Epg',
-  ctaBgTexture:
-    'https://lh3.googleusercontent.com/aida-public/AB6AXuCnBuyvhTfzkbN4sb5n0o1vP4I_D1OW-yxVuXmyTR7gUPXZSnR2Zvzjtpuy7S_tmkImkCKVyH6vq1q00yFZl_GPYU_f9oFZLvNhbWC5dpV1LH8qv8e4VM1qIW9vgCVNQ0419tyFFu49Gr46Na7d1hJGHivy1MAE3Fu7epiT9bVETQwEGUcPYyKUyzAvEymNIVjjW2Vj5cyUm1fUyTXWWt_a8-a1ItHi4zhqdpD3QnkBjZd8N1mc2nSZkUbxckBwcnliSoS0vG3xYw',
+const IMAGES = {
+  hero: 'https://images.unsplash.com/photo-1533026795897-5bb93fa969d4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1920',
+  clothingRack: 'https://images.unsplash.com/photo-1655252205431-5d0ef316837b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=900',
+  earthTone: 'https://images.unsplash.com/photo-1764697907661-322b4e1b51a8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
+  streetwear: 'https://images.unsplash.com/photo-1635650804263-1a1941e14df5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
+  resort: 'https://images.unsplash.com/photo-1722340319384-e3a9f24dff09?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=800',
 }
 
+// ─── Pricing plan data ────────────────────────────────────────────────────────
+
+const PLANS = [
+  {
+    id: 'standard',
+    name: 'Standard',
+    price: '$5',
+    period: 'one-time',
+    badge: null,
+    featured: false,
+    features: [
+      '1 city, 4 outfit images',
+      'Capsule wardrobe list (8–12 items)',
+      'Day-by-day outfit plan',
+      'Shareable gallery link',
+      'Photo deleted after generation',
+    ],
+    cta: 'Get Started',
+    href: '/trip',
+  },
+  {
+    id: 'pro',
+    name: 'Pro',
+    price: '$12',
+    period: 'one-time',
+    badge: 'Most Popular',
+    featured: true,
+    features: [
+      'Up to 5 cities, 4–6 images each',
+      'High-res outfit generation',
+      '1 free regeneration per city',
+      'Everything in Standard',
+      'Priority generation queue',
+    ],
+    cta: 'Start with Pro',
+    href: '/trip',
+  },
+  {
+    id: 'annual',
+    name: 'Annual',
+    price: '$29',
+    period: 'per year',
+    badge: 'Save $115/yr',
+    featured: false,
+    features: [
+      'All Pro features included',
+      'Up to 12 trips per year',
+      'Early access to new features',
+      'Member-only city guides',
+      'Dedicated support channel',
+    ],
+    cta: 'Join Annual',
+    href: '/trip',
+  },
+]
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export default function HomePage() {
-  const { t } = useLanguage()
+  const { t, locale } = useLanguage()
   const { user } = useAuth()
   const [scrolled, setScrolled] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
-  // CTA destination: /trip if logged in, /auth/login if not
-  const ctaHref = user ? '/trip' : '/auth/login'
+  const ctaHref = '/trip'
+
+  // Hero font size — CJK locales need slightly smaller clamp
+  const heroFontSize =
+    locale === 'ko' || locale === 'ja' || locale === 'zh'
+      ? 'clamp(40px, 6vw, 80px)'
+      : 'clamp(48px, 7vw, 96px)'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20)
@@ -76,29 +116,29 @@ export default function HomePage() {
               className="material-symbols-outlined text-primary text-2xl select-none"
               aria-hidden="true"
             >
-              all_inclusive
+              luggage
             </span>
             <span className="text-xs sm:text-sm font-bold tracking-widest uppercase font-playfair text-secondary">
-              Travel Capsule AI
+              Travel Capsule
             </span>
           </Link>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex items-center gap-8" aria-label="Main navigation">
             <a
-              href="#weather"
+              href="#intelligence"
               className="text-xs font-medium tracking-widest uppercase text-secondary/70 hover:text-primary transition-colors"
             >
               {t.nav.philosophy}
             </a>
             <a
-              href="#blueprint"
+              href="#capsules"
               className="text-xs font-medium tracking-widest uppercase text-secondary/70 hover:text-primary transition-colors"
             >
               {t.nav.curations}
             </a>
             <a
-              href="#guide"
+              href="#pricing"
               className="text-xs font-medium tracking-widest uppercase text-secondary/70 hover:text-primary transition-colors"
             >
               {t.nav.membership}
@@ -107,11 +147,8 @@ export default function HomePage() {
 
           {/* Right group */}
           <div className="flex items-center gap-1.5 sm:gap-4 shrink-0 min-w-0">
-            {/* Language switcher — always visible */}
             <LanguageSwitcher variant="dropdown" />
-            {/* Auth button — always visible */}
             <AuthButton />
-            {/* CTA — hidden on mobile (hero CTA is enough) */}
             <Link
               href={ctaHref}
               className="hidden sm:inline-flex bg-primary hover:bg-primary/90 text-cream text-xs font-bold tracking-widest uppercase py-3 px-5 transition-all"
@@ -119,7 +156,7 @@ export default function HomePage() {
             >
               {t.nav.cta}
             </Link>
-            {/* Hamburger — only mobile, for nav links */}
+            {/* Hamburger */}
             <button
               className="flex md:hidden items-center justify-center w-9 h-9 text-secondary"
               onClick={() => setMobileMenuOpen(prev => !prev)}
@@ -155,9 +192,9 @@ export default function HomePage() {
           >
             <div className="px-6 py-5 flex flex-col gap-1">
               {[
-                { label: t.nav.philosophy, href: '#weather' },
-                { label: t.nav.curations, href: '#blueprint' },
-                { label: t.nav.membership, href: '#guide' },
+                { label: t.nav.philosophy, href: '#intelligence' },
+                { label: t.nav.curations, href: '#capsules' },
+                { label: t.nav.membership, href: '#pricing' },
               ].map(({ label, href }) => (
                 <a
                   key={href}
@@ -182,398 +219,478 @@ export default function HomePage() {
 
       {/* ─── HERO ────────────────────────────────────────────────────────────── */}
       <section
-        className="relative min-h-screen flex flex-col"
+        className="relative min-h-screen flex flex-col grain-overlay overflow-hidden"
         aria-label="Hero"
       >
         {/* Full-screen background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={IMG.heroBg}
+          src={IMAGES.hero}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover brightness-[0.85]"
+          className="absolute inset-0 w-full h-full object-cover brightness-[0.60]"
+          fetchPriority="high"
         />
+
         {/* Gradient overlay */}
         <div
-          className="absolute inset-0 bg-gradient-to-b from-secondary/40 via-secondary/20 to-secondary/70"
+          className="absolute inset-0"
+          style={{
+            background:
+              'linear-gradient(to bottom, rgba(26,20,16,0.4) 0%, transparent 40%, rgba(26,20,16,0.6) 100%)',
+            zIndex: 1,
+          }}
           aria-hidden="true"
         />
 
         {/* Centered content */}
-        <div className="relative z-10 flex-1 flex flex-col items-center justify-center text-center px-6 py-24">
-          {/* Badge */}
-          <div className="mb-8">
-            <span className="inline-block border border-cream/40 text-cream/90 text-xs font-medium tracking-widest uppercase px-4 py-2">
-              {t.hero.badge}
+        <div className="relative flex-1 flex flex-col items-center justify-center text-center px-6 py-28" style={{ zIndex: 2 }}>
+
+          {/* Animated pill badge */}
+          <div className="mb-8 flex items-center justify-center">
+            <span className="inline-flex items-center gap-2 border border-cream/30 text-cream/90 text-[10px] font-semibold tracking-[0.2em] uppercase px-5 py-2 backdrop-blur-sm bg-secondary/20">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary" />
+              </span>
+              ALGORITHM ACTIVE
             </span>
           </div>
 
           {/* Heading */}
-          <h1 className="font-playfair text-3xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-bold leading-tight text-cream mb-6">
+          <h1
+            className="font-playfair font-bold text-cream leading-tight mb-4"
+            style={{ fontSize: heroFontSize }}
+          >
             {t.hero.heading1}
             <br />
             <em className="italic text-cream/90">{t.hero.heading2}</em>
           </h1>
 
+          {/* Divider line */}
+          <div className="w-16 h-0.5 bg-primary mb-6" aria-hidden="true" />
+
           {/* Subtitle */}
-          <p className="text-cream/80 text-base md:text-lg max-w-xl mx-auto mb-10 leading-relaxed font-light">
+          <p className="text-cream/75 text-base md:text-lg max-w-lg mx-auto mb-10 leading-relaxed font-light">
             {t.hero.sub}
           </p>
 
           {/* CTA */}
           <Link
             href={ctaHref}
-            className="inline-flex items-center gap-3 bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-3.5 px-6 sm:px-10 transition-all shadow-lg hover:shadow-xl"
+            className="inline-flex items-center gap-3 bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-8 sm:px-12 transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
           >
-            {t.hero.cta} →
+            Curate My Capsule &rarr;
           </Link>
+
+          {/* Trust line */}
+          <p className="mt-6 text-cream/40 text-[11px] tracking-widest uppercase">
+            From $5 &middot; No subscription &middot; Results in 2–4 min
+          </p>
         </div>
 
-        {/* Bottom bar */}
-        <div className="relative z-10 border-t border-cream/20 py-4 px-6">
-          <div className="max-w-7xl mx-auto flex items-center justify-center gap-4 sm:gap-8 text-cream/50 text-[10px] sm:text-xs tracking-widest uppercase">
+        {/* Bottom editorial bar */}
+        <div className="relative border-t border-cream/15 py-4 px-6" style={{ zIndex: 2 }}>
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-4 sm:gap-10 text-cream/45 text-[10px] sm:text-xs tracking-widest uppercase">
             <span>{t.hero.estLabel}</span>
-            <span className="w-px h-3 bg-cream/30" aria-hidden="true" />
+            <span className="w-px h-3 bg-cream/25" aria-hidden="true" />
             <span>{t.hero.scrollLabel}</span>
-            <span className="w-px h-3 bg-cream/30" aria-hidden="true" />
+            <span className="w-px h-3 bg-cream/25" aria-hidden="true" />
             <span>{t.hero.editionLabel}</span>
           </div>
         </div>
       </section>
 
-      {/* ─── SECTION 2: PRECISION WEATHER MAPPING ────────────────────────────── */}
-      <section className="py-20 px-6 bg-cream" id="weather" aria-label="Precision Weather Mapping">
+      {/* ─── INTELLIGENCE SECTION ─────────────────────────────────────────────── */}
+      <section
+        className="py-24 px-6 bg-cream"
+        id="intelligence"
+        aria-label="Fashion meets forecast"
+      >
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
 
-          {/* Left — image composition */}
-          <div className="relative pb-16 md:pb-10">
-            {/* Main gray container with trench coat */}
-            <div className="relative bg-[#E8E4DF] rounded-none overflow-hidden aspect-[4/5]">
+          {/* Left — editorial text */}
+          <div className="flex flex-col gap-6">
+            <p className="text-xs font-semibold tracking-widest uppercase text-primary">
+              INTELLIGENCE LAYER
+            </p>
+            <h2 className="font-playfair text-4xl md:text-5xl font-bold text-secondary leading-tight">
+              Fashion Meets
+              <br />
+              <em className="italic">Forecast.</em>
+            </h2>
+            <p className="text-secondary/70 leading-relaxed max-w-md">
+              Our AI cross-references real-time climate data, local cultural vibes, and seasonal style trends to curate a capsule wardrobe that works every day of your trip — not just on paper.
+            </p>
+
+            {/* Stats row */}
+            <div className="flex gap-10 pt-2">
+              <div>
+                <p className="font-playfair text-4xl font-bold text-secondary">12+</p>
+                <p className="text-xs uppercase tracking-widest text-secondary/50 mt-1">Cities Supported</p>
+              </div>
+              <div className="w-px bg-sand" aria-hidden="true" />
+              <div>
+                <p className="font-playfair text-4xl font-bold text-secondary">100%</p>
+                <p className="text-xs uppercase tracking-widest text-secondary/50 mt-1">Weather-Accurate</p>
+              </div>
+            </div>
+
+            <Link
+              href={ctaHref}
+              className="inline-flex items-center gap-2 text-primary text-sm font-bold tracking-widest uppercase border-b border-primary/40 hover:border-primary pb-0.5 self-start transition-colors mt-2"
+            >
+              Start Planning &rarr;
+            </Link>
+          </div>
+
+          {/* Right — clothing rack image with floating badge */}
+          <div className="relative">
+            <div className="relative overflow-hidden aspect-[4/5] bg-sand">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={IMG.trenchCoat}
-                alt="Trench coat styled outfit"
+                src={IMAGES.clothingRack}
+                alt="AI-curated clothing selection on a rack"
                 className="w-full h-full object-cover"
               />
             </div>
 
-            {/* Floating weather card — top right */}
-            <div className="absolute top-4 right-2 md:top-8 md:-right-6 bg-white shadow-xl p-4 min-w-[160px] z-10">
-              <p className="text-xs font-semibold text-secondary/50 uppercase tracking-widest mb-1">
-                {t.weather.forecastLabel}
+            {/* Floating badge */}
+            <div className="absolute bottom-6 left-6 bg-white/95 backdrop-blur-sm shadow-xl px-5 py-3 border-l-2 border-primary">
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-primary mb-0.5">
+                AI Curated
               </p>
-              <p className="text-sm font-bold text-secondary">Paris, FR</p>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-2xl font-light text-secondary font-playfair">18°</span>
-                <span className="text-xs text-primary font-medium">{t.weather.windyLabel}</span>
-              </div>
-              <p className="text-xs text-secondary/60 mt-2 leading-snug">{t.weather.windNote}</p>
-            </div>
-
-            {/* Bottom-left polaroid: cashmere */}
-            <div
-              className="absolute bottom-0 left-4 md:-bottom-8 md:left-0 bg-white shadow-lg p-2 z-10"
-              style={{ transform: 'rotate(-4deg)', width: 96 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMG.cashmereCard}
-                alt="Cashmere accessory"
-                className="w-full aspect-square object-cover"
-              />
-              <p className="text-[9px] text-secondary/50 mt-1 text-center">Cashmere</p>
-            </div>
-
-            {/* Bottom-right polaroid: leather bag */}
-            <div
-              className="absolute bottom-2 left-24 md:-bottom-4 md:left-28 bg-white shadow-lg p-2 z-10"
-              style={{ transform: 'rotate(3deg)', width: 88 }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMG.leatherBag}
-                alt="Leather bag accessory"
-                className="w-full aspect-square object-cover"
-              />
-              <p className="text-[9px] text-secondary/50 mt-1 text-center">Leather</p>
-            </div>
-          </div>
-
-          {/* Right — editorial text */}
-          <div className="flex flex-col gap-6 lg:pl-8">
-            <p className="text-xs font-semibold tracking-widest uppercase text-primary">
-              {t.weather.sectionLabel}
-            </p>
-            <h2 className="font-playfair text-4xl md:text-5xl font-bold text-secondary leading-tight">
-              {t.weather.heading1}
-              <br />
-              <em className="italic">{t.weather.heading2}</em>
-            </h2>
-            <p className="text-secondary/70 leading-relaxed">{t.weather.bodyText}</p>
-
-            {/* Wind alert banner */}
-            <div className="border-l-2 border-primary pl-4 py-1">
-              <p className="text-xs font-bold uppercase tracking-widest text-primary mb-1">
-                {t.weather.windyDayEdit}
-              </p>
-              <p className="text-sm text-secondary/70">{t.weather.windNote}</p>
-            </div>
-
-            {/* 2-col feature grid */}
-            <div className="grid grid-cols-2 gap-6 pt-4">
-              <div>
-                <p className="font-bold text-secondary mb-1 text-sm">{t.weather.thermalTitle}</p>
-                <p className="text-secondary/60 text-sm leading-snug">{t.weather.thermalDesc}</p>
-              </div>
-              <div>
-                <p className="font-bold text-secondary mb-1 text-sm">{t.weather.humidityTitle}</p>
-                <p className="text-secondary/60 text-sm leading-snug">{t.weather.humidityDesc}</p>
-              </div>
+              <p className="text-secondary text-sm font-bold">AI-curated selections</p>
+              <p className="text-secondary/50 text-xs mt-0.5">Weather &bull; Vibe &bull; Season</p>
             </div>
           </div>
 
         </div>
       </section>
 
-      {/* ─── SECTION 3: THE 10-ITEM BLUEPRINT ───────────────────────────────── */}
-      <section className="py-20 px-6 bg-sand" id="blueprint" aria-label="The 10-Item Blueprint">
+      {/* ─── CAPSULES IN MOTION ───────────────────────────────────────────────── */}
+      <section
+        className="py-24 px-6 bg-sand"
+        id="capsules"
+        aria-label="Capsules in Motion"
+      >
         <div className="max-w-7xl mx-auto">
 
-          {/* Header — right-aligned */}
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 mb-12">
-            <div className="md:max-w-sm">
-              <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">
-                {t.blueprint.sectionLabel}
-              </p>
-              <h2 className="font-playfair text-4xl md:text-5xl font-bold text-secondary leading-tight">
-                {t.blueprint.heading}
-              </h2>
-            </div>
-            <p className="text-secondary/60 max-w-xs text-sm leading-relaxed md:text-right">
-              {t.blueprint.desc}
-            </p>
-          </div>
-
-          {/* Masonry-style grid — 5 images + 1 CTA tile */}
-          <div className="grid grid-cols-3 grid-rows-2 gap-3 h-[280px] sm:h-[400px] md:h-[520px] lg:h-[600px]">
-
-            {/* Wool coat — tall left */}
-            <div className="col-span-1 row-span-2 relative overflow-hidden bg-secondary group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMG.woolCoat}
-                alt="Wool overcoat"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-secondary/80 to-transparent p-4">
-                <p className="text-cream/60 text-[10px] uppercase tracking-widest">{t.blueprint.outerLayerLabel}</p>
-                <p className="text-cream text-sm font-semibold">{t.blueprint.outerLayerName}</p>
-              </div>
-            </div>
-
-            {/* Cashmere knit — top center */}
-            <div className="col-span-1 row-span-1 relative overflow-hidden bg-secondary group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMG.cashmereKnit}
-                alt="Cashmere knit"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-            </div>
-
-            {/* Trousers — top right */}
-            <div className="col-span-1 row-span-1 relative overflow-hidden bg-secondary group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMG.trousers}
-                alt="Tailored trousers"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-            </div>
-
-            {/* Dress — bottom center */}
-            <div className="col-span-1 row-span-1 relative overflow-hidden bg-secondary group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMG.dress}
-                alt="Versatile dress"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-            </div>
-
-            {/* Scarf — middle right */}
-            <div className="col-span-1 row-span-1 relative overflow-hidden bg-secondary group">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMG.scarf}
-                alt="Silk scarf"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-            </div>
-
-            {/* "See all items" dark tile — overlaid top of scarf row via absolute... use extra tile */}
-            {/* We achieve this with a 6th grid cell */}
-          </div>
-
-          {/* "See all 10 items" dark tile below grid on mobile / as overlay concept */}
-          <Link
-            href={ctaHref}
-            className="mt-3 flex items-center justify-center gap-3 bg-secondary hover:bg-secondary/90 text-cream text-xs font-bold tracking-widest uppercase py-5 transition-all group"
-            aria-label={t.blueprint.seeAllItems}
-          >
-            <span
-              className="material-symbols-outlined text-base text-cream/60 group-hover:text-cream transition-colors"
-              aria-hidden="true"
-            >
-              lock
-            </span>
-            {t.blueprint.seeAllItems}
-          </Link>
-
-          {/* Footer bar */}
-          <div className="mt-6 flex items-center justify-between text-xs text-secondary/50 uppercase tracking-widest border-t border-secondary/10 pt-4">
-            <span>{t.blueprint.curatedFor}</span>
-            <span>{t.blueprint.totalWeight}</span>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ─── SECTION 4: WEAR-IT-NOW DAILY GUIDE ──────────────────────────────── */}
-      <section className="py-20 px-6 bg-cream" id="guide" aria-label="Daily Guide">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-
-          {/* Left — numbered steps */}
-          <div className="flex flex-col gap-8">
+          {/* Section header */}
+          <div className="mb-12 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-4">
-                {t.guide.sectionLabel}
+              <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">
+                LIVE CAPSULES
               </p>
               <h2 className="font-playfair text-4xl md:text-5xl font-bold text-secondary leading-tight">
-                {t.guide.heading1}
-                <br />
-                <em className="italic">{t.guide.heading2}</em>
+                Capsules in Motion
               </h2>
             </div>
-            <p className="text-secondary/70 leading-relaxed">{t.guide.bodyText}</p>
-
-            {/* Steps */}
-            {[
-              { num: '01', title: t.guide.step1Title, desc: t.guide.step1Desc },
-              { num: '02', title: t.guide.step2Title, desc: t.guide.step2Desc },
-              { num: '03', title: t.guide.step3Title, desc: t.guide.step3Desc },
-            ].map(({ num, title, desc }) => (
-              <div key={num} className="flex gap-6 items-start">
-                <span className="font-playfair text-5xl font-bold text-secondary/10 leading-none shrink-0 select-none">
-                  {num}
-                </span>
-                <div className="pt-2">
-                  <p className="font-bold text-secondary mb-1">{title}</p>
-                  <p className="text-secondary/60 text-sm leading-relaxed">{desc}</p>
-                </div>
-              </div>
-            ))}
+            <p className="text-secondary/55 text-sm leading-relaxed md:max-w-xs md:text-right">
+              Each capsule adapts to the city&rsquo;s energy — from Tokyo&rsquo;s precision to Bali&rsquo;s ease.
+            </p>
           </div>
 
-          {/* Right — flat-lay photo + floating activity card */}
-          <div className="relative pb-20 md:pb-0">
-            {/* Grayscale → color on hover flat-lay */}
-            <div className="group relative overflow-hidden aspect-[4/5]">
+          {/* 3-column card grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+
+            {/* Card 1 — Mediterranean Drift */}
+            <div className="relative aspect-[3/4] overflow-hidden group cursor-default bg-secondary">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={IMG.flatLay}
-                alt="Flat-lay outfit for museum day"
-                className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+                src={IMAGES.earthTone}
+                alt="Earth tone Mediterranean capsule wardrobe"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
               />
-            </div>
-
-            {/* Floating activity card — bottom left */}
-            <div className="absolute -bottom-4 left-0 md:-bottom-8 md:-left-6 bg-white shadow-xl p-5 z-10 min-w-[200px]">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-primary mb-1">
-                {t.guide.dayLabel}
-              </p>
-              <p className="font-bold text-secondary text-sm">{t.guide.activityTitle}</p>
-              <p className="text-xs text-secondary/50 mt-0.5">{t.guide.activityDetail}</p>
-              <div className="flex gap-2 mt-3">
-                {[IMG.activityItem1, IMG.activityItem2, IMG.activityItem3].map((src, i) => (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img
-                    key={i}
-                    src={src}
-                    alt=""
-                    aria-hidden="true"
-                    className="w-8 h-8 rounded-full object-cover border-2 border-white"
-                  />
-                ))}
+              {/* Gradient */}
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to top, rgba(26,20,16,0.85) 0%, transparent 55%)',
+                }}
+                aria-hidden="true"
+              />
+              {/* Text */}
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <span className="inline-block text-[10px] font-bold tracking-widest uppercase text-cream/70 border border-cream/30 px-3 py-1 mb-3">
+                  Warm &amp; Earthy
+                </span>
+                <p className="font-playfair text-xl font-bold text-cream italic">
+                  Mediterranean Drift
+                </p>
+                <p className="text-cream/55 text-xs mt-1">Paris &bull; Rome &bull; Barcelona</p>
               </div>
             </div>
+
+            {/* Card 2 — Tokyo After Dark */}
+            <div className="relative aspect-[3/4] overflow-hidden group cursor-default bg-secondary sm:mt-8">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={IMAGES.streetwear}
+                alt="Urban edge streetwear capsule wardrobe"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to top, rgba(26,20,16,0.85) 0%, transparent 55%)',
+                }}
+                aria-hidden="true"
+              />
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <span className="inline-block text-[10px] font-bold tracking-widest uppercase text-cream/70 border border-cream/30 px-3 py-1 mb-3">
+                  Urban Edge
+                </span>
+                <p className="font-playfair text-xl font-bold text-cream italic">
+                  Tokyo After Dark
+                </p>
+                <p className="text-cream/55 text-xs mt-1">Tokyo &bull; Seoul &bull; Singapore</p>
+              </div>
+            </div>
+
+            {/* Card 3 — Island Transition */}
+            <div className="relative aspect-[3/4] overflow-hidden group cursor-default bg-secondary sm:col-span-2 lg:col-span-1">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={IMAGES.resort}
+                alt="Relaxed luxe resort capsule wardrobe"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to top, rgba(26,20,16,0.85) 0%, transparent 55%)',
+                }}
+                aria-hidden="true"
+              />
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <span className="inline-block text-[10px] font-bold tracking-widest uppercase text-cream/70 border border-cream/30 px-3 py-1 mb-3">
+                  Relaxed Luxe
+                </span>
+                <p className="font-playfair text-xl font-bold text-cream italic">
+                  Island Transition
+                </p>
+                <p className="text-cream/55 text-xs mt-1">Bali &bull; Maldives &bull; Phuket</p>
+              </div>
+            </div>
+
           </div>
 
         </div>
       </section>
 
-      {/* ─── SECTION 5: TESTIMONIAL ──────────────────────────────────────────── */}
-      <section className="py-20 px-6 bg-white border-y border-sand" aria-label="Testimonial">
-        <div className="max-w-3xl mx-auto relative">
-          {/* Decorative quotation mark */}
-          <span
-            className="absolute -top-4 -left-2 font-playfair text-8xl text-primary/20 leading-none select-none"
-            aria-hidden="true"
-          >
-            &ldquo;
-          </span>
+      {/* ─── EXAMPLES SECTION ────────────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-cream" aria-label="Plan examples">
+        <div className="max-w-7xl mx-auto">
 
-          <blockquote className="relative z-10 pt-8">
-            <p className="font-playfair text-2xl md:text-3xl text-secondary leading-relaxed mb-8 italic">
-              {t.testimonial.quote}
+          {/* Section header */}
+          <div className="mb-12 text-center">
+            <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">
+              PLAN EXAMPLES
             </p>
-            <footer className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-sand shrink-0" aria-hidden="true" />
-              <div>
-                <p className="font-bold text-secondary text-sm">{t.testimonial.author}</p>
-                <p className="text-secondary/50 text-xs">{t.testimonial.detail}</p>
+            <h2 className="font-playfair text-4xl md:text-5xl font-bold text-secondary leading-tight">
+              See What&rsquo;s Inside
+            </h2>
+          </div>
+
+          {/* 2-column examples grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Pro example */}
+            <div className="relative overflow-hidden group aspect-[4/3] bg-secondary">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={IMAGES.earthTone}
+                alt="Multi-city Pro plan example"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-75"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to top, rgba(26,20,16,0.90) 0%, transparent 60%)',
+                }}
+                aria-hidden="true"
+              />
+              <div className="absolute top-5 left-5">
+                <span className="inline-block bg-primary text-cream text-[10px] font-bold tracking-widest uppercase px-3 py-1.5">
+                  Pro
+                </span>
               </div>
-            </footer>
-          </blockquote>
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <p className="font-playfair text-2xl font-bold text-cream italic mb-1">
+                  Multi-City Style Guide
+                </p>
+                <p className="text-cream/60 text-sm">Up to 5 cities &bull; 4–6 images each &bull; $12</p>
+              </div>
+            </div>
+
+            {/* Annual example */}
+            <div className="relative overflow-hidden group aspect-[4/3] bg-secondary">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={IMAGES.streetwear}
+                alt="Annual member dashboard example"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-75"
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: 'linear-gradient(to top, rgba(26,20,16,0.90) 0%, transparent 60%)',
+                }}
+                aria-hidden="true"
+              />
+              <div className="absolute top-5 left-5">
+                <span className="inline-block bg-gold text-secondary text-[10px] font-bold tracking-widest uppercase px-3 py-1.5">
+                  Annual
+                </span>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 p-6">
+                <p className="font-playfair text-2xl font-bold text-cream italic mb-1">
+                  Annual Member Dashboard
+                </p>
+                <p className="text-cream/60 text-sm">12 trips/year &bull; All Pro features &bull; $29/yr</p>
+              </div>
+            </div>
+
+          </div>
+
         </div>
       </section>
 
-      {/* ─── SECTION 6: CTA ──────────────────────────────────────────────────── */}
+      {/* ─── DARK CTA SECTION ────────────────────────────────────────────────── */}
       <section
-        className="relative py-28 px-6 bg-secondary overflow-hidden"
+        className="relative py-28 px-6 bg-secondary overflow-hidden grain-overlay"
         aria-label="Call to action"
       >
-        {/* Background texture */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={IMG.ctaBgTexture}
-          alt=""
-          aria-hidden="true"
-          className="absolute inset-0 w-full h-full object-cover mix-blend-overlay opacity-20"
-        />
-
-        <div className="relative z-10 max-w-2xl mx-auto text-center">
-          <h2 className="font-playfair text-5xl md:text-6xl font-bold text-cream leading-tight mb-6">
+        <div className="relative max-w-2xl mx-auto text-center" style={{ zIndex: 2 }}>
+          <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-6">
+            YOUR STYLE AWAITS
+          </p>
+          <h2 className="font-playfair text-4xl sm:text-5xl md:text-6xl font-bold text-cream leading-tight mb-6">
             {t.cta.heading1}
             <br />
             <em className="italic">{t.cta.heading2}</em>
           </h2>
-          <p className="text-cream/70 text-base md:text-lg mb-10 leading-relaxed">{t.cta.sub}</p>
-          <div className="flex flex-col items-center gap-3">
+          <p className="text-cream/65 text-base md:text-lg mb-10 leading-relaxed max-w-lg mx-auto">
+            {t.cta.sub}
+          </p>
+          <div className="flex flex-col items-center gap-4">
             <Link
               href={ctaHref}
-              className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-6 sm:px-12 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 w-full sm:w-auto"
+              className="inline-flex items-center justify-center bg-primary hover:bg-primary/90 text-cream text-sm font-bold tracking-widest uppercase py-4 px-8 sm:px-14 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-0.5 w-full sm:w-auto"
             >
               {t.cta.button}
             </Link>
-            <p className="text-cream/40 text-xs tracking-widest uppercase">{t.cta.note}</p>
+            <p className="text-cream/35 text-xs tracking-widest uppercase">{t.cta.note}</p>
           </div>
+        </div>
+      </section>
+
+      {/* ─── PRICING SECTION ─────────────────────────────────────────────────── */}
+      <section
+        className="py-24 px-6 bg-cream"
+        id="pricing"
+        aria-label="Pricing plans"
+      >
+        <div className="max-w-7xl mx-auto">
+
+          {/* Header */}
+          <div className="mb-14 text-center">
+            <p className="text-xs font-semibold tracking-widest uppercase text-primary mb-3">
+              {t.pricing.label}
+            </p>
+            <h2 className="font-playfair text-4xl md:text-5xl font-bold text-secondary leading-tight">
+              Simple, Honest Pricing
+            </h2>
+            <p className="text-secondary/60 mt-4 text-base max-w-md mx-auto leading-relaxed">
+              No subscriptions by default. Pay once, get your capsule wardrobe.
+            </p>
+          </div>
+
+          {/* 3-column pricing grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {PLANS.map((plan) => (
+              <div
+                key={plan.id}
+                className={`relative flex flex-col p-8 border transition-all ${
+                  plan.featured
+                    ? 'bg-primary border-primary text-cream shadow-2xl scale-105'
+                    : 'bg-white border-sand text-secondary hover:border-secondary/20 hover:shadow-lg'
+                }`}
+              >
+                {/* Badge */}
+                {plan.badge && (
+                  <span
+                    className={`absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] font-bold tracking-widest uppercase px-4 py-1.5 ${
+                      plan.featured ? 'bg-secondary text-cream' : 'bg-gold text-secondary'
+                    }`}
+                  >
+                    {plan.badge}
+                  </span>
+                )}
+
+                {/* Plan name */}
+                <p
+                  className={`text-xs font-bold tracking-widest uppercase mb-4 ${
+                    plan.featured ? 'text-cream/70' : 'text-secondary/50'
+                  }`}
+                >
+                  {plan.name}
+                </p>
+
+                {/* Price */}
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span className={`font-playfair text-5xl font-bold ${plan.featured ? 'text-cream' : 'text-secondary'}`}>
+                    {plan.price}
+                  </span>
+                </div>
+                <p className={`text-xs tracking-widest uppercase mb-6 ${plan.featured ? 'text-cream/60' : 'text-secondary/45'}`}>
+                  {plan.period}
+                </p>
+
+                {/* Features */}
+                <ul className="flex flex-col gap-3 mb-8 flex-1">
+                  {plan.features.map((feature) => (
+                    <li key={feature} className="flex items-start gap-2.5 text-sm">
+                      <span
+                        className={`mt-0.5 text-xs font-bold shrink-0 ${plan.featured ? 'text-cream' : 'text-primary'}`}
+                        aria-hidden="true"
+                      >
+                        ✓
+                      </span>
+                      <span className={plan.featured ? 'text-cream/85' : 'text-secondary/70'}>
+                        {feature}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {/* CTA button */}
+                <Link
+                  href={plan.href}
+                  className={`flex items-center justify-center text-sm font-bold tracking-widest uppercase py-3.5 px-6 transition-all ${
+                    plan.featured
+                      ? 'bg-cream text-primary hover:bg-cream/90'
+                      : 'border border-secondary text-secondary hover:bg-secondary hover:text-cream'
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+
+              </div>
+            ))}
+          </div>
+
+          {/* Guarantee line */}
+          <p className="text-center text-secondary/40 text-xs mt-10 tracking-wide">
+            {t.pricing.guarantee}
+          </p>
+
         </div>
       </section>
 
       {/* ─── FOOTER ──────────────────────────────────────────────────────────── */}
       <footer className="bg-white border-t border-sand" aria-label="Site footer">
-        {/* Main footer row */}
         <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row items-start justify-between gap-8">
 
           {/* Left — logo + tagline */}
@@ -587,25 +704,22 @@ export default function HomePage() {
                 className="material-symbols-outlined text-primary text-xl select-none"
                 aria-hidden="true"
               >
-                all_inclusive
+                luggage
               </span>
               <span className="text-sm font-bold tracking-widest uppercase font-playfair text-secondary">
-                Travel Capsule AI
+                Travel Capsule
               </span>
             </Link>
             <p className="text-secondary/50 text-xs leading-relaxed">{t.footer.tagline}</p>
           </div>
 
           {/* Right — nav links */}
-          <nav
-            className="flex flex-wrap gap-x-8 gap-y-3"
-            aria-label="Footer navigation"
-          >
+          <nav className="flex flex-wrap gap-x-8 gap-y-3" aria-label="Footer navigation">
             {[
               { label: t.footer.journal, href: '/' },
               { label: t.footer.methodology, href: '/' },
-              { label: t.footer.pricing, href: ctaHref },
-              { label: t.footer.login, href: ctaHref },
+              { label: t.footer.pricing, href: '#pricing' },
+              { label: t.footer.login, href: '/auth/login' },
               { label: t.footer.instagram, href: '/' },
             ].map(({ label, href }) => (
               <Link

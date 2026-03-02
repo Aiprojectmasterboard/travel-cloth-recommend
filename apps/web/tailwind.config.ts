@@ -19,6 +19,17 @@ const config: Config = {
         'warm-white': '#FAF6F0',
         gold: '#D4AF37',
         weatherBlue: '#E0F2FE',
+        // Figma design tokens
+        'tc-primary': '#C4613A',
+        'tc-primary-dark': '#A84A25',
+        'tc-cream': '#FDF8F3',
+        'tc-dark': '#1A1410',
+        'tc-sand': '#EFE8DF',
+        'tc-border': '#E8DDD4',
+        'tc-gold': '#D4AF37',
+        'tc-gold-accent': '#C8A96E',
+        'tc-text': '#292524',
+        'tc-sub': '#57534e',
       },
       fontFamily: {
         // Latin headings → Korean → Japanese → Chinese serif fallback chain
