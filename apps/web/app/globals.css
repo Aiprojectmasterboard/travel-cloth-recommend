@@ -22,6 +22,7 @@
   --tc-sand: #EFE8DF;
   --tc-border: #E8DDD4;
   --tc-gold: #D4AF37;
+  --tc-gold-accent: #C8A96E;
   --tc-text: #292524;
   --tc-sub: #57534e;
   --font-display: 'Playfair Display', serif;
@@ -32,6 +33,19 @@
   --max-w: 1400px;
   --shadow-card: 0 2px 12px rgba(0,0,0,.06);
   --shadow-cta: 0 4px 16px rgba(196,97,58,.25);
+
+  /* Spacing tokens */
+  --space-base: 4px;
+  --space-card-pad: 32px;
+  --space-section: 128px;
+
+  /* Radius tokens */
+  --radius: 0.5rem;
+  --r-cta: 0px;
+  --r-input: 4px;
+  --r-card: 8px;
+  --r-modal: 16px;
+  --r-pill: 9999px;
 }
 
 /* ─── Grain overlay ─── */
