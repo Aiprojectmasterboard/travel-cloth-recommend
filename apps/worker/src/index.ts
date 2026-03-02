@@ -168,7 +168,7 @@ const app = new Hono<{ Bindings: Bindings }>();
 app.use(
   '/api/*',
   cors({
-    origin: ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev', 'http://localhost:3000'],
+    origin: ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev', 'http://localhost:3000', 'http://localhost:5173'],
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
@@ -1364,6 +1364,120 @@ app.post('/api/regenerate', async (c) => {
     console.error('[POST /api/regenerate] Unexpected error:', errorMsg);
     return c.json({ error: 'internal_error' }, 500);
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POST /api/generate
+// ─────────────────────────────────────────────────────────────────────────────
+// Direct AI outfit image generation from user profile + cities.
+// Does NOT require a trip_id or payment — used for pro/annual dashboard
+// immediate generation using user's onboarding profile + optional face photo.
+//
+// Body: {
+//   cities: [{city: string, country: string}][],
+//   gender: "male"|"female"|"non-binary",
+//   height_cm?: number,
+//   weight_kg?: number,
+//   aesthetics?: string[],
+//   face_url?: string,    // R2 URL from /api/upload-photo
+//   count_per_city?: number  // default 4
+// }
+
+app.post('/api/generate', async (c) => {
+  let body: {
+    cities?: Array<{ city: string; country: string }>;
+    gender?: string;
+    height_cm?: number;
+    weight_kg?: number;
+    aesthetics?: string[];
+    face_url?: string;
+    count_per_city?: number;
+  };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const { cities, gender, height_cm, weight_kg, aesthetics = [], face_url, count_per_city = 4 } = body;
+
+  if (!Array.isArray(cities) || cities.length === 0) {
+    return c.json({ error: 'cities array required' }, 400);
+  }
+
+  // Validate gender
+  const safeGender = (gender === 'male' || gender === 'female' || gender === 'non-binary')
+    ? gender : 'female';
+
+  const userProfile = {
+    gender: safeGender as 'male' | 'female' | 'non-binary',
+    height_cm: typeof height_cm === 'number' && height_cm > 0 ? height_cm : undefined,
+    weight_kg: typeof weight_kg === 'number' && weight_kg > 0 ? weight_kg : undefined,
+    aesthetics: Array.isArray(aesthetics) ? aesthetics.slice(0, 10) : [],
+  };
+
+  // Build minimal vibes from city + aesthetics (no Claude call needed)
+  const CITY_VIBES: Record<string, { mood: string; tags: string[] }> = {
+    paris:     { mood: 'Parisian Chic',    tags: ['sophisticated', 'effortless', 'layered'] },
+    tokyo:     { mood: 'Urban Minimal',    tags: ['clean', 'structured', 'functional'] },
+    rome:      { mood: 'Golden Hour',      tags: ['warm tones', 'relaxed elegance', 'Italian flair'] },
+    barcelona: { mood: 'Sun-Soaked Bold',  tags: ['colorful', 'vibrant', 'coastal'] },
+    milan:     { mood: 'Avant-Garde',      tags: ['sharp silhouettes', 'luxury', 'editorial'] },
+    london:    { mood: 'Understated Layer',tags: ['muted tones', 'functional chic', 'layered'] },
+    seoul:     { mood: 'Clean Contemporary', tags: ['minimal', 'oversized', 'monochrome'] },
+    bali:      { mood: 'Coastal Ease',     tags: ['breezy', 'natural textures', 'relaxed'] },
+    istanbul:  { mood: 'Spice & Silk',     tags: ['rich textures', 'vibrant', 'layered'] },
+    amsterdam: { mood: 'Nordic Clean',     tags: ['functional', 'understated', 'practical'] },
+  };
+
+  // Build style prompts directly for each city (count_per_city each)
+  const stylePrompts: Array<{ city: string; mood: string; prompt: string; negative_prompt: string }> = [];
+  const NEGATIVE = 'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, 3d render, blurry, low quality, nsfw, watermark, text overlay, logo';
+
+  // Resolve model directive from gender
+  const modelDirective = safeGender === 'male' ? 'Male model' : safeGender === 'non-binary' ? 'Androgynous model' : 'Female model';
+  const heightDesc = (height_cm && height_cm >= 175) ? 'tall slender figure' : (height_cm && height_cm <= 160) ? 'petite figure' : 'average height';
+  const bmiNote = (() => {
+    if (!height_cm || !weight_kg) return '';
+    const bmi = weight_kg / ((height_cm / 100) ** 2);
+    if (bmi < 18.5) return 'slender build';
+    if (bmi < 25) return 'slim build';
+    if (bmi < 30) return 'regular build';
+    return 'full-figured silhouette';
+  })();
+  const profilePrefix = [modelDirective, heightDesc, bmiNote].filter(Boolean).join(', ');
+
+  const OUTFITS = ['day exploration look', 'smart casual evening', 'cultural site visit', 'fine dining outfit'];
+  const safeCount = Math.min(Math.max(count_per_city, 1), 6);
+
+  for (const cityEntry of cities.slice(0, 5)) {
+    const cityKey = cityEntry.city.toLowerCase().replace(/[^a-z]/g, '');
+    const vibeData = CITY_VIBES[cityKey] ?? { mood: `${cityEntry.city} Style`, tags: aesthetics.length > 0 ? aesthetics : ['chic', 'travel-ready'] };
+    const aestheticStyle = aesthetics.length > 0 ? aesthetics.slice(0, 3).join(', ') : vibeData.tags.slice(0, 2).join(', ');
+
+    for (let i = 0; i < safeCount; i++) {
+      const outfit = OUTFITS[i % OUTFITS.length];
+      stylePrompts.push({
+        city: cityEntry.city,
+        mood: `outfit-${i + 1}`,
+        prompt: `${profilePrefix}, ${outfit} in ${cityEntry.city}, ${vibeData.tags.join(', ')}, ${aestheticStyle} style, ${cityEntry.city} street backdrop, professional fashion editorial photography, natural lighting, sharp focus, photorealistic, full body shot`,
+        negative_prompt: NEGATIVE,
+      });
+    }
+  }
+
+  // Generate images
+  const tempTripId = crypto.randomUUID();
+  const result = await imageGenAgent(
+    { prompts: stylePrompts, tripId: tempTripId, faceUrl: face_url },
+    c.env
+  );
+
+  return c.json({
+    images: result.results,
+    succeeded: result.succeeded,
+    failed: result.failed,
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
@@ -68,8 +68,15 @@ export function ProDashboard() {
   const [activeCity, setActiveCity] = useState(0);
   const [expandedOutfit, setExpandedOutfit] = useState(0);
   const [regenUsed, setRegenUsed] = useState(false);
-  const { isLoggedIn, setShowSignupPrompt } = useAuth();
+  const { isLoggedIn, setShowSignupPrompt, purchasedPlan } = useAuth();
   const { data: onboarding } = useOnboarding();
+
+  // Payment gate — redirect to /preview if not purchased
+  useEffect(() => {
+    if (!purchasedPlan) {
+      navigate("/preview", { replace: true });
+    }
+  }, [purchasedPlan, navigate]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -77,6 +84,110 @@ export function ProDashboard() {
       return () => clearTimeout(timer);
     }
   }, [isLoggedIn, setShowSignupPrompt]);
+
+  /* ── AI Image Generation ── */
+  const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
+  const [genStatus, setGenStatus] = useState<"idle" | "uploading" | "generating" | "done" | "error">("idle");
+  const generationStarted = useRef(false);
+
+  useEffect(() => {
+    if (generationStarted.current) return;
+    generationStarted.current = true;
+
+    const WORKER_URL =
+      (import.meta.env as Record<string, string>).VITE_WORKER_URL ||
+      "https://travel-capsule-worker.netson94.workers.dev";
+    let cancelled = false;
+
+    async function generateImages() {
+      try {
+        // Step 1: Upload face photo if available
+        let face_url: string | undefined;
+        if (onboarding.photo) {
+          setGenStatus("uploading");
+          try {
+            const mimeMatch = onboarding.photo.match(/^data:(image\/\w+);base64,/);
+            const mimeType = mimeMatch?.[1] ?? "image/jpeg";
+            const base64Data = onboarding.photo.split(",")[1] ?? onboarding.photo;
+            const byteChars = atob(base64Data);
+            const byteArray = new Uint8Array(byteChars.length);
+            for (let i = 0; i < byteChars.length; i++) {
+              byteArray[i] = byteChars.charCodeAt(i);
+            }
+            const blob = new Blob([byteArray], { type: mimeType });
+            const fd = new FormData();
+            fd.append("photo", blob, "photo.jpg");
+            const uploadRes = await fetch(`${WORKER_URL}/api/upload-photo`, {
+              method: "POST",
+              body: fd,
+            });
+            if (uploadRes.ok) {
+              const uploadData = (await uploadRes.json()) as { face_url?: string };
+              face_url = uploadData.face_url;
+            }
+          } catch (err) {
+            console.warn("[ProDashboard] Photo upload failed, continuing without face:", err);
+          }
+        }
+
+        if (cancelled) return;
+        setGenStatus("generating");
+
+        const resolvedCities =
+          onboarding.cities.length > 0
+            ? onboarding.cities.map((c) => ({ city: c.city, country: c.country }))
+            : DEFAULT_CITIES.map((c) => ({ city: c.city, country: c.country }));
+
+        const ht = parseFloat(onboarding.height);
+        const wt = parseFloat(onboarding.weight);
+
+        const res = await fetch(`${WORKER_URL}/api/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cities: resolvedCities,
+            gender: onboarding.gender || "female",
+            height_cm: !isNaN(ht) && ht > 0 ? ht : undefined,
+            weight_kg: !isNaN(wt) && wt > 0 ? wt : undefined,
+            aesthetics: onboarding.aesthetics ?? [],
+            face_url,
+            count_per_city: 4,
+          }),
+        });
+
+        if (cancelled) return;
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = (await res.json()) as {
+          images: Array<{ city: string; mood: string; image_url?: string; success: boolean }>;
+        };
+
+        const newMap = new Map<string, string>();
+        for (const img of data.images) {
+          if (img.success && img.image_url) {
+            newMap.set(`${img.city}::${img.mood}`, img.image_url);
+          }
+        }
+
+        if (!cancelled) {
+          setAiImages(newMap);
+          setGenStatus("done");
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("[ProDashboard] Generation error:", err);
+          setGenStatus("error");
+        }
+      }
+    }
+
+    generateImages();
+    return () => {
+      cancelled = true;
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ── Build profile from onboarding ── */
   const profile = useMemo(() => buildProfile(onboarding), [onboarding]);
@@ -154,8 +265,26 @@ export function ProDashboard() {
         <p className="mt-2 text-[15px] text-[#57534e] max-w-[600px]" style={{ fontFamily: "var(--font-body)" }}>
           {cities.length} cities, one seamlessly curated capsule wardrobe. Every piece earns its place across your entire journey.
         </p>
-        <div className="mt-3">
+        <div className="mt-3 flex items-center gap-3 flex-wrap">
           <AiGeneratedBadge confidence={allOutfits[0]?.aiConfidence || 90} bodyFitLabel={bodyFitLabel} />
+          {(genStatus === "uploading" || genStatus === "generating") && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" />
+              {genStatus === "uploading" ? "Uploading photo…" : "Generating AI outfits…"}
+            </span>
+          )}
+          {genStatus === "done" && aiImages.size > 0 && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              <Icon name="check_circle" size={14} className="text-green-600" />
+              {aiImages.size} AI images ready
+            </span>
+          )}
+          {genStatus === "error" && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              <Icon name="error_outline" size={14} className="text-red-500" />
+              Generation unavailable — using style previews
+            </span>
+          )}
         </div>
 
         {/* City tabs */}
@@ -233,11 +362,27 @@ export function ProDashboard() {
                       <div className="px-5 pb-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                            <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover" />
+                            {(() => {
+                              const aiKey = `${currentSet.city}::outfit-${idx + 1}`;
+                              const aiUrl = aiImages.get(aiKey);
+                              const src = aiUrl || outfit.image;
+                              const isLoading =
+                                (genStatus === "uploading" || genStatus === "generating") && !aiUrl;
+                              return isLoading ? (
+                                <div className="w-full h-full bg-[#EFE8DF] animate-pulse flex flex-col items-center justify-center gap-3" style={{ minHeight: 260 }}>
+                                  <Icon name="auto_awesome" size={32} className="text-[#C4613A]/40" filled />
+                                  <span className="text-[12px] text-[#57534e]/60 text-center px-4" style={{ fontFamily: "var(--font-body)" }}>
+                                    {genStatus === "uploading" ? "Uploading your photo…" : "Generating AI outfit…"}
+                                  </span>
+                                </div>
+                              ) : (
+                                <ImageWithFallback src={src} alt={outfit.title} className="w-full h-full object-cover" />
+                              );
+                            })()}
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                             <div className="absolute top-3 left-3">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                                <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                                <Icon name="auto_awesome" size={10} className="text-white" filled /> {aiImages.has(`${currentSet.city}::outfit-${idx + 1}`) ? "AI Generated" : "Style Preview"}
                               </span>
                             </div>
                             <div className="absolute bottom-4 left-4 right-4">

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { Icon } from "../components/travel-capsule";
 import { getCheckoutStatus, getDashboardRoute, type PlanKey } from "../services/polarCheckout";
+import { useAuth } from "../context/AuthContext";
 
 /**
  * Checkout Success Page
@@ -11,17 +12,15 @@ import { getCheckoutStatus, getDashboardRoute, type PlanKey } from "../services/
  *
  * This page:
  * 1. Verifies checkout status via Polar client API
- * 2. Shows a success animation
- * 3. Redirects to the appropriate dashboard
- *
- * POLAR COMPLIANCE:
- * - Uses GET /v1/checkouts/client/{client_secret} (no auth needed)
- * - Does NOT expose OAT
+ * 2. Records the purchased plan in AuthContext (+ sessionStorage)
+ * 3. Shows a success animation
+ * 4. Redirects to the appropriate dashboard
  */
 export function CheckoutSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [status, setStatus] = useState<"verifying" | "confirmed" | "failed">("verifying");
+  const { setPurchasedPlan } = useAuth();
 
   const plan = (searchParams.get("plan") || "standard") as PlanKey;
   const sessionId = searchParams.get("session_id") || "";
@@ -29,15 +28,10 @@ export function CheckoutSuccess() {
   useEffect(() => {
     async function verify() {
       try {
-        /**
-         * PRODUCTION: Verify the checkout session is confirmed.
-         * GET /v1/checkouts/client/{client_secret}
-         * No authentication required (safe for client-side).
-         */
         const result = await getCheckoutStatus(sessionId);
         if (result.status === "confirmed") {
+          setPurchasedPlan(plan);
           setStatus("confirmed");
-          // Auto-redirect to dashboard after brief success screen
           setTimeout(() => {
             navigate(getDashboardRoute(plan), { replace: true });
           }, 2500);
@@ -53,12 +47,13 @@ export function CheckoutSuccess() {
       verify();
     } else {
       // No session ID — demo mode, auto-confirm
+      setPurchasedPlan(plan);
       setStatus("confirmed");
       setTimeout(() => {
         navigate(getDashboardRoute(plan), { replace: true });
       }, 2500);
     }
-  }, [sessionId, plan, navigate]);
+  }, [sessionId, plan, navigate, setPurchasedPlan]);
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">

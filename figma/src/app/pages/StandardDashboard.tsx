@@ -46,8 +46,15 @@ export function StandardDashboard() {
   const navigate = useNavigate();
   const [activeDay, setActiveDay] = useState(1);
   const [expandedOutfit, setExpandedOutfit] = useState(0);
-  const { isLoggedIn, setShowSignupPrompt } = useAuth();
+  const { isLoggedIn, setShowSignupPrompt, purchasedPlan } = useAuth();
   const { data: onboarding } = useOnboarding();
+
+  // Payment gate — redirect to /preview if not purchased
+  useEffect(() => {
+    if (!purchasedPlan) {
+      navigate("/preview", { replace: true });
+    }
+  }, [purchasedPlan, navigate]);
 
   useEffect(() => {
     if (!isLoggedIn) {

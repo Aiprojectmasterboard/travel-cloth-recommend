@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
@@ -15,6 +15,7 @@ import {
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useOnboarding } from "../context/OnboardingContext";
+import { useAuth } from "../context/AuthContext";
 import {
   buildProfile,
   generateCityOutfits,
@@ -69,6 +70,14 @@ export function AnnualDashboard() {
   const navigate = useNavigate();
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   const { data: onboarding } = useOnboarding();
+  const { purchasedPlan } = useAuth();
+
+  // Payment gate — redirect to /preview if not purchased
+  useEffect(() => {
+    if (!purchasedPlan) {
+      navigate("/preview", { replace: true });
+    }
+  }, [purchasedPlan, navigate]);
 
   /* ── Build profile & generate outfits ── */
   const profile = useMemo(() => buildProfile(onboarding), [onboarding]);
