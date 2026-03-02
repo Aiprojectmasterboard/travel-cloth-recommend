@@ -64,7 +64,7 @@ interface GeminiResponse {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const MODEL = 'gemini-3.1-flash-image-preview';
+const MODEL = 'gemini-2.0-flash-preview-image-generation';
 const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [1_000, 2_000, 4_000] as const;
 
@@ -135,11 +135,7 @@ async function generateWithRetry(
       const body = {
         contents: [{ parts }],
         generationConfig: {
-          responseModalities: ['IMAGE', 'TEXT'],
-          imageConfig: {
-            aspectRatio: '3:4',
-            imageSize: '2K',
-          },
+          responseModalities: ['IMAGE'],
         },
       };
 
