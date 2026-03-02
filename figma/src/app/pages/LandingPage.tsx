@@ -407,11 +407,16 @@ export function LandingPage() {
             </span>
           </div>
           <div className="flex items-center gap-6 flex-wrap justify-center">
-            {["footer.privacy", "footer.terms", "footer.sustainability", "footer.contact"].map((key) => (
-              <a key={key} href="#" className="text-[11px] uppercase tracking-[0.1em] text-[#57534e] hover:text-[#C4613A] transition-colors"
+            {[
+              { key: "footer.privacy", path: "/privacy" },
+              { key: "footer.terms",   path: "/terms" },
+              { key: "footer.contact", path: "/contact" },
+            ].map(({ key, path }) => (
+              <button key={key} onClick={() => navigate(path)}
+                className="text-[11px] uppercase tracking-[0.1em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 500 }}>
                 {t(key)}
-              </a>
+              </button>
             ))}
           </div>
         </div>

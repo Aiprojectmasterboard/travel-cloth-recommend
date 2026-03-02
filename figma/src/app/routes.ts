@@ -13,6 +13,9 @@ import { CheckoutSuccess } from "./pages/CheckoutSuccess";
 import { SiteMap } from "./pages/SiteMap";
 import { ExampleProPage } from "./pages/ExampleProPage";
 import { ExampleAnnualPage } from "./pages/ExampleAnnualPage";
+import { PrivacyPage } from "./pages/PrivacyPage";
+import { TermsPage } from "./pages/TermsPage";
+import { ContactPage } from "./pages/ContactPage";
 
 export const router = createBrowserRouter([
   {
@@ -32,6 +35,9 @@ export const router = createBrowserRouter([
       { path: "dashboard/annual", Component: AnnualDashboard },
       { path: "examples/pro", Component: ExampleProPage },
       { path: "examples/annual", Component: ExampleAnnualPage },
+      { path: "privacy", Component: PrivacyPage },
+      { path: "terms", Component: TermsPage },
+      { path: "contact", Component: ContactPage },
     ],
   },
 ]);
