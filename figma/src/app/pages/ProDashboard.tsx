@@ -330,12 +330,63 @@ export function ProDashboard() {
             {/* Outfit cards */}
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
-                  {currentSet.city} Outfits
+                <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
+                  Your <em>{currentSet.city} Capsule</em>
                 </h2>
-                <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                  {currentSet.outfits.length} Looks · {profile.gender === "male" ? "Menswear" : profile.gender === "non-binary" ? "Unisex" : "Womenswear"}
-                </span>
+                <div className="flex items-center gap-2">
+                  {genStatus === "generating" ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[10px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                      <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> Generating…
+                    </span>
+                  ) : genStatus === "done" && aiImages.size > 0 ? (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-[10px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                      <span className="material-symbols-outlined" style={{ fontSize: 12, fontVariationSettings: "'FILL' 1" }}>check_circle</span> {aiImages.size} AI Ready
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                      {currentSet.outfits.length} Outfit Looks
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* 2×2 outfit thumbnail grid */}
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
+                {currentSet.outfits.slice(0, 4).map((outfit, i) => {
+                  const aiKey = `${currentSet.city}::outfit-${i + 1}`;
+                  const aiUrl = aiImages.get(aiKey);
+                  const imgSrc = aiUrl || outfit.image;
+                  return (
+                    <button key={outfit.id} onClick={() => { setExpandedOutfit(i); }}
+                      className={`relative rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${expandedOutfit === i ? "border-[#C4613A] ring-2 ring-[#C4613A]/30" : "border-transparent hover:border-[#E8DDD4]"}`}
+                      style={{ aspectRatio: "4/5" }}>
+                      {genStatus === "generating" && !aiUrl ? (
+                        <div className="absolute inset-0 bg-[#EFE8DF] animate-pulse" />
+                      ) : (
+                        <img src={imgSrc} alt={outfit.title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = outfit.image; }} />
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                      {/* AI badge */}
+                      {aiUrl && (
+                        <div className="absolute top-2 left-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                            <span className="material-symbols-outlined" style={{ fontSize: 10, fontVariationSettings: "'FILL' 1" }}>auto_awesome</span> AI
+                          </span>
+                        </div>
+                      )}
+                      <div className="absolute bottom-3 left-3 right-3">
+                        <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}>Day {outfit.day}</span>
+                        <span className="text-white text-[16px] italic block leading-tight" style={{ fontFamily: "var(--font-display)" }}>{outfit.title.split(" ")[0]}</span>
+                        <span className="text-white/60 text-[11px] block mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{outfit.subtitle}</span>
+                      </div>
+                      {expandedOutfit === i && (
+                        <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#C4613A] flex items-center justify-center">
+                          <span className="material-symbols-outlined text-white" style={{ fontSize: 12, fontVariationSettings: "'FILL' 1" }}>check</span>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
 
               <div className="space-y-6">

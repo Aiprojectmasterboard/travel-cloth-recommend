@@ -125,43 +125,44 @@ export function PreviewPage() {
           </div>
         </div>
 
-        {/* AI Outfit Preview — Teaser Grid (1 unlocked + 3 blurred) */}
+        {/* AI Outfit Preview — Teaser Grid (all 4 locked) */}
         <div className="mt-12">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-[#292524]" style={{ fontSize: "clamp(24px, 3vw, 36px)", fontFamily: displayFont }}>
               AI Outfit Preview
             </h2>
-            <span className="text-[11px] uppercase tracking-[0.12em] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-              1 of 4 unlocked
-            </span>
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1410] rounded-full">
+              <span className="material-symbols-outlined text-white" style={{ fontSize: 14 }}>lock</span>
+              <span className="text-[10px] uppercase tracking-[0.12em] text-white" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                Preview locked — unlock after purchase
+              </span>
+            </div>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {OUTFIT_PREVIEWS.map((outfit, idx) => (
+            {OUTFIT_PREVIEWS.map((outfit) => (
               <div key={outfit.label} className="group">
                 <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
                   <ImageWithFallback
                     src={outfit.img}
                     alt={outfit.label}
-                    className={`w-full h-full object-cover transition-transform duration-500 ${idx === 0 ? "group-hover:scale-105" : ""}`}
-                    style={idx > 0 ? { filter: "blur(12px) brightness(0.7)", transform: "scale(1.1)" } : undefined}
+                    className="w-full h-full object-cover transition-transform duration-500"
+                    style={{ filter: "blur(12px) brightness(0.7)", transform: "scale(1.1)" }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  {/* Lock overlay for blurred images */}
-                  {idx > 0 && (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                      <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-                        <span className="material-symbols-outlined text-white" style={{ fontSize: 22 }}>lock</span>
-                      </div>
-                      <span className="text-white/80 text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                        Unlock
-                      </span>
+                  {/* Lock overlay for all images */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                      <span className="material-symbols-outlined text-white" style={{ fontSize: 22 }}>lock</span>
                     </div>
-                  )}
+                    <span className="text-white/80 text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                      Unlock
+                    </span>
+                  </div>
                   <div className="absolute bottom-3 left-3 right-3">
                     <span className="text-white/70 text-[10px] uppercase tracking-[0.1em] block" style={{ fontFamily: "var(--font-mono)" }}>
                       {outfit.label}
                     </span>
-                    <span className={`text-[15px] italic ${idx > 0 ? "blur-[3px]" : ""}`} style={{ fontFamily: displayFont, color: "white" }}>
+                    <span className="text-[15px] italic blur-[3px]" style={{ fontFamily: displayFont, color: "white" }}>
                       {outfit.style}
                     </span>
                   </div>
@@ -172,7 +173,7 @@ export function PreviewPage() {
           {/* CTA below teaser grid */}
           <div className="mt-5 flex items-center justify-between px-1">
             <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
-              3 more personalized looks waiting for you
+              4 personalized looks waiting for you
             </span>
             <button
               onClick={() => document.getElementById("pricing-section")?.scrollIntoView({ behavior: "smooth" })}
