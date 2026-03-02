@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import Anthropic from '@anthropic-ai/sdk';
 import { runPreview, runResult } from './agents/orchestrator';
 import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
 
@@ -1367,6 +1368,90 @@ app.post('/api/regenerate', async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// ─── AI Outfit Item Breakdown ─────────────────────────────────────────────────
+// Calls Claude haiku to generate structured item lists for each outfit in a city.
+// Returns "city::outfit-N" → items[] map.
+
+interface OutfitItemAI {
+  name: string;
+  category: 'top' | 'bottom' | 'footwear' | 'accessory' | 'outerwear' | 'dress' | 'bag';
+  desc: string;
+  essential: boolean;
+}
+
+interface CityOutfitBreakdown {
+  city: string;
+  outfits: Array<{ mood: string; title: string; items: OutfitItemAI[] }>;
+}
+
+const OUTFIT_CONTEXTS = [
+  { key: 'outfit-1', title: 'Day Exploration',       ctx: 'comfortable daytime sightseeing and walking' },
+  { key: 'outfit-2', title: 'Smart Casual Evening',  ctx: 'casual bar, wine bar or bistro evening' },
+  { key: 'outfit-3', title: 'Cultural Site Visit',   ctx: 'museums, galleries, temples or historic sites' },
+  { key: 'outfit-4', title: 'Fine Dining',            ctx: 'upscale restaurant or rooftop dinner' },
+] as const;
+
+async function generateOutfitItems(
+  cityEntry: { city: string; country: string },
+  vibeData: { mood: string; tags: string[] },
+  aesthetics: string[],
+  gender: string,
+  count: number,
+  apiKey: string
+): Promise<CityOutfitBreakdown> {
+  const client = new Anthropic({ apiKey });
+  const contexts = OUTFIT_CONTEXTS.slice(0, Math.min(count, 4));
+  const stylingNote = aesthetics.length > 0 ? aesthetics.slice(0, 3).join(', ') : vibeData.tags.slice(0, 2).join(', ');
+
+  const prompt = `You are a professional travel stylist. Generate outfit item lists for a ${vibeData.mood} trip to ${cityEntry.city}.
+
+Traveller profile:
+- Gender: ${gender}
+- Style aesthetic: ${stylingNote}
+- City mood tags: ${vibeData.tags.join(', ')}
+
+Generate exactly ${contexts.length} outfits. Each outfit must have 4-5 items. Keep names concise (2-4 words). Make choices realistic for ${cityEntry.city} in this style.
+
+Return ONLY valid JSON (no markdown fences, no explanation):
+{
+  "outfits": [
+    {
+      "key": "outfit-1",
+      "title": "Day Exploration",
+      "items": [
+        {"name": "Slim tapered chinos", "category": "bottom", "desc": "Camel tone, cuffed", "essential": true},
+        {"name": "Linen shirt", "category": "top", "desc": "Soft white, half-tucked", "essential": true},
+        {"name": "Canvas sneakers", "category": "footwear", "desc": "Clean white, minimalist", "essential": true},
+        {"name": "Crossbody bag", "category": "bag", "desc": "Tan leather, compact", "essential": false},
+        {"name": "Linen blazer", "category": "outerwear", "desc": "Unstructured, ivory", "essential": false}
+      ]
+    }
+  ]
+}
+
+Outfits to generate:
+${contexts.map((o) => `- key: "${o.key}", title: "${o.title}", context: ${o.ctx}`).join('\n')}`;
+
+  try {
+    const msg = await client.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1500,
+      messages: [{ role: 'user', content: prompt }],
+    });
+    const text = msg.content[0].type === 'text' ? msg.content[0].text.trim() : '{}';
+    // Strip potential markdown fences
+    const clean = text.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
+    const parsed = JSON.parse(clean) as { outfits: Array<{ key: string; title: string; items: OutfitItemAI[] }> };
+    return {
+      city: cityEntry.city,
+      outfits: parsed.outfits.map((o) => ({ mood: o.key, title: o.title, items: o.items })),
+    };
+  } catch (err) {
+    console.warn(`[generateOutfitItems] Failed for ${cityEntry.city}:`, (err as Error).message);
+    return { city: cityEntry.city, outfits: [] };
+  }
+}
+
 // POST /api/generate
 // ─────────────────────────────────────────────────────────────────────────────
 // Direct AI outfit image generation from user profile + cities.
@@ -1466,17 +1551,35 @@ app.post('/api/generate', async (c) => {
     }
   }
 
-  // Generate images
+  // Generate images + outfit item breakdowns in parallel
   const tempTripId = crypto.randomUUID();
-  const result = await imageGenAgent(
-    { prompts: stylePrompts, tripId: tempTripId, faceUrl: face_url },
-    c.env
-  );
+  const cityList = cities.slice(0, 5);
+
+  const [imageResult, ...breakdownResults] = await Promise.all([
+    imageGenAgent({ prompts: stylePrompts, tripId: tempTripId, faceUrl: face_url }, c.env),
+    ...cityList.map((cityEntry) => {
+      const cityKey = cityEntry.city.toLowerCase().replace(/[^a-z]/g, '');
+      const vibeData = CITY_VIBES[cityKey] ?? {
+        mood: `${cityEntry.city} Style`,
+        tags: aesthetics.length > 0 ? aesthetics : ['chic', 'travel-ready'],
+      };
+      return generateOutfitItems(cityEntry, vibeData, userProfile.aesthetics, safeGender, safeCount, c.env.ANTHROPIC_API_KEY);
+    }),
+  ]);
+
+  // Build "CityName::outfit-N" → items[] lookup
+  const outfitItems: Record<string, OutfitItemAI[]> = {};
+  for (const breakdown of breakdownResults) {
+    for (const outfit of breakdown.outfits) {
+      outfitItems[`${breakdown.city}::${outfit.mood}`] = outfit.items;
+    }
+  }
 
   return c.json({
-    images: result.results,
-    succeeded: result.succeeded,
-    failed: result.failed,
+    images: imageResult.results,
+    succeeded: imageResult.succeeded,
+    failed: imageResult.failed,
+    outfitItems,   // "Paris::outfit-1" → [{name, category, desc, essential}]
   });
 });
 

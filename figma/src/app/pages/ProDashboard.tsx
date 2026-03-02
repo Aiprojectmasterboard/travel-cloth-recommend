@@ -90,6 +90,9 @@ export function ProDashboard() {
   const [genStatus, setGenStatus] = useState<"idle" | "uploading" | "generating" | "done" | "error">("idle");
   const generationStarted = useRef(false);
 
+  interface AiItem { name: string; category: string; desc: string; essential: boolean; }
+  const [aiOutfitItems, setAiOutfitItems] = useState<Record<string, AiItem[]>>({});
+
   useEffect(() => {
     if (generationStarted.current) return;
     generationStarted.current = true;
@@ -161,6 +164,7 @@ export function ProDashboard() {
 
         const data = (await res.json()) as {
           images: Array<{ city: string; mood: string; image_url?: string; success: boolean }>;
+          outfitItems?: Record<string, AiItem[]>;
         };
 
         const newMap = new Map<string, string>();
@@ -172,6 +176,7 @@ export function ProDashboard() {
 
         if (!cancelled) {
           setAiImages(newMap);
+          if (data.outfitItems) setAiOutfitItems(data.outfitItems);
           setGenStatus("done");
         }
       } catch (err) {
@@ -228,6 +233,29 @@ export function ProDashboard() {
   const packing: PackingItem[] = useMemo(() => derivePacking(allOutfits), [allOutfits]);
   const packedCount = packing.filter((p) => p.packed).length;
   const bodyFitLabel = allOutfits[0]?.bodyFitLabel || "";
+
+  /* ── AI-derived packing list (de-duplicated across all cities/outfits) ── */
+  const aiPackingList = useMemo<Array<{ name: string; category: string; desc: string; essential: boolean; cities: string[] }>>(() => {
+    if (Object.keys(aiOutfitItems).length === 0) return [];
+    const map = new Map<string, { name: string; category: string; desc: string; essential: boolean; cities: string[] }>();
+    for (const [key, items] of Object.entries(aiOutfitItems)) {
+      const city = key.split("::")[0] ?? "";
+      for (const item of items) {
+        const k = item.name.toLowerCase().replace(/\s+/g, "-");
+        const existing = map.get(k);
+        if (existing) {
+          if (!existing.cities.includes(city)) existing.cities.push(city);
+          if (item.essential) existing.essential = true;
+        } else {
+          map.set(k, { ...item, cities: [city] });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => {
+      if (a.essential !== b.essential) return a.essential ? -1 : 1;
+      return b.cities.length - a.cities.length;
+    });
+  }, [aiOutfitItems]);
 
   const currentSet = citySets[activeCity] || citySets[0];
 
@@ -395,23 +423,62 @@ export function ProDashboard() {
                           </div>
 
                           <div>
-                            <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                              Outfit Breakdown · Your Sizes
-                            </span>
-                            <div className="space-y-2">
-                              {outfit.items.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                                  <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                      <SizeChip size={item.recommendedSize} />
-                                    </div>
-                                    <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
+                            {(() => {
+                              const aiKey = `${currentSet.city}::outfit-${idx + 1}`;
+                              const aiItems = aiOutfitItems[aiKey];
+                              const CAT_ICON: Record<string, string> = {
+                                top: "shirt", bottom: "layers", outerwear: "dry_cleaning",
+                                footwear: "footprint", accessory: "watch", bag: "shopping_bag",
+                                dress: "checkroom",
+                              };
+                              const hasAiItems = aiItems && aiItems.length > 0;
+                              return (
+                                <>
+                                  <div className="flex items-center justify-between mb-4">
+                                    <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                                      Outfit Breakdown · Your Sizes
+                                    </span>
+                                    {hasAiItems && (
+                                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[9px] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                                        <Icon name="auto_awesome" size={9} className="text-[#C4613A]" filled /> AI curated
+                                      </span>
+                                    )}
                                   </div>
-                                </div>
-                              ))}
-                            </div>
+                                  <div className="space-y-2">
+                                    {hasAiItems
+                                      ? aiItems.map((item, i) => (
+                                          <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 ${item.essential ? "bg-[#C4613A]/10" : "bg-[#EFE8DF]"}`}>
+                                              <Icon name={CAT_ICON[item.category] ?? "checkroom"} size={22} className={item.essential ? "text-[#C4613A]" : "text-[#57534e]"} />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-2 flex-wrap">
+                                                <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                                <SizeChip size={bodyFitLabel || "M"} />
+                                                {item.essential && (
+                                                  <span className="px-1.5 py-0.5 bg-[#C4613A]/10 text-[#C4613A] rounded text-[9px] uppercase tracking-[0.06em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>must-have</span>
+                                                )}
+                                              </div>
+                                              <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
+                                            </div>
+                                          </div>
+                                        ))
+                                      : outfit.items.map((item) => (
+                                          <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                            <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                                            <div className="flex-1 min-w-0">
+                                              <div className="flex items-center gap-2">
+                                                <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                                <SizeChip size={item.recommendedSize} />
+                                              </div>
+                                              <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                  </div>
+                                </>
+                              );
+                            })()}
                             <p className="mt-5 text-[14px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: "var(--font-display)" }}>
                               "{outfit.note}"
                             </p>
@@ -447,36 +514,67 @@ export function ProDashboard() {
                 bodyFitLabel={bodyFitLabel}
               />
 
-              {/* Multi-City Packing (auto-derived) */}
+              {/* Multi-City Packing — AI-derived when available, else mock */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Multi-City Packing</h3>
-                  <span className="px-2 py-0.5 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                    Auto-derived
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-[0.1em] ${aiPackingList.length > 0 ? "bg-[#C4613A]/10 text-[#C4613A]" : "bg-[#EFE8DF] text-[#57534e]"}`} style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                    {aiPackingList.length > 0 ? "AI curated" : "Auto-derived"}
                   </span>
                 </div>
                 <p className="text-[12px] text-[#57534e] mb-4" style={{ fontFamily: "var(--font-body)" }}>
-                  Consolidated from {allOutfits.length} outfits across {citySets.length} cities
+                  {aiPackingList.length > 0
+                    ? `${aiPackingList.filter(i => i.essential).length} must-haves · ${aiPackingList.length} total across ${citySets.length} cities`
+                    : `Consolidated from ${allOutfits.length} outfits across ${citySets.length} cities`}
                 </p>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {packing.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                      <ImageWithFallback src={item.img} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                          <SizeChip size={item.recommendedSize} />
+                  {(aiPackingList.length > 0 ? aiPackingList : packing).map((item, i) => {
+                    const isAi = aiPackingList.length > 0;
+                    const CAT_ICON: Record<string, string> = {
+                      top: "shirt", bottom: "layers", outerwear: "dry_cleaning",
+                      footwear: "footprint", accessory: "watch", bag: "shopping_bag", dress: "checkroom",
+                    };
+                    if (isAi) {
+                      const ai = item as typeof aiPackingList[number];
+                      return (
+                        <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${ai.essential ? "bg-[#C4613A]/10" : "bg-[#EFE8DF]"}`}>
+                            <Icon name={CAT_ICON[ai.category] ?? "checkroom"} size={18} className={ai.essential ? "text-[#C4613A]" : "text-[#57534e]"} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{ai.name}</span>
+                              {ai.essential && <span className="px-1.5 py-0.5 bg-[#C4613A]/10 text-[#C4613A] rounded text-[9px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>★</span>}
+                            </div>
+                            <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
+                              {ai.cities.length > 1 ? `${ai.cities.length} cities` : ai.cities[0]} · {ai.category}
+                            </span>
+                          </div>
                         </div>
-                        <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                          Used in {item.usageCount} look{item.usageCount > 1 ? "s" : ""}
-                        </span>
+                      );
+                    }
+                    const mock = item as PackingItem;
+                    return (
+                      <div key={mock.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                        <ImageWithFallback src={mock.img} alt={mock.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{mock.name}</span>
+                            <SizeChip size={mock.recommendedSize} />
+                          </div>
+                          <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
+                            Used in {mock.usageCount} look{mock.usageCount > 1 ? "s" : ""}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 <div className="mt-4 pt-3 border-t border-[#EFE8DF]">
                   <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-                    {packing.length} unique items for {allOutfits.length} looks
+                    {aiPackingList.length > 0
+                      ? `${aiPackingList.length} AI-recommended pieces`
+                      : `${packing.length} unique items for ${allOutfits.length} looks`}
                   </span>
                 </div>
               </div>
