@@ -23,7 +23,7 @@ export function CheckoutSuccess() {
   const { setPurchasedPlan } = useAuth();
 
   const plan = (searchParams.get("plan") || "standard") as PlanKey;
-  const sessionId = searchParams.get("session_id") || "";
+  const sessionId = searchParams.get("session_id") || searchParams.get("checkout_id") || "";
 
   useEffect(() => {
     async function verify() {
