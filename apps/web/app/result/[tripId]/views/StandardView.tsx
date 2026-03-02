@@ -8,16 +8,6 @@ import {
   type CityOutfitSet,
 } from '@/lib/outfitGenerator'
 import {
-  StyleCodeCard,
-  MoodCard,
-  UpgradeBanner,
-  DayPlanStrip,
-  ProfileBadge,
-  TagChip,
-  SizeChip,
-  AiGeneratedBadge,
-} from '@/components/travel-capsule'
-import {
   ViewProps,
   DEMO_OUTFIT_IMAGES,
   DEMO_CAPSULE_IMAGES,
@@ -44,10 +34,7 @@ const ITINERARY_DETAILS = [
   { temp: '13°C', rain: '30%', steps: '6,200', desc: 'Final morning for any last errands. Travel-ready outfit that transitions smoothly from café to airport.' },
 ]
 
-const HERO_IMG = 'https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'
-const MOOD_IMG = 'https://images.unsplash.com/photo-1577058006248-8289d93b53ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080'
-
-// ─── Outfit Accordion Card ─────────────────────────────────────────────────────
+// ─── Outfit Accordion Card ──────────────────────────────────────────────────
 
 interface OutfitAccordionCardProps {
   dayNum: number
@@ -73,159 +60,80 @@ function OutfitAccordionCard({
   onToggle,
 }: OutfitAccordionCardProps) {
   return (
-    <div style={{
-      background: '#fff',
-      border: '1px solid #ebdacc',
-      borderRadius: 16,
-      overflow: 'hidden',
-      boxShadow: '0 2px 12px rgba(0,0,0,.04)',
-    }}>
+    <div className="bg-white border border-[#ebdacc] rounded-2xl overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
       <button
         onClick={onToggle}
         aria-expanded={isOpen}
-        style={{
-          width: '100%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '20px 24px',
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          textAlign: 'left',
-          gap: 16,
-          transition: 'background 0.18s',
-        }}
+        className="w-full flex items-center justify-between px-6 py-5 bg-transparent border-none cursor-pointer text-left gap-4 transition-colors hover:bg-[#FDF8F3]/50"
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
-          <span style={{
-            flexShrink: 0,
-            width: 40,
-            height: 40,
-            borderRadius: '50%',
-            background: 'rgba(196,97,58,0.1)',
-            color: '#C4613A',
-            fontWeight: 700,
-            fontSize: 14,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontFamily: 'var(--font-mono, monospace)',
-          }}>
+        <div className="flex items-center gap-4 flex-1 min-w-0">
+          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-[#C4613A]/10 text-[#C4613A] font-bold text-sm flex items-center justify-center font-mono">
             {dayNum}
           </span>
-          <div style={{ minWidth: 0 }}>
-            <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: '#292524', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <div className="min-w-0">
+            <p className="font-playfair text-lg text-[#292524] mb-0.5 whitespace-nowrap overflow-hidden text-ellipsis">
               {activityLabel}
             </p>
-            <p style={{ fontSize: 12, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>
+            <p className="text-xs text-[#57534e] font-sans">
               {styleSubtext}
             </p>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-          <span style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 4,
-            padding: '2px 8px',
-            borderRadius: 9999,
-            background: 'rgba(196,97,58,0.08)',
-            color: '#C4613A',
-            fontSize: 9,
-            fontFamily: 'var(--font-mono, monospace)',
-            fontWeight: 600,
-          }}>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] font-mono font-semibold">
             {aiConfidence}% match
           </span>
-          <span className="material-symbols-outlined" style={{
-            fontSize: 24,
-            color: '#57534e',
-            transform: isOpen ? 'rotate(180deg)' : 'none',
-            transition: 'transform 0.25s',
-          }}>
+          <span
+            className="material-symbols-outlined text-[#57534e] transition-transform duration-300"
+            style={{ fontSize: 24, transform: isOpen ? 'rotate(180deg)' : 'none' }}
+          >
             expand_more
           </span>
         </div>
       </button>
 
       {isOpen && (
-        <div style={{ padding: '0 24px 24px', borderTop: '1px solid #f0e8e0' }}>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 24,
-            paddingTop: 20,
-          }}>
+        <div className="px-6 pb-6 border-t border-[#f0e8e0]">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-5">
             {/* Outfit image */}
-            <div style={{ position: 'relative', aspectRatio: '3/4', borderRadius: 12, overflow: 'hidden', background: '#f0e8e0' }}>
-              <Image
-                src={imageUrl}
-                alt={activityLabel}
-                fill
-                style={{ objectFit: 'cover' }}
-                unoptimized
-              />
-              <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }} />
-              <div style={{ position: 'absolute', top: 12, left: 12 }}>
-                <span style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 4,
-                  padding: '2px 8px',
-                  borderRadius: 9999,
-                  background: 'rgba(255,255,255,0.2)',
-                  backdropFilter: 'blur(8px)',
-                  color: '#fff',
-                  fontSize: 9,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.1em',
-                  fontFamily: 'var(--font-mono, monospace)',
-                }}>
+            <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[#f0e8e0]">
+              <Image src={imageUrl} alt={activityLabel} fill className="object-cover" unoptimized />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+              <div className="absolute top-3 left-3">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-lg text-white text-[9px] uppercase tracking-[0.1em] font-mono">
                   <span className="material-symbols-outlined" style={{ fontSize: 10 }}>auto_awesome</span>
                   AI Generated
                 </span>
-              </div>
-              <div style={{ position: 'absolute', bottom: 12, left: 12 }}>
-                <TagChip>Day {dayNum}</TagChip>
               </div>
             </div>
 
             {/* Outfit breakdown */}
             <div>
-              <p style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '0.12em',
-                textTransform: 'uppercase',
-                color: '#57534e',
-                marginBottom: 16,
-                fontFamily: 'var(--font-sans, sans-serif)',
-              }}>
+              <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#57534e] mb-4 font-sans">
                 Outfit Breakdown · Your Sizes
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="flex flex-col gap-2">
                 {items.map((item) => (
-                  <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, borderRadius: 8 }}>
-                    <div style={{ position: 'relative', width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f5efe8' }}>
-                      <Image src={item.imageUrl} alt={item.name} fill style={{ objectFit: 'cover' }} unoptimized />
+                  <div key={item.name} className="flex items-center gap-3 p-2 rounded-lg">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#f5efe8]">
+                      <Image src={item.imageUrl} alt={item.name} fill className="object-cover" unoptimized />
                     </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 14, color: '#292524', fontWeight: 500, fontFamily: 'var(--font-sans, sans-serif)' }}>
-                          {item.name}
-                        </span>
-                        {item.size && <SizeChip size={item.size} />}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-[#292524] font-medium font-sans">{item.name}</span>
+                        {item.size && (
+                          <span className="inline-flex items-center justify-center w-8 h-8 bg-white border border-[#E8DDD4] text-[#1A1410] text-xs font-bold rounded-full">
+                            {item.size}
+                          </span>
+                        )}
                       </div>
-                      <span style={{ fontSize: 12, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>
-                        {item.description}
-                      </span>
+                      <span className="text-xs text-[#57534e] font-sans">{item.description}</span>
                     </div>
                   </div>
                 ))}
               </div>
               {note && (
-                <p style={{ marginTop: 20, fontSize: 14, color: '#57534e', fontStyle: 'italic', lineHeight: 1.65, fontFamily: "'Playfair Display', serif" }}>
+                <p className="mt-5 text-sm text-[#57534e] italic leading-relaxed font-playfair">
                   &ldquo;{note}&rdquo;
                 </p>
               )}
@@ -233,14 +141,73 @@ function OutfitAccordionCard({
           </div>
         </div>
       )}
+    </div>
+  )
+}
 
-      <style jsx>{`
-        @media (max-width: 640px) {
-          .outfit-body-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
+// ─── AI Generation Profile Sidebar ──────────────────────────────────────────
+
+function AIProfileSidebar({ profile }: {
+  profile: { gender: string; height: number; weight: number; aesthetics: string[] } | null
+}) {
+  const gender = profile?.gender ?? 'Male'
+  const height = profile?.height ?? 180
+  const weight = profile?.weight ?? 80
+  const aesthetics = profile?.aesthetics?.length ? profile.aesthetics : ['Minimalist', 'Streetwear']
+  const genderIcon = gender === 'male' || gender === 'Male' ? '♂' : gender === 'female' || gender === 'Female' ? '♀' : '⚧'
+
+  return (
+    <div className="bg-white border border-[#E8DDD4] rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="material-symbols-outlined text-[#C4613A]" style={{ fontSize: 18 }}>auto_awesome</span>
+        <h3 className="font-playfair text-lg text-[#292524]">AI Generation Profile</h3>
+      </div>
+      <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#C4613A] mb-4 font-mono">
+        Outfits Tailored to Your Data
+      </p>
+
+      {/* Warning pill */}
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FFF7ED] border border-[#FDBA74]/30 text-[#9A3412] text-xs font-medium mb-5">
+        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>warning</span>
+        Tailored for {gender} · {height}cm · average build
+      </div>
+
+      {/* Stats */}
+      <div className="flex flex-col gap-0">
+        {[
+          { icon: genderIcon, label: 'Gender', value: gender },
+          { icon: '↕', label: 'Height', value: `${height} cm` },
+          { icon: '⚖', label: 'Weight', value: `${weight} kg` },
+          { icon: '📷', label: 'Reference Photo', value: 'Not provided' },
+        ].map((stat) => (
+          <div key={stat.label} className="flex items-center justify-between py-2.5 border-b border-[#EFE8DF] last:border-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm w-5 text-center">{stat.icon}</span>
+              <span className="text-sm text-[#57534e] font-sans">{stat.label}</span>
+            </div>
+            <span className="text-sm text-[#292524] font-semibold font-sans">{stat.value}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Style Preferences */}
+      <div className="mt-4">
+        <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#57534e] mb-2 font-mono">
+          Style Preferences
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {aesthetics.map((tag) => (
+            <span key={tag} className="inline-flex px-3 py-1 bg-[#F5EFE6] text-[#57534e] text-xs font-medium rounded-full border border-[#E8DDD4]">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Description */}
+      <p className="mt-4 text-sm text-[#57534e] italic leading-relaxed font-playfair">
+        Layered sophistication meets urban practicality. Your capsule adapts to your profile with AI-curated precision.
+      </p>
     </div>
   )
 }
@@ -249,32 +216,21 @@ function OutfitAccordionCard({
 
 export default function StandardView({ trip, tripId: _tripId, onShare }: ViewProps) {
   const [openCard, setOpenCard] = useState<number>(0)
-  const [selectedDay, setSelectedDay] = useState(0)
-  const [showSignup, setShowSignup] = useState(false)
 
   const primaryCity = trip.cities[0]?.name ?? 'Your City'
   const totalDays = trip.cities.reduce((sum, c) => sum + c.days, 0)
   const month = getMonthName(trip.month)
-  const cityFlag = getCityFlag(primaryCity)
-  const moodLabel = trip.generation_jobs?.[0]?.mood ?? 'Travel Chic'
-  const styleQuote =
-    trip.vibe_description ??
-    'Carefully curated looks to help you explore your destination with effortless style and comfort.'
-
-  // 5-second signup prompt trigger
-  useEffect(() => {
-    const timer = setTimeout(() => setShowSignup(true), 5000)
-    return () => clearTimeout(timer)
-  }, [])
 
   // Build profile from localStorage
   const [cityOutfitSet, setCityOutfitSet] = useState<CityOutfitSet | null>(null)
+  const [userProfile, setUserProfile] = useState<{ gender: string; height: number; weight: number; aesthetics: string[] } | null>(null)
 
   useEffect(() => {
     try {
       const raw = JSON.parse(localStorage.getItem('tc_user_profile') ?? 'null')
       if (raw) {
         const profile = buildProfile(raw.gender, raw.height, raw.weight, raw.aesthetics ?? [])
+        setUserProfile({ gender: raw.gender, height: raw.height, weight: raw.weight, aesthetics: raw.aesthetics ?? [] })
         const monthNum = typeof trip.month === 'string' ? parseInt(trip.month, 10) : Number(trip.month)
         const set = generateCityOutfits(profile, {
           city: primaryCity,
@@ -289,32 +245,9 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
     }
   }, [primaryCity, trip.month, totalDays])
 
-  // Packing list derived from outfit set or demo
-  const packing = useMemo(() => {
-    if (cityOutfitSet) {
-      const allItems = cityOutfitSet.outfits.flatMap(o => o.items)
-      const seen = new Map<string, { name: string; count: number; imageUrl: string; category: string }>()
-      for (const item of allItems) {
-        if (seen.has(item.name)) {
-          seen.get(item.name)!.count++
-        } else {
-          seen.set(item.name, { name: item.name, count: 1, imageUrl: item.imageUrl, category: item.category })
-        }
-      }
-      return Array.from(seen.values()).slice(0, 12)
-    }
-    return []
-  }, [cityOutfitSet])
-
   // Wardrobe items
   const wardrobeItems =
     trip.wardrobe_items && trip.wardrobe_items.length > 0 ? trip.wardrobe_items : DEMO_WARDROBE_ITEMS
-
-  // Capsule grid items (max 10)
-  const capsuleItems = wardrobeItems.slice(0, 10).map((item, i) => ({
-    name: item.name,
-    imageUrl: item.image_url ?? DEMO_CAPSULE_IMAGES[i % DEMO_CAPSULE_IMAGES.length],
-  }))
 
   // Outfit images (real job images first, then demo)
   const jobImages = (trip.generation_jobs ?? []).filter((j) => j.image_url).map((j) => j.image_url!)
@@ -332,231 +265,62 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
         }))
 
   const accordionDays = dayPlans.slice(0, 4)
-  const itineraryDay = ITINERARY_DETAILS[selectedDay % ITINERARY_DETAILS.length]!
+  const aiConfidenceBase = 93
 
-  // Mood palette
-  const palette = ['#D8C4B6', '#2C3333', '#F5EFE6', '#C4613A', '#1A1410']
-
-  // Day plan strip format
-  const dayPlanStripItems = Array.from({ length: Math.max(totalDays, 7) }, (_, i) => ({
-    day: i + 1,
-    label: DAY_ACTIVITY_LABELS[i % DAY_ACTIVITY_LABELS.length],
-    city: dayPlans[i]?.city ?? primaryCity,
-    outfit: dayPlans[i]?.activities?.join(', ') ?? ITINERARY_DETAILS[i % ITINERARY_DETAILS.length].desc,
-  }))
-
-  const bodyFitLabel = cityOutfitSet?.outfits[0] ? 'Fitted' : ''
-  const aiConfidenceBase = 88
+  const genderLabel = useMemo(() => {
+    if (!cityOutfitSet) return 'Menswear'
+    const g = userProfile?.gender
+    return g === 'male' || g === 'Male' ? 'Menswear' : g === 'female' || g === 'Female' ? 'Womenswear' : 'Unisex'
+  }, [cityOutfitSet, userProfile])
 
   return (
-    <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto', padding: '32px clamp(16px, 3vw, 40px) 80px', fontFamily: 'var(--font-sans, sans-serif)' }}>
+    <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-20 font-sans">
 
-      {/* ── Signup Prompt ──────────────────────────────────────────────────────── */}
-      {showSignup && (
-        <div style={{
-          position: 'fixed',
-          bottom: 24,
-          right: 24,
-          zIndex: 100,
-          background: '#1A1410',
-          color: '#fff',
-          borderRadius: 16,
-          padding: '20px 24px',
-          maxWidth: 320,
-          boxShadow: '0 8px 40px rgba(0,0,0,0.3)',
-        }}>
-          <button
-            onClick={() => setShowSignup(false)}
-            style={{ position: 'absolute', top: 12, right: 12, background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', fontSize: 18 }}
-            aria-label="Close signup prompt"
-          >
-            ×
-          </button>
-          <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#C4613A', marginBottom: 8 }}>
-            Save Your Capsule
-          </p>
-          <p style={{ fontSize: 14, lineHeight: 1.6, color: 'rgba(255,255,255,0.85)', marginBottom: 16 }}>
-            Create a free account to access your capsule anytime.
-          </p>
-          <a href="/auth/login" style={{
-            display: 'block',
-            background: '#C4613A',
-            color: '#fff',
-            textAlign: 'center',
-            padding: '10px 20px',
-            borderRadius: 8,
-            fontSize: 13,
-            fontWeight: 700,
-            textDecoration: 'none',
-          }}>
-            Create Account — Free
-          </a>
-        </div>
-      )}
+      {/* ── Title Area ──────────────────────────────────────────────────────── */}
+      <section className="mb-8">
+        <h1 className="font-playfair text-[clamp(28px,5vw,44px)] text-[#292524] leading-tight mb-2">
+          Your <span className="font-bold">{primaryCity}</span> Capsule
+        </h1>
+        <p className="text-base text-[#57534e] max-w-xl leading-relaxed mb-4">
+          {totalDays} days of curated style for {primaryCity} — weather-adapted, culture-aware, and tailored to your profile.
+        </p>
 
-      {/* ── Title Area ─────────────────────────────────────────────────────────── */}
-      <section style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, marginBottom: 40, flexWrap: 'wrap' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            background: '#F5EFE6',
-            color: '#9c8c7e',
-            fontSize: 11,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            padding: '4px 14px',
-            borderRadius: 9999,
-            width: 'fit-content',
-          }}>
-            Standard Plan
-          </div>
-          <h1 style={{
-            fontFamily: "'Playfair Display', serif",
-            fontStyle: 'italic',
-            fontSize: 'clamp(32px, 5vw, 56px)',
-            color: '#292524',
-            lineHeight: 1.1,
-          }}>
-            Your {primaryCity} Capsule
-          </h1>
-          <p style={{ fontSize: 16, color: '#57534e', maxWidth: 480, lineHeight: 1.65 }}>
-            7 days of curated style for {primaryCity} — weather-adapted, culture-aware, and tailored to your profile.
-          </p>
-          <div>
-            <AiGeneratedBadge />
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-          <button
-            onClick={() => window.print()}
-            style={{
-              height: 36,
-              padding: '0 16px',
-              borderRadius: 9999,
-              border: 'none',
-              background: 'rgba(196,97,58,0.1)',
-              color: '#C4613A',
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>picture_as_pdf</span>
-            Save PDF
-          </button>
-          <button
-            onClick={() => onShare()}
-            style={{
-              height: 36,
-              padding: '0 16px',
-              borderRadius: 9999,
-              border: '1.5px solid #C4613A',
-              background: 'transparent',
-              color: '#C4613A',
-              fontSize: 12,
-              fontWeight: 600,
-              textTransform: 'uppercase',
-              letterSpacing: '0.08em',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 8,
-              transition: 'background 0.18s, color 0.18s',
-            }}
-            aria-label="Share your capsule"
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 16 }}>share</span>
-            Share
-          </button>
+        {/* Badges row: matches Figma exactly */}
+        <div className="flex flex-wrap items-center gap-2">
+          {/* AI Generated badge */}
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#1A1410]/80 text-white text-[9px] font-bold tracking-[0.12em] uppercase rounded-sm backdrop-blur-sm">
+            <span className="material-symbols-outlined" style={{ fontSize: 10 }}>auto_awesome</span>
+            AI Generated
+          </span>
+          {/* Match confidence */}
+          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[#C4613A] text-xs font-semibold font-mono">
+            <span className="material-symbols-outlined" style={{ fontSize: 12 }}>auto_awesome</span>
+            {aiConfidenceBase}% Match
+          </span>
+          {/* Profile tailored chip */}
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#F5EFE6] text-[#57534e] text-xs font-medium rounded-full border border-[#E8DDD4]">
+            Tailored for {userProfile?.gender ?? 'Male'} · {userProfile?.height ?? 180}cm · average build
+          </span>
         </div>
       </section>
 
-      {/* ── Hero Banner (21:9) ─────────────────────────────────────────────────── */}
-      <div style={{ position: 'relative', aspectRatio: '21/9', borderRadius: 20, overflow: 'hidden', marginBottom: 48 }}>
-        <Image
-          src={HERO_IMG}
-          alt={`${primaryCity} city hero`}
-          fill
-          style={{ objectFit: 'cover' }}
-          priority
-          unoptimized
-        />
-        <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(26,20,16,0.8) 0%, rgba(26,20,16,0.2) 50%, transparent 100%)' }} />
-        {/* Glass card overlay */}
-        <div style={{
-          position: 'absolute',
-          bottom: 24,
-          left: 24,
-          right: 24,
-          background: 'rgba(253,248,243,0.15)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255,255,255,0.2)',
-          borderRadius: 16,
-          padding: '20px 24px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          flexWrap: 'wrap',
-        }}>
-          <div>
-            <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.7)', marginBottom: 6, fontFamily: 'var(--font-mono, monospace)' }}>
-              {month} Collection
-            </p>
-            <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, color: '#fff', fontStyle: 'italic' }}>
-              {primaryCity} — {moodLabel}
-            </h2>
-          </div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {['Minimalist', 'Walkable', 'Transitional'].map((tag) => (
-              <span key={tag} style={{
-                padding: '4px 12px',
-                borderRadius: 9999,
-                background: 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(8px)',
-                color: '#fff',
-                fontSize: 11,
-                fontWeight: 500,
-                border: '1px solid rgba(255,255,255,0.2)',
-              }}>
-                {tag}
-              </span>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* ── Main 2-Column Grid ─────────────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 items-start">
 
-      {/* ── Main Grid ──────────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: 32, alignItems: 'start' }}>
+        {/* ── Left Column ──────────────────────────────────────────────────── */}
+        <div className="flex flex-col gap-10">
 
-        {/* ── Left Column ──────────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-
-          {/* 1. AI-Curated Outfits */}
+          {/* AI-Curated Outfits Section */}
           <section>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: '#292524' }}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="font-playfair text-2xl text-[#292524]">
                 AI-Curated Outfits
               </h2>
-              <span style={{
-                fontSize: 10,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-                color: '#57534e',
-                fontFamily: 'var(--font-mono, monospace)',
-              }}>
-                {accordionDays.length} Looks
+              <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#57534e] font-mono">
+                {accordionDays.length} Looks · {genderLabel}
               </span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="flex flex-col gap-3">
               {accordionDays.map((dp, i) => {
                 const outfit = cityOutfitSet?.outfits[i]
                 const offset = i * 3
@@ -593,238 +357,13 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
               })}
             </div>
           </section>
-
-          {/* 2. Day-by-Day Itinerary */}
-          <section>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: '#292524' }}>
-                Your 7-Day Itinerary
-              </h2>
-              <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#57534e', fontFamily: 'var(--font-mono, monospace)' }}>
-                {Math.max(totalDays, 7)} days
-              </span>
-            </div>
-            <DayPlanStrip days={dayPlanStripItems} />
-            <div style={{
-              marginTop: 16,
-              background: '#fff',
-              border: '1px solid #E8DDD4',
-              borderRadius: 16,
-              padding: 24,
-              boxShadow: '0 2px 8px rgba(0,0,0,.03)',
-            }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 16 }}>
-                {[
-                  { icon: 'device_thermostat', val: itineraryDay.temp, label: 'Temperature' },
-                  { icon: 'rainy', val: itineraryDay.rain, label: 'Rain Chance' },
-                  { icon: 'directions_walk', val: itineraryDay.steps, label: 'Est. Steps' },
-                ].map((s) => (
-                  <div key={s.label} style={{ textAlign: 'center', padding: '12px 8px', background: '#FDF8F3', borderRadius: 8 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#C4613A', display: 'block', marginBottom: 4 }}>{s.icon}</span>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: '#292524', display: 'block', fontFamily: 'var(--font-mono, monospace)' }}>{s.val}</span>
-                    <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#9c8c7e' }}>{s.label}</span>
-                  </div>
-                ))}
-              </div>
-              <p style={{ fontSize: 14, color: '#57534e', lineHeight: 1.7 }}>
-                {itineraryDay.desc}
-              </p>
-            </div>
-          </section>
-
-          {/* 3. Packing List (from outfit generator or wardrobe) */}
-          <section>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: '#292524' }}>
-                Your Packing List
-              </h2>
-              <span style={{
-                padding: '4px 12px',
-                background: 'rgba(196,97,58,0.1)',
-                color: '#C4613A',
-                borderRadius: 9999,
-                fontSize: 10,
-                fontWeight: 600,
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                fontFamily: 'var(--font-sans, sans-serif)',
-              }}>
-                {packing.length > 0 ? packing.length : capsuleItems.length} items · Auto-generated
-              </span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-              {(packing.length > 0
-                ? packing.map(p => ({ name: p.name, imageUrl: p.imageUrl ?? DEMO_CAPSULE_IMAGES[0], count: p.count, category: p.category }))
-                : capsuleItems.map(c => ({ name: c.name, imageUrl: c.imageUrl, count: 0, category: '' }))
-              ).map((item) => (
-                <div key={item.name} style={{
-                  background: '#fff',
-                  borderRadius: 12,
-                  border: '1px solid #E8DDD4',
-                  overflow: 'hidden',
-                }}>
-                  <div style={{ position: 'relative', aspectRatio: '1', overflow: 'hidden', background: '#f0e8e0', padding: 8 }}>
-                    <Image
-                      src={item.imageUrl}
-                      alt={item.name}
-                      fill
-                      style={{ objectFit: 'cover' }}
-                      unoptimized
-                    />
-                    {item.count > 1 && (
-                      <div style={{ position: 'absolute', top: 8, left: 8 }}>
-                        <span style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          padding: '2px 6px',
-                          borderRadius: 9999,
-                          background: 'rgba(0,0,0,0.6)',
-                          color: '#fff',
-                          fontSize: 9,
-                          fontFamily: 'var(--font-mono, monospace)',
-                          fontWeight: 600,
-                        }}>
-                          x{item.count} looks
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                  <div style={{ padding: '10px 12px' }}>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: '#292524', fontFamily: 'var(--font-sans, sans-serif)' }}>
-                      {item.name}
-                    </p>
-                    {item.category && (
-                      <p style={{ fontSize: 10, color: '#57534e', textTransform: 'capitalize', fontFamily: 'var(--font-mono, monospace)' }}>
-                        {item.category}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* 4. Upgrade Banner */}
-          <section style={{ borderRadius: 20, overflow: 'hidden' }}>
-            <UpgradeBanner onUpgrade={() => onShare()} />
-            <div style={{ background: '#C4613A', padding: '0 24px 20px', marginTop: -1 }}>
-              <p style={{ fontSize: 14, color: 'rgba(255,255,255,0.8)', fontFamily: 'var(--font-sans, sans-serif)' }}>
-                Upgrade to Pro for multi-city itineraries, hero images, and style regeneration.
-              </p>
-            </div>
-          </section>
         </div>
 
-        {/* ── Right Column ─────────────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, position: 'sticky', top: 80 }}>
-
-          {/* Profile Badge */}
-          <ProfileBadge plan="Standard" />
-
-          {/* Style Code Card */}
-          <StyleCodeCard
-            city={primaryCity}
-            moodName={moodLabel}
-            description={styleQuote}
-            tags={['Minimalist', 'Walkable', 'Transitional']}
-            weather={{ high: '16°C', low: '9°C', rain: '20%' }}
-          />
-
-          {/* City Mood Card */}
-          <MoodCard
-            city={primaryCity}
-            flag={cityFlag}
-            month={month}
-            description={`The city wears a palette of warm stone, amber light, and deep forest greens.`}
-            images={[MOOD_IMG, DEMO_CAPSULE_IMAGES[1]]}
-            palette={palette}
-          />
-
-          {/* Capsule Summary */}
-          <div style={{ background: '#fff', border: '1px solid #E8DDD4', borderRadius: 16, padding: 24, boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-              <span className="material-symbols-outlined" style={{ fontSize: 18, color: '#C4613A' }}>luggage</span>
-              <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.15em', textTransform: 'uppercase', color: '#9c8c7e' }}>
-                Capsule Summary
-              </span>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-              {[
-                { icon: 'checkroom', label: 'Packing Items', value: `${capsuleItems.length} pieces` },
-                { icon: 'style', label: 'AI Outfits', value: `${accordionDays.length} looks` },
-                { icon: 'calendar_month', label: 'Trip Duration', value: `${totalDays} days` },
-                { icon: 'grid_view', label: 'Combinations', value: '28 outfits' },
-                { icon: 'eco', label: 'Sustainability', value: '92% reusable' },
-              ].map((stat) => (
-                <div key={stat.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid #EFE8DF' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#C4613A' }}>{stat.icon}</span>
-                    <span style={{ fontSize: 13, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>{stat.label}</span>
-                  </div>
-                  <span style={{ fontSize: 13, color: '#292524', fontWeight: 600, fontFamily: 'var(--font-mono, monospace)' }}>{stat.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Unlock Pro dashed box */}
-          <div style={{
-            border: '2px dashed rgba(196,97,58,0.4)',
-            borderRadius: 16,
-            padding: 24,
-            textAlign: 'center',
-            background: 'rgba(196,97,58,0.03)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            <span className="material-symbols-outlined" style={{ fontSize: 28, color: '#C4613A' }}>lock</span>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 16, color: '#1A1410' }}>Unlock with Pro</h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, width: '100%', textAlign: 'left', marginBottom: 8 }}>
-              {['Multi-city planning', 'Hero editorial images', 'Ultra High-Res exports', 'Style regeneration'].map((f) => (
-                <div key={f} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 14, color: 'rgba(87,83,78,0.5)' }}>lock</span>
-                  <span style={{ fontSize: 13, color: 'rgba(87,83,78,0.7)', fontFamily: 'var(--font-sans, sans-serif)' }}>{f}</span>
-                </div>
-              ))}
-            </div>
-            <button
-              onClick={() => onShare()}
-              style={{
-                width: '100%',
-                height: 40,
-                background: '#C4613A',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 0,
-                fontSize: 12,
-                fontWeight: 700,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                cursor: 'pointer',
-                transition: 'background 0.18s',
-                fontFamily: 'var(--font-sans, sans-serif)',
-              }}
-            >
-              Upgrade to Pro
-            </button>
-          </div>
+        {/* ── Right Sidebar ────────────────────────────────────────────────── */}
+        <div className="hidden lg:flex flex-col gap-5 sticky top-24">
+          <AIProfileSidebar profile={userProfile} />
         </div>
       </div>
-
-      <style jsx global>{`
-        @media (max-width: 1024px) {
-          .std-main-grid-responsive {
-            grid-template-columns: 1fr !important;
-          }
-        }
-        @media (max-width: 640px) {
-          .std-packing-grid-responsive {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-        }
-      `}</style>
     </div>
   )
 }

@@ -15,22 +15,22 @@ import type { PlanType } from '../../../../../packages/types'
 
 const OUTFIT_PREVIEWS = [
   {
-    label: 'Day 1 · Arrival',
+    label: 'Day 1 \u00B7 Arrival',
     img: 'https://images.unsplash.com/photo-1677592737288-5ffcf72770d1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Classic Layering',
   },
   {
-    label: 'Day 2 · Galleries',
+    label: 'Day 2 \u00B7 Galleries',
     img: 'https://images.unsplash.com/photo-1746730921292-bd6be2c256d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Smart Casual',
   },
   {
-    label: 'Day 3 · Museums',
+    label: 'Day 3 \u00B7 Museums',
     img: 'https://images.unsplash.com/photo-1570298529069-2ca77646dd89?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Cozy Intellectual',
   },
   {
-    label: 'Day 4 · Dinner',
+    label: 'Day 4 \u00B7 Dinner',
     img: 'https://images.unsplash.com/photo-1587137276455-d0e42050e533?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Evening Elegance',
   },
@@ -85,10 +85,6 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
     setPaymentError(null)
     try {
       const { checkout_url } = await createCheckout(tripId, plan)
-      // Redirect to Polar-hosted checkout. On success, Polar redirects back to
-      // /checkout/success?plan={plan}&tripId={tripId} as the successUrl.
-      // If the Worker provides a direct Polar URL, follow it; otherwise fall
-      // back to the success page so the result poller can pick up the trip.
       if (checkout_url) {
         window.location.href = checkout_url
       } else {
@@ -108,13 +104,8 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
         className="min-h-screen flex flex-col items-center justify-center gap-4"
         style={{ background: '#FDF8F3' }}
       >
-        <div
-          className="w-11 h-11 rounded-full border-2 border-[#F5EFE6] border-t-[#C4613A] animate-spin"
-        />
-        <p
-          className="text-sm text-[#9c8c7e]"
-          style={{ fontFamily: bodyFont }}
-        >
+        <div className="w-11 h-11 rounded-full border-2 border-[#F5EFE6] border-t-[#C4613A] animate-spin" />
+        <p className="text-sm text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>
           Analyzing your trip...
         </p>
       </div>
@@ -135,10 +126,10 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
         >
           Preview not found
         </h1>
-        <p className="text-[15px] text-[#9c8c7e] max-w-[360px]">
+        <p className="text-[15px] text-[#8A7B6E] max-w-[360px]">
           This preview may have expired. Start a new trip to try again.
         </p>
-        <BtnPrimary href="/trip" className="mt-2 rounded-full">
+        <BtnPrimary href="/trip" className="mt-2">
           Start New Trip
         </BtnPrimary>
       </div>
@@ -150,25 +141,16 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
   const firstVibe = data.vibes[0]
   const firstWeather = data.weather[0]
   const teaserUrl = data.teaser?.teaser_url ?? null
+  const destinationLabel = data.vibes.map((v) => v.city).join(', ') || '\u2014'
+  const moodName = firstVibe?.mood_name ?? null
 
-  const destinationLabel = data.vibes.map((v) => v.city).join(', ') || '—'
-  const aestheticLabel = firstVibe?.mood_name?.split('—')[1]?.trim() ?? '—'
-  const weatherFocusLabel = firstWeather?.climate_band
-    ? firstWeather.climate_band.charAt(0).toUpperCase() +
-      firstWeather.climate_band.slice(1) +
-      ' Layers'
-    : '—'
-  const durationLabel = firstWeather?.climate_band
-    ? firstWeather.climate_band.charAt(0).toUpperCase() +
-      firstWeather.climate_band.slice(1) +
-      ' climate'
-    : '—'
+  // ─── Progress checklist items ──────────────────────────────────────────────
 
-  const summaryStats = [
-    { key: 'preview.destination', value: destinationLabel },
-    { key: 'preview.duration', value: durationLabel },
-    { key: 'preview.aesthetic', value: aestheticLabel },
-    { key: 'preview.weather', value: weatherFocusLabel },
+  const checklistItems = [
+    { label: `Weather analyzed for ${destinationLabel}`, done: true },
+    { label: moodName ? `City vibe matched \u2014 ${moodName}` : 'City vibe matched', done: true, highlight: true },
+    { label: '4 looks generated (1 unlocked)', done: true },
+    { label: 'Full capsule + Day-by-day plan', done: false },
   ]
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -176,68 +158,70 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
   return (
     <div className="min-h-screen" style={{ background: '#FDF8F3', fontFamily: bodyFont, color: '#1A1410' }}>
 
-      {/* ─── Header ──────────────────────────────────────────────────────────── */}
+      {/* ─── Header (simple) ──────────────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50"
-        style={{ backgroundColor: 'rgba(253,248,243,0.8)', backdropFilter: 'blur(16px)' }}
+        className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/60"
+        style={{ backgroundColor: 'rgba(253,248,243,0.9)', backdropFilter: 'blur(16px)' }}
       >
-        <div
-          className="mx-auto flex items-center justify-between px-6 py-4"
-          style={{ maxWidth: 'var(--max-w)' }}
-        >
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => router.push('/')}
-            role="link"
+        <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: 1200 }}>
+          <a
+            href="/"
+            className="flex items-center gap-2"
             aria-label="Go to home"
           >
-            <Icon name="luggage" size={28} className="text-[#C4613A]" />
+            <Icon name="luggage" size={26} className="text-[#C4613A]" />
             <span
-              className="text-[20px] tracking-tight text-[#1A1410]"
-              style={{ fontFamily: displayFont, fontWeight: 700 }}
+              className="text-lg tracking-tight text-[#1A1410]"
+              style={{ fontFamily: displayFont, fontWeight: 700, fontStyle: 'italic' }}
             >
               Travel Capsule
             </span>
-          </div>
-          <div className="flex items-center gap-3">
+          </a>
+          <div className="flex items-center gap-4">
             <LanguageSelector />
+            <button
+              className="w-9 h-9 rounded-full bg-[#F5EFE6] flex items-center justify-center hover:bg-[#E8DDD4] transition-colors"
+              aria-label="User account"
+            >
+              <Icon name="person" size={20} className="text-[#8A7B6E]" />
+            </button>
           </div>
         </div>
       </header>
 
       {/* ─── Main ────────────────────────────────────────────────────────────── */}
-      <main className="mx-auto px-6 py-12" style={{ maxWidth: 1200 }}>
+      <main className="mx-auto px-6" style={{ maxWidth: 1200 }}>
 
-        {/* ─── Step label + hero copy ─────────────────────────────────────── */}
-        <span
-          className="text-[10px] uppercase tracking-[0.15em] text-[#C4613A] block"
-          style={{ fontFamily: bodyFont, fontWeight: 600 }}
-        >
-          {t('preview.step')}
-        </span>
-        <h1
-          className="mt-4 text-[#292524] italic whitespace-pre-line"
-          style={{ fontSize: 'clamp(40px, 5vw, 72px)', fontFamily: displayFont, lineHeight: 1.05 }}
-        >
-          {t('preview.title')}
-        </h1>
-        <p
-          className="mt-4 text-[18px] text-[#57534e] max-w-[600px]"
-          style={{ fontFamily: bodyFont, fontWeight: 300 }}
-        >
-          {t('preview.body')}
-        </p>
+        {/* ─── Step label + Hero copy ─────────────────────────────────────── */}
+        <section className="pt-12 pb-8">
+          <span
+            className="text-[10px] uppercase tracking-[0.2em] text-[#C4613A] block mb-5 font-semibold"
+            style={{ fontFamily: 'var(--font-mono, monospace)' }}
+          >
+            Step 4 of 4: Finalizing your journey
+          </span>
+          <h1
+            className="text-[#1A1410] italic mb-5"
+            style={{ fontSize: 'clamp(36px, 5vw, 56px)', fontFamily: displayFont, lineHeight: 1.08 }}
+          >
+            Your story is ready{'\n'}to unfold.
+          </h1>
+          <p
+            className="text-[17px] text-[#8A7B6E] max-w-[560px] leading-relaxed"
+            style={{ fontFamily: bodyFont }}
+          >
+            We&apos;ve analyzed your destination, weather patterns, and style preferences.
+            Choose a plan to unlock your capsule.
+          </p>
+        </section>
 
-        {/* ─── Preview hero card (21:9) ────────────────────────────────────── */}
-        <div
-          className="mt-10 relative rounded-2xl overflow-hidden shadow-2xl"
-          style={{ aspectRatio: '21/9' }}
-        >
+        {/* ─── Wide city image ────────────────────────────────────────────── */}
+        <div className="relative rounded-2xl overflow-hidden mb-12" style={{ height: 'clamp(200px, 25vw, 320px)' }}>
           {teaserUrl ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
               src={teaserUrl}
-              alt="Your travel look teaser"
+              alt="Your travel destination"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -246,64 +230,83 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
               style={{ background: 'linear-gradient(135deg, #1A1410 0%, #3d2b1f 50%, #1A1410 100%)' }}
             />
           )}
-          <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
-          {/* Glass card overlay */}
-          <div
-            className="absolute bottom-6 left-6 right-6 sm:right-auto sm:w-[380px] p-6 rounded-2xl"
-            style={{ background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(20px)' }}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[#C4613A] flex items-center justify-center flex-shrink-0">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+          {/* Mood badge overlay */}
+          {moodName && (
+            <div className="absolute bottom-5 left-6">
+              <span
+                className="px-4 py-2 rounded-lg text-white text-sm italic"
+                style={{
+                  fontFamily: displayFont,
+                  background: 'rgba(255,255,255,0.15)',
+                  backdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                }}
+              >
+                {moodName}
+              </span>
+            </div>
+          )}
+          {firstVibe?.vibe_tags && firstVibe.vibe_tags.length > 0 && (
+            <div className="absolute bottom-5 right-6 flex gap-2">
+              {firstVibe.vibe_tags.slice(0, 3).map((tag: string) => (
                 <span
-                  className="material-symbols-outlined text-white select-none"
+                  key={tag}
+                  className="px-2.5 py-1 rounded-full text-[10px] font-semibold tracking-wider uppercase text-white/90"
+                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)' }}
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ─── Progress checklist ─────────────────────────────────────────── */}
+        <section className="mb-12 max-w-[560px]">
+          <h3
+            className="text-[10px] uppercase tracking-[0.15em] text-[#8A7B6E] font-bold mb-4"
+            style={{ fontFamily: bodyFont }}
+          >
+            Analysis Progress
+          </h3>
+          <div className="space-y-3">
+            {checklistItems.map((item, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <span
+                  className={`material-symbols-outlined shrink-0 ${item.done ? 'text-[#C4613A]' : 'text-[#E8DDD4]'}`}
                   style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}
                   aria-hidden="true"
                 >
-                  auto_awesome
+                  {item.done ? 'check_circle' : 'lock'}
+                </span>
+                <span
+                  className={`text-[14px] leading-relaxed ${
+                    item.done ? 'text-[#1A1410]' : 'text-[#8A7B6E]'
+                  } ${item.highlight ? 'italic' : ''}`}
+                  style={{
+                    fontFamily: item.highlight ? displayFont : bodyFont,
+                    ...(item.highlight ? { color: '#D4AF37' } : {}),
+                  }}
+                >
+                  {item.done ? '\u2705' : '\uD83D\uDD12'} {item.label}
                 </span>
               </div>
-              <span
-                className="text-[20px] text-white italic"
-                style={{ fontFamily: displayFont }}
-              >
-                Lookbook Preview
-              </span>
-            </div>
-            <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
-              <div className="h-full w-[75%] bg-[#C4613A] rounded-full" />
-            </div>
-            <span
-              className="mt-2 block text-[10px] uppercase tracking-[0.12em] text-white/70"
-              style={{ fontFamily: 'var(--font-mono)' }}
-            >
-              {firstVibe?.mood_name ?? '75% AI Analysis Complete'}
-            </span>
-            {firstVibe?.vibe_tags && firstVibe.vibe_tags.length > 0 && (
-              <div className="flex gap-2 flex-wrap mt-3">
-                {firstVibe.vibe_tags.slice(0, 3).map((tag: string) => (
-                  <span
-                    key={tag}
-                    className="bg-white/15 border border-white/28 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-[0.08em] uppercase text-white/90"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
-        </div>
+        </section>
 
-        {/* ─── AI Outfit Preview grid ──────────────────────────────────────── */}
-        <section className="mt-12">
+        {/* ─── Teaser 2x2 grid ───────────────────────────────────────────── */}
+        <section className="mb-16">
           <h2
-            className="text-[#292524] mb-6"
-            style={{ fontSize: 'clamp(24px, 3vw, 36px)', fontFamily: displayFont }}
+            className="text-[#1A1410] mb-6"
+            style={{ fontSize: 'clamp(22px, 3vw, 32px)', fontFamily: displayFont }}
           >
             AI Outfit Preview
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {OUTFIT_PREVIEWS.map((outfit, i) => (
-              <div key={i} className="group">
+              <div key={i} className="group relative">
                 <div
                   className="relative rounded-xl overflow-hidden bg-[#E8DDD4]"
                   style={{ aspectRatio: '3/4' }}
@@ -312,13 +315,27 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
                   <img
                     src={outfit.img}
                     alt={outfit.label}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-105 ${
+                      i > 0 ? 'blur-lg scale-110' : ''
+                    }`}
                   />
+                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+
+                  {/* Lock icon for blurred images */}
+                  {i > 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                        <Icon name="lock" size={24} className="text-white" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Label overlay */}
                   <div className="absolute bottom-3 left-3 right-3">
                     <span
                       className="text-white/70 text-[10px] uppercase tracking-[0.1em] block"
-                      style={{ fontFamily: 'var(--font-mono)' }}
+                      style={{ fontFamily: 'var(--font-mono, monospace)' }}
                     >
                       {outfit.label}
                     </span>
@@ -329,59 +346,37 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
                       {outfit.style}
                     </span>
                   </div>
+
+                  {/* "Unlocked" badge on first image */}
+                  {i === 0 && (
+                    <div className="absolute top-3 right-3">
+                      <span className="px-2 py-0.5 bg-[#C4613A] text-white text-[9px] uppercase tracking-widest font-bold rounded-sm">
+                        Unlocked
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
-        </section>
-
-        {/* ─── Trip Summary ────────────────────────────────────────────────── */}
-        <section className="mt-12 pt-8 border-t border-[#C4613A]/10">
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#C4613A]/8">
-            <h2
-              className="text-[#1A1410]"
-              style={{ fontSize: 'clamp(20px, 2.5vw, 28px)', fontFamily: displayFont }}
-            >
-              {t('preview.tripSummary')}
-            </h2>
-            <button
-              onClick={() => router.push('/trip')}
-              className="text-[12px] font-bold tracking-[0.08em] text-[#C4613A] uppercase hover:opacity-70 transition-opacity"
-              aria-label="Edit trip details"
-            >
-              {t('preview.editDetails')} ✏
-            </button>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {summaryStats.map(({ key, value }) => (
-              <div key={key} className="flex flex-col gap-1.5">
-                <span
-                  className="text-[10px] font-bold tracking-[0.16em] uppercase text-[#C4613A]"
-                  style={{ fontFamily: bodyFont }}
-                >
-                  {t(key)}
-                </span>
-                <p
-                  className="text-[20px] font-medium text-[#1A1410]"
-                  style={{ fontFamily: bodyFont }}
-                >
-                  {value}
-                </p>
-              </div>
-            ))}
-          </div>
+          <p
+            className="text-center text-[13px] text-[#C4613A] mt-4 font-medium"
+            style={{ fontFamily: bodyFont }}
+          >
+            3 more looks waiting &mdash; Unlock now
+          </p>
         </section>
 
         {/* ─── Pricing ─────────────────────────────────────────────────────── */}
-        <section className="mt-20 mb-20">
+        <section className="mb-20" id="pricing">
           {/* Price anchor pill */}
           <div className="flex justify-center mb-6">
             <div
-              className="inline-flex items-center gap-3 rounded-full px-5 py-1.5 flex-wrap justify-center"
+              className="inline-flex items-center gap-3 rounded-full px-5 py-2 flex-wrap justify-center"
               style={{ background: '#1A1410' }}
             >
-              <span className="text-[12px] text-[#9c8c7e] line-through">Personal stylist: $200+</span>
-              <span className="text-[12px] text-white/30">→</span>
+              <span className="text-[12px] text-[#8A7B6E] line-through">Personal stylist: $200+</span>
+              <span className="text-[12px] text-white/30">&rarr;</span>
               <span className="text-[12px] font-bold text-[#D4AF37]">Travel Capsule AI: from $5</span>
             </div>
           </div>
@@ -393,7 +388,7 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
             {t('pricing.title')}
           </h2>
           <p
-            className="text-center text-[16px] text-[#1A1410]/60 mb-10"
+            className="text-center text-[15px] text-[#8A7B6E] mb-10"
             style={{ fontFamily: bodyFont }}
           >
             {t('preview.selectPlan')}
@@ -409,84 +404,73 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto items-start">
 
             {/* Standard */}
-            <div className="flex flex-col bg-white border border-[#C4613A]/10 rounded-2xl p-8 relative overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="flex flex-col bg-white border border-[#E8DDD4] rounded-2xl p-7 relative overflow-hidden hover:shadow-lg transition-shadow">
               <div className="flex flex-col flex-1">
                 <h3
-                  className="not-italic text-[28px] text-[#292524] mb-4"
+                  className="not-italic text-[24px] text-[#1A1410] mb-3"
                   style={{ fontFamily: displayFont }}
                 >
                   Standard
                 </h3>
                 <div className="flex items-baseline gap-1 mb-1">
                   <span
-                    className="text-[48px] text-[#292524]"
+                    className="text-[44px] text-[#1A1410]"
                     style={{ fontFamily: displayFont, fontWeight: 700 }}
                   >
                     $5
                   </span>
-                  <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+                  <span className="text-[14px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>
                     {t('pricing.oneTime')}
                   </span>
                 </div>
                 <span
-                  className="mb-6 text-[11px] text-[#57534e]/60"
-                  style={{ fontFamily: 'var(--font-mono)' }}
+                  className="mb-5 text-[11px] text-[#8A7B6E]/60"
+                  style={{ fontFamily: 'var(--font-mono, monospace)' }}
                 >
                   {t('pricing.noAccountNeeded')}
                 </span>
-                <ul className="flex flex-col gap-3 mb-8 flex-1">
+                <ul className="flex flex-col gap-2.5 mb-7 flex-1">
                   {STANDARD_FEATURE_KEYS.map((key) => (
                     <CheckItem key={key}>{t(key)}</CheckItem>
                   ))}
                 </ul>
               </div>
-              <div className="flex flex-col gap-3 mt-auto">
-                <button
-                  onClick={() => handleSelectPlan('standard')}
-                  disabled={paymentLoading !== null}
-                  className="h-[56px] w-full bg-white border-2 border-[#C4613A] text-[#C4613A] text-[13px] font-bold uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] hover:text-white transition-all disabled:opacity-50 disabled:cursor-wait"
-                  style={{
-                    fontFamily: bodyFont,
-                    opacity: paymentLoading !== null && paymentLoading !== 'standard' ? 0.6 : 1,
-                  }}
-                  aria-label="Select Standard plan"
-                >
-                  {paymentLoading === 'standard' ? 'Redirecting...' : t('pricing.standard.cta')}
-                </button>
-                <button
-                  onClick={() => router.push('/trip')}
-                  className="w-full flex items-center justify-center gap-2 h-[40px] text-[12px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors border border-dashed border-[#E8DDD4] hover:border-[#C4613A]/40 rounded-xl"
-                  style={{ fontFamily: bodyFont, fontWeight: 500 }}
-                  aria-label="See sample result"
-                >
-                  <Icon name="visibility" size={16} />
-                  {t('preview.seeSample')}
-                </button>
-              </div>
+              <button
+                onClick={() => handleSelectPlan('standard')}
+                disabled={paymentLoading !== null}
+                className="h-[52px] w-full bg-white border-2 border-[#C4613A] text-[#C4613A] text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-[#C4613A] hover:text-white transition-all disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+                style={{
+                  fontFamily: bodyFont,
+                  opacity: paymentLoading !== null && paymentLoading !== 'standard' ? 0.6 : 1,
+                }}
+                aria-label="Select Standard plan"
+              >
+                {paymentLoading === 'standard' ? 'Redirecting...' : t('pricing.standard.cta')}
+              </button>
             </div>
 
             {/* Pro — highlighted */}
             <div
-              className="relative flex flex-col rounded-2xl p-8 overflow-hidden"
-              style={{ background: '#C4613A', boxShadow: '0 4px 16px rgba(196,97,58,.25)' }}
+              className="relative flex flex-col rounded-2xl p-7 overflow-hidden"
+              style={{ background: '#C4613A', boxShadow: '0 8px 32px rgba(196,97,58,.25)' }}
             >
               {/* Most Popular badge */}
               <span
-                className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#1A1410] text-white text-[10px] uppercase tracking-[0.12em] rounded-full whitespace-nowrap"
-                style={{ fontFamily: bodyFont, fontWeight: 600 }}
+                className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 bg-[#1A1410] text-white text-[10px] uppercase tracking-[0.12em] rounded-full whitespace-nowrap font-semibold"
+                style={{ fontFamily: bodyFont }}
               >
                 {t('pricing.pro.badge')}
               </span>
-              <div className="flex flex-col flex-1">
+              <div className="flex flex-col flex-1 mt-2">
                 <h3
-                  className="text-white not-italic text-[28px] mb-4"
+                  className="text-white not-italic text-[24px] mb-3"
                   style={{ fontFamily: displayFont }}
                 >
                   Pro
                 </h3>
                 <div className="flex items-baseline gap-1 mb-1">
                   <span
-                    className="text-[48px] text-white"
+                    className="text-[44px] text-white"
                     style={{ fontFamily: displayFont, fontWeight: 700 }}
                   >
                     $12
@@ -496,143 +480,121 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
                   </span>
                 </div>
                 <span
-                  className="mb-6 text-[11px] text-white/40"
-                  style={{ fontFamily: 'var(--font-mono)' }}
+                  className="mb-5 text-[11px] text-white/40"
+                  style={{ fontFamily: 'var(--font-mono, monospace)' }}
                 >
                   {t('pricing.noAccountNeeded')}
                 </span>
-                <ul className="flex flex-col gap-3 mb-8 flex-1">
+                <ul className="flex flex-col gap-2.5 mb-7 flex-1">
                   {PRO_FEATURE_KEYS.map((key) => (
-                    <li key={key} className="flex items-center gap-2.5">
+                    <li key={key} className="flex items-start gap-2.5">
                       <span
-                        className="material-symbols-outlined text-white shrink-0"
-                        style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}
+                        className="material-symbols-outlined text-white shrink-0 mt-0.5"
+                        style={{ fontSize: 16, fontVariationSettings: "'FILL' 1" }}
                       >
                         check_circle
                       </span>
-                      <span className="text-[14px] text-white/90" style={{ fontFamily: bodyFont }}>
+                      <span className="text-[14px] text-white/90 leading-relaxed" style={{ fontFamily: bodyFont }}>
                         {t(key)}
                       </span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="flex flex-col gap-3 mt-auto">
-                <button
-                  onClick={() => handleSelectPlan('pro')}
-                  disabled={paymentLoading !== null}
-                  className="h-[56px] w-full bg-white text-[#C4613A] text-[13px] font-bold uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                  style={{
-                    fontFamily: bodyFont,
-                    opacity: paymentLoading !== null && paymentLoading !== 'pro' ? 0.6 : 1,
-                  }}
-                  aria-label="Select Pro plan"
-                >
-                  {paymentLoading === 'pro' ? 'Redirecting...' : t('pricing.pro.cta')}
-                </button>
-                <button
-                  onClick={() => router.push('/trip')}
-                  className="w-full flex items-center justify-center gap-2 h-[40px] text-[12px] uppercase tracking-[0.08em] text-white/70 hover:text-white transition-colors border border-dashed border-white/30 hover:border-white/50 rounded-xl"
-                  style={{ fontFamily: bodyFont, fontWeight: 500 }}
-                  aria-label="See sample result"
-                >
-                  <Icon name="visibility" size={16} />
-                  {t('preview.seeSample')}
-                </button>
-              </div>
+              <button
+                onClick={() => handleSelectPlan('pro')}
+                disabled={paymentLoading !== null}
+                className="h-[52px] w-full bg-white text-[#C4613A] text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+                style={{
+                  fontFamily: bodyFont,
+                  opacity: paymentLoading !== null && paymentLoading !== 'pro' ? 0.6 : 1,
+                }}
+                aria-label="Select Pro plan"
+              >
+                {paymentLoading === 'pro' ? 'Redirecting...' : t('pricing.pro.cta')}
+              </button>
             </div>
 
             {/* Annual */}
-            <div className="relative flex flex-col bg-white border border-[#C4613A]/10 rounded-2xl p-8 overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="relative flex flex-col bg-white border border-[#E8DDD4] rounded-2xl p-7 overflow-hidden hover:shadow-lg transition-shadow">
               {/* Gold savings badge */}
               <span
-                className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 gold-gradient text-white text-[10px] uppercase tracking-[0.12em] rounded-full whitespace-nowrap"
-                style={{ fontFamily: bodyFont, fontWeight: 600 }}
+                className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-4 py-1 text-white text-[10px] uppercase tracking-[0.12em] rounded-full whitespace-nowrap font-semibold"
+                style={{ fontFamily: bodyFont, background: 'linear-gradient(135deg, #D4AF37, #C8A96E)' }}
               >
                 {t('pricing.annual.badge')}
               </span>
-              <div className="flex flex-col flex-1">
+              <div className="flex flex-col flex-1 mt-2">
                 <h3
-                  className="not-italic text-[28px] text-[#292524] mb-4"
+                  className="not-italic text-[24px] text-[#1A1410] mb-3"
                   style={{ fontFamily: displayFont }}
                 >
                   Annual
                 </h3>
-                <div className="flex items-baseline gap-1 mb-7">
+                <div className="flex items-baseline gap-1 mb-5">
                   <span
-                    className="text-[48px] text-[#292524]"
+                    className="text-[44px] text-[#1A1410]"
                     style={{ fontFamily: displayFont, fontWeight: 700 }}
                   >
                     $29
                   </span>
-                  <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+                  <span className="text-[14px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>
                     {t('pricing.perYear')}
                   </span>
                 </div>
-                <ul className="flex flex-col gap-3 mb-8 flex-1">
+                <ul className="flex flex-col gap-2.5 mb-7 flex-1">
                   {ANNUAL_FEATURE_KEYS.map((key) => (
                     <CheckItem key={key}>{t(key)}</CheckItem>
                   ))}
                 </ul>
               </div>
-              <div className="flex flex-col gap-3 mt-auto">
-                <button
-                  onClick={() => handleSelectPlan('annual')}
-                  disabled={paymentLoading !== null}
-                  className="h-[56px] w-full bg-[#1A1410] text-white text-[13px] font-bold uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] transition-colors disabled:opacity-50 disabled:cursor-wait"
-                  style={{
-                    fontFamily: bodyFont,
-                    opacity: paymentLoading !== null && paymentLoading !== 'annual' ? 0.6 : 1,
-                  }}
-                  aria-label="Select Annual plan"
-                >
-                  {paymentLoading === 'annual' ? 'Redirecting...' : t('pricing.annual.cta')}
-                </button>
-                <button
-                  onClick={() => router.push('/trip')}
-                  className="w-full flex items-center justify-center gap-2 h-[40px] text-[12px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors border border-dashed border-[#E8DDD4] hover:border-[#C4613A]/40 rounded-xl"
-                  style={{ fontFamily: bodyFont, fontWeight: 500 }}
-                  aria-label="See sample result"
-                >
-                  <Icon name="visibility" size={16} />
-                  {t('preview.seeSample')}
-                </button>
-              </div>
+              <button
+                onClick={() => handleSelectPlan('annual')}
+                disabled={paymentLoading !== null}
+                className="h-[52px] w-full bg-[#1A1410] text-white text-[12px] font-bold uppercase tracking-[0.08em] hover:bg-[#C4613A] transition-colors disabled:opacity-50 disabled:cursor-wait cursor-pointer"
+                style={{
+                  fontFamily: bodyFont,
+                  opacity: paymentLoading !== null && paymentLoading !== 'annual' ? 0.6 : 1,
+                }}
+                aria-label="Select Annual plan"
+              >
+                {paymentLoading === 'annual' ? 'Redirecting...' : t('pricing.annual.cta')}
+              </button>
             </div>
 
           </div>
 
           {/* Trust signals */}
-          <div className="flex justify-center gap-6 mt-7 flex-wrap">
-            <span className="flex items-center gap-1.5 text-[12px] text-[#9c8c7e]">
+          <div className="flex justify-center gap-6 mt-8 flex-wrap">
+            <span className="flex items-center gap-1.5 text-[12px] text-[#8A7B6E]">
               <Icon name="lock" size={15} />
               Secure checkout via Polar
             </span>
-            <span className="text-[12px] text-[#9c8c7e]">24h refund guarantee</span>
-            <span className="text-[12px] text-[#9c8c7e]">Standard &amp; Pro: one-time charge</span>
+            <span className="flex items-center gap-1.5 text-[12px] text-[#8A7B6E]">
+              <Icon name="verified" size={15} />
+              24h refund guarantee
+            </span>
+            <span className="flex items-center gap-1.5 text-[12px] text-[#8A7B6E]">
+              <Icon name="bolt" size={15} />
+              Instant access
+            </span>
           </div>
-          <p className="text-center text-[10px] text-[#9c8c7e]/65 mt-4 leading-relaxed max-w-[560px] mx-auto">
+          <p className="text-center text-[10px] text-[#8A7B6E]/60 mt-4 leading-relaxed max-w-[520px] mx-auto">
             Annual plan automatically renews at $29/year. Cancel anytime before renewal.
             Standard and Pro plans are one-time payments with no auto-renewal.
           </p>
-          <p
-            className="text-center text-[12px] text-[#9c8c7e] mt-3"
-            style={{ fontFamily: bodyFont }}
-          >
-            {t('pricing.noAccountNeeded')}
-          </p>
         </section>
 
-        {/* ─── Footer quote ────────────────────────────────────────────────── */}
-        <footer className="text-center pt-16 pb-10 border-t border-[#C4613A]/10">
+        {/* ─── Footer ────────────────────────────────────────────────────── */}
+        <footer className="text-center pt-12 pb-10 border-t border-[#E8DDD4]">
           <blockquote
-            className="text-[26px] italic text-[#1A1410]/78 mb-5 leading-relaxed"
+            className="text-[24px] italic text-[#1A1410]/70 mb-4 leading-relaxed max-w-[480px] mx-auto"
             style={{ fontFamily: displayFont }}
           >
             &ldquo;{t('footer.quote')}&rdquo;
           </blockquote>
           <p
-            className="text-[11px] font-bold tracking-[0.18em] uppercase text-[#C4613A] mb-12"
+            className="text-[10px] font-bold tracking-[0.18em] uppercase text-[#C4613A] mb-10"
             style={{ fontFamily: bodyFont }}
           >
             &mdash; {t('footer.quoteAuthor')}

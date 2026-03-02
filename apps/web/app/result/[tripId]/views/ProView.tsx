@@ -9,12 +9,6 @@ import {
   type CityOutfitSet,
 } from '@/lib/outfitGenerator'
 import {
-  SizeChip,
-  TagChip,
-  AiGeneratedBadge,
-  ProfileBadge,
-} from '@/components/travel-capsule'
-import {
   ViewProps,
   DEMO_OUTFIT_IMAGES,
   DEMO_CAPSULE_IMAGES,
@@ -42,14 +36,6 @@ const CITY_WEATHER: Record<string, { temp: number; rain: number; wind: number; c
   milan: { temp: 12, rain: 25, wind: 10, condition: 'Overcast' },
 }
 
-const CITY_PALETTES: Record<string, string[]> = {
-  paris: ['#8B7355', '#C4A882', '#4A5568', '#D4C5B2'],
-  rome: ['#C2956B', '#E8C9A0', '#8B6E4E', '#F0E0C8'],
-  barcelona: ['#E2A76F', '#5BA3C2', '#F5DEB3', '#4A7C59'],
-  tokyo: ['#4A5568', '#8B7355', '#2D3748', '#D4C5B2'],
-  milan: ['#1A1A2E', '#6B6E70', '#C4A882', '#E8DDD4'],
-}
-
 const CITY_ACTIVITIES: Record<string, string[]> = {
   paris: ['Cafe Culture', 'Gallery Walk', 'Bistro Dinner', 'Seine Stroll', 'Vintage Shopping'],
   rome: ['Colosseum Visit', 'Trastevere Dining', 'Vatican Morning', 'Piazza Exploring', 'Gelato Tour'],
@@ -58,29 +44,60 @@ const CITY_ACTIVITIES: Record<string, string[]> = {
   milan: ['Duomo Visit', 'Fashion District', 'Aperitivo Hour', 'Canal Walk', 'Gallery Tour'],
 }
 
-const CITY_MOOD_NAMES = [
-  'Parisian Chic',
-  'Roman Holiday',
-  'Barcelona Sol',
-  'Tokyo Minimal',
-  'Milan Avant-Garde',
-]
+// ─── AI Profile Sidebar (shared pattern) ─────────────────────────────────────
 
-const CITY_TIMELINE_STYLES = [
-  'Chic & Structured',
-  'Edgy & Layered',
-  'Functional & Cool',
-  'Relaxed & Breezy',
-  'Bold & Vibrant',
-]
+function AIProfileSidebar({ profile }: {
+  profile: { gender: string; height: number; weight: number; aesthetics: string[] }
+}) {
+  const gender = profile.gender
+  const genderIcon = gender === 'male' || gender === 'Male' ? '♂' : gender === 'female' || gender === 'Female' ? '♀' : '⚧'
 
-const CITY_QUOTES = [
-  'Effortlessly transition from day to night with versatile staples tailored for the cobblestone streets.',
-  'Sophisticated layers designed to handle unpredictable weather while looking sharp for evenings out.',
-  'Functional yet trendy pieces perfect for sun-drenched days and golden-hour evenings.',
-  'Minimalist precision meets urban exploration — curated for the most fashion-forward streets.',
-  'Bold statements balanced with comfort — made for spontaneous adventures under Mediterranean sun.',
-]
+  return (
+    <div className="bg-white border border-[#E8DDD4] rounded-2xl p-6 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+      <div className="flex items-center gap-2 mb-2">
+        <span className="material-symbols-outlined text-[#C4613A]" style={{ fontSize: 18 }}>auto_awesome</span>
+        <h3 className="font-playfair text-lg text-[#292524]">AI Generation Profile</h3>
+      </div>
+      <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#C4613A] mb-4 font-mono">
+        Outfits Tailored to Your Data
+      </p>
+      <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#FFF7ED] border border-[#FDBA74]/30 text-[#9A3412] text-xs font-medium mb-5">
+        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>warning</span>
+        Tailored for {gender} · {profile.height}cm · average build
+      </div>
+      <div className="flex flex-col gap-0">
+        {[
+          { icon: genderIcon, label: 'Gender', value: gender },
+          { icon: '↕', label: 'Height', value: `${profile.height} cm` },
+          { icon: '⚖', label: 'Weight', value: `${profile.weight} kg` },
+          { icon: '📷', label: 'Reference Photo', value: 'Not provided' },
+        ].map((stat) => (
+          <div key={stat.label} className="flex items-center justify-between py-2.5 border-b border-[#EFE8DF] last:border-0">
+            <div className="flex items-center gap-2">
+              <span className="text-sm w-5 text-center">{stat.icon}</span>
+              <span className="text-sm text-[#57534e] font-sans">{stat.label}</span>
+            </div>
+            <span className="text-sm text-[#292524] font-semibold font-sans">{stat.value}</span>
+          </div>
+        ))}
+      </div>
+      <div className="mt-4">
+        <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#57534e] mb-2 font-mono">
+          Style Preferences
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {(profile.aesthetics.length > 0 ? profile.aesthetics : ['Minimalist', 'Streetwear']).map((tag: string) => (
+            <span key={tag} className="inline-flex px-3 py-1 bg-[#F5EFE6] text-[#57534e] text-xs font-medium rounded-full border border-[#E8DDD4]">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── ProView ──────────────────────────────────────────────────────────────────
 
 export default function ProView({ trip, tripId, onShare }: ViewProps) {
   const cities = trip.cities ?? []
@@ -93,13 +110,17 @@ export default function ProView({ trip, tripId, onShare }: ViewProps) {
   >({})
 
   // Build profile from localStorage
-  const profile = useMemo(() => {
+  const profileData = useMemo(() => {
     try {
       const raw = JSON.parse(localStorage.getItem('tc_user_profile') ?? 'null')
-      if (raw) return buildProfile(raw.gender, raw.height, raw.weight, raw.aesthetics ?? [])
+      if (raw) return { gender: raw.gender ?? 'Male', height: raw.height ?? 180, weight: raw.weight ?? 80, aesthetics: raw.aesthetics ?? [] }
     } catch { /* ignore */ }
-    return buildProfile('female', 165, 60, [])
+    return { gender: 'Female', height: 170, weight: 56, aesthetics: ['Minimalist', 'Classic', 'Casual'] }
   }, [])
+
+  const profile = useMemo(() => {
+    return buildProfile(profileData.gender, profileData.height, profileData.weight, profileData.aesthetics)
+  }, [profileData])
 
   // Generate outfits per city
   const citySets = useMemo(() => {
@@ -112,26 +133,21 @@ export default function ProView({ trip, tripId, onShare }: ViewProps) {
         month: isNaN(monthNum) ? 10 : monthNum,
         days: c.days,
       }, 4)
-      // Get real job images for this city
       const jobImages = (trip.generation_jobs ?? [])
         .filter(j => j.city === c.name && j.image_url)
         .map(j => j.image_url!)
       const heroImg = jobImages[0] ?? CITY_HEROES[key] ?? CITY_HEROES.paris
       const weather = CITY_WEATHER[key] ?? CITY_WEATHER.paris
-      const palette = CITY_PALETTES[key] ?? CITY_PALETTES.paris
       const activities = CITY_ACTIVITIES[key] ?? CITY_ACTIVITIES.paris
-      const moodName = trip.generation_jobs?.find(j => j.city === c.name)?.mood
-        ?? CITY_MOOD_NAMES[cities.indexOf(c) % CITY_MOOD_NAMES.length]
-      return { city: c.name, heroImg, weather, palette, activities, moodName, outfitSet, jobImages }
+      return { city: c.name, heroImg, weather, activities, outfitSet, jobImages }
     })
   }, [cities, profile, trip.generation_jobs, trip.month])
 
-  // Consolidated packing from all cities
+  // Consolidated packing
   const allOutfits = useMemo(() => citySets.flatMap(cs => cs.outfitSet.outfits), [citySets])
   const packing = useMemo(() => derivePacking(citySets.map(cs => cs.outfitSet)), [citySets])
 
   const currentSet = citySets[activeCity] ?? citySets[0]
-  const bodyFitLabel = allOutfits[0]?.styleTag ?? ''
 
   const handleRegenerate = useCallback(async (cityName: string) => {
     const current = regenState[cityName]
@@ -145,7 +161,7 @@ export default function ProView({ trip, tripId, onShare }: ViewProps) {
     }
   }, [tripId, regenState])
 
-  // Travel date range
+  // Travel date ranges
   let dayOffset = 1
   const cityDayRanges = cities.map((c) => {
     const start = dayOffset
@@ -154,470 +170,270 @@ export default function ProView({ trip, tripId, onShare }: ViewProps) {
     return { start, end }
   })
   const totalDays = cities.reduce((sum, c) => sum + (c.days ?? 3), 0)
-  const travelDatesLabel = `${month} 1 – ${month} ${totalDays}`
+
+  const genderLabel = profileData.gender === 'male' || profileData.gender === 'Male' ? 'Menswear' : profileData.gender === 'female' || profileData.gender === 'Female' ? 'Womenswear' : 'Unisex'
 
   if (!currentSet) return null
 
   return (
-    <div style={{ width: '100%', maxWidth: 1400, margin: '0 auto', padding: '32px clamp(16px, 3vw, 40px) 80px', fontFamily: 'var(--font-sans, sans-serif)', background: '#FDF8F3', minHeight: '100vh' }}>
+    <div className="w-full min-h-screen bg-[#FDF8F3] font-sans">
 
-      {/* ── Title + AI Badge ────────────────────────────────────────────────────── */}
-      <div style={{ marginBottom: 8 }}>
-        <h1 style={{
-          fontFamily: "'Playfair Display', serif",
-          fontStyle: 'italic',
-          fontSize: 'clamp(32px, 3.5vw, 48px)',
-          color: '#292524',
-          lineHeight: 1.1,
-          marginBottom: 8,
-        }}>
-          Your Multi-City Style Guide
+      {/* ── Example Banner (demo mode) ──────────────────────────────────────── */}
+      {!process.env.NEXT_PUBLIC_WORKER_URL && (
+        <div className="bg-[#C4613A] text-white text-center py-2.5 px-4 text-sm font-medium">
+          <span className="uppercase tracking-[0.1em] text-xs font-bold">Example Preview</span>
+          <span className="mx-2">—</span>
+          This is what you receive with the Pro Plan ($12)
+          <a href="/trip" className="ml-3 inline-flex items-center gap-1 bg-white text-[#C4613A] px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide hover:bg-white/90 transition-colors">
+            Get Started
+            <span className="material-symbols-outlined" style={{ fontSize: 14 }}>arrow_forward</span>
+          </a>
+        </div>
+      )}
+
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-10 pt-8 pb-20">
+
+        {/* ── Badges + AI Generated ─────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-[#1A1410]/80 text-white text-[9px] font-bold tracking-[0.12em] uppercase rounded-sm backdrop-blur-sm">
+            <span className="material-symbols-outlined" style={{ fontSize: 10 }}>auto_awesome</span>
+            AI Generated
+          </span>
+          <span className="inline-flex items-center gap-1 text-[#C4613A] text-xs font-semibold font-mono">
+            <span className="material-symbols-outlined" style={{ fontSize: 12 }}>auto_awesome</span>
+            93% AI Confidence
+          </span>
+          <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#F5EFE6] text-[#57534e] text-xs font-medium rounded-full border border-[#E8DDD4]">
+            Tailored for {profileData.gender} · {profileData.height}cm · {profileData.weight < 65 ? 'petite' : 'average'} build
+          </span>
+        </div>
+
+        {/* ── Title ──────────────────────────────────────────────────────────── */}
+        <h1 className="font-playfair italic text-[clamp(28px,3.5vw,44px)] text-[#292524] leading-tight mb-2">
+          Multi-City Style Guide
         </h1>
-        <p style={{ fontSize: 15, color: '#57534e', maxWidth: 600, lineHeight: 1.65 }}>
-          {cities.length} {cities.length === 1 ? 'city' : 'cities'}, one seamlessly curated capsule wardrobe.
-          Every piece earns its place across your entire journey.
+        <p className="text-base text-[#57534e] max-w-xl leading-relaxed mb-6">
+          {cities.length} {cities.length === 1 ? 'city' : 'cities'}, one seamlessly curated capsule wardrobe. Every piece earns its place across your entire European journey.
         </p>
-        <div style={{ marginTop: 12 }}>
-          <AiGeneratedBadge />
+
+        {/* ── City Tabs as pills ────────────────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-2 mb-8">
+          {citySets.map((cs, i) => {
+            const range = cityDayRanges[i]
+            const isActive = activeCity === i
+            return (
+              <button
+                key={cs.city}
+                onClick={() => { setActiveCity(i); setExpandedOutfit(0) }}
+                className={`px-4 py-2 rounded-full text-xs uppercase tracking-[0.08em] font-medium cursor-pointer transition-all duration-200 border ${
+                  isActive
+                    ? 'bg-[#C4613A] border-[#C4613A] text-white'
+                    : 'bg-white border-[#E8DDD4] text-[#57534e] hover:border-[#C4613A]/40'
+                }`}
+              >
+                {cs.city} · {month} {range?.start} – {month} {range?.end}
+              </button>
+            )
+          })}
         </div>
-      </div>
 
-      {/* ── City Tabs ───────────────────────────────────────────────────────────── */}
-      <div style={{ marginTop: 20, marginBottom: 32, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-        {citySets.map((cs, i) => {
-          const range = cityDayRanges[i]
-          return (
-            <button
-              key={cs.city}
-              onClick={() => { setActiveCity(i); setExpandedOutfit(0) }}
-              style={{
-                padding: '6px 16px',
-                borderRadius: 9999,
-                fontSize: 12,
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                fontWeight: 500,
-                cursor: 'pointer',
-                border: activeCity === i ? '1px solid #C4613A' : '1px solid #E8DDD4',
-                background: activeCity === i ? '#C4613A' : '#fff',
-                color: activeCity === i ? '#fff' : '#57534e',
-                transition: 'all 0.18s',
-                fontFamily: 'var(--font-sans, sans-serif)',
-              }}
-            >
-              {getCityFlag(cs.city)} {cs.city} · Days {range?.start}–{range?.end}
-            </button>
-          )
-        })}
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button
-            onClick={() => onShare()}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              background: '#C4613A',
-              color: '#fff',
-              border: 'none',
-              borderRadius: 8,
-              padding: '8px 20px',
-              fontSize: 13,
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-sans, sans-serif)',
-            }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: 18 }}>share</span>
-            Share Guide
-          </button>
-        </div>
-      </div>
+        {/* ── Main 2-Column Grid ────────────────────────────────────────────── */}
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-8 items-start">
 
-      {/* ── Main 12-col Grid ─────────────────────────────────────────────────────── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32, alignItems: 'start' }}>
+          {/* ── Left Column ──────────────────────────────────────────────────── */}
+          <div className="flex flex-col gap-10">
 
-        {/* ── Left: City Content ───────────────────────────────────────────────── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+            {/* City Hero Image */}
+            <div className="relative rounded-2xl overflow-hidden aspect-[16/9]">
+              <Image
+                src={currentSet.heroImg}
+                alt={currentSet.city}
+                fill
+                className="object-cover"
+                style={{ filter: CITY_FILTERS[activeCity % CITY_FILTERS.length] }}
+                priority={activeCity === 0}
+                unoptimized
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
 
-          {/* City Hero Image */}
-          <div style={{ position: 'relative', borderRadius: 16, overflow: 'hidden', aspectRatio: '16/9' }}>
-            <Image
-              src={currentSet.heroImg}
-              alt={currentSet.city}
-              fill
-              style={{ objectFit: 'cover', filter: CITY_FILTERS[activeCity % CITY_FILTERS.length] }}
-              priority={activeCity === 0}
-              unoptimized
-            />
-            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent 50%)' }} />
-
-            {/* Top badges */}
-            <div style={{ position: 'absolute', top: 20, left: 20, display: 'flex', gap: 8 }}>
-              <TagChip>{currentSet.city}</TagChip>
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                padding: '2px 8px',
-                borderRadius: 9999,
-                background: 'rgba(255,255,255,0.2)',
-                backdropFilter: 'blur(8px)',
-                color: '#fff',
-                fontSize: 9,
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-                fontFamily: 'var(--font-mono, monospace)',
-              }}>
-                <span className="material-symbols-outlined" style={{ fontSize: 12 }}>hd</span>
-                Ultra Hi-Res
-              </span>
-            </div>
-
-            {/* Bottom overlay */}
-            <div style={{ position: 'absolute', bottom: 20, left: 20, right: 20, display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12 }}>
-              <div>
-                <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.7)', display: 'block', fontFamily: 'var(--font-sans, sans-serif)', fontWeight: 500, marginBottom: 4 }}>
-                  {travelDatesLabel}
-                </span>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 28, color: '#fff', fontStyle: 'italic' }}>
-                  {currentSet.outfitSet.outfits.length} AI Outfits
+              {/* Top left: city name + hi-res badge */}
+              <div className="absolute top-5 left-5 flex items-center gap-2">
+                <span className="text-white text-xs uppercase tracking-[0.12em] font-semibold font-sans">
+                  {currentSet.city}, {currentSet.city === 'Paris' ? 'France' : currentSet.city === 'Rome' || currentSet.city === 'Milan' ? 'Italy' : currentSet.city === 'Barcelona' ? 'Spain' : currentSet.city === 'Tokyo' ? 'Japan' : ''}
                 </span>
               </div>
-              {/* Regen button */}
-              {(regenState[currentSet.city]?.count ?? 0) < 1 ? (
-                <button
-                  onClick={() => handleRegenerate(currentSet.city)}
-                  disabled={regenState[currentSet.city]?.loading}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    padding: '8px 16px',
-                    borderRadius: 9999,
-                    border: '1px solid rgba(255,255,255,0.3)',
-                    background: 'rgba(255,255,255,0.15)',
-                    backdropFilter: 'blur(8px)',
-                    color: '#fff',
-                    fontSize: 12,
-                    fontWeight: 500,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    cursor: 'pointer',
-                    fontFamily: 'var(--font-sans, sans-serif)',
-                    opacity: regenState[currentSet.city]?.loading ? 0.6 : 1,
-                  }}
-                >
-                  <span className={`material-symbols-outlined${regenState[currentSet.city]?.loading ? ' animate-spin' : ''}`} style={{ fontSize: 16 }}>
-                    refresh
-                  </span>
-                  Regenerate (1 left)
-                </button>
-              ) : (
-                <span style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '8px 16px',
-                  borderRadius: 9999,
-                  border: '1px solid rgba(255,255,255,0.2)',
-                  background: 'rgba(255,255,255,0.1)',
-                  color: 'rgba(255,255,255,0.7)',
-                  fontSize: 12,
-                  fontFamily: 'var(--font-sans, sans-serif)',
-                }}>
-                  <span className="material-symbols-outlined" style={{ fontSize: 16 }}>check_circle</span>
-                  Regenerated
+              <div className="absolute top-5 right-5">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-lg text-white text-[9px] uppercase tracking-[0.12em] font-mono">
+                  <span className="material-symbols-outlined" style={{ fontSize: 12 }}>hd</span>
+                  Ultra Hi-Res
                 </span>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Outfit Cards */}
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: 24, color: '#292524' }}>
-                {currentSet.city} Outfits
-              </h2>
-              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#57534e', fontFamily: 'var(--font-mono, monospace)' }}>
-                {currentSet.outfitSet.outfits.length} Looks · {profile.gender === 'male' ? 'Menswear' : profile.gender === 'non-binary' ? 'Unisex' : 'Womenswear'}
-              </span>
+              {/* Bottom overlay */}
+              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between gap-4">
+                <div>
+                  <span className="text-xs text-white/70 uppercase tracking-[0.15em] block font-sans font-medium mb-1">
+                    {month} {cityDayRanges[activeCity]?.start} – {month} {cityDayRanges[activeCity]?.end}
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {currentSet.outfitSet.outfits.map((outfit, idx) => {
-                // Use real job images if available for this city
-                const jobImgUrl = currentSet.jobImages[idx] ?? regenState[currentSet.city]?.newImageUrl
-                const imgUrl = idx === 0 && regenState[currentSet.city]?.newImageUrl
-                  ? regenState[currentSet.city].newImageUrl!
-                  : jobImgUrl ?? outfit.imageUrl
-                const isOpen = expandedOutfit === idx
+            {/* Outfit Accordion Cards */}
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="font-playfair text-2xl text-[#292524]">
+                  {currentSet.city} Outfits
+                </h2>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] font-mono font-semibold">
+                  {currentSet.outfitSet.outfits.length} Looks · {genderLabel}
+                </span>
+              </div>
 
-                return (
-                  <div key={outfit.id} style={{
-                    background: '#fff',
-                    borderRadius: 16,
-                    border: '1px solid #ebdacc',
-                    overflow: 'hidden',
-                    boxShadow: '0 2px 12px rgba(0,0,0,.04)',
-                  }}>
-                    <button
-                      onClick={() => setExpandedOutfit(isOpen ? -1 : idx)}
-                      style={{
-                        width: '100%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '20px 24px',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        gap: 16,
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flex: 1, minWidth: 0 }}>
-                        <span style={{
-                          flexShrink: 0,
-                          width: 40,
-                          height: 40,
-                          borderRadius: '50%',
-                          background: 'rgba(196,97,58,0.1)',
-                          color: '#C4613A',
-                          fontWeight: 700,
-                          fontSize: 14,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontFamily: 'var(--font-mono, monospace)',
-                        }}>
-                          {outfit.day}
-                        </span>
-                        <div style={{ minWidth: 0 }}>
-                          <p style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: '#292524', marginBottom: 2 }}>{outfit.label}</p>
-                          <p style={{ fontSize: 12, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>{outfit.styleTag}</p>
-                        </div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: 9999,
-                          background: 'rgba(196,97,58,0.08)',
-                          color: '#C4613A',
-                          fontSize: 9,
-                          fontFamily: 'var(--font-mono, monospace)',
-                          fontWeight: 600,
-                        }}>
-                          {88 - idx * 2}% match
-                        </span>
-                        <span className="material-symbols-outlined" style={{
-                          fontSize: 24,
-                          color: '#57534e',
-                          transform: isOpen ? 'rotate(180deg)' : 'none',
-                          transition: 'transform 0.25s',
-                        }}>expand_more</span>
-                      </div>
-                    </button>
+              <div className="flex flex-col gap-3">
+                {currentSet.outfitSet.outfits.map((outfit, idx) => {
+                  const jobImgUrl = currentSet.jobImages[idx] ?? regenState[currentSet.city]?.newImageUrl
+                  const imgUrl = idx === 0 && regenState[currentSet.city]?.newImageUrl
+                    ? regenState[currentSet.city].newImageUrl!
+                    : jobImgUrl ?? outfit.imageUrl
+                  const isOpen = expandedOutfit === idx
 
-                    {isOpen && (
-                      <div style={{ padding: '0 24px 24px', borderTop: '1px solid #f0e8e0' }}>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, paddingTop: 20 }}>
-                          {/* Outfit image */}
-                          <div style={{ position: 'relative', aspectRatio: '3/4', borderRadius: 12, overflow: 'hidden', background: '#f0e8e0' }}>
-                            <Image src={imgUrl} alt={outfit.label} fill style={{ objectFit: 'cover' }} unoptimized />
-                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4), transparent)' }} />
-                            <div style={{ position: 'absolute', top: 12, left: 12 }}>
-                              <span style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                padding: '2px 8px',
-                                borderRadius: 9999,
-                                background: 'rgba(255,255,255,0.2)',
-                                backdropFilter: 'blur(8px)',
-                                color: '#fff',
-                                fontSize: 9,
-                                textTransform: 'uppercase',
-                                letterSpacing: '0.1em',
-                                fontFamily: 'var(--font-mono, monospace)',
-                              }}>
-                                AI Generated
-                              </span>
-                            </div>
-                            {/* Color palette bottom */}
-                            <div style={{ position: 'absolute', bottom: 12, left: 12, right: 12, display: 'flex', gap: 6 }}>
-                              {currentSet.palette.map((color) => (
-                                <div key={color} style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.5)', background: color }} />
-                              ))}
-                            </div>
+                  return (
+                    <div key={outfit.id} className="bg-white rounded-2xl border border-[#ebdacc] overflow-hidden shadow-[0_2px_12px_rgba(0,0,0,0.04)]">
+                      <button
+                        onClick={() => setExpandedOutfit(isOpen ? -1 : idx)}
+                        className="w-full flex items-center justify-between px-6 py-5 bg-transparent border-none cursor-pointer text-left gap-4 transition-colors hover:bg-[#FDF8F3]/50"
+                      >
+                        <div className="flex items-center gap-4 flex-1 min-w-0">
+                          <span className="flex-shrink-0 w-10 h-10 rounded-full bg-[#C4613A]/10 text-[#C4613A] font-bold text-sm flex items-center justify-center font-mono">
+                            {outfit.day}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="font-playfair text-lg text-[#292524] mb-0.5">{outfit.label}</p>
+                            <p className="text-xs text-[#57534e] font-sans">{outfit.styleTag}</p>
                           </div>
+                        </div>
+                        <div className="flex items-center gap-3 flex-shrink-0">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] font-mono font-semibold">
+                            {88 - idx * 2}% match
+                          </span>
+                          <span className="material-symbols-outlined text-[#57534e] transition-transform duration-300" style={{ fontSize: 24, transform: isOpen ? 'rotate(180deg)' : 'none' }}>
+                            expand_more
+                          </span>
+                        </div>
+                      </button>
 
-                          {/* Outfit breakdown */}
-                          <div>
-                            <p style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#57534e', marginBottom: 16, fontFamily: 'var(--font-sans, sans-serif)' }}>
-                              Outfit Breakdown · Your Sizes
-                            </p>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                              {outfit.items.map((item) => (
-                                <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, borderRadius: 8 }}>
-                                  <div style={{ position: 'relative', width: 48, height: 48, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f5efe8' }}>
-                                    <Image src={item.imageUrl} alt={item.name} fill style={{ objectFit: 'cover' }} unoptimized />
-                                  </div>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                      <span style={{ fontSize: 14, color: '#292524', fontWeight: 500, fontFamily: 'var(--font-sans, sans-serif)' }}>{item.name}</span>
-                                      {item.size && <SizeChip size={item.size} />}
-                                    </div>
-                                    <span style={{ fontSize: 12, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>{item.category}</span>
-                                  </div>
-                                </div>
-                              ))}
+                      {isOpen && (
+                        <div className="px-6 pb-6 border-t border-[#f0e8e0]">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-5">
+                            <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-[#f0e8e0]">
+                              <Image src={imgUrl} alt={outfit.label} fill className="object-cover" unoptimized />
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                              <div className="absolute top-3 left-3">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-lg text-white text-[9px] uppercase tracking-[0.1em] font-mono">
+                                  AI Generated
+                                </span>
+                              </div>
                             </div>
-                            {/* Activities */}
-                            <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #EFE8DF' }}>
-                              <p style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.12em', color: '#57534e', marginBottom: 8, fontFamily: 'var(--font-sans, sans-serif)' }}>
-                                Activities
+                            <div>
+                              <p className="text-[10px] font-semibold tracking-[0.12em] uppercase text-[#57534e] mb-4 font-sans">
+                                Outfit Breakdown · Your Sizes
                               </p>
-                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                                {currentSet.activities.map((a) => (
-                                  <span key={a} style={{ padding: '4px 10px', background: '#FDF8F3', border: '1px solid #E8DDD4', borderRadius: 9999, fontSize: 11, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>
-                                    {a}
-                                  </span>
+                              <div className="flex flex-col gap-2">
+                                {outfit.items.map((item) => (
+                                  <div key={item.name} className="flex items-center gap-3 p-2 rounded-lg">
+                                    <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#f5efe8]">
+                                      <Image src={item.imageUrl} alt={item.name} fill className="object-cover" unoptimized />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-sm text-[#292524] font-medium font-sans">{item.name}</span>
+                                        {item.size && (
+                                          <span className="inline-flex items-center justify-center w-8 h-8 bg-white border border-[#E8DDD4] text-[#1A1410] text-xs font-bold rounded-full">
+                                            {item.size}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-[#57534e] font-sans">{item.category}</span>
+                                    </div>
+                                  </div>
                                 ))}
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
             </div>
           </div>
 
-          {/* Style Quote */}
-          <p style={{
-            fontSize: 18,
-            color: '#57534e',
-            fontStyle: 'italic',
-            borderLeft: `4px solid ${activeCity === 0 ? '#C4613A' : '#a8a29e'}`,
-            paddingLeft: 16,
-            paddingTop: 4,
-            paddingBottom: 4,
-            lineHeight: 1.7,
-            fontFamily: "'Playfair Display', serif",
-          }}>
-            &ldquo;{CITY_QUOTES[activeCity % CITY_QUOTES.length]}&rdquo;
-          </p>
+          {/* ── Right Sidebar ─────────────────────────────────────────────────── */}
+          <aside className="hidden lg:flex flex-col gap-5">
+            <div className="sticky top-24 flex flex-col gap-5">
+
+              {/* Example User card (from Figma) */}
+              <div className="bg-white border border-[#E8DDD4] rounded-2xl p-5 shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-[#C4613A] flex items-center justify-center text-white text-sm font-bold">
+                    {(trip.user_name ?? 'T')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-[#1A1410]">{trip.user_name ?? 'Example User'}</p>
+                    <p className="text-xs text-[#9c8c7e]">
+                      {profileData.gender} · {profileData.height}cm · {profileData.weight}kg
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(profileData.aesthetics.length > 0 ? profileData.aesthetics : ['Minimalist', 'Classic', 'Casual']).map((tag: string) => (
+                    <span key={tag} className="inline-flex px-2.5 py-0.5 bg-[#F5EFE6] text-[#57534e] text-[11px] font-medium rounded-full border border-[#E8DDD4]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Multi-City Packing */}
+              <div className="bg-white rounded-2xl p-5 border border-[#E8DDD4] shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-playfair text-base text-[#292524] font-bold">Multi-City Packing</h3>
+                  <span className="px-2 py-0.5 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[9px] uppercase tracking-[0.1em] font-mono font-semibold">
+                    Auto-derived
+                  </span>
+                </div>
+                <p className="text-xs text-[#57534e] mb-4 font-sans">
+                  Consolidated from {allOutfits.length} outfits across {citySets.length} cities
+                </p>
+                <div className="flex flex-col gap-2 max-h-[360px] overflow-y-auto">
+                  {packing.slice(0, 10).map((item) => (
+                    <div key={item.name} className="flex items-center gap-3 p-2 rounded-lg">
+                      {item.imageUrl && (
+                        <div className="relative w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-[#f5efe8]">
+                          <Image src={item.imageUrl} alt={item.name} fill className="object-cover" unoptimized />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] text-[#292524] font-medium overflow-hidden text-ellipsis whitespace-nowrap font-sans">
+                          {item.name}
+                        </p>
+                        <p className="text-[10px] text-[#57534e] font-mono">
+                          {item.quantity > 1 ? `x${item.quantity} looks` : '1 look'} · {item.category}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* AI Profile */}
+              <AIProfileSidebar profile={profileData} />
+            </div>
+          </aside>
         </div>
-
-        {/* ── Right Sidebar ────────────────────────────────────────────────────── */}
-        <aside style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div style={{ position: 'sticky', top: 88, display: 'flex', flexDirection: 'column', gap: 24 }}>
-
-            {/* AI Profile */}
-            <ProfileBadge plan="Pro" />
-
-            {/* Multi-City Packing Summary */}
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #E8DDD4', boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: '#292524' }}>Multi-City Packing</h3>
-                <span style={{ padding: '2px 8px', borderRadius: 9999, background: 'rgba(196,97,58,0.1)', color: '#C4613A', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.1em', fontFamily: 'var(--font-mono, monospace)', fontWeight: 600 }}>
-                  Auto-derived
-                </span>
-              </div>
-              <p style={{ fontSize: 12, color: '#57534e', marginBottom: 16, fontFamily: 'var(--font-sans, sans-serif)' }}>
-                Consolidated from {allOutfits.length} outfits across {citySets.length} cities
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'auto' }}>
-                {packing.slice(0, 10).map((item) => (
-                  <div key={item.name} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 8, borderRadius: 8 }}>
-                    {item.imageUrl && (
-                      <div style={{ position: 'relative', width: 40, height: 40, borderRadius: 8, overflow: 'hidden', flexShrink: 0, background: '#f5efe8' }}>
-                        <Image src={item.imageUrl} alt={item.name} fill style={{ objectFit: 'cover' }} unoptimized />
-                      </div>
-                    )}
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 13, color: '#292524', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans, sans-serif)' }}>
-                        {item.name}
-                      </p>
-                      <p style={{ fontSize: 10, color: '#57534e', fontFamily: 'var(--font-mono, monospace)' }}>
-                        {item.quantity > 1 ? `x${item.quantity} looks` : '1 look'} · {item.category}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid #EFE8DF' }}>
-                <span style={{ fontSize: 12, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>
-                  {packing.length} unique items for {allOutfits.length} looks
-                </span>
-              </div>
-            </div>
-
-            {/* Weather Forecast */}
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #E8DDD4', boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: '#292524', marginBottom: 20 }}>
-                Weather Forecast
-              </h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {citySets.map((cs) => (
-                  <div key={cs.city} style={{ paddingBottom: 12, borderBottom: '1px solid #EFE8DF', marginBottom: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <div>
-                        <p style={{ fontSize: 14, color: '#292524', fontWeight: 500, fontFamily: 'var(--font-sans, sans-serif)' }}>{cs.city}</p>
-                        <p style={{ fontSize: 11, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>{cs.weather.condition}</p>
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 12, fontFamily: 'var(--font-mono, monospace)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#292524' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 14, color: '#C4613A' }}>thermostat</span>
-                        {cs.weather.temp}°C
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#57534e' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>water_drop</span>
-                        {cs.weather.rain}%
-                      </span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: '#57534e' }}>
-                        <span className="material-symbols-outlined" style={{ fontSize: 14 }}>air</span>
-                        {cs.weather.wind}km/h
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Capsule Stats */}
-            <div style={{ background: '#fff', borderRadius: 16, padding: 24, border: '1px solid #E8DDD4', boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}>
-              <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: 18, color: '#292524', marginBottom: 16 }}>Capsule Stats</h3>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                {[
-                  { icon: 'public', label: 'Cities', value: `${citySets.length}` },
-                  { icon: 'style', label: 'AI Outfits', value: `${allOutfits.length} looks` },
-                  { icon: 'checkroom', label: 'Packing Items', value: `${packing.length} pieces` },
-                  { icon: 'hd', label: 'Export Quality', value: 'Ultra Hi-Res' },
-                  { icon: 'refresh', label: 'Regenerations', value: Object.values(regenState).some(r => r.count > 0) ? '0 left' : '1 left' },
-                ].map((stat) => (
-                  <div key={stat.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0', borderBottom: '1px solid #EFE8DF' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="material-symbols-outlined" style={{ fontSize: 16, color: '#C4613A' }}>{stat.icon}</span>
-                      <span style={{ fontSize: 13, color: '#57534e', fontFamily: 'var(--font-sans, sans-serif)' }}>{stat.label}</span>
-                    </div>
-                    <span style={{ fontSize: 13, color: '#292524', fontWeight: 600, fontFamily: 'var(--font-mono, monospace)' }}>{stat.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </aside>
       </div>
-
-      <style jsx global>{`
-        @media (max-width: 1024px) {
-          .pro-grid-responsive { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
     </div>
   )
 }
