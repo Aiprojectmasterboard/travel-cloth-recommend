@@ -171,21 +171,41 @@ async function generateWithRetry(
  * @param input - tripId, vibeResult, optional faceUrl
  * @param env   - Cloudflare Worker bindings
  */
+export interface TeaserUserProfile {
+  gender?: 'male' | 'female' | 'non-binary';
+  height_cm?: number;
+  aesthetics?: string[];
+}
+
 export async function teaserAgent(
-  input: { tripId: string; vibeResult: VibeResult; faceUrl?: string },
+  input: { tripId: string; vibeResult: VibeResult; faceUrl?: string; userProfile?: TeaserUserProfile },
   env: Bindings
 ): Promise<TeaserResult> {
-  const { tripId, vibeResult, faceUrl } = input;
+  const { tripId, vibeResult, faceUrl, userProfile } = input;
 
   // Guard: NANOBANANA_API_KEY must be configured as a Worker secret
   if (!env.NANOBANANA_API_KEY) {
     throw new Error('[teaserAgent] NANOBANANA_API_KEY is not configured — run: wrangler secret put NANOBANANA_API_KEY');
   }
 
-  // Build image prompt from vibe data
+  // Build model descriptor from user profile
+  const modelDesc = userProfile?.gender === 'male'
+    ? 'Male model'
+    : userProfile?.gender === 'non-binary'
+    ? 'Androgynous model'
+    : 'Female model';
+  const heightDesc = userProfile?.height_cm
+    ? (userProfile.height_cm >= 175 ? 'tall figure' : userProfile.height_cm <= 160 ? 'petite figure' : '')
+    : '';
+  const styleDesc = userProfile?.aesthetics?.length
+    ? userProfile.aesthetics.slice(0, 2).join(' and ') + ' style'
+    : '';
+
+  // Build image prompt from vibe + user profile
   const tagString = vibeResult.vibe_tags.join(', ');
+  const profilePrefix = [modelDesc, heightDesc, styleDesc].filter(Boolean).join(', ');
   const prompt =
-    `${vibeResult.mood_label} fashion editorial, ${tagString}, ` +
+    `${profilePrefix}, ${vibeResult.mood_label} fashion editorial, ${tagString}, ` +
     `${vibeResult.avoid_note ? `(not: ${vibeResult.avoid_note}), ` : ''}` +
     'professional fashion photography, high fashion magazine editorial, ' +
     'full body shot, studio or city street background, golden hour light, ' +

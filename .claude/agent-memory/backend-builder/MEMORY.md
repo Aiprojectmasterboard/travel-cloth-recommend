@@ -23,14 +23,14 @@ All agents accept `env: Bindings` as last param.
 - `vibeAgent({city,country,weather}, env): Promise<VibeResult>` — Claude API
 - `teaserAgent({tripId,vibeResult,faceUrl?}, env): Promise<TeaserResult>` — NanoBanana + R2
 - `capsuleAgent({vibeResults,weather,plan,cities,month,tripDays?}, env): Promise<CapsuleResult>` — Claude
-- `styleAgent({vibeResults,cities,weather?}, env): Promise<StylePrompts[]>` — Claude (Pro only)
+- `styleAgent({vibeResults,cities,weather?,userProfile?}, env): Promise<StylePrompts[]>` — Claude (Pro only)
 - `imageGenAgent({prompts,tripId,jobIds?,faceUrl?}, env): Promise<GeneratedImages>` — NanoBanana (Pro only)
 - `fulfillmentAgent({tripId,email?,galleryUrl}, env): Promise<void>` — Resend + R2 cleanup
 - `growthAgent({tripId,moodName,plan}, env): Promise<GrowthResult>` — HMAC upgrade token + share copy
 - `generateUpgradeToken(tripId, env): Promise<string>` — exported from growthAgent
 - `verifyUpgradeToken(tripId, token, env): Promise<boolean>` — exported from growthAgent
 
-## index.ts Routes (10 API endpoints)
+## index.ts Routes (11 API endpoints)
 1. GET  /api/health
 2. POST /api/preview — Turnstile check (skip if SKIP_TURNSTILE==="true") + 5/day session rate limit
 3. POST /api/preview/email — email_captures upsert + Resend mood card
@@ -41,6 +41,7 @@ All agents accept `env: Bindings` as last param.
 8. GET  /api/result/:tripId — legacy route, same auth check, nested {trip,order,capsule,images} shape
 9. GET  /api/share/:tripId — public teaser data
 10. POST /api/account/delete — JWT auth + cascade delete user data
+11. POST /api/regenerate — regenerate 1 image for a city (pro/annual only, 1 regen per trip)
 
 ## Key Patterns
 - Supabase: raw fetch helper (`sbFetch`) in each agent — no @supabase/supabase-js
@@ -77,8 +78,20 @@ All agents accept `env: Bindings` as last param.
 - free: `{ plan:'free', count:9-11, principles:string[3] }` — preview page teaser
 - paid: `{ plan:PlanType, items:CapsuleItem[], daily_plan:DailyOutfit[] }` — full result
 
+## User Profile in Image Prompts (styleAgent — added 2026-03-02)
+- `UserProfile` exported from `styleAgent.ts`: `{gender:'male'|'female'|'non-binary', height_cm?, weight_kg?, aesthetics:string[]}`
+- `index.ts /api/preview` parses `gender`, `height_cm`, `weight_kg`, `style_preferences[]` from body
+  → validates & stores as `gender`, `height_cm`, `weight_kg`, `aesthetics` columns on `trips` row
+- `orchestrator runResult` reads those columns back from trips row → builds `UserProfile` → passes to `styleAgent`
+- `buildProfileBlock()` injects profile text block into Claude user prompt
+- `buildImagePrefix()` injects "Female model, petite figure, slim build, " at start of each image prompt
+- Aesthetic keyword→guidance map: minimalist, classic, streetwear, bohemian, romantic, edgy, sporty, preppy, luxury, vintage
+- All helpers degrade gracefully when profile is absent (no profile = neutral prompts, original behavior)
+- DB columns required (add to migration if missing): `gender TEXT`, `height_cm NUMERIC`, `weight_kg NUMERIC`, `aesthetics JSONB`
+
 ## DB Tables (key columns used by agents)
-- trips: id, session_id, cities(JSONB), month, face_url, status, vibe_data, weather_data, share_url, upgrade_token
+- trips: id, session_id, cities(JSONB), month, face_url, status, vibe_data, weather_data, share_url, upgrade_token,
+         gender, height_cm, weight_kg, aesthetics(JSONB)
 - orders: polar_order_id(UNIQUE), trip_id, status, amount, plan, upgrade_token
 - generation_jobs: trip_id, city, mood, prompt, status, image_url, job_type('teaser'|'pro'), attempts
 - capsule_results: trip_id, items(JSONB), daily_plan(JSONB), plan
@@ -113,9 +126,38 @@ All agents accept `env: Bindings` as last param.
   - trip INSERT에 `client_ip` 저장 (rate limit용, API 응답에 노출 안 함)
 - Turnstile: SKIP_TURNSTILE !== 'true' + 키 미설정 → 503 fail-closed (이전: warn+통과)
 
+## Regenerate Endpoint Notes (added 2026-03-01)
+- Route: POST /api/regenerate — body `{ trip_id, city }`, no mandatory auth header
+- Quota: pro=1 regen/trip, annual=1 regen/trip, standard=403 plan_not_eligible
+- Regen tracking workaround: generation_jobs.job_type CHECK only allows 'teaser'|'full' (NOT 'regen')
+  - Store regen jobs with job_type='full' AND mood='regen-<timestamp>'
+  - Count regens by querying: `mood=like.regen-*` filter on generation_jobs
+  - TODO migration: add 'regen' to CHECK constraint, then use job_type='regen'
+- Order lookup uses status='paid' (not 'completed' as spec says — actual DB column values)
+- imageGenAgent called with dynamic import: `const { imageGenAgent } = await import('./agents/imageGenAgent')`
+- Prompt sourced from: (1) existing completed full-gen job prompt, (2) vibe_data mood, (3) generic fallback
+- R2 key for regen image: `outputs/{tripId}/{citySlug}/{index}.png` — index auto-incremented by imageGenAgent
+- DB insert for regen job is non-fatal: failure is logged but 200 still returned if image was generated
+
 ## Business Logic Constraints
 - `/api/preview` cities: max 5 (per CLAUDE.md spec) — enforce `cities.length > 5` in validation
 - `/api/payment/upgrade`: creates Polar checkout for `POLAR_PRODUCT_ID_PRO` (full $12 price)
   - Known gap: needs separate Polar product for $7 upgrade delta — current impl charges full Pro price
 - Annual plan trip_count reset: does NOT auto-reset on Polar subscription renewal (no renewal webhook yet)
 - NanoBanana is Gemini-based — uses Google generativelanguage.googleapis.com with NANOBANANA_API_KEY as x-goog-api-key header
+- Polar checkout `success_url`: MUST be `/checkout/success?plan={plan}&tripId={tripId}` (NOT `/result/{tripId}`)
+  — the checkout/success page reads ?plan to route to StandardView/ProView/AnnualView
+
+## GET /api/result/:tripId Response Shape (CONFIRMED 2026-03-02)
+- Returns BOTH flat fields (for `api.ts ResultData`) AND nested `trip`/`order` fields (legacy)
+- Flat: `trip_id, plan, cities, month, weather, vibes, capsule{items,daily_plan}, images[{city,url,index}], teaser_url, growth, created_at`
+- Legacy nested: `trip, order, share_url`
+- `images` = completed full/regen generation_jobs rows, mapped to `{city, url, index}` (NOT raw `image_url`)
+- `plan` is at TOP LEVEL extracted from `order.plan` — NOT buried inside nested `order`
+- `vibes`/`weather` sourced from `trip.vibe_data` / `trip.weather_data` (set by runPreview)
+
+## packages/types/index.ts Key Alignments (2026-03-02)
+- `WeatherResult.diurnal_swing`: optional (weatherAgent doesn't return it)
+- `WeatherResult.month`: optional (weatherAgent includes it, packages/types didn't — now aligned)
+- `VibeResult.mood_label`: optional — vibeAgent sets it as `"{City} — {mood_name}"`, packages/types didn't have it
+- These mismatches were causing silent runtime gaps between api.ts types and actual agent output

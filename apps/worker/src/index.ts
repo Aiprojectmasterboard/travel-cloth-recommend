@@ -195,6 +195,12 @@ app.post('/api/preview', async (c) => {
     month?: number;
     face_url?: string;
     cf_turnstile_token?: string;
+    /** Traveller profile fields from the trip form */
+    gender?: string;
+    height_cm?: number;
+    weight_kg?: number;
+    /** Array of aesthetic keywords e.g. ["minimalist", "classic"] */
+    style_preferences?: string[];
   };
   try {
     body = await c.req.json();
@@ -202,7 +208,17 @@ app.post('/api/preview', async (c) => {
     return c.json({ error: 'Invalid JSON body' }, 400);
   }
 
-  const { session_id, cities, month, face_url, cf_turnstile_token } = body;
+  const {
+    session_id,
+    cities,
+    month,
+    face_url,
+    cf_turnstile_token,
+    gender,
+    height_cm,
+    weight_kg,
+    style_preferences,
+  } = body;
 
   // Input validation
   if (!session_id || typeof session_id !== 'string' || session_id.length > 128) {
@@ -270,6 +286,26 @@ app.post('/api/preview', async (c) => {
     }
   }
 
+  // Validate optional profile fields — accept only safe primitive types
+  const safeGender =
+    gender === 'male' || gender === 'female' || gender === 'non-binary'
+      ? gender
+      : undefined;
+  const safeHeightCm =
+    typeof height_cm === 'number' && height_cm > 0 && height_cm < 300
+      ? height_cm
+      : undefined;
+  const safeWeightKg =
+    typeof weight_kg === 'number' && weight_kg > 0 && weight_kg < 500
+      ? weight_kg
+      : undefined;
+  const safeAesthetics = Array.isArray(style_preferences)
+    ? style_preferences
+        .filter((s): s is string => typeof s === 'string')
+        .map((s) => s.toLowerCase().trim())
+        .slice(0, 10) // cap to 10 aesthetic tags
+    : [];
+
   // Insert trip row (client_ip stored for rate limiting; never exposed in API responses)
   const tripPayload = {
     session_id,
@@ -277,6 +313,10 @@ app.post('/api/preview', async (c) => {
     month,
     ...(face_url ? { face_url } : {}),
     ...(clientIp ? { client_ip: clientIp } : {}),
+    ...(safeGender ? { gender: safeGender } : {}),
+    ...(safeHeightCm !== undefined ? { height_cm: safeHeightCm } : {}),
+    ...(safeWeightKg !== undefined ? { weight_kg: safeWeightKg } : {}),
+    aesthetics: safeAesthetics,
     status: 'pending',
   };
   const insertRes = await supabase(c.env, '/trips', {
@@ -299,7 +339,19 @@ app.post('/api/preview', async (c) => {
   // Run preview pipeline (async — results written to DB)
   try {
     const preview = await runPreview(
-      { trip_id: tripId, session_id, cities: cities as unknown[], month, face_url },
+      {
+        trip_id: tripId,
+        session_id,
+        cities: cities as unknown[],
+        month,
+        face_url,
+        user_profile: {
+          gender:      safeGender,
+          height_cm:   safeHeightCm,
+          weight_kg:   safeWeightKg,
+          aesthetics:  safeAesthetics,
+        },
+      },
       c.env
     );
     return c.json(preview);
@@ -429,12 +481,14 @@ app.post('/api/payment/checkout', async (c) => {
   const typedPlan = plan as PlanType;
   const productId = polarProductId(typedPlan, c.env);
 
-  // return_url: redirect to result page after successful payment
-  // Use the request Origin to support both travelscapsule.com and pages.dev
+  // success_url: redirect to the checkout-success page so the frontend knows
+  // which plan was purchased and can surface the correct result view.
+  // Format: /checkout/success?plan={plan}&tripId={tripId}
+  // Use the request Origin to support both travelscapsule.com and pages.dev.
   const reqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
   const allowedOrigins = ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
   const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelscapsule.com';
-  const returnUrl = `${returnBase}/result/${trip_id}`;
+  const returnUrl = `${returnBase}/checkout/success?plan=${typedPlan}&tripId=${trip_id}`;
 
   const checkoutPayload: Record<string, unknown> = {
     // products array is the current non-deprecated field (product_id is deprecated)
@@ -684,7 +738,7 @@ app.post('/api/payment/upgrade', async (c) => {
   const upgradeReqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
   const upgradeAllowed = ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
   const upgradeBase = upgradeAllowed.includes(upgradeReqOrigin) ? upgradeReqOrigin : 'https://travelscapsule.com';
-  const upgradeReturnUrl = `${upgradeBase}/result/${trip_id}`;
+  const upgradeReturnUrl = `${upgradeBase}/checkout/success?plan=pro&tripId=${trip_id}`;
   const checkoutPayload = {
     products: [c.env.POLAR_PRODUCT_ID_PRO],
     metadata: {
@@ -868,6 +922,7 @@ app.get('/api/trips/:tripId', async (c) => {
     status: trip.status,
     cities: trip.cities,
     month: trip.month,
+    plan: (order.plan as string) ?? 'standard',
     generation_jobs: jobRows,
     wardrobe_items: (capsule?.items as unknown[]) ?? [],
     daily_plan: (capsule?.daily_plan as unknown[]) ?? [],
@@ -895,7 +950,7 @@ app.get('/api/result/:tripId', async (c) => {
     return c.json({ error: 'Payment required to view results' }, 402);
   }
 
-  const [trip, capsule, images] = await Promise.all([
+  const [tripRows, capsuleRows, jobRows] = await Promise.all([
     supabase(c.env, `/trips?id=eq.${tripId}&limit=1`).then((r) =>
       r.json() as Promise<Array<Record<string, unknown>>>
     ),
@@ -904,19 +959,71 @@ app.get('/api/result/:tripId', async (c) => {
     ),
     supabase(
       c.env,
-      `/generation_jobs?trip_id=eq.${tripId}&select=city,mood,status,image_url,job_type`
+      `/generation_jobs?trip_id=eq.${tripId}&select=city,mood,status,image_url,job_type,created_at&order=created_at.asc`
     ).then((r) => r.json() as Promise<Array<Record<string, unknown>>>),
   ]);
 
-  if (trip.length === 0) return c.json({ error: 'Trip not found' }, 404);
+  if (tripRows.length === 0) return c.json({ error: 'Trip not found' }, 404);
+
+  const tripRow = tripRows[0];
+  const capsuleRow = capsuleRows[0] ?? null;
+  const order = orders[0];
+
+  // Normalise images: api.ts ResultData expects { city, url, index }[]
+  // generation_jobs stores the URL in `image_url`; filter to completed full-gen images only.
+  const images = jobRows
+    .filter(
+      (j) =>
+        j.status === 'completed' &&
+        (j.job_type === 'full' || j.job_type === 'regen') &&
+        j.image_url
+    )
+    .map((j, idx) => ({
+      city: (j.city as string) ?? '',
+      url: (j.image_url as string) ?? '',
+      index: idx,
+    }));
+
+  // Also expose the teaser as a fallback image if no full images exist
+  const teaserJobs = jobRows.filter(
+    (j) => j.status === 'completed' && j.job_type === 'teaser' && j.image_url
+  );
+  const teaserUrl =
+    (teaserJobs[0]?.image_url as string | undefined) ?? '';
 
   const shareUrl = `https://travelscapsule.com/share/${tripId}?utm_source=share&utm_medium=direct`;
 
+  // Reconstruct vibes and weather from trip row (stored by runPreview)
+  const vibes = Array.isArray(tripRow.vibe_data) ? tripRow.vibe_data : [];
+  const weather = Array.isArray(tripRow.weather_data) ? tripRow.weather_data : [];
+
   return c.json({
-    trip: trip[0],
-    order: orders[0],
-    capsule: capsule[0] ?? null,
+    // Top-level fields expected by api.ts ResultData
+    trip_id: tripId,
+    plan: (order.plan as string) ?? 'standard',
+    cities: tripRow.cities,
+    month: tripRow.month,
+    weather,
+    vibes,
+    capsule: {
+      items: (capsuleRow?.items as unknown[]) ?? [],
+      daily_plan: (capsuleRow?.daily_plan as unknown[]) ?? [],
+    },
     images,
+    teaser_url: teaserUrl,
+    growth: {
+      share_url: (tripRow.share_url as string) ?? shareUrl,
+      upgrade_token: (order.upgrade_token as string | undefined) ?? null,
+      social_copies: {
+        instagram: '',
+        twitter: '',
+        kakao: '',
+      },
+    },
+    created_at: (tripRow.created_at as string) ?? '',
+    // Nested shape for legacy consumers (result/[tripId] page using nested access)
+    trip: tripRow,
+    order,
     share_url: shareUrl,
   });
 });

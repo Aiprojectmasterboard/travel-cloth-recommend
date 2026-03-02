@@ -17,7 +17,7 @@ import { weatherAgent, type WeatherResult } from './weatherAgent';
 import { vibeAgent, type VibeResult } from './vibeAgent';
 import { teaserAgent } from './teaserAgent';
 import { capsuleAgent, type CapsuleResult } from './capsuleAgent';
-import { styleAgent } from './styleAgent';
+import { styleAgent, type UserProfile } from './styleAgent';
 import { imageGenAgent } from './imageGenAgent';
 import { fulfillmentAgent } from './fulfillmentAgent';
 import { growthAgent } from './growthAgent';
@@ -30,6 +30,13 @@ export interface TripInput {
   cities: unknown[]; // raw JSONB from DB — cast to CityInput[] below
   month: number;
   face_url?: string;
+  /** Optional traveller profile from the trip form (step 2 / step 3) */
+  user_profile?: {
+    gender?: string;
+    height_cm?: number;
+    weight_kg?: number;
+    aesthetics?: string[];
+  };
 }
 
 interface CityInput {
@@ -222,7 +229,7 @@ export async function runPreview(
   input: TripInput,
   env: Bindings
 ): Promise<PreviewResponse> {
-  const { trip_id, cities: rawCities, month, face_url } = input;
+  const { trip_id, cities: rawCities, month, face_url, user_profile } = input;
 
   console.log(`[runPreview] Starting free preview for trip ${trip_id}`);
 
@@ -308,7 +315,18 @@ export async function runPreview(
     if (firstVibe) {
       try {
         const teaser = await teaserAgent(
-          { tripId: trip_id, vibeResult: firstVibe, faceUrl: face_url },
+          {
+            tripId: trip_id,
+            vibeResult: firstVibe,
+            faceUrl: face_url,
+            userProfile: user_profile
+              ? {
+                  gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
+                  height_cm: user_profile.height_cm,
+                  aesthetics: user_profile.aesthetics,
+                }
+              : undefined,
+          },
           env
         );
         teaserUrl = teaser.image_url;
@@ -418,6 +436,18 @@ export async function runResult(
   const month = typeof trip.month === 'number' ? trip.month : 1;
   const faceUrl = typeof trip.face_url === 'string' ? trip.face_url : undefined;
 
+  // ── Read user profile from trip row (written by /api/preview on insert) ──
+  const tripGender   = typeof trip.gender === 'string' ? trip.gender : 'female';
+  const tripAesthetics: string[] = Array.isArray(trip.aesthetics) ? (trip.aesthetics as string[]) : [];
+  const userProfile: UserProfile = {
+    gender: (tripGender === 'male' || tripGender === 'non-binary')
+      ? (tripGender as 'male' | 'non-binary')
+      : 'female',
+    height_cm: typeof trip.height_cm === 'number' ? trip.height_cm : undefined,
+    weight_kg: typeof trip.weight_kg === 'number' ? trip.weight_kg : undefined,
+    aesthetics: tripAesthetics,
+  };
+
   // Retrieve cached vibe/weather from trip row (set by runPreview)
   const vibeResults: VibeResult[] = Array.isArray(trip.vibe_data)
     ? (trip.vibe_data as VibeResult[])
@@ -478,6 +508,7 @@ export async function runResult(
         vibeResults: finalVibes,
         cities: cities.map((c) => c.name),
         weather: finalWeather,
+        userProfile,
       },
       env
     );

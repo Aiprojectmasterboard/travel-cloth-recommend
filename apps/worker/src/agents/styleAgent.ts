@@ -21,6 +21,22 @@ export interface StylePrompts {
   negative_prompt: string;
 }
 
+/**
+ * Optional user profile for personalised image generation.
+ * When provided, the model directive, silhouette, and clothing choices
+ * in each prompt are adjusted to reflect the traveller's body and aesthetic.
+ */
+export interface UserProfile {
+  /** Drives model directive: "male model" | "female model" | "androgynous model" */
+  gender: 'male' | 'female' | 'non-binary';
+  /** Height in centimetres — used to choose tall/average/petite silhouette phrasing */
+  height_cm?: number;
+  /** Weight in kilograms — used together with height to pick BMI-appropriate silhouettes */
+  weight_kg?: number;
+  /** Preferred fashion aesthetics e.g. ["minimalist", "classic", "streetwear"] */
+  aesthetics: string[];
+}
+
 // Claude response shape
 interface ClaudeStyleResponse {
   prompts: Array<{
@@ -42,25 +58,138 @@ const DEFAULT_NEGATIVE =
 const PROMPTS_PER_CITY = 2;
 const MAX_CITIES = 3;
 
+// ─── Profile Helpers ──────────────────────────────────────────────────────────
+
+/**
+ * Returns the model directive string used at the start of every image prompt.
+ * e.g. "Female model", "Male model", "Androgynous model"
+ */
+function resolveModelDirective(gender: UserProfile['gender']): string {
+  if (gender === 'male') return 'Male model';
+  if (gender === 'non-binary') return 'Androgynous model';
+  return 'Female model';
+}
+
+/**
+ * Derives a height-based silhouette descriptor from centimetres.
+ * Falls back to "average height" when height is unknown.
+ */
+function resolveHeightDescriptor(height_cm?: number): string {
+  if (!height_cm) return 'average height';
+  if (height_cm >= 175) return 'tall slender figure';
+  if (height_cm <= 160) return 'petite figure';
+  return 'average height figure';
+}
+
+/**
+ * Returns a BMI-aware silhouette note for the prompt.
+ * Returns an empty string when insufficient data is provided so that
+ * the prompt stays clean rather than guessing.
+ */
+function resolveBmiNote(height_cm?: number, weight_kg?: number): string {
+  if (!height_cm || !weight_kg) return '';
+  const heightM = height_cm / 100;
+  const bmi = weight_kg / (heightM * heightM);
+  if (bmi < 18.5) return 'slender build';
+  if (bmi < 25) return 'slim build';
+  if (bmi < 30) return 'regular build';
+  return 'full-figured silhouette';
+}
+
+/**
+ * Converts a list of aesthetic keywords into styling guidance that
+ * the image prompt can reference for clothing choices.
+ *
+ * Examples:
+ *   ["minimalist"] → "clean lines, neutral tones, minimal accessories"
+ *   ["streetwear"] → "oversized silhouettes, sneakers, graphic elements"
+ */
+function resolveAestheticGuidance(aesthetics: string[]): string {
+  const mapping: Record<string, string> = {
+    minimalist:  'clean lines, neutral tones, minimal accessories',
+    classic:     'tailored cuts, timeless pieces, polished accessories',
+    streetwear:  'oversized silhouettes, sneakers, graphic elements',
+    bohemian:    'flowy fabrics, earthy tones, layered textures',
+    romantic:    'soft draping, floral details, delicate accessories',
+    edgy:        'structured cuts, dark tones, statement accessories',
+    sporty:      'functional layers, athletic-inspired pieces, comfortable footwear',
+    preppy:      'clean-cut pieces, polo-style tops, loafers or white sneakers',
+    luxury:      'premium fabrics, designer-inspired pieces, refined accessories',
+    vintage:     'retro silhouettes, muted palettes, nostalgic details',
+  };
+
+  const matched = aesthetics
+    .map((a) => mapping[a.toLowerCase()])
+    .filter(Boolean);
+
+  return matched.length > 0
+    ? matched.join('; ')
+    : aesthetics.join(', ');
+}
+
+/**
+ * Builds a concise profile block injected into the Claude user prompt.
+ * Returns an empty string when no profile is provided so the prompt
+ * degrades gracefully.
+ */
+function buildProfileBlock(profile?: UserProfile): string {
+  if (!profile) return '';
+
+  const modelDirective = resolveModelDirective(profile.gender);
+  const heightDesc    = resolveHeightDescriptor(profile.height_cm);
+  const bmiNote       = resolveBmiNote(profile.height_cm, profile.weight_kg);
+  const aesthetics    = profile.aesthetics.length > 0
+    ? profile.aesthetics.join(', ')
+    : 'versatile travel style';
+  const aestheticHints = resolveAestheticGuidance(profile.aesthetics);
+
+  const lines = [
+    `User Profile (apply to ALL prompts):`,
+    `  - Model directive: ${modelDirective}`,
+    `  - Figure: ${heightDesc}${bmiNote ? `, ${bmiNote}` : ''}`,
+    `  - Style preferences: ${aesthetics}`,
+    `  - Aesthetic guidance: ${aestheticHints}`,
+  ];
+
+  return lines.join('\n');
+}
+
+/**
+ * Builds the model/figure prefix injected at the start of each image prompt.
+ * e.g. "Female model, petite figure, slim build, "
+ */
+function buildImagePrefix(profile?: UserProfile): string {
+  if (!profile) return '';
+
+  const directive  = resolveModelDirective(profile.gender);
+  const heightDesc = resolveHeightDescriptor(profile.height_cm);
+  const bmiNote    = resolveBmiNote(profile.height_cm, profile.weight_kg);
+
+  const parts = [directive, heightDesc, bmiNote].filter(Boolean);
+  return parts.join(', ') + ', ';
+}
+
 // ─── Main Exported Function ───────────────────────────────────────────────────
 
 /**
  * Generates 2 NanoBanana image prompts per city (up to 6 total).
  *
- * @param input.vibeResults - Array of VibeResult from vibeAgent (one per city)
- * @param input.cities      - City names in the same order as vibeResults
- * @param input.weather     - Optional WeatherResult array for additional context
- * @param env               - Cloudflare Worker bindings
+ * @param input.vibeResults  - Array of VibeResult from vibeAgent (one per city)
+ * @param input.cities       - City names in the same order as vibeResults
+ * @param input.weather      - Optional WeatherResult array for additional context
+ * @param input.userProfile  - Optional traveller profile to personalise model/silhouette/aesthetics
+ * @param env                - Cloudflare Worker bindings
  */
 export async function styleAgent(
   input: {
     vibeResults: VibeResult[];
     cities: string[];
     weather?: WeatherResult[];
+    userProfile?: UserProfile;
   },
   env: Bindings
 ): Promise<StylePrompts[]> {
-  const { vibeResults, cities, weather = [] } = input;
+  const { vibeResults, cities, weather = [], userProfile } = input;
 
   // Cap to MAX_CITIES to keep token usage predictable
   const activeCities = cities.slice(0, MAX_CITIES);
@@ -81,27 +210,42 @@ export async function styleAgent(
     return `City ${i + 1}: ${city}\n  Vibe: ${vibeStr}\n  Weather: ${wxStr}`;
   }).join('\n\n');
 
+  // Build user profile block (empty string when no profile is supplied)
+  const profileBlock = buildProfileBlock(userProfile);
+  // Build the image prompt prefix (e.g. "Female model, petite figure, slim build, ")
+  const imagePrefix  = buildImagePrefix(userProfile);
+
+  // Compose aesthetic rules for the prompt when a profile is available
+  const aestheticRule = userProfile && userProfile.aesthetics.length > 0
+    ? `   - Incorporate the user's style preferences (${userProfile.aesthetics.join(', ')}) into clothing choices`
+    : '';
+
   const systemPrompt =
     'You are a professional fashion stylist and AI image director. ' +
     'Your task is to write precise, vivid NanoBanana image generation prompts ' +
     'for fashion editorial photography. Each prompt must be photorealistic and ' +
     'capture the unique spirit of the destination and its current weather. ' +
+    (userProfile
+      ? 'You must also honour the provided user profile — model directive, figure description, ' +
+        'and aesthetic preferences must be reflected in every prompt. '
+      : '') +
     'Always respond with valid JSON only — no markdown fences, no extra text.';
 
   const userPrompt = `Generate exactly ${PROMPTS_PER_CITY} fashion editorial image prompts for EACH of the following cities (${activeCities.length * PROMPTS_PER_CITY} prompts total):
 
 ${cityBlocks}
-
+${profileBlock ? `\n${profileBlock}\n` : ''}
 Rules for each prompt:
 1. mood: 2-3 word hyphenated English label (e.g. "morning-exploration", "golden-hour-cafe")
-2. Each prompt must specify:
-   - Specific clothing items appropriate for the climate and city vibe
+2. Each prompt MUST begin with: "${imagePrefix || 'A fashion model, '}" followed by the outfit description
+3. Each prompt must specify:
+   - Specific clothing items appropriate for the climate and city vibe${aestheticRule ? `\n${aestheticRule}` : ''}
    - A recognizable location type in that city (cafe, street, market, rooftop, etc.)
    - Lighting style (golden hour, soft overcast, neon-lit evening, bright midday, etc.)
    - Camera angle (full body, 3/4 shot, street-level)
    - End with: "fashion editorial photography, professional model, high fashion magazine style, photorealistic, 4K"
-3. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
-4. Prompts for the same city must have different moods/times-of-day
+4. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
+5. Prompts for the same city must have different moods/times-of-day
 
 Climate clothing guide:
 - cold (<10°C): heavy coats, thermal layers, knits, waterproof boots

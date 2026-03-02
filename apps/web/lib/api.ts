@@ -93,12 +93,25 @@ export async function submitEmail(tripId: string, email: string): Promise<void> 
 
 /**
  * Initiate Polar checkout. Returns checkout_url to redirect the user.
+ *
+ * Accepts either positional params (legacy) or a named-params object:
+ *   createCheckout({ plan: 'standard', tripId: '...' })
+ *   createCheckout('trip-uuid', 'standard')  // legacy form still works
  */
 export async function createCheckout(
-  tripId: string,
-  plan: 'standard' | 'pro' | 'annual'
+  paramsOrTripId: { plan: 'standard' | 'pro' | 'annual'; tripId: string } | string,
+  plan?: 'standard' | 'pro' | 'annual'
 ): Promise<CheckoutResponse> {
-  return apiPost<CheckoutResponse>('/api/payment/checkout', { trip_id: tripId, plan })
+  let trip_id: string
+  let resolvedPlan: 'standard' | 'pro' | 'annual'
+  if (typeof paramsOrTripId === 'string') {
+    trip_id = paramsOrTripId
+    resolvedPlan = plan ?? 'standard'
+  } else {
+    trip_id = paramsOrTripId.tripId
+    resolvedPlan = paramsOrTripId.plan
+  }
+  return apiPost<CheckoutResponse>('/api/payment/checkout', { trip_id, plan: resolvedPlan })
 }
 
 /**

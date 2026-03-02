@@ -281,7 +281,73 @@ export function generateCityOutfits(
   return { city: city.city, outfits, capsuleItems }
 }
 
-export function derivePacking(allOutfits: CityOutfitSet[]): PackingItem[] {
+// ─── Packing essentials ───────────────────────────────────────────────────────
+
+interface PackingAddition {
+  name: string
+  category: string
+  quantity: number
+  imageUrl?: string
+}
+
+function getEssentialsByGender(gender: string, aesthetics: string[]): PackingAddition[] {
+  const base: PackingAddition[] = [
+    { name: 'Comfortable Walking Shoes', category: 'Shoes', quantity: 1 },
+    { name: 'Light Layer / Jacket', category: 'Outerwear', quantity: 1 },
+    { name: 'Versatile Bag', category: 'Accessories', quantity: 1 },
+  ]
+
+  if (gender === 'male') {
+    base.push({ name: 'Smart Casual Trousers', category: 'Bottom', quantity: 2 })
+  } else {
+    base.push({ name: 'Versatile Dress or Skirt', category: 'Bottom', quantity: 1 })
+  }
+
+  for (const aesthetic of aesthetics) {
+    switch (aesthetic) {
+      case 'classic':
+        base.push(
+          { name: 'Trench Coat', category: 'Outerwear', quantity: 1 },
+          { name: 'Tailored Slacks', category: 'Bottom', quantity: 1 },
+        )
+        break
+      case 'casual':
+        base.push(
+          { name: 'Denim Jeans', category: 'Bottom', quantity: 1 },
+          { name: 'Sneakers', category: 'Shoes', quantity: 1 },
+        )
+        break
+      case 'streetwear':
+        base.push(
+          { name: 'Hoodie', category: 'Top', quantity: 1 },
+          { name: 'Jogger Pants', category: 'Bottom', quantity: 1 },
+        )
+        break
+      case 'minimalist':
+        base.push(
+          { name: 'White Button-Down Shirt', category: 'Top', quantity: 1 },
+          { name: 'Neutral Palette Tee', category: 'Top', quantity: 1 },
+        )
+        break
+      case 'resort':
+        base.push(
+          { name: 'Linen Shirt', category: 'Top', quantity: 1 },
+          { name: 'Sandals', category: 'Shoes', quantity: 1 },
+        )
+        break
+    }
+  }
+
+  return base
+}
+
+export function derivePacking(
+  allOutfits: CityOutfitSet[],
+  options: { gender?: string; aesthetics?: string[] } = {},
+): PackingItem[] {
+  const { gender = 'female', aesthetics = [] } = options
+
+  // Collect item counts from outfit sets, preserving first-seen imageUrl
   const counts = new Map<string, { item: GeneratedItem; count: number }>()
   for (const citySet of allOutfits) {
     for (const outfit of citySet.outfits) {
@@ -295,12 +361,41 @@ export function derivePacking(allOutfits: CityOutfitSet[]): PackingItem[] {
       }
     }
   }
-  return Array.from(counts.values())
-    .sort((a, b) => b.count - a.count)
-    .map(({ item, count }) => ({
+
+  // Build initial packing list from outfit items
+  const packingMap = new Map<string, PackingItem>()
+  Array.from(counts.values()).forEach(({ item, count }) => {
+    packingMap.set(item.name, {
       name: item.name,
       category: item.category,
       quantity: Math.ceil(count / 2),
       imageUrl: item.imageUrl,
-    }))
+    })
+  })
+
+  // Merge essential items (only add if not already present)
+  const essentials = getEssentialsByGender(gender, aesthetics)
+  for (const essential of essentials) {
+    if (!packingMap.has(essential.name)) {
+      packingMap.set(essential.name, essential)
+    }
+  }
+
+  // Apply category caps: Outerwear max 1, all other categories max 2
+  const categoryCounts = new Map<string, number>()
+  const result: PackingItem[] = []
+
+  // Sort by quantity descending so highest-priority items are kept first
+  const sorted = Array.from(packingMap.values()).sort((a, b) => b.quantity - a.quantity)
+
+  for (const packing of sorted) {
+    const cat = packing.category
+    const cap = cat === 'Outerwear' ? 1 : 2
+    const current = categoryCounts.get(cat) ?? 0
+    if (current >= cap) continue
+    categoryCounts.set(cat, current + 1)
+    result.push(packing)
+  }
+
+  return result
 }

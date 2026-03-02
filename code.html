@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Smart AI Packing Checklist - Travel Capsule AI</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400;1,500&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600&amp;family=DM+Sans:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#C4613A", 
+                        secondary: "#1A1410", 
+                        cream: "#FDF8F3", 
+                        sand: "#EFE8DF", 
+                        gold: "#D4AF37",
+                        weatherBlue: "#E0F2FE",
+                        terracotta: "#C4613A",
+                    },
+                    fontFamily: {
+                        sans: ["DM Sans", "sans-serif"],
+                        serif: ["Playfair Display", "serif"],
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        .editorial-text {
+            font-family: 'Playfair Display', serif;
+        }
+        .grain-overlay::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: overlay;
+        }
+        .checkbox-custom:checked {
+            background-color: #C4613A;
+            border-color: #C4613A;
+            background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+        }
+        .scrolling-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrolling-container::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.05);
+        }
+        .scrolling-container::-webkit-scrollbar-thumb {
+            background: rgba(196, 97, 58, 0.3);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-secondary bg-cream grain-overlay overflow-x-hidden min-h-screen flex flex-col">
+<header class="fixed top-0 z-50 w-full bg-cream/90 backdrop-blur-md border-b border-secondary/5 transition-all duration-300">
+<div class="max-w-[1920px] mx-auto px-6 lg:px-12 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-3xl font-light">all_inclusive</span>
+<h1 class="text-lg tracking-widest uppercase font-serif font-medium">Travel Capsule AI</h1>
+</div>
+<div class="hidden md:flex items-center gap-6 text-xs font-medium uppercase tracking-widest text-secondary/60">
+<span>Trip: Paris, FR</span>
+<span class="text-secondary/20">|</span>
+<span>Oct 12 - Oct 18</span>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center gap-2 px-3 py-1 bg-white border border-secondary/10 rounded-full">
+<span class="w-2 h-2 bg-primary rounded-full animate-pulse"></span>
+<span class="text-[10px] font-bold uppercase tracking-widest text-secondary">Saved</span>
+</div>
+<div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center font-serif italic text-sm">JC</div>
+</div>
+</div>
+</header>
+<main class="flex-grow pt-20 lg:pt-24 flex flex-col lg:flex-row h-screen lg:overflow-hidden">
+<section class="lg:w-3/5 xl:w-2/3 h-full overflow-y-auto scrolling-container px-6 lg:px-16 py-10 lg:py-12 bg-cream">
+<div class="max-w-3xl mx-auto space-y-12 pb-24">
+<div class="space-y-4">
+<div class="flex items-center gap-3 text-terracotta mb-2">
+<span class="material-symbols-outlined text-xl">flight_takeoff</span>
+<span class="text-xs font-bold uppercase tracking-[0.2em]">Ready for Departure</span>
+</div>
+<h2 class="editorial-text text-4xl lg:text-5xl text-secondary leading-tight">
+                        Your Paris <br/>
+<span class="italic text-terracotta/80">Smart Checklist.</span>
+</h2>
+<p class="text-secondary/60 text-lg font-light max-w-lg">
+                        10 items curated for 14°C - 19°C. High humidity detected.
+                    </p>
+<div class="w-full bg-secondary/5 h-1 mt-6 rounded-full overflow-hidden">
+<div class="bg-terracotta h-full w-[35%] rounded-full"></div>
+</div>
+<div class="flex justify-between text-xs font-medium text-secondary/40 uppercase tracking-widest mt-1">
+<span>4/14 Items Packed</span>
+<span>Weight: 2.1 / 4.8kg</span>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="font-serif text-2xl text-secondary flex items-center gap-3">
+<span class="w-6 h-px bg-secondary/20"></span>
+                        The Capsule Core (10)
+                    </h3>
+<div class="space-y-3">
+<label class="group flex items-center gap-6 p-4 bg-white hover:shadow-md border border-secondary/5 transition-all duration-300 cursor-pointer rounded-sm">
+<div class="relative w-16 h-20 bg-gray-100 overflow-hidden flex-shrink-0">
+<img alt="Camel Trench" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCemfaGwdXs2NhShpMv2CMVvtqCTDz2A0UwhvVyFxTr6WqjQwzck75V_uX2RblhR6ANusfEJyy6SRtncFKZfTvq_ActlA7G7DS0dYA_liv1v21bXt_HtxlY404h2aF_uIDahsSamyhtUAbG9V58uyvg4ZGAedl3bwrk16IpCG2tOmuTkuHdfNxxzyvqAFAaOI8IZW-w3UI5C6F3Mr-FHMBGQntOcFATx_u7iMJeEMK6IQL1nmoyadgt-OJ-NxU7s3wE_7BsQH1IgQ"/>
+</div>
+<div class="flex-grow">
+<h4 class="font-serif text-lg text-secondary group-hover:text-terracotta transition-colors">Classic Camel Trench</h4>
+<p class="text-xs text-secondary/50 mt-1">Outerwear • Water Resistant</p>
+</div>
+<input checked="" class="checkbox-custom w-6 h-6 rounded-full border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+</label>
+<label class="group flex items-center gap-6 p-4 bg-white hover:shadow-md border border-secondary/5 transition-all duration-300 cursor-pointer rounded-sm">
+<div class="relative w-16 h-20 bg-gray-100 overflow-hidden flex-shrink-0">
+<img alt="Cashmere Crewneck" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfwHU5olSEv1NR80ElRhrLBKGhY93BBkEoMWAsjYb1dRCDLI5yJqrIdwbf3ECegNs9TurPi86DBBn-sQoc_4sQZVHhD0fsOwXe2zF4oGZGhBsERriPg13pwIs__ilG9S_-noGqj2nYFzo8gs3Jussvcnc6shtSrGP1dhITC78axKu5jK6EtW-jy8ZQS9SplC6z2LZ2KUn30m4hO8GXM5PgTl0DPJxM766q8y5MdEDZ6PUjXTynIIE5J_cJGLA2v7orMtlrZib8WA"/>
+</div>
+<div class="flex-grow">
+<h4 class="font-serif text-lg text-secondary group-hover:text-terracotta transition-colors">Cashmere Crewneck</h4>
+<p class="text-xs text-secondary/50 mt-1">Mid-Layer • Breathable Warmth</p>
+</div>
+<input class="checkbox-custom w-6 h-6 rounded-full border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+</label>
+<label class="group flex items-center gap-6 p-4 bg-white hover:shadow-md border border-secondary/5 transition-all duration-300 cursor-pointer rounded-sm">
+<div class="relative w-16 h-20 bg-gray-100 overflow-hidden flex-shrink-0">
+<img alt="Tailored Wool Trousers" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDD9oWWIcIjP-aznFWBd-q3H4He0d0w8UUxDz-qwyEN46tdme1JJ2ExGbRQeMTJWRElXG7ZUdSyyBOxBfst1_FcY2vz3LvXNI9TKEaMWPGihyVoG8GVLlHfFxsc7l5SLl_ZO0C-18l_r_l_iN5f8Ysu-0D0spAwtXyrZ8tsa8O23fjZ1Ebq5GPvHCJpF99-n7AXQpcpPbGRmLc7MuT3Hweum_XQbnsHUuLE7c07AjL_Y7BCpV9Ov3OrpfecBEPsm20UdbPT_u1gGQ"/>
+</div>
+<div class="flex-grow">
+<h4 class="font-serif text-lg text-secondary group-hover:text-terracotta transition-colors">Tailored Wool Trousers</h4>
+<p class="text-xs text-secondary/50 mt-1">Bottoms • Wrinkle Resistant</p>
+</div>
+<input checked="" class="checkbox-custom w-6 h-6 rounded-full border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+</label>
+<label class="group flex items-center gap-6 p-4 bg-white hover:shadow-md border border-secondary/5 transition-all duration-300 cursor-pointer rounded-sm">
+<div class="relative w-16 h-20 bg-gray-100 overflow-hidden flex-shrink-0">
+<img alt="Silk Midi Dress" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCY_Z4dVFsqmNG1_NsZRtO1BJH9AhfUhsJF6C4hF4ujNxjazt9_sv0X2koa6W8QROK6vQocJN9FCSUJEpt1Zfrq08AzqFE4xF_mX1X7Ue24hiucdsnspxVw7qAT1FnshghKmpKX3wmhrQshBjr3z2Ca9yLHtP_78L_pLU5TMg7NSNzRcUqn8vFvTzapdUL7h8_FKLJTanJf-lAXWa2jM-vizdCd6qSP1WOQDUoQ_9SDdVHB4JgToWmiA_hCN_sZXTxpM848g7Aspw"/>
+</div>
+<div class="flex-grow">
+<h4 class="font-serif text-lg text-secondary group-hover:text-terracotta transition-colors">Silk Midi Dress</h4>
+<p class="text-xs text-secondary/50 mt-1">Evening • Lightweight</p>
+</div>
+<input class="checkbox-custom w-6 h-6 rounded-full border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+</label>
+</div>
+</div>
+<div class="space-y-6">
+<div class="flex justify-between items-end">
+<h3 class="font-serif text-2xl text-secondary flex items-center gap-3">
+<span class="w-6 h-px bg-secondary/20"></span>
+                            Weather Essentials
+                        </h3>
+<span class="text-[10px] uppercase tracking-widest text-terracotta bg-terracotta/10 px-2 py-1 rounded">High Humidity Alert</span>
+</div>
+<div class="space-y-3">
+<label class="group flex items-center gap-6 p-4 bg-white hover:shadow-md border border-secondary/5 transition-all duration-300 cursor-pointer rounded-sm border-l-4 border-l-terracotta">
+<div class="w-16 h-16 bg-weatherBlue/20 flex items-center justify-center text-terracotta">
+<span class="material-symbols-outlined text-3xl">umbrella</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-serif text-lg text-secondary group-hover:text-terracotta transition-colors">Compact Windproof Umbrella</h4>
+<p class="text-xs text-secondary/50 mt-1">Recommended for Tuesday's showers</p>
+</div>
+<input checked="" class="checkbox-custom w-6 h-6 rounded-full border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+</label>
+<label class="group flex items-center gap-6 p-4 bg-white hover:shadow-md border border-secondary/5 transition-all duration-300 cursor-pointer rounded-sm">
+<div class="relative w-16 h-16 bg-gray-100 overflow-hidden flex-shrink-0">
+<img alt="Silk Scarf" class="w-full h-full object-cover mix-blend-multiply opacity-90 group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4qAubSHHgBljVm6DOKfqUsoXmdhT6I3-_Kh9PUSOTnxUk-Dmxk6yLOY42ZyyhN1QkPbWr-a_G2pBEh4Vz5DAiPwoutivyQoZm_Wi8zp_YKvjLEF3H9GKClYyYRXcZB-UDBcAm0GugMobPO2c3seNq6DUzwrYfVSwKsHBdeV7ppPAa1SRbxAlONcJYDqXBikK3GTyflJPdfxgMSj7Qippsu2hyJ3tg39gNFEDPHdja-jwz1uHQGjIkabhQ4yo_4-zPvlhsxgJI7Q"/>
+</div>
+<div class="flex-grow">
+<h4 class="font-serif text-lg text-secondary group-hover:text-terracotta transition-colors">Silk Scarf</h4>
+<p class="text-xs text-secondary/50 mt-1">Wind Protection • Breathable</p>
+</div>
+<input class="checkbox-custom w-6 h-6 rounded-full border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+</label>
+</div>
+</div>
+<div class="space-y-6">
+<h3 class="font-serif text-2xl text-secondary flex items-center gap-3">
+<span class="w-6 h-px bg-secondary/20"></span>
+                        Personal Basics
+                    </h3>
+<div class="bg-white border border-secondary/5 p-6 space-y-4 rounded-sm">
+<label class="flex items-center gap-4 cursor-pointer group">
+<input checked="" class="checkbox-custom w-5 h-5 rounded border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+<span class="text-sm text-secondary/80 group-hover:text-terracotta transition-colors">Undergarments (x7)</span>
+</label>
+<label class="flex items-center gap-4 cursor-pointer group">
+<input class="checkbox-custom w-5 h-5 rounded border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+<span class="text-sm text-secondary/80 group-hover:text-terracotta transition-colors">Toiletries Bag (Liquids &lt; 100ml)</span>
+</label>
+<label class="flex items-center gap-4 cursor-pointer group">
+<input class="checkbox-custom w-5 h-5 rounded border-2 border-secondary/20 text-terracotta focus:ring-terracotta transition-colors cursor-pointer" type="checkbox"/>
+<span class="text-sm text-secondary/80 group-hover:text-terracotta transition-colors">Universal Travel Adapter</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<section class="lg:w-2/5 xl:w-1/3 bg-white border-l border-sand h-full overflow-y-auto relative hidden lg:flex flex-col">
+<div class="p-10 space-y-10">
+<div class="bg-cream border border-terracotta/20 p-6 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-10">
+<span class="material-symbols-outlined text-6xl text-terracotta">partly_cloudy_day</span>
+</div>
+<div class="relative z-10">
+<span class="text-[10px] font-bold uppercase tracking-widest text-terracotta mb-2 block">Live Weather Alert</span>
+<h4 class="font-serif text-xl text-secondary mb-2">Paris Forecast: High Humidity</h4>
+<p class="text-sm text-secondary/70 leading-relaxed">
+                            Pack breathable silk layers to manage the 78% humidity. Avoid heavy denim which retains moisture.
+                        </p>
+</div>
+</div>
+<div>
+<div class="flex justify-between items-end mb-6">
+<h3 class="font-serif text-2xl text-secondary">Bag Preview</h3>
+<span class="text-xs uppercase tracking-widest text-secondary/40">Carry-on Only</span>
+</div>
+<div class="aspect-[3/4] bg-[#F4F4F4] relative border border-secondary/5 p-8 flex items-center justify-center">
+<div class="absolute inset-4 border border-dashed border-secondary/10"></div>
+<div class="grid grid-cols-2 gap-4 w-full h-full relative z-10">
+<div class="col-span-2 bg-white shadow-sm p-3 flex items-center gap-3 opacity-100">
+<div class="w-10 h-10 bg-gray-100 flex items-center justify-center">
+<span class="material-symbols-outlined text-gray-400 text-sm">checkroom</span>
+</div>
+<div>
+<span class="block text-xs font-bold uppercase text-secondary">Base Layer</span>
+<span class="text-[10px] text-gray-400">Shoes &amp; Heavy Items</span>
+</div>
+</div>
+<div class="bg-white shadow-sm p-3 flex flex-col justify-center items-center gap-2 aspect-square">
+<span class="material-symbols-outlined text-terracotta">all_inclusive</span>
+<span class="text-[10px] uppercase tracking-wide text-center">Rolled Knits</span>
+</div>
+<div class="bg-white shadow-sm p-3 flex flex-col justify-center items-center gap-2 aspect-square">
+<span class="material-symbols-outlined text-terracotta">layers</span>
+<span class="text-[10px] uppercase tracking-wide text-center">Folded Pants</span>
+</div>
+<div class="col-span-2 bg-white/80 backdrop-blur-sm border border-terracotta/30 p-3 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-terracotta/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-terracotta text-sm">wb_sunny</span>
+</div>
+<span class="text-xs font-medium text-secondary">Toiletries (Top)</span>
+</div>
+<span class="material-symbols-outlined text-green-600 text-sm">check_circle</span>
+</div>
+</div>
+<div class="absolute -bottom-5 left-1/2 transform -translate-x-1/2 bg-secondary text-white px-6 py-2 shadow-lg flex items-center gap-3 whitespace-nowrap z-20">
+<span class="material-symbols-outlined text-sm">scale</span>
+<span class="text-xs uppercase tracking-widest font-bold">Total Weight: 4.8kg</span>
+</div>
+</div>
+<p class="text-center text-xs text-secondary/40 mt-10 italic">
+                        *Based on standard carry-on limits (10kg)
+                    </p>
+</div>
+<div class="bg-sand/30 p-6 rounded-sm">
+<h5 class="font-serif text-lg mb-2">Pro Tip</h5>
+<p class="text-sm text-secondary/70">
+                        Wear your heaviest item (Camel Trench) on the plane to save 1.2kg of luggage weight.
+                    </p>
+</div>
+</div>
+<div class="mt-auto p-10 bg-white border-t border-sand">
+<button class="w-full bg-terracotta hover:bg-[#A84A25] text-white text-sm font-bold h-14 uppercase tracking-widest transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center gap-3 group">
+<span>I'm All Packed</span>
+<span class="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+</button>
+</div>
+</section>
+<div class="lg:hidden fixed bottom-0 left-0 w-full bg-white border-t border-sand p-4 z-40 shadow-[0_-5px_20px_rgba(0,0,0,0.05)]">
+<div class="flex justify-between items-center mb-4">
+<div>
+<span class="block text-[10px] uppercase tracking-widest text-secondary/40">Total Weight</span>
+<span class="text-lg font-serif font-bold text-secondary">4.8kg</span>
+</div>
+<div class="text-right">
+<span class="block text-[10px] uppercase tracking-widest text-secondary/40">Progress</span>
+<span class="text-lg font-serif font-bold text-terracotta">30%</span>
+</div>
+</div>
+<button class="w-full bg-terracotta text-white text-sm font-bold py-4 uppercase tracking-widest">
+                I'm All Packed
+            </button>
+</div>
+</main>
+
+</body></html>

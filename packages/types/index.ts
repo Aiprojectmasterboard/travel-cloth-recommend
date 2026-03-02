@@ -38,18 +38,24 @@ export interface TripInput {
 
 export interface WeatherResult {
   city: string;
+  /** Travel month (1–12) */
+  month?: number;
   temperature_day_avg: number;
   temperature_night_avg: number;
   precipitation_prob: number;
-  diurnal_swing: number;
+  /** Optional: temperature swing between day and night highs */
+  diurnal_swing?: number;
   climate_band: ClimateBand;
   style_hint: string;
 }
 
 export interface VibeResult {
   city: string;
-  mood_name: string;       // "{City} — {MoodName}" format
-  vibe_tags: string[];     // 3 tags
+  /** Combined label e.g. "Paris — Rainy Chic" */
+  mood_label?: string;
+  /** Short mood name e.g. "Rainy Chic" */
+  mood_name: string;
+  vibe_tags: string[];     // 3-5 adjective tags
   color_palette: string[]; // hex codes, 3-5 values
   avoid_note: string;
 }

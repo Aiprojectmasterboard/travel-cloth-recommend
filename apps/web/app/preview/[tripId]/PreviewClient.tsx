@@ -6,7 +6,7 @@ import { getPreview, createCheckout } from '@/lib/api'
 import { useLang } from '@/components/LanguageContext'
 import { Icon } from '@/components/travel-capsule/Icon'
 import { LanguageSelector } from '@/components/travel-capsule/LanguageSelector'
-import { BtnPrimary, BtnSecondary, BtnDark } from '@/components/travel-capsule/Buttons'
+import { BtnPrimary } from '@/components/travel-capsule/Buttons'
 import { CheckItem } from '@/components/travel-capsule/CheckItem'
 import type { PreviewResponse } from '../../../../../packages/types'
 import type { PlanType } from '../../../../../packages/types'
@@ -16,26 +16,22 @@ import type { PlanType } from '../../../../../packages/types'
 const OUTFIT_PREVIEWS = [
   {
     label: 'Day 1 · Arrival',
-    // eslint-disable-next-line @next/next/no-img-element
-    img: 'https://images.unsplash.com/photo-1583744946564-b52ac1c389c8?w=600',
+    img: 'https://images.unsplash.com/photo-1677592737288-5ffcf72770d1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Classic Layering',
   },
   {
-    label: 'Day 2 · Explore',
-    // eslint-disable-next-line @next/next/no-img-element
-    img: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=600',
+    label: 'Day 2 · Galleries',
+    img: 'https://images.unsplash.com/photo-1746730921292-bd6be2c256d5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Smart Casual',
   },
   {
-    label: 'Day 3 · Culture',
-    // eslint-disable-next-line @next/next/no-img-element
-    img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600',
+    label: 'Day 3 · Museums',
+    img: 'https://images.unsplash.com/photo-1570298529069-2ca77646dd89?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Cozy Intellectual',
   },
   {
     label: 'Day 4 · Dinner',
-    // eslint-disable-next-line @next/next/no-img-element
-    img: 'https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=600',
+    img: 'https://images.unsplash.com/photo-1587137276455-d0e42050e533?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080',
     style: 'Evening Elegance',
   },
 ]
@@ -89,7 +85,15 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
     setPaymentError(null)
     try {
       const { checkout_url } = await createCheckout(tripId, plan)
-      window.location.href = checkout_url
+      // Redirect to Polar-hosted checkout. On success, Polar redirects back to
+      // /checkout/success?plan={plan}&tripId={tripId} as the successUrl.
+      // If the Worker provides a direct Polar URL, follow it; otherwise fall
+      // back to the success page so the result poller can pick up the trip.
+      if (checkout_url) {
+        window.location.href = checkout_url
+      } else {
+        router.push(`/checkout/success?plan=${plan}&tripId=${tripId}`)
+      }
     } catch {
       setPaymentError('Could not start checkout. Please try again.')
       setPaymentLoading(null)
@@ -250,7 +254,13 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
           >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-[#C4613A] flex items-center justify-center flex-shrink-0">
-                <Icon name="auto_awesome" size={20} className="text-white" />
+                <span
+                  className="material-symbols-outlined text-white select-none"
+                  style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}
+                  aria-hidden="true"
+                >
+                  auto_awesome
+                </span>
               </div>
               <span
                 className="text-[20px] text-white italic"
@@ -396,41 +406,60 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
           )}
 
           {/* Plan cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto items-start">
 
             {/* Standard */}
-            <div className="flex flex-col bg-white border border-[#C4613A]/12 rounded-[20px] p-8 relative overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="flex flex-col bg-white border border-[#C4613A]/10 rounded-2xl p-8 relative overflow-hidden hover:shadow-lg transition-shadow">
               <div className="flex flex-col flex-1">
-                <p
-                  className="text-[15px] font-bold text-[#1A1410] mb-2"
-                  style={{ fontFamily: bodyFont }}
+                <h3
+                  className="not-italic text-[28px] text-[#292524] mb-4"
+                  style={{ fontFamily: displayFont }}
                 >
                   Standard
-                </p>
-                <div className="flex items-baseline gap-1 mb-7">
-                  <span className="text-[40px] font-bold text-[#1A1410]">$5</span>
-                  <span className="text-[14px] text-[#1A1410]/50">/trip</span>
+                </h3>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span
+                    className="text-[48px] text-[#292524]"
+                    style={{ fontFamily: displayFont, fontWeight: 700 }}
+                  >
+                    $5
+                  </span>
+                  <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+                    {t('pricing.oneTime')}
+                  </span>
                 </div>
+                <span
+                  className="mb-6 text-[11px] text-[#57534e]/60"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  {t('pricing.noAccountNeeded')}
+                </span>
                 <ul className="flex flex-col gap-3 mb-8 flex-1">
                   {STANDARD_FEATURE_KEYS.map((key) => (
                     <CheckItem key={key}>{t(key)}</CheckItem>
                   ))}
                 </ul>
               </div>
-              <div className="flex flex-col gap-2 mt-auto">
-                <BtnSecondary
+              <div className="flex flex-col gap-3 mt-auto">
+                <button
                   onClick={() => handleSelectPlan('standard')}
                   disabled={paymentLoading !== null}
-                  className={`w-full rounded-xl justify-center${paymentLoading !== null && paymentLoading !== 'standard' ? ' opacity-60' : ''}`}
+                  className="h-[56px] w-full bg-white border-2 border-[#C4613A] text-[#C4613A] text-[13px] font-bold uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] hover:text-white transition-all disabled:opacity-50 disabled:cursor-wait"
+                  style={{
+                    fontFamily: bodyFont,
+                    opacity: paymentLoading !== null && paymentLoading !== 'standard' ? 0.6 : 1,
+                  }}
+                  aria-label="Select Standard plan"
                 >
                   {paymentLoading === 'standard' ? 'Redirecting...' : t('pricing.standard.cta')}
-                </BtnSecondary>
+                </button>
                 <button
                   onClick={() => router.push('/trip')}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#C4613A] border border-dashed border-[#C4613A]/40 hover:border-[#C4613A] transition-colors"
-                  style={{ fontFamily: bodyFont }}
+                  className="w-full flex items-center justify-center gap-2 h-[40px] text-[12px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors border border-dashed border-[#E8DDD4] hover:border-[#C4613A]/40 rounded-xl"
+                  style={{ fontFamily: bodyFont, fontWeight: 500 }}
                   aria-label="See sample result"
                 >
+                  <Icon name="visibility" size={16} />
                   {t('preview.seeSample')}
                 </button>
               </div>
@@ -438,81 +467,107 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
 
             {/* Pro — highlighted */}
             <div
-              className="flex flex-col rounded-[20px] p-8 relative overflow-hidden md:scale-[1.03]"
-              style={{ background: '#C4613A', boxShadow: '0 20px 48px rgba(196,97,58,0.35)' }}
+              className="relative flex flex-col rounded-2xl p-8 overflow-hidden"
+              style={{ background: '#C4613A', boxShadow: '0 4px 16px rgba(196,97,58,.25)' }}
             >
               {/* Most Popular badge */}
               <span
-                className="absolute top-4 right-4 text-[10px] font-bold uppercase tracking-[0.1em] text-white px-3 py-1 rounded-full"
-                style={{ background: 'rgba(255,255,255,0.22)', backdropFilter: 'blur(8px)' }}
+                className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#1A1410] text-white text-[10px] uppercase tracking-[0.12em] rounded-full whitespace-nowrap"
+                style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
                 {t('pricing.pro.badge')}
               </span>
               <div className="flex flex-col flex-1">
-                <p
-                  className="text-[15px] font-bold text-white mb-2"
-                  style={{ fontFamily: bodyFont }}
+                <h3
+                  className="text-white not-italic text-[28px] mb-4"
+                  style={{ fontFamily: displayFont }}
                 >
                   Pro
-                </p>
-                <div className="flex items-baseline gap-1 mb-7">
-                  <span className="text-[40px] font-bold text-white">$12</span>
-                  <span className="text-[14px] text-white/65">/trip</span>
+                </h3>
+                <div className="flex items-baseline gap-1 mb-1">
+                  <span
+                    className="text-[48px] text-white"
+                    style={{ fontFamily: displayFont, fontWeight: 700 }}
+                  >
+                    $12
+                  </span>
+                  <span className="text-[14px] text-white/70" style={{ fontFamily: bodyFont }}>
+                    {t('pricing.oneTime')}
+                  </span>
                 </div>
+                <span
+                  className="mb-6 text-[11px] text-white/40"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  {t('pricing.noAccountNeeded')}
+                </span>
                 <ul className="flex flex-col gap-3 mb-8 flex-1">
                   {PRO_FEATURE_KEYS.map((key) => (
-                    <li key={key} className="flex items-start gap-2.5">
+                    <li key={key} className="flex items-center gap-2.5">
                       <span
-                        className="material-symbols-outlined shrink-0 text-white/80 mt-0.5"
-                        style={{ fontSize: 16 }}
+                        className="material-symbols-outlined text-white shrink-0"
+                        style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}
                       >
                         check_circle
                       </span>
-                      <span className="text-sm leading-relaxed text-white/88">{t(key)}</span>
+                      <span className="text-[14px] text-white/90" style={{ fontFamily: bodyFont }}>
+                        {t(key)}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="flex flex-col gap-2 mt-auto">
+              <div className="flex flex-col gap-3 mt-auto">
                 <button
                   onClick={() => handleSelectPlan('pro')}
                   disabled={paymentLoading !== null}
-                  className="w-full py-4 rounded-xl text-sm font-bold uppercase tracking-wide bg-white text-[#C4613A] hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-wait"
-                  style={{ fontFamily: bodyFont, opacity: paymentLoading !== null && paymentLoading !== 'pro' ? 0.6 : 1 }}
+                  className="h-[56px] w-full bg-white text-[#C4613A] text-[13px] font-bold uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-wait"
+                  style={{
+                    fontFamily: bodyFont,
+                    opacity: paymentLoading !== null && paymentLoading !== 'pro' ? 0.6 : 1,
+                  }}
                   aria-label="Select Pro plan"
                 >
                   {paymentLoading === 'pro' ? 'Redirecting...' : t('pricing.pro.cta')}
                 </button>
                 <button
                   onClick={() => router.push('/trip')}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-white/80 border border-dashed border-white/30 hover:border-white/60 transition-colors"
-                  style={{ fontFamily: bodyFont }}
+                  className="w-full flex items-center justify-center gap-2 h-[40px] text-[12px] uppercase tracking-[0.08em] text-white/70 hover:text-white transition-colors border border-dashed border-white/30 hover:border-white/50 rounded-xl"
+                  style={{ fontFamily: bodyFont, fontWeight: 500 }}
                   aria-label="See sample result"
                 >
+                  <Icon name="visibility" size={16} />
                   {t('preview.seeSample')}
                 </button>
               </div>
             </div>
 
             {/* Annual */}
-            <div className="flex flex-col bg-white border border-[#C4613A]/12 rounded-[20px] p-8 relative overflow-hidden hover:shadow-lg transition-shadow">
+            <div className="relative flex flex-col bg-white border border-[#C4613A]/10 rounded-2xl p-8 overflow-hidden hover:shadow-lg transition-shadow">
               {/* Gold savings badge */}
               <span
-                className="inline-block mb-3 text-[10px] font-bold uppercase tracking-[0.1em] text-[#C4613A] px-2.5 py-1 rounded-full"
-                style={{ background: 'rgba(212,175,55,0.15)', color: '#B8920A' }}
+                className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 gold-gradient text-white text-[10px] uppercase tracking-[0.12em] rounded-full whitespace-nowrap"
+                style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
                 {t('pricing.annual.badge')}
               </span>
               <div className="flex flex-col flex-1">
-                <p
-                  className="text-[15px] font-bold text-[#1A1410] mb-2"
-                  style={{ fontFamily: bodyFont }}
+                <h3
+                  className="not-italic text-[28px] text-[#292524] mb-4"
+                  style={{ fontFamily: displayFont }}
                 >
                   Annual
-                </p>
+                </h3>
                 <div className="flex items-baseline gap-1 mb-7">
-                  <span className="text-[40px] font-bold text-[#1A1410]">$29</span>
-                  <span className="text-[14px] text-[#1A1410]/50">{t('pricing.perYear')}</span>
+                  <span
+                    className="text-[48px] text-[#292524]"
+                    style={{ fontFamily: displayFont, fontWeight: 700 }}
+                  >
+                    $29
+                  </span>
+                  <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+                    {t('pricing.perYear')}
+                  </span>
                 </div>
                 <ul className="flex flex-col gap-3 mb-8 flex-1">
                   {ANNUAL_FEATURE_KEYS.map((key) => (
@@ -520,20 +575,26 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
                   ))}
                 </ul>
               </div>
-              <div className="flex flex-col gap-2 mt-auto">
-                <BtnDark
+              <div className="flex flex-col gap-3 mt-auto">
+                <button
                   onClick={() => handleSelectPlan('annual')}
                   disabled={paymentLoading !== null}
-                  className={`w-full rounded-xl justify-center${paymentLoading !== null && paymentLoading !== 'annual' ? ' opacity-60' : ''}`}
+                  className="h-[56px] w-full bg-[#1A1410] text-white text-[13px] font-bold uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] transition-colors disabled:opacity-50 disabled:cursor-wait"
+                  style={{
+                    fontFamily: bodyFont,
+                    opacity: paymentLoading !== null && paymentLoading !== 'annual' ? 0.6 : 1,
+                  }}
+                  aria-label="Select Annual plan"
                 >
                   {paymentLoading === 'annual' ? 'Redirecting...' : t('pricing.annual.cta')}
-                </BtnDark>
+                </button>
                 <button
                   onClick={() => router.push('/trip')}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold text-[#C4613A] border border-dashed border-[#C4613A]/40 hover:border-[#C4613A] transition-colors"
-                  style={{ fontFamily: bodyFont }}
+                  className="w-full flex items-center justify-center gap-2 h-[40px] text-[12px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors border border-dashed border-[#E8DDD4] hover:border-[#C4613A]/40 rounded-xl"
+                  style={{ fontFamily: bodyFont, fontWeight: 500 }}
                   aria-label="See sample result"
                 >
+                  <Icon name="visibility" size={16} />
                   {t('preview.seeSample')}
                 </button>
               </div>

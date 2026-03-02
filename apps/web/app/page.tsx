@@ -482,86 +482,126 @@ export default function HomePage() {
 
             {/* Pro example */}
             <div
-              className="relative overflow-hidden group aspect-[4/3] bg-[#1A1410] cursor-pointer rounded-xl"
-              onClick={() => router.push('/trip')}
+              className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#C4613A]/30 transition-all"
+              style={{ boxShadow: '0 2px 12px rgba(0,0,0,.04)' }}
+              onClick={() => router.push('/result/demo?plan=pro')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push('/result/demo?plan=pro') }}
+              aria-label="View Pro plan example — Multi-City Style Guide"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMAGES.earthTone}
-                alt="Multi-city Pro plan example"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-75"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.90) 0%, transparent 60%)' }}
-                aria-hidden="true"
-              />
-              <div className="absolute top-5 left-5">
-                <span className="inline-block bg-[#C4613A] text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1.5">
-                  Pro
-                </span>
+              <div className="relative h-[280px] overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={IMAGES.earthTone}
+                  alt="Multi-city Pro plan example"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.60) 0%, transparent 60%)' }}
+                  aria-hidden="true"
+                />
+                <div className="absolute top-4 left-4">
+                  <span
+                    className="px-3 py-1 bg-[#C4613A] text-white rounded-full text-[10px] uppercase tracking-[0.1em]"
+                    style={{ fontFamily: bodyFont, fontWeight: 600 }}
+                  >
+                    Pro
+                  </span>
+                </div>
+                <div className="absolute bottom-4 left-4 right-4">
+                  <span
+                    className="text-white text-[24px] italic block"
+                    style={{ fontFamily: displayFont }}
+                  >
+                    Multi-City Style Guide
+                  </span>
+                  <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
+                    Paris · Rome · Barcelona
+                  </span>
+                </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <p
-                  className="text-2xl text-white italic mb-1"
-                  style={{ fontFamily: displayFont, fontWeight: 700 }}
-                >
-                  Multi-City Style Guide
-                </p>
-                <p className="text-white/60 text-sm" style={{ fontFamily: bodyFont }}>
-                  Paris · Rome · Barcelona &mdash; $12
-                </p>
-              </div>
-              <div className="absolute bottom-6 right-6">
+              <div className="p-5 flex items-center justify-between">
+                <div className="flex gap-2 flex-wrap">
+                  {['3 Cities', '12 Items', '42 Looks'].map((s) => (
+                    <span
+                      key={s}
+                      className="px-2 py-0.5 rounded-full text-[10px] text-[#57534e] border border-[#E8DDD4]"
+                      style={{ fontFamily: 'var(--font-mono)', backgroundColor: '#FDF8F3' }}
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
                 <span
-                  className="inline-flex items-center gap-1 text-white/70 text-[11px] uppercase tracking-[0.1em]"
-                  style={{ fontFamily: bodyFont }}
+                  className="text-[12px] uppercase tracking-[0.08em] text-[#C4613A] flex-shrink-0"
+                  style={{ fontFamily: bodyFont, fontWeight: 600 }}
                 >
-                  {t('section.examples.viewPro')}
-                  <Icon name="arrow_forward" size={14} className="text-white/70" />
+                  {t('section.examples.viewPro')} →
                 </span>
               </div>
             </div>
 
             {/* Annual example */}
             <div
-              className="relative overflow-hidden group aspect-[4/3] bg-[#1A1410] cursor-pointer rounded-xl"
-              onClick={() => router.push('/trip')}
+              className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#D4AF37]/40 transition-all"
+              style={{ boxShadow: '0 2px 12px rgba(0,0,0,.04)' }}
+              onClick={() => router.push('/result/demo?plan=annual')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push('/result/demo?plan=annual') }}
+              aria-label="View Annual member dashboard example"
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={IMAGES.streetwear}
-                alt="Annual member dashboard example"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 brightness-75"
-              />
-              <div
-                className="absolute inset-0"
-                style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.90) 0%, transparent 60%)' }}
-                aria-hidden="true"
-              />
-              <div className="absolute top-5 left-5">
-                <span className="inline-block bg-[#D4AF37] text-[#1A1410] text-[10px] font-bold tracking-widest uppercase px-3 py-1.5">
-                  Annual
-                </span>
+              <div className="relative h-[280px] overflow-hidden">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={IMAGES.streetwear}
+                  alt="Annual member dashboard example"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{ background: 'linear-gradient(to top, rgba(26,20,16,0.60) 0%, transparent 60%)' }}
+                  aria-hidden="true"
+                />
+                <div className="absolute top-4 left-4">
+                  <span
+                    className="px-3 py-1 text-white rounded-full text-[10px] uppercase tracking-[0.1em] gold-gradient"
+                    style={{ fontFamily: bodyFont, fontWeight: 600 }}
+                  >
+                    Annual
+                  </span>
+                </div>
+                <div className="absolute bottom-4 left-4 right-4">
+                  <span
+                    className="text-white text-[24px] italic block"
+                    style={{ fontFamily: displayFont }}
+                  >
+                    Annual Member Dashboard
+                  </span>
+                  <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
+                    Tokyo · Style DNA · Past Trips
+                  </span>
+                </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 p-6">
-                <p
-                  className="text-2xl text-white italic mb-1"
-                  style={{ fontFamily: displayFont, fontWeight: 700 }}
-                >
-                  Annual Style DNA
-                </p>
-                <p className="text-white/60 text-sm" style={{ fontFamily: bodyFont }}>
-                  Tokyo · Seoul · 12 trips/year &mdash; $29/yr
-                </p>
-              </div>
-              <div className="absolute bottom-6 right-6">
+              <div className="p-5 flex items-center justify-between">
+                <div className="flex gap-2 flex-wrap">
+                  {['12 Trips/yr', 'Style DNA', 'VIP'].map((s) => (
+                    <span
+                      key={s}
+                      className="px-2 py-0.5 rounded-full text-[10px] text-[#57534e] border border-[#E8DDD4]"
+                      style={{ fontFamily: 'var(--font-mono)', backgroundColor: '#FDF8F3' }}
+                    >
+                      {s}
+                    </span>
+                  ))}
+                </div>
                 <span
-                  className="inline-flex items-center gap-1 text-white/70 text-[11px] uppercase tracking-[0.1em]"
-                  style={{ fontFamily: bodyFont }}
+                  className="text-[12px] uppercase tracking-[0.08em] text-[#D4AF37] flex-shrink-0"
+                  style={{ fontFamily: bodyFont, fontWeight: 600 }}
                 >
-                  {t('section.examples.viewAnnual')}
-                  <Icon name="arrow_forward" size={14} className="text-white/70" />
+                  {t('section.examples.viewAnnual')} →
                 </span>
               </div>
             </div>

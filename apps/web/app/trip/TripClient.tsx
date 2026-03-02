@@ -27,26 +27,35 @@ type Step = 1 | 2 | 3 | 4
 interface CityWithDates extends CityInput {
   start_date: string
   end_date: string
+  imageUrl?: string
 }
 
-// ─── City image map ────────────────────────────────────────────────────────────
+// ─── City options with Unsplash thumbnails ─────────────────────────────────
 
-const CITY_IMAGES: Record<string, string> = {
-  Paris:      'https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?q=80&w=200',
-  Tokyo:      'https://images.unsplash.com/photo-1583915223588-7d88ebf23414?q=80&w=200',
-  Barcelona:  'https://images.unsplash.com/photo-1745516314491-55ba68a55008?q=80&w=200',
-  Milan:      'https://images.unsplash.com/photo-1599804932675-f458d37ea3fc?q=80&w=200',
-  London:     'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?q=80&w=200',
-  'New York': 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?q=80&w=200',
+const CITY_OPTIONS = [
+  { city: 'Paris', country: 'France', imageUrl: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=80&q=60' },
+  { city: 'Tokyo', country: 'Japan', imageUrl: 'https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=80&q=60' },
+  { city: 'Barcelona', country: 'Spain', imageUrl: 'https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=80&q=60' },
+  { city: 'Milan', country: 'Italy', imageUrl: 'https://images.unsplash.com/photo-1551882547-ff40c4a49f51?w=80&q=60' },
+  { city: 'New York', country: 'USA', imageUrl: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=80&q=60' },
+  { city: 'London', country: 'UK', imageUrl: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=80&q=60' },
+  { city: 'Rome', country: 'Italy', imageUrl: 'https://images.unsplash.com/photo-1515542622106-78bda8ba0e5b?w=80&q=60' },
+  { city: 'Bali', country: 'Indonesia', imageUrl: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=80&q=60' },
+]
+
+// Lookup image URL for a given city name
+function getCityImageUrl(cityName: string): string | undefined {
+  const match = CITY_OPTIONS.find((o) => o.city.toLowerCase() === cityName.toLowerCase())
+  return match?.imageUrl
 }
 
 // ─── Sidebar images per step ──────────────────────────────────────────────────
 
 const SIDEBAR_IMAGES: Record<Step, string> = {
-  1: 'https://images.unsplash.com/photo-1762883691346-0bf3da20c4b7?q=80&w=600',
-  2: 'https://images.unsplash.com/photo-1753161025583-06f2a298d622?q=80&w=600',
-  3: 'https://images.unsplash.com/photo-1769084701646-eb49280dae4e?q=80&w=600',
-  4: 'https://images.unsplash.com/photo-1762883691346-0bf3da20c4b7?q=80&w=600',
+  1: 'https://images.unsplash.com/photo-1523987355523-c7b5b0dd90a7?w=800&q=80',
+  2: 'https://images.unsplash.com/photo-1558769132-cb1aea458c5e?w=800&q=80',
+  3: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=800&q=80',
+  4: 'https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=800&q=80',
 }
 
 // ─── Quotes per step ──────────────────────────────────────────────────────────
@@ -162,6 +171,7 @@ export default function TripClient() {
   const [aesthetics, setAesthetics] = useState<string[]>([])
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const photoPreviewUrlRef = useRef<string | null>(null)
   const dropZoneRef = useRef<HTMLDivElement>(null)
@@ -193,7 +203,15 @@ export default function TripClient() {
   function buildNewCity(name: string, country: string, lat?: number, lon?: number): CityWithDates {
     const prev = cities.length > 0 ? cities[cities.length - 1] : null
     const suggestedStart = prev?.end_date ?? ''
-    return { name, country, lat, lon, start_date: suggestedStart, end_date: '' }
+    return {
+      name,
+      country,
+      lat,
+      lon,
+      start_date: suggestedStart,
+      end_date: '',
+      imageUrl: getCityImageUrl(name),
+    }
   }
 
   function addCityFromSuggestion(s: (typeof CITY_DB)[0]) {
@@ -270,6 +288,16 @@ export default function TripClient() {
     setSubmitError(null)
   }
 
+  function removePhoto() {
+    if (photoPreviewUrlRef.current) {
+      URL.revokeObjectURL(photoPreviewUrlRef.current)
+      photoPreviewUrlRef.current = null
+    }
+    setPhoto(null)
+    setPhotoPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   function onPhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (file) applyPhotoFile(file)
@@ -277,12 +305,18 @@ export default function TripClient() {
 
   function onDrop(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault()
+    setDragOver(false)
     const file = e.dataTransfer.files?.[0]
     if (file && file.type.startsWith('image/')) applyPhotoFile(file)
   }
 
   function onDragOver(e: React.DragEvent<HTMLDivElement>) {
     e.preventDefault()
+    setDragOver(true)
+  }
+
+  function onDragLeave() {
+    setDragOver(false)
   }
 
   // ─── Validation ────────────────────────────────────────────────────────────
@@ -365,6 +399,9 @@ export default function TripClient() {
         month: getMonthFromDate(overallStartDate),
         start_date: overallStartDate,
         end_date: overallEndDate,
+        gender: gender || 'female',
+        ...(parseFloat(height) ? { height_cm: parseFloat(height) } : {}),
+        ...(parseFloat(weight) ? { weight_kg: parseFloat(weight) } : {}),
         ...(aesthetics.length > 0 ? { style_preferences: aesthetics } : {}),
         cf_turnstile_token: token,
         ...(face_url ? { face_url } : {}),
@@ -390,6 +427,18 @@ export default function TripClient() {
   }
 
   const quote = QUOTES[step]
+
+  // ─── Step 4 summary helpers ────────────────────────────────────────────────
+
+  const primaryCity = cities[0]
+  const primaryCityImageUrl = primaryCity?.imageUrl ?? SIDEBAR_IMAGES[4]
+  const genderLabel = gender
+    ? gender.charAt(0).toUpperCase() + gender.slice(1)
+    : 'Not specified'
+  const styleLabel = aesthetics.length > 0 ? aesthetics.join(', ') : 'Not selected'
+  const step4DayCount = primaryCity
+    ? Math.max(1, getNightCount(primaryCity.start_date, primaryCity.end_date))
+    : 0
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -441,7 +490,7 @@ export default function TripClient() {
             Tell us your destinations so we can tailor your capsule wardrobe to each city&apos;s climate and culture.
           </p>
 
-          {/* City search */}
+          {/* City search with image thumbnails in dropdown */}
           <div className="relative mb-6">
             <div className="relative">
               <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#57534e]/50" />
@@ -473,103 +522,149 @@ export default function TripClient() {
               </p>
             )}
 
-            {/* Autocomplete suggestions */}
-            {showSuggestions && (
-              <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-white rounded-xl border border-[#E8DDD4] shadow-lg overflow-hidden">
-                {suggestions.map((s) => (
-                  <button
-                    key={`${s.city}-${s.country}`}
-                    onMouseDown={() => addCityFromSuggestion(s)}
-                    className="w-full text-left px-4 py-3 hover:bg-[#FDF8F3] flex items-start gap-3 border-b border-[#E8DDD4] last:border-0 transition-colors"
-                  >
-                    <Icon name="location_on" size={16} className="text-[#C4613A]/40 mt-0.5 shrink-0" />
-                    <div>
-                      <span className="font-medium text-[#292524] text-sm">{s.city}</span>
-                      <span className="text-[#57534e] text-sm ml-1.5">{s.country}</span>
-                      <p className="text-xs text-[#C4613A]/70 italic mt-0.5">{s.mood_name}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* City list */}
-          {cities.length > 0 && (
-            <div className="space-y-3 mb-8">
-              {cities.map((city, i) => {
-                const nights = getNightCount(city.start_date, city.end_date)
-                const prevCityEnd = i > 0 ? cities[i - 1].end_date : ''
-                const minStart = i === 0 ? TODAY : (prevCityEnd || TODAY)
-                const cityImg = CITY_IMAGES[city.name]
-
-                return (
-                  <div
-                    key={city.name}
-                    className="bg-white p-4 rounded-xl border border-[#E8DDD4] shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#E8DDD4] relative">
-                        {cityImg ? (
+            {/* Autocomplete dropdown with city thumbnails */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div
+                className="absolute z-20 w-full mt-2 bg-white border border-[#E8DDD4] rounded-xl overflow-hidden"
+                style={{ boxShadow: '0 4px 20px rgba(0,0,0,.08)' }}
+              >
+                {suggestions.map((s) => {
+                  const thumbUrl = getCityImageUrl(s.city)
+                  return (
+                    <button
+                      key={`${s.city}-${s.country}`}
+                      onMouseDown={() => addCityFromSuggestion(s)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#FDF8F3] transition-colors text-left border-b border-[#E8DDD4] last:border-0 cursor-pointer"
+                    >
+                      {thumbUrl ? (
+                        <div className="relative w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
                           <Image
-                            src={cityImg}
-                            alt={city.name}
+                            src={thumbUrl}
+                            alt={s.city}
                             fill
                             className="object-cover"
                             unoptimized
                           />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <Icon name="location_city" size={18} className="text-[#C4613A]" />
-                          </div>
-                        )}
-                      </div>
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 rounded-md bg-[#E8DDD4] flex items-center justify-center flex-shrink-0">
+                          <Icon name="location_on" size={16} className="text-[#C4613A]/60" />
+                        </div>
+                      )}
                       <div>
-                        <p className="font-semibold text-[#292524] text-sm">{city.name}, {city.country}</p>
-                        {nights > 0 && (
-                          <p className="text-[#57534e] text-xs">{nights} night{nights !== 1 ? 's' : ''}</p>
+                        <span
+                          className="text-[14px] text-[#292524]"
+                          style={{ fontFamily: bodyFont, fontWeight: 500 }}
+                        >
+                          {s.city}
+                        </span>
+                        <span
+                          className="text-[12px] text-[#57534e] ml-2"
+                          style={{ fontFamily: bodyFont }}
+                        >
+                          {s.country}
+                        </span>
+                        {s.mood_name && (
+                          <p className="text-[11px] text-[#C4613A]/70 italic mt-0.5">{s.mood_name}</p>
                         )}
                       </div>
-                    </div>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <div className="flex flex-col">
-                        <label className="text-[10px] uppercase font-bold text-[#57534e] mb-1">From</label>
-                        <DateSelect
-                          value={city.start_date}
-                          onChange={(v) => updateCityDate(i, 'start_date', v)}
-                          min={minStart}
-                        />
+          {/* Current Itinerary — city cards with inline date pickers */}
+          {cities.length > 0 && (
+            <div className="mb-8">
+              <label
+                className="block text-[#57534e] text-xs font-bold uppercase tracking-widest mb-3"
+                style={{ fontFamily: bodyFont }}
+              >
+                Current Itinerary
+              </label>
+              <div className="space-y-3">
+                {cities.map((city, i) => {
+                  const nights = getNightCount(city.start_date, city.end_date)
+                  const prevCityEnd = i > 0 ? cities[i - 1].end_date : ''
+                  const minStart = i === 0 ? TODAY : (prevCityEnd || TODAY)
+
+                  return (
+                    <div
+                      key={city.name}
+                      className="bg-white rounded-xl border border-[#E8DDD4] overflow-hidden"
+                      style={{ boxShadow: '0 2px 8px rgba(0,0,0,.04)' }}
+                    >
+                      {/* City header row */}
+                      <div className="flex items-center gap-3 px-4 pt-4 pb-3">
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 bg-[#E8DDD4]">
+                          {city.imageUrl ? (
+                            <Image
+                              src={city.imageUrl}
+                              alt={city.name}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Icon name="location_city" size={18} className="text-[#C4613A]" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-[#292524] text-sm truncate">
+                            {city.name}, {city.country}
+                          </p>
+                          {nights > 0 && (
+                            <p className="text-[#57534e] text-xs mt-0.5">
+                              {nights} night{nights !== 1 ? 's' : ''}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => removeCity(city.name)}
+                          className="p-1.5 text-[#57534e]/40 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                          aria-label={`Remove ${city.name}`}
+                        >
+                          <Icon name="close" size={18} />
+                        </button>
                       </div>
-                      <Icon name="arrow_right_alt" className="text-[#57534e]/50 mt-4" />
-                      <div className="flex flex-col">
-                        <label className="text-[10px] uppercase font-bold text-[#57534e] mb-1">To</label>
-                        <DateSelect
-                          value={city.end_date}
-                          onChange={(v) => updateCityDate(i, 'end_date', v)}
-                          disabled={!city.start_date}
-                          min={city.start_date ? (() => {
-                            const d = new Date(city.start_date + 'T00:00:00')
-                            d.setDate(d.getDate() + 1)
-                            return d.toISOString().split('T')[0]
-                          })() : TODAY}
-                        />
+
+                      {/* Date pickers */}
+                      <div className="flex items-center gap-2 px-4 pb-4">
+                        <div className="flex flex-col flex-1">
+                          <label className="text-[10px] uppercase font-bold text-[#57534e] mb-1">From</label>
+                          <DateSelect
+                            value={city.start_date}
+                            onChange={(v) => updateCityDate(i, 'start_date', v)}
+                            min={minStart}
+                          />
+                        </div>
+                        <Icon name="arrow_right_alt" size={18} className="text-[#57534e]/40 mt-5 flex-shrink-0" />
+                        <div className="flex flex-col flex-1">
+                          <label className="text-[10px] uppercase font-bold text-[#57534e] mb-1">To</label>
+                          <DateSelect
+                            value={city.end_date}
+                            onChange={(v) => updateCityDate(i, 'end_date', v)}
+                            disabled={!city.start_date}
+                            min={city.start_date ? (() => {
+                              const d = new Date(city.start_date + 'T00:00:00')
+                              d.setDate(d.getDate() + 1)
+                              return d.toISOString().split('T')[0]
+                            })() : TODAY}
+                          />
+                        </div>
                       </div>
-                      <button
-                        onClick={() => removeCity(city.name)}
-                        className="mt-4 p-2 text-[#57534e]/40 hover:text-red-500 transition-colors"
-                        aria-label={`Remove ${city.name}`}
-                      >
-                        <Icon name="delete" size={18} />
-                      </button>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })}
+              </div>
             </div>
           )}
 
-          {/* Total summary */}
+          {/* Total trip summary (shown when all dates are valid) */}
           {step1Valid && cities.length > 0 && (
             <div className="mb-8 px-5 py-4 bg-white rounded-xl border border-[#E8DDD4] flex items-center justify-between">
               <div>
@@ -583,6 +678,13 @@ export default function TripClient() {
               </div>
               <Icon name="flight" size={24} className="text-[#C4613A]" />
             </div>
+          )}
+
+          {/* Max cities notice */}
+          {cities.length >= MAX_CITIES && (
+            <p className="mb-4 text-xs text-[#57534e]/60 text-center" style={{ fontFamily: bodyFont }}>
+              Maximum {MAX_CITIES} destinations reached.
+            </p>
           )}
 
           {/* Nav footer */}
@@ -605,18 +707,21 @@ export default function TripClient() {
         <div>
           <h1
             className="text-[#292524] leading-tight mb-4"
-            style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontFamily: displayFont, lineHeight: 1.1 }}
+            style={{ fontSize: 'clamp(36px, 4vw, 56px)', fontFamily: displayFont, lineHeight: 1.1 }}
           >
             Personalize <em>your look</em>
           </h1>
-          <p className="text-[16px] text-[#57534e] mb-8" style={{ fontFamily: bodyFont }}>
-            Help us tailor your capsule wardrobe with a few details about your style.
+          <p className="mt-4 text-[16px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+            Help us understand your preferences to create the perfect capsule wardrobe for your body and style.
           </p>
 
-          {/* Gender selection */}
-          <div className="mt-6">
-            <label className="block text-xs font-bold uppercase tracking-widest text-[#57534e] mb-3">
-              Gender
+          {/* Gender Selection */}
+          <div className="mt-10">
+            <label
+              className="text-[#57534e] block mb-4 text-sm"
+              style={{ fontFamily: bodyFont }}
+            >
+              Gender Selection
             </label>
             <div className="grid grid-cols-3 gap-3">
               {GENDER_OPTIONS.map((g) => {
@@ -626,15 +731,21 @@ export default function TripClient() {
                     key={g.id}
                     onClick={() => setGender(g.id)}
                     aria-pressed={selected}
-                    className={`flex flex-col items-center gap-2 py-5 px-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-[#C4613A]/30 ${
+                    className={`flex flex-col items-center gap-2 py-5 px-3 rounded-xl border-2 transition-all focus:outline-none focus:ring-2 focus:ring-[#C4613A]/30 cursor-pointer ${
                       selected
                         ? 'border-[#C4613A] bg-[#C4613A]/5'
-                        : 'border-[#E8DDD4] bg-white hover:border-[#C4613A]/40'
+                        : 'border-[#E8DDD4] bg-white hover:border-[#C4613A]/30'
                     }`}
-                    style={{ fontFamily: bodyFont }}
                   >
-                    <Icon name={g.icon} size={28} className={selected ? 'text-[#C4613A]' : 'text-[#57534e]'} />
-                    <span className={`text-sm font-semibold ${selected ? 'text-[#C4613A]' : 'text-[#292524]'}`}>
+                    <Icon
+                      name={g.icon}
+                      size={28}
+                      className={selected ? 'text-[#C4613A]' : 'text-[#57534e]'}
+                    />
+                    <span
+                      className={`text-[14px] ${selected ? 'text-[#C4613A]' : 'text-[#292524]'}`}
+                      style={{ fontFamily: bodyFont, fontWeight: 500 }}
+                    >
                       {g.label}
                     </span>
                   </button>
@@ -643,16 +754,20 @@ export default function TripClient() {
             </div>
           </div>
 
-          {/* Body info */}
+          {/* Body Info */}
           <div className="mt-10">
-            <div className="flex items-baseline gap-3 mb-3">
-              <label className="block text-xs font-bold uppercase tracking-widest text-[#57534e]">
-                Body Info
-              </label>
-              <span className="text-[12px] text-[#57534e]/60">
-                Optional — helps with more accurate sizing recommendations
-              </span>
-            </div>
+            <label
+              className="text-[#57534e] block mb-1 text-sm"
+              style={{ fontFamily: bodyFont }}
+            >
+              Body Info
+            </label>
+            <span
+              className="text-[12px] text-[#57534e]/60 block mb-4"
+              style={{ fontFamily: bodyFont }}
+            >
+              Optional — helps with more accurate sizing recommendations
+            </span>
             <div className="grid grid-cols-2 gap-4">
               <TCInput
                 label="Height (cm)"
@@ -691,81 +806,140 @@ export default function TripClient() {
         <div>
           <h1
             className="text-[#292524] leading-tight mb-4"
-            style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontFamily: displayFont, lineHeight: 1.1 }}
+            style={{ fontSize: 'clamp(36px, 4vw, 56px)', fontFamily: displayFont, lineHeight: 1.1 }}
           >
             Your Style <em>Profile</em>
           </h1>
-          <p className="text-[16px] text-[#57534e] mb-8" style={{ fontFamily: bodyFont }}>
-            Select the aesthetics that define your travel vibe. Choose as many as you like.
+          <p className="mt-4 text-[16px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+            Define your travel aesthetic so our AI can match outfits to your personal style.
           </p>
 
-          {/* Aesthetic grid */}
-          <div className="grid grid-cols-3 gap-3 mb-10">
-            {STYLE_OPTIONS.map(({ id, label, img }) => (
-              <AestheticCard
-                key={id}
-                label={label}
-                imageUrl={img}
-                selected={aesthetics.includes(id)}
-                onClick={() => toggleAesthetic(id)}
-              />
-            ))}
+          {/* Aesthetic Selection */}
+          <div className="mt-10">
+            <h4
+              className="text-[#292524] mb-1"
+              style={{ fontFamily: bodyFont, fontWeight: 600, fontSize: 16 }}
+            >
+              Select Your Aesthetic
+            </h4>
+            <p
+              className="text-[14px] text-[#57534e] mb-5"
+              style={{ fontFamily: bodyFont }}
+            >
+              Choose the looks that best represent your travel personality.
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {STYLE_OPTIONS.map(({ id, label, img }) => (
+                <AestheticCard
+                  key={id}
+                  label={label}
+                  imageUrl={img}
+                  selected={aesthetics.includes(id)}
+                  onClick={() => toggleAesthetic(id)}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Photo upload section */}
-          <div className="mt-6 p-6 bg-[#C4613A]/5 rounded-xl border border-[#C4613A]/10">
+          {/* AI Personalization — Photo Upload */}
+          <div className="mt-10 p-6 bg-[#C4613A]/5 rounded-xl border border-[#C4613A]/10">
             <div className="flex items-start gap-3">
-              <Icon name="auto_awesome" size={24} className="text-[#C4613A] shrink-0 mt-0.5" />
+              <Icon name="auto_awesome" size={24} className="text-[#C4613A] flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold text-[#292524] text-sm mb-1" style={{ fontFamily: displayFont }}>
+                <h4
+                  className="text-[#292524] mb-1"
+                  style={{ fontFamily: bodyFont, fontWeight: 600, fontSize: 16 }}
+                >
                   Personalize with AI
                 </h4>
-                <p className="text-[13px] text-[#57534e] mb-4" style={{ fontFamily: bodyFont }}>
-                  Upload a full-body photo so our AI can generate outfits tailored to your proportions.
+                <p
+                  className="text-[14px] text-[#57534e] mb-4"
+                  style={{ fontFamily: bodyFont }}
+                >
+                  Upload a full-body photo so our AI can generate outfits tailored to your proportions and build.
                 </p>
 
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={onPhotoChange}
+                  accept="image/png,image/jpeg,image/webp"
                   className="hidden"
+                  onChange={onPhotoChange}
                   aria-label="Upload photo"
                 />
 
                 {photoPreview ? (
-                  <div className="flex items-center gap-4">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={photoPreview}
-                      alt="Selected photo preview"
-                      className="w-16 h-16 rounded-lg object-cover border border-[#E8DDD4]"
-                    />
-                    <div>
-                      <p className="text-sm font-semibold text-[#292524]">Photo uploaded</p>
+                  /* Photo preview */
+                  <div className="relative rounded-xl overflow-hidden border border-[#E8DDD4] bg-white">
+                    <div className="flex items-center gap-4 p-4">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photoPreview}
+                        alt="Your photo"
+                        className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className="text-[14px] text-[#292524] block truncate"
+                          style={{ fontFamily: bodyFont, fontWeight: 500 }}
+                        >
+                          {photo?.name ?? 'Photo uploaded'}
+                        </span>
+                        <span
+                          className="text-[12px] text-[#57534e] flex items-center gap-1 mt-1"
+                          style={{ fontFamily: bodyFont }}
+                        >
+                          <Icon name="check_circle" size={14} className="text-green-600" />
+                          Photo uploaded — AI will use this for outfit generation
+                        </span>
+                        <button
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-xs text-[#C4613A] hover:underline mt-1"
+                          style={{ fontFamily: bodyFont }}
+                        >
+                          Change photo
+                        </button>
+                      </div>
                       <button
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-xs text-[#C4613A] hover:underline mt-0.5"
+                        onClick={removePhoto}
+                        className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-[#EFE8DF] transition-colors cursor-pointer"
+                        aria-label="Remove photo"
                       >
-                        Change photo
+                        <Icon name="close" size={18} className="text-[#57534e]" />
                       </button>
                     </div>
                   </div>
                 ) : (
+                  /* Upload dropzone */
                   <div
                     ref={dropZoneRef}
-                    onClick={() => fileInputRef.current?.click()}
-                    onDrop={onDrop}
                     onDragOver={onDragOver}
+                    onDragLeave={onDragLeave}
+                    onDrop={onDrop}
+                    onClick={() => fileInputRef.current?.click()}
                     onKeyDown={(e) => e.key === 'Enter' && fileInputRef.current?.click()}
                     role="button"
                     tabIndex={0}
                     aria-label="Click or drag to upload a photo"
-                    className="border-2 border-dashed border-[#C4613A]/30 rounded-xl flex flex-col items-center justify-center py-6 cursor-pointer hover:border-[#C4613A]/60 hover:bg-[#C4613A]/5 transition-all"
+                    className={`border-2 border-dashed rounded-xl p-8 text-center transition-colors cursor-pointer bg-white/50 ${
+                      dragOver
+                        ? 'border-[#C4613A] bg-[#C4613A]/5'
+                        : 'border-[#E8DDD4] hover:border-[#C4613A]/30'
+                    }`}
                   >
-                    <Icon name="add_a_photo" size={28} className="text-[#C4613A]/50 mb-2" />
-                    <p className="text-sm font-semibold text-[#292524]">Click or drag to upload</p>
-                    <p className="text-[11px] text-[#57534e]/50 mt-1 uppercase tracking-widest">JPG · PNG · WEBP · Max 5 MB</p>
+                    <Icon name="cloud_upload" size={32} className="text-[#57534e]/40 mx-auto" />
+                    <p
+                      className="mt-2 text-[14px] text-[#57534e]/60"
+                      style={{ fontFamily: bodyFont }}
+                    >
+                      Drag & drop or click to upload
+                    </p>
+                    <p
+                      className="mt-1 text-[11px] text-[#57534e]/40"
+                      style={{ fontFamily: bodyFont }}
+                    >
+                      Full-body photo recommended · PNG, JPG up to 5MB
+                    </p>
                   </div>
                 )}
 
@@ -787,10 +961,10 @@ export default function TripClient() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => goTo(4)}
-                className="text-[14px] text-[#57534e] hover:text-[#C4613A] underline transition-colors"
+                className="text-[14px] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer underline underline-offset-4"
                 style={{ fontFamily: bodyFont }}
               >
-                Skip for now
+                Skip, style me without a photo
               </button>
               <BtnPrimary size="sm" onClick={() => goTo(4)}>
                 <span className="flex items-center gap-2">
@@ -808,95 +982,115 @@ export default function TripClient() {
         <div>
           <h1
             className="text-[#292524] leading-tight mb-4"
-            style={{ fontSize: 'clamp(32px, 4vw, 48px)', fontFamily: displayFont, lineHeight: 1.1 }}
+            style={{ fontSize: 'clamp(36px, 4vw, 56px)', fontFamily: displayFont, lineHeight: 1.1 }}
           >
             Ready for your <em>getaway?</em>
           </h1>
-          <p className="text-[16px] text-[#57534e] mb-8" style={{ fontFamily: bodyFont }}>
-            Review your trip details before we generate your custom capsule wardrobe.
+          <p className="mt-4 text-[16px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+            Review your trip details before we analyze the perfect capsule wardrobe.
           </p>
 
-          {/* Summary card */}
-          <div className="mt-6 bg-white rounded-2xl overflow-hidden border border-[#E8DDD4]">
-            {/* City hero strip */}
-            <div className="relative h-32 bg-gradient-to-br from-[#1A1410] to-[#3a2820] overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-              <div className="absolute bottom-5 left-6">
+          {/* Summary Card */}
+          <div
+            className="mt-10 bg-white rounded-2xl overflow-hidden border border-[#E8DDD4]"
+            style={{ boxShadow: '0 2px 12px rgba(0,0,0,.06)' }}
+          >
+            {/* City hero image */}
+            <div className="relative h-[200px]">
+              <Image
+                src={primaryCityImageUrl}
+                alt={primaryCity?.name ?? 'Your trip'}
+                fill
+                className="object-cover"
+                unoptimized
+                priority
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+              <div className="absolute top-4 left-4">
+                <span
+                  className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]"
+                  style={{ fontFamily: bodyFont, fontWeight: 600 }}
+                >
+                  Trip Summary
+                </span>
+              </div>
+              <div className="absolute bottom-4 left-5">
                 <h3
-                  className="text-white text-2xl font-bold"
+                  className="text-white text-[28px] italic"
                   style={{ fontFamily: displayFont }}
                 >
-                  {cities.length > 0 ? cities.map((c) => c.name).join(' · ') : 'Your Trip'}
+                  {cities.length > 0
+                    ? cities.map((c) => `${c.name}, ${c.country}`).join(' · ')
+                    : 'Your Trip'}
                 </h3>
               </div>
             </div>
 
             {/* Info rows */}
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#57534e]">
-                  <Icon name="calendar_today" size={16} className="text-[#C4613A]" />
-                  <span className="text-[11px] font-bold uppercase tracking-widest">Dates</span>
-                </div>
-                <span className="text-sm font-semibold text-[#292524]">
-                  {overallStartDate && overallEndDate
-                    ? `${formatDateShort(overallStartDate)} – ${formatDateShort(overallEndDate)}`
-                    : '—'}
-                </span>
+            <div className="p-6">
+              <div className="space-y-4">
+                {[
+                  {
+                    icon: 'calendar_today',
+                    label: 'Dates',
+                    value: overallStartDate && overallEndDate
+                      ? `${formatDateDisplay(overallStartDate)} — ${formatDateDisplay(overallEndDate)}`
+                      : '—',
+                  },
+                  {
+                    icon: 'schedule',
+                    label: 'Duration',
+                    value: step4DayCount > 0 ? `${step4DayCount} days` : '—',
+                  },
+                  {
+                    icon: 'palette',
+                    label: 'Style',
+                    value: styleLabel,
+                  },
+                  {
+                    icon: 'person',
+                    label: 'Gender',
+                    value: genderLabel,
+                  },
+                  {
+                    icon: 'photo_camera',
+                    label: 'Reference Photo',
+                    value: photo ? 'Uploaded' : 'Not provided',
+                  },
+                ].map((row) => (
+                  <div key={row.label} className="flex items-center gap-3">
+                    <Icon name={row.icon} size={18} className="text-[#C4613A] flex-shrink-0" />
+                    <div className="flex items-baseline gap-2 min-w-0">
+                      <span
+                        className="text-[12px] uppercase tracking-[0.08em] text-[#57534e] flex-shrink-0"
+                        style={{ fontFamily: bodyFont, fontWeight: 500 }}
+                      >
+                        {row.label}
+                      </span>
+                      <span
+                        className="text-[14px] text-[#292524] truncate capitalize"
+                        style={{ fontFamily: bodyFont }}
+                      >
+                        {row.value}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[#57534e]">
-                  <Icon name="nights_stay" size={16} className="text-[#C4613A]" />
-                  <span className="text-[11px] font-bold uppercase tracking-widest">Duration</span>
-                </div>
-                <span className="text-sm font-semibold text-[#292524]">
-                  {totalNights > 0 ? `${totalNights} nights` : '—'}
-                </span>
+              <div className="mt-6 pt-4 border-t border-[#E8DDD4]">
+                <p className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+                  Everything correct?
+                </p>
+                <button
+                  onClick={() => goTo(1)}
+                  className="mt-1 inline-flex items-center gap-1 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:text-[#A84A25] transition-colors cursor-pointer"
+                  style={{ fontFamily: bodyFont, fontWeight: 600 }}
+                >
+                  Edit Details
+                  <Icon name="edit" size={14} className="text-[#C4613A]" />
+                </button>
               </div>
-
-              {aesthetics.length > 0 && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[#57534e]">
-                    <Icon name="style" size={16} className="text-[#C4613A]" />
-                    <span className="text-[11px] font-bold uppercase tracking-widest">Style</span>
-                  </div>
-                  <span className="text-sm font-semibold text-[#292524] capitalize">
-                    {aesthetics.slice(0, 2).join(', ')}
-                  </span>
-                </div>
-              )}
-
-              {gender && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[#57534e]">
-                    <Icon name="person" size={16} className="text-[#C4613A]" />
-                    <span className="text-[11px] font-bold uppercase tracking-widest">Gender</span>
-                  </div>
-                  <span className="text-sm font-semibold text-[#292524] capitalize">{gender}</span>
-                </div>
-              )}
-
-              {photo && (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-[#57534e]">
-                    <Icon name="photo_camera" size={16} className="text-[#C4613A]" />
-                    <span className="text-[11px] font-bold uppercase tracking-widest">Reference Photo</span>
-                  </div>
-                  <span className="text-sm font-semibold text-[#292524]">Uploaded</span>
-                </div>
-              )}
-            </div>
-
-            {/* Edit button */}
-            <div className="px-6 py-3 bg-[#FDF8F3] border-t border-[#E8DDD4] flex justify-end">
-              <button
-                onClick={() => goTo(1)}
-                className="text-[#C4613A] text-xs font-bold uppercase tracking-widest hover:underline flex items-center gap-1.5"
-              >
-                Edit Details
-                <Icon name="edit" size={14} />
-              </button>
             </div>
           </div>
 
@@ -912,14 +1106,21 @@ export default function TripClient() {
 
           {/* Main CTA */}
           <div className="mt-8">
-            <button
+            <BtnPrimary
+              className="w-full"
+              size="lg"
               onClick={handleSubmit}
               disabled={!step1Valid || submitting}
-              className="w-full bg-[#C4613A] text-white py-4 rounded-2xl font-bold hover:bg-[#a34828] hover:-translate-y-0.5 transition-all text-lg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-3 shadow-lg shadow-[#C4613A]/20"
             >
               {submitting ? (
                 <>
-                  <svg className="animate-spin h-5 w-5 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+                  <svg
+                    className="animate-spin h-5 w-5 shrink-0"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
@@ -927,33 +1128,44 @@ export default function TripClient() {
                 </>
               ) : (
                 <>
-                  <Icon name="auto_awesome" size={20} />
+                  <Icon name="auto_awesome" size={20} className="text-white" />
                   Analyze My Trip
                 </>
               )}
-            </button>
+            </BtnPrimary>
           </div>
 
-          {/* What happens next */}
-          <div className="mt-6 p-5 bg-white rounded-xl border border-[#E8DDD4] flex items-start gap-3">
-            <Icon name="auto_awesome" size={20} className="text-[#C4613A] mt-0.5 shrink-0" />
-            <div>
-              <p className="text-[#292524] text-xs font-bold uppercase tracking-widest mb-1">What happens next</p>
-              <p className="text-[#57534e] text-xs leading-relaxed">
-                Our AI curates your perfect wardrobe by analyzing the local style scene, weather, and your aesthetic profile. You&apos;ll receive a free preview instantly.
-              </p>
+          {/* The Next Step */}
+          <div className="mt-10">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#C4613A]" />
+              <span
+                className="text-[11px] uppercase tracking-[0.15em] text-[#57534e]"
+                style={{ fontFamily: bodyFont }}
+              >
+                The Next Step
+              </span>
             </div>
+            <p
+              className="text-[14px] text-[#57534e] leading-relaxed"
+              style={{ fontFamily: bodyFont }}
+            >
+              Once you click &ldquo;Analyze My Trip,&rdquo; our AI will process weather forecasts, cultural context, and your style preferences to generate a complete capsule wardrobe in under 30 seconds.
+            </p>
           </div>
 
-          {/* Legal */}
+          {/* Footer legal */}
           <div className="mt-10 pt-6 border-t border-[#E8DDD4]">
-            <p className="text-[11px] text-[#57534e]/50" style={{ fontFamily: bodyFont }}>
-              By clicking &ldquo;Analyze My Trip&rdquo; you agree to our Terms of Service.
+            <p
+              className="text-[11px] text-[#57534e]/50 leading-relaxed"
+              style={{ fontFamily: bodyFont }}
+            >
+              By clicking &ldquo;Analyze My Trip&rdquo; you agree to our Terms of Service and Privacy Policy. Your data is encrypted and never shared with third parties.
             </p>
           </div>
 
           {/* Back button */}
-          <div className="mt-6 flex justify-start">
+          <div className="mt-8 flex items-center justify-between pb-6">
             <BtnSecondary size="sm" onClick={() => goTo(3)}>
               Back
             </BtnSecondary>
