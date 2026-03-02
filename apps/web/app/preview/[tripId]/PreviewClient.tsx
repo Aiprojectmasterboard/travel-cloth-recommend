@@ -157,7 +157,8 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
 
   const firstVibe = data.vibes[0]
   const firstWeather = data.weather[0]
-  const teaserUrl = data.teaser?.teaser_url ?? null
+  // Use || instead of ?? so empty string ('') also falls back to null
+  const teaserUrl = data.teaser?.teaser_url || null
 
   // Derive display values from data
   const destinationLabel = data.vibes.map((v) => v.city).join(', ')
@@ -244,7 +245,6 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
           {/* Content */}
           <div style={{
             position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            backdropFilter: teaserUrl ? undefined : 'blur(0)',
           }}>
             <div style={{
               background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(20px)',
@@ -258,32 +258,27 @@ export default function PreviewClient({ tripId }: { tripId: string }) {
               }}>
                 <span className="material-symbols-outlined" style={{ fontSize: 32, color: '#fff' }}>auto_awesome</span>
               </div>
-              {teaserUrl ? (
-                <>
-                  <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, color: '#fff', marginBottom: 8 }}>
-                    Lookbook Preview
-                  </h3>
-                  <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14 }}>
-                    {firstVibe?.mood_name ?? 'Your travel style is ready.'}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, color: '#fff', marginBottom: 8 }}>
-                    Lookbook Preview
-                  </h3>
-                  <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 24 }}>
-                    We are currently generating custom outfit combinations and mapping your city vibe cards...
-                  </p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div style={{ height: 8, background: 'rgba(255,255,255,0.2)', borderRadius: 9999, overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: '75%', background: '#b8552e', borderRadius: 9999 }} />
-                    </div>
-                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                      75% AI Analysis Complete
+              <h3 style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, color: '#fff', marginBottom: 8 }}>
+                {firstVibe?.mood_label ?? 'Your Travel Style'}
+              </h3>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 16 }}>
+                {teaserUrl
+                  ? 'Your AI-curated travel look is ready below.'
+                  : 'AI analysis complete — unlock your full outfit gallery below.'}
+              </p>
+              {firstVibe?.vibe_tags && firstVibe.vibe_tags.length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
+                  {firstVibe.vibe_tags.slice(0, 3).map((tag) => (
+                    <span key={tag} style={{
+                      background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)',
+                      padding: '4px 12px', borderRadius: 9999,
+                      fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase',
+                      color: 'rgba(255,255,255,0.9)',
+                    }}>
+                      {tag}
                     </span>
-                  </div>
-                </>
+                  ))}
+                </div>
               )}
             </div>
           </div>

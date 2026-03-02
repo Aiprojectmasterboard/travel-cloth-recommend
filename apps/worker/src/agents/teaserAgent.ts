@@ -44,8 +44,10 @@ interface GeminiResponse {
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL = 'gemini-3.1-flash-image-preview';
-const MAX_ATTEMPTS = 3;
-const BACKOFF_MS = [1_000, 2_000, 4_000] as const;
+const MAX_ATTEMPTS = 2;
+const BACKOFF_MS = [1_000, 2_000] as const;
+// Keep per-request timeout short so teaser failures don't block the Worker response
+const FETCH_TIMEOUT_MS = 10_000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -93,13 +95,13 @@ async function generateNanoBanana(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(30_000),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     }
   );
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`[teaserAgent] Gemini API HTTP ${res.status}: ${text}`);
+    throw new Error(`[teaserAgent] Gemini API HTTP ${res.status}: ${text.slice(0, 300)}`);
   }
 
   const data = (await res.json()) as GeminiResponse;
@@ -174,6 +176,11 @@ export async function teaserAgent(
   env: Bindings
 ): Promise<TeaserResult> {
   const { tripId, vibeResult, faceUrl } = input;
+
+  // Guard: NANOBANANA_API_KEY must be configured as a Worker secret
+  if (!env.NANOBANANA_API_KEY) {
+    throw new Error('[teaserAgent] NANOBANANA_API_KEY is not configured — run: wrangler secret put NANOBANANA_API_KEY');
+  }
 
   // Build image prompt from vibe data
   const tagString = vibeResult.vibe_tags.join(', ');

@@ -314,7 +314,7 @@ export async function runPreview(
         teaserUrl = teaser.image_url;
 
         // Insert generation_jobs row for the teaser
-        await sbFetch(env, '/generation_jobs', {
+        const jobInsertRes = await sbFetch(env, '/generation_jobs', {
           method: 'POST',
           body: JSON.stringify({
             trip_id,
@@ -327,6 +327,10 @@ export async function runPreview(
             attempts: 1,
           }),
         });
+        if (!jobInsertRes.ok) {
+          const detail = await jobInsertRes.text();
+          console.error(`[runPreview] generation_jobs INSERT failed (${jobInsertRes.status}): ${detail}`);
+        }
       } catch (err) {
         console.error(`[runPreview] Teaser generation failed for trip ${trip_id}:`, (err as Error).message);
         // Non-fatal — preview can proceed without teaser
