@@ -165,16 +165,38 @@ function polarProductId(plan: PlanType, env: Bindings): string {
 
 // ─── Hono App ─────────────────────────────────────────────────────────────────
 
+const ALLOWED_ORIGINS = [
+  'https://travelscapsule.com',
+  'https://www.travelscapsule.com',
+  'https://travel-cloth-recommend.pages.dev',
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
 const app = new Hono<{ Bindings: Bindings }>();
 
 app.use(
   '/api/*',
   cors({
-    origin: ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev', 'http://localhost:3000', 'http://localhost:5173'],
+    origin: ALLOWED_ORIGINS,
     allowMethods: ['GET', 'POST', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
   })
 );
+
+// Global error handler — MUST add CORS headers manually because the cors
+// middleware's "after next()" code does not run when the route throws.
+app.onError((err, c) => {
+  const origin = c.req.header('origin') ?? '';
+  if (ALLOWED_ORIGINS.includes(origin)) {
+    c.header('Access-Control-Allow-Origin', origin);
+    c.header('Vary', 'Origin');
+    c.header('Access-Control-Allow-Credentials', 'false');
+  }
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error('[onError]', msg);
+  return c.json({ error: 'Internal Server Error', detail: msg.slice(0, 200) }, 500);
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. GET /api/health
