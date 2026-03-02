@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Build & Deploy Next.js → Cloudflare Pages
+    name: Build & Deploy Vite+React → Cloudflare Pages
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -21,87 +21,24 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
-          cache: 'npm'
-          cache-dependency-path: package-lock.json
 
-      - name: Install dependencies (workspace root)
+      - name: Install dependencies (figma/)
+        working-directory: figma
         run: npm install --legacy-peer-deps
 
-      - name: Build Next.js
-        working-directory: apps/web
-        run: npx next build
+      - name: Build Vite+React
+        working-directory: figma
+        run: npm run build
         env:
           NODE_ENV: production
-          NEXT_PUBLIC_SUPABASE_URL: https://lmrrawhvjmuexajllint.supabase.co
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_3_Vzle5e2GXFtLG5d8F69Q_oznMxXm2
-          NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY: 0x4AAAAAACj5TNMi2k0b77UT
-          NEXT_PUBLIC_WORKER_URL: https://travel-capsule-worker.netson94.workers.dev
-          NEXT_PUBLIC_SITE_URL: https://travelscapsule.com
-
-      - name: Build Cloudflare Pages bundle (@cloudflare/next-on-pages)
-        working-directory: apps/web
-        run: npx @cloudflare/next-on-pages@1
-
-      # ── Set nodejs_compat flag BEFORE deploy ──────────────────────────────────
-      # @cloudflare/next-on-pages generates a _worker.js that uses node:buffer
-      # and node:async_hooks. Without nodejs_compat the Worker silently fails
-      # and serves a blank page. We patch the Pages project via API every deploy
-      # to guarantee the flag is always present.
-      - name: Set nodejs_compat flag + NEXT_PUBLIC env vars via Cloudflare API
-        env:
-          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          CF_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-        run: |
-          RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X PATCH \
-            "https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/pages/projects/travel-cloth-recommend" \
-            -H "Authorization: Bearer ${CF_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d '{
-              "deployment_configs": {
-                "production": {
-                  "compatibility_flags": ["nodejs_compat"],
-                  "compatibility_date": "2024-09-23",
-                  "env_vars": {
-                    "NEXT_PUBLIC_SUPABASE_URL":                  {"value": "https://lmrrawhvjmuexajllint.supabase.co"},
-                    "NEXT_PUBLIC_SUPABASE_ANON_KEY":             {"value": "sb_publishable_3_Vzle5e2GXFtLG5d8F69Q_oznMxXm2"},
-                    "NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY": {"value": "0x4AAAAAACj5TNMi2k0b77UT"},
-                    "NEXT_PUBLIC_WORKER_URL":                    {"value": "https://travel-capsule-worker.netson94.workers.dev"},
-                    "NEXT_PUBLIC_SITE_URL":                      {"value": "https://travelscapsule.com"}
-                  }
-                },
-                "preview": {
-                  "compatibility_flags": ["nodejs_compat"],
-                  "compatibility_date": "2024-09-23",
-                  "env_vars": {
-                    "NEXT_PUBLIC_SUPABASE_URL":                  {"value": "https://lmrrawhvjmuexajllint.supabase.co"},
-                    "NEXT_PUBLIC_SUPABASE_ANON_KEY":             {"value": "sb_publishable_3_Vzle5e2GXFtLG5d8F69Q_oznMxXm2"},
-                    "NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY": {"value": "0x4AAAAAACj5TNMi2k0b77UT"},
-                    "NEXT_PUBLIC_WORKER_URL":                    {"value": "https://travel-capsule-worker.netson94.workers.dev"},
-                    "NEXT_PUBLIC_SITE_URL":                      {"value": "https://travelscapsule.com"}
-                  }
-                }
-              }
-            }')
-
-          HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
-          BODY=$(echo "$RESPONSE" | grep -v "HTTP_STATUS:")
-
-          echo "API response status: $HTTP_STATUS"
-          echo "$BODY" | jq '{success: .success, errors: .errors}' 2>/dev/null || echo "$BODY"
-
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "⚠️  WARNING: Could not set nodejs_compat flag automatically."
-            echo "    Please set it manually in Cloudflare Pages dashboard:"
-            echo "    Pages → travel-cloth-recommend → Settings → Functions → Compatibility flags"
-            echo "    Add: nodejs_compat  (to both Production and Preview)"
-          fi
+          VITE_WORKER_URL: https://travel-capsule-worker.netson94.workers.dev
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy apps/web/.vercel/output/static --project-name=travel-cloth-recommend --commit-dirty=true
+          command: pages deploy figma/dist --project-name=travel-cloth-recommend --commit-dirty=true
 
   deploy-worker:
     name: Deploy Cloudflare Worker + Secrets
