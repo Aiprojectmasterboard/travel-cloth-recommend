@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
+import { buildProfile, generateCityOutfits, type CityOutfitSet } from '@/lib/outfitGenerator'
 import {
   ViewProps,
   DEMO_OUTFIT_IMAGES,
@@ -13,10 +14,10 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const DAY_ACTIVITY_LABELS = ['Arrival', 'Museums', 'Galleries', 'Shopping', 'Dinner', 'Versailles', 'Depart']
+const DAY_ACTIVITY_LABELS = ['Arrival', 'Museums', 'Galleries', 'Shopping', 'Dinner', 'Day Trip', 'Depart']
 const DAY_STYLE_SUBTEXTS = [
   'Relaxed Transit Chic', 'Cultural Sophistication', 'Artful Eclecticism',
-  'Street Luxe', 'Evening Elegance', 'Classic French Countryside', 'Effortless Exit',
+  'Street Luxe', 'Evening Elegance', 'Scenic Exploration', 'Effortless Exit',
 ]
 
 const ITINERARY_DETAILS = [
@@ -257,6 +258,28 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
   const totalDays = trip.cities.reduce((sum, c) => sum + c.days, 0)
   const month = getMonthName(trip.month)
   const cityFlag = getCityFlag(primaryCity)
+  const moodLabel = trip.generation_jobs?.[0]?.mood ?? 'Travel Chic'
+
+  const [cityOutfitSet, setCityOutfitSet] = useState<CityOutfitSet | null>(null)
+
+  useEffect(() => {
+    try {
+      const raw = JSON.parse(localStorage.getItem('tc_user_profile') ?? 'null')
+      if (raw) {
+        const profile = buildProfile(raw.gender, raw.height, raw.weight, raw.aesthetics ?? [])
+        const monthNum = typeof trip.month === 'string' ? parseInt(trip.month, 10) : Number(trip.month)
+        const set = generateCityOutfits(profile, {
+          city: primaryCity,
+          country: '',
+          month: isNaN(monthNum) ? 10 : monthNum,
+          days: totalDays,
+        }, 4)
+        setCityOutfitSet(set)
+      }
+    } catch {
+      // localStorage unavailable or parse error — use defaults
+    }
+  }, [primaryCity, trip.month, totalDays])
 
   // Build day plans from API data or generate demo ones
   const dayPlans =
@@ -286,7 +309,7 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
   // Style quote
   const styleQuote =
     trip.vibe_description ??
-    'Perfect for exploring Le Marais or a casual coffee stop. The trench adds sophistication while keeping you prepared for light showers.'
+    'Carefully curated looks to help you explore your destination with effortless style and comfort.'
 
   // Capsule grid items (max 10)
   const capsuleItems = wardrobeItems.slice(0, 10).map((item, i) => ({
@@ -344,7 +367,11 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
                 const breakdownItems = wardrobeItems.slice(offset, offset + 4).length >= 1
                   ? wardrobeItems.slice(offset, offset + 4)
                   : wardrobeItems.slice(0, 4)
-                const items = breakdownItems.map((item) => ({
+                const items = cityOutfitSet?.outfits[i]?.items.map((it) => ({
+                  name: it.name,
+                  description: it.category + (it.size ? ` · ${it.size}` : ''),
+                  imageUrl: it.imageUrl,
+                })) ?? breakdownItems.map((item) => ({
                   name: item.name,
                   description: item.description ?? item.cities,
                   imageUrl: item.image_url ?? DEMO_CAPSULE_IMAGES[i % DEMO_CAPSULE_IMAGES.length],
@@ -353,9 +380,9 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
                   <OutfitAccordionCard
                     key={dp.day}
                     dayNum={dp.day}
-                    activityLabel={DAY_ACTIVITY_LABELS[i % DAY_ACTIVITY_LABELS.length]}
-                    styleSubtext={DAY_STYLE_SUBTEXTS[i % DAY_STYLE_SUBTEXTS.length]}
-                    imageUrl={outfitImages[i % outfitImages.length]}
+                    activityLabel={cityOutfitSet?.outfits[i]?.label ?? DAY_ACTIVITY_LABELS[i % DAY_ACTIVITY_LABELS.length]}
+                    styleSubtext={cityOutfitSet?.outfits[i]?.styleTag ?? DAY_STYLE_SUBTEXTS[i % DAY_STYLE_SUBTEXTS.length]}
+                    imageUrl={cityOutfitSet?.outfits[i]?.imageUrl ?? outfitImages[i % outfitImages.length]}
                     items={items}
                     isOpen={openCard === i}
                     onToggle={() => setOpenCard(openCard === i ? -1 : i)}
@@ -473,7 +500,7 @@ export default function StandardView({ trip, tripId: _tripId, onShare }: ViewPro
               <span className="material-symbols-outlined std-sidebar-icon">psychology</span>
               <span className="std-sidebar-card-eyebrow">Style Code</span>
             </div>
-            <h3 className="std-sidebar-title">{primaryCity} — Autumn Chic</h3>
+            <h3 className="std-sidebar-title">{primaryCity} — {moodLabel}</h3>
             <p className="std-sidebar-body">{styleQuote}</p>
             <div className="std-style-tags">
               {['Minimalist', 'Walkable', 'Transitional'].map((t) => (

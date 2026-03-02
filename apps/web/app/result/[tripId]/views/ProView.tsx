@@ -200,7 +200,8 @@ export default function ProView({ trip, tripId, onShare }: ViewProps) {
             const cityName = cityObj.name
             const flag = getCityFlag(cityName)
             const filter = CITY_FILTERS[idx % CITY_FILTERS.length]
-            const moodName = CITY_MOOD_NAMES[idx % CITY_MOOD_NAMES.length]
+            const moodName = trip.generation_jobs?.find(j => j.city === cityName)?.mood
+              ?? CITY_MOOD_NAMES[idx % CITY_MOOD_NAMES.length]
             const descriptor = CITY_STYLE_DESCRIPTORS[idx % CITY_STYLE_DESCRIPTORS.length]
             const range = cityDayRanges[idx]
             const labels = GALLERY_LABELS[idx % GALLERY_LABELS.length]

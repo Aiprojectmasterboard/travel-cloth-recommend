@@ -351,6 +351,14 @@ export default function TripClient() {
         localStorage.setItem(SESSION_KEY, sessionId)
       }
 
+      // Save user profile for result page personalization
+      localStorage.setItem('tc_user_profile', JSON.stringify({
+        gender: gender || 'female',
+        height: parseFloat(height) || 165,
+        weight: parseFloat(weight) || 60,
+        aesthetics,
+      }))
+
       const preview = await apiPost<PreviewResponse>('/api/preview', {
         session_id: sessionId,
         cities: citiesWithDays,
