@@ -143,15 +143,15 @@ const translationsEn: Record<string, string> = {
 }
 
 const translationsKo: Record<string, string> = {
-  'hero.tagline': '날씨 걱정의 끝,\n완벽한 여행 코디.',
-  'hero.pill': '알고리즘 활성화',
+  'hero.tagline': '날씨 고민,\n이제 그만.',
+  'hero.pill': '알고리즘 작동 중',
   'hero.subtitle': 'AI 기반 캡슐 워드로브 시스템',
-  'hero.body': '날씨 적응형, 목적지 맞춤 코디 플래닝으로 여행 짐 걱정을 영원히 없애드립니다.',
+  'hero.body': '날씨에 맞춘, 여행지를 이해하는 스타일링. 집 싸기 스트레스에서 완전히 해방됩니다.',
   'hero.cta': '나만의 캡슐 만들기',
-  'nav.howItWorks': '이용 방법',
-  'nav.pricing': '가격',
-  'nav.examples': '예시',
-  'nav.startPlanning': '플래닝 시작',
+  'nav.howItWorks': '서비스 소개',
+  'nav.pricing': '요금제',
+  'nav.examples': '예시 보기',
+  'nav.startPlanning': '시작하기',
   'nav.login': '로그인',
   'nav.myCapsules': '내 캡슐',
   'nav.shop': '쇼핑',

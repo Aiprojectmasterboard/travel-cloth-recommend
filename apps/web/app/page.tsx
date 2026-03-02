@@ -110,6 +110,13 @@ export default function HomePage() {
               {/* Right group */}
               <div className="flex items-center gap-3">
                 <LanguageSelector />
+                <Link
+                  href="/auth/login"
+                  className="hidden md:flex text-[12px] tracking-[0.08em] uppercase text-white/80 hover:text-white transition-colors"
+                  style={{ fontFamily: bodyFont, fontWeight: 500 }}
+                >
+                  {t('nav.login')}
+                </Link>
                 <BtnPrimary size="sm" onClick={() => router.push('/trip')}>
                   {t('nav.startPlanning')}
                 </BtnPrimary>
