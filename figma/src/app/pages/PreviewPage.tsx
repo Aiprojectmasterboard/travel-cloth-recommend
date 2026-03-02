@@ -55,13 +55,13 @@ export function PreviewPage() {
         successUrl: `${window.location.origin}/checkout/success?plan=${plan}`,
       });
 
-      /**
-       * PRODUCTION: Redirect to Polar's hosted checkout page
-       *   window.location.href = session.url;
-       *
-       * DEMO: Navigate to success page directly (mock flow)
-       */
-      navigate(`/checkout/success?plan=${plan}&session_id=${session.clientSecret}`);
+      if (session.url) {
+        // Redirect to Polar's hosted checkout page
+        window.location.href = session.url;
+      } else {
+        // Fallback: demo mode (no Polar URL available)
+        navigate(`/checkout/success?plan=${plan}&session_id=${session.clientSecret}`);
+      }
     } catch {
       setCheckoutLoading(null);
     }
@@ -284,7 +284,7 @@ export function PreviewPage() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-[#EFE8DF] flex items-center justify-center gap-6 flex-wrap">
-          {["footer.privacy", "footer.terms", "footer.sustainability", "footer.contact"].map((key) => (
+          {["footer.privacy", "footer.terms", "footer.contact"].map((key) => (
             <a key={key} href="#" className="text-[11px] uppercase tracking-[0.1em] text-[#57534e] hover:text-[#C4613A] transition-colors" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
               {t(key)}
             </a>

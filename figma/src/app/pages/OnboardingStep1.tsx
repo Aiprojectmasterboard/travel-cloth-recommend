@@ -19,6 +19,7 @@ export function OnboardingStep1() {
   const { data, setData } = useOnboarding();
   const [search, setSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [error, setError] = useState("");
 
   const filtered = CITY_OPTIONS.filter(
     (c) =>
@@ -143,10 +144,25 @@ export function OnboardingStep1() {
         </div>
       )}
 
+      {/* Validation error */}
+      {error && (
+        <p className="mt-4 text-[13px] text-red-500 flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+          <Icon name="error" size={16} className="text-red-500" />
+          {error}
+        </p>
+      )}
+
       {/* Navigation */}
-      <div className="mt-12 flex items-center justify-between">
+      <div className="mt-8 flex items-center justify-between">
         <BtnSecondary size="sm" onClick={() => navigate("/")}>Back</BtnSecondary>
-        <BtnPrimary size="sm" onClick={() => navigate("/onboarding/2")}>
+        <BtnPrimary size="sm" onClick={() => {
+          if (data.cities.length === 0) {
+            setError("Please add at least one destination to continue.");
+            return;
+          }
+          setError("");
+          navigate("/onboarding/2");
+        }}>
           <span className="flex items-center gap-2">
             Continue to Style Profile
             <Icon name="arrow_forward" size={16} className="text-white" />

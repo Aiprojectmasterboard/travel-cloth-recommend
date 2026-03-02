@@ -109,6 +109,8 @@ export interface CheckoutSessionRequest {
   externalCustomerId?: string;
   /** URL to return to after successful checkout */
   successUrl: string;
+  /** Optional trip ID for metadata tracking */
+  tripId?: string;
 }
 
 export interface CheckoutSessionResponse {
@@ -173,6 +175,7 @@ export async function createCheckoutSession(
       product_id: product.productId,
       success_url: request.successUrl,
       customer_email: request.customerEmail,
+      trip_id: request.tripId,
     }),
   })
   if (!res.ok) {
@@ -180,7 +183,14 @@ export async function createCheckoutSession(
     const mockId = `chk_demo_${Date.now()}_${request.plan}`
     return { id: mockId, url: ``, clientSecret: `cs_demo_${mockId}`, status: 'open' as const }
   }
-  return res.json()
+  // Worker returns { checkout_url, checkout_id, trip_id } — map to CheckoutSessionResponse shape
+  const data = await res.json() as { checkout_url?: string; checkout_id?: string; url?: string; id?: string }
+  return {
+    id: data.checkout_id ?? data.id ?? '',
+    url: data.checkout_url ?? data.url ?? '',
+    clientSecret: data.checkout_id ?? '',
+    status: 'open' as const,
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════ */

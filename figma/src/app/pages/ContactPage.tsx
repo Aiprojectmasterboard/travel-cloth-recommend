@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { Icon, BtnPrimary } from "../components/travel-capsule";
 
-const SUPPORT_EMAIL = "support@travelscapsule.com";
+const SUPPORT_EMAIL = "netson94@gmail.com";
 
 export function ContactPage() {
   const navigate = useNavigate();

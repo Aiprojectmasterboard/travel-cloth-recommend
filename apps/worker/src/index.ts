@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import Anthropic from '@anthropic-ai/sdk';
 import { runPreview, runResult } from './agents/orchestrator';
 import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
+import { imageGenAgent } from './agents/imageGenAgent';
 
 // ─── Environment Bindings ─────────────────────────────────────────────────────
 // Secrets  → `wrangler secret put <NAME>`
@@ -469,9 +470,9 @@ app.post('/api/payment/checkout', async (c) => {
   }
 
   const { trip_id, plan, customer_email } = body;
-  if (!trip_id || !isValidUUID(trip_id)) {
-    return c.json({ error: 'Valid trip_id required' }, 400);
-  }
+  // trip_id is optional — auto-generate if not provided so the frontend
+  // doesn't need to create a trip before initiating checkout.
+  const resolvedTripId = (trip_id && isValidUUID(trip_id)) ? trip_id : crypto.randomUUID();
   if (!plan || !['standard', 'pro', 'annual'].includes(plan)) {
     return c.json({ error: 'plan must be standard | pro | annual' }, 400);
   }
@@ -489,12 +490,12 @@ app.post('/api/payment/checkout', async (c) => {
   const reqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
   const allowedOrigins = ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
   const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelscapsule.com';
-  const returnUrl = `${returnBase}/checkout/success?plan=${typedPlan}&tripId=${trip_id}`;
+  const returnUrl = `${returnBase}/checkout/success?plan=${typedPlan}&tripId=${resolvedTripId}`;
 
   const checkoutPayload: Record<string, unknown> = {
     // products array is the current non-deprecated field (product_id is deprecated)
     products: [productId],
-    metadata: { trip_id, plan: typedPlan },
+    metadata: { trip_id: resolvedTripId, plan: typedPlan },
     success_url: returnUrl,
     ...(customer_email ? { customer_email } : {}),
   };
@@ -516,7 +517,7 @@ app.post('/api/payment/checkout', async (c) => {
   }
 
   const session = (await polarRes.json()) as { url: string; id: string };
-  return c.json({ checkout_url: session.url, checkout_id: session.id });
+  return c.json({ checkout_url: session.url, checkout_id: session.id, trip_id: resolvedTripId });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1555,32 +1556,45 @@ app.post('/api/generate', async (c) => {
   const tempTripId = crypto.randomUUID();
   const cityList = cities.slice(0, 5);
 
-  const [imageResult, ...breakdownResults] = await Promise.all([
-    imageGenAgent({ prompts: stylePrompts, tripId: tempTripId, faceUrl: face_url }, c.env),
-    ...cityList.map((cityEntry) => {
-      const cityKey = cityEntry.city.toLowerCase().replace(/[^a-z]/g, '');
-      const vibeData = CITY_VIBES[cityKey] ?? {
-        mood: `${cityEntry.city} Style`,
-        tags: aesthetics.length > 0 ? aesthetics : ['chic', 'travel-ready'],
-      };
-      return generateOutfitItems(cityEntry, vibeData, userProfile.aesthetics, safeGender, safeCount, c.env.ANTHROPIC_API_KEY);
-    }),
-  ]);
+  try {
+    // imageGenAgent may throw if Gemini key is invalid or network fails
+    // Run image gen and item breakdowns in parallel; if image gen fails we
+    // still return item breakdowns so the UI has something useful.
+    const [imageResult, ...breakdownResults] = await Promise.all([
+      imageGenAgent({ prompts: stylePrompts, tripId: tempTripId, faceUrl: face_url }, c.env)
+        .catch((err: Error) => {
+          console.error('[POST /api/generate] imageGenAgent failed:', err.message);
+          return { results: [] as Array<{ city: string; mood: string; success: boolean; image_url?: string; error?: string }>, succeeded: 0, failed: stylePrompts.length };
+        }),
+      ...cityList.map((cityEntry) => {
+        const cityKey = cityEntry.city.toLowerCase().replace(/[^a-z]/g, '');
+        const vibeData = CITY_VIBES[cityKey] ?? {
+          mood: `${cityEntry.city} Style`,
+          tags: aesthetics.length > 0 ? aesthetics : ['chic', 'travel-ready'],
+        };
+        return generateOutfitItems(cityEntry, vibeData, userProfile.aesthetics, safeGender, safeCount, c.env.ANTHROPIC_API_KEY);
+      }),
+    ]);
 
-  // Build "CityName::outfit-N" → items[] lookup
-  const outfitItems: Record<string, OutfitItemAI[]> = {};
-  for (const breakdown of breakdownResults) {
-    for (const outfit of breakdown.outfits) {
-      outfitItems[`${breakdown.city}::${outfit.mood}`] = outfit.items;
+    // Build "CityName::outfit-N" → items[] lookup
+    const outfitItems: Record<string, OutfitItemAI[]> = {};
+    for (const breakdown of breakdownResults) {
+      for (const outfit of breakdown.outfits) {
+        outfitItems[`${breakdown.city}::${outfit.mood}`] = outfit.items;
+      }
     }
-  }
 
-  return c.json({
-    images: imageResult.results,
-    succeeded: imageResult.succeeded,
-    failed: imageResult.failed,
-    outfitItems,   // "Paris::outfit-1" → [{name, category, desc, essential}]
-  });
+    return c.json({
+      images: imageResult.results,
+      succeeded: imageResult.succeeded,
+      failed: imageResult.failed,
+      outfitItems,   // "Paris::outfit-1" → [{name, category, desc, essential}]
+    });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error('[POST /api/generate] Unexpected error:', msg);
+    return c.json({ error: 'Generation failed', detail: msg.slice(0, 200) }, 500);
+  }
 });
 
 // ─────────────────────────────────────────────────────────────────────────────

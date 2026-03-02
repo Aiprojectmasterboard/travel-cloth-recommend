@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Icon } from "../components/travel-capsule";
 
 const EFFECTIVE_DATE = "March 1, 2026";
-const CONTACT_EMAIL = "privacy@travelscapsule.com";
+const CONTACT_EMAIL = "netson94@gmail.com";
 
 export function PrivacyPage() {
   const navigate = useNavigate();
