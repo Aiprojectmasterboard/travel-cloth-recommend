@@ -14,7 +14,7 @@ export function WeatherWidget({ temp, unit = "C", rain, wind, heatIndex, classNa
   return (
     <div className={`flex items-center gap-6 ${className}`}>
       <span
-        className="text-[48px] text-[#292524]"
+        className="text-[36px] sm:text-[48px] text-[#292524]"
         style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
       >
         {temp}°{unit}

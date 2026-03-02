@@ -85,7 +85,7 @@ export function PreviewPage() {
                 <span className="text-white text-[12px]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{user?.initials}</span>
               </div>
             ) : (
-              <button onClick={() => setShowLoginModal(true)} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#EFE8DF] transition-colors cursor-pointer">
+              <button onClick={() => setShowLoginModal(true)} className="w-11 h-11 rounded-full flex items-center justify-center hover:bg-[#EFE8DF] transition-colors cursor-pointer">
                 <Icon name="person" size={22} className="text-[#57534e]" />
               </button>
             )}
@@ -109,7 +109,7 @@ export function PreviewPage() {
         <div className="mt-10 relative rounded-2xl overflow-hidden" style={{ aspectRatio: "21/9" }}>
           <ImageWithFallback src={IMG.paris} alt="Trip preview" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
-          <div className="absolute bottom-6 left-6 right-6 sm:right-auto sm:w-[380px] p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(20px)" }}>
+          <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-[360px] p-4 sm:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(20px)" }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-[#C4613A] flex items-center justify-center">
                 <Icon name="auto_awesome" size={20} className="text-white" filled />
@@ -195,7 +195,7 @@ export function PreviewPage() {
               {t("preview.editDetails")}
             </button>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
               { labelKey: "preview.destination", value: `${city}, ${country}` },
               { labelKey: "preview.duration", value: `7 ${t("general.days")}` },

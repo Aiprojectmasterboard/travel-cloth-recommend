@@ -101,18 +101,16 @@ export function LandingPage() {
 
         <div className="relative z-10 border-t border-white/10">
           <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
-            {["Sys.Ver 2.4", "Initialize Style Synthesis", "Dynamic Weather Mapping"].map((text, i) => (
-              <span key={i} className="text-[10px] uppercase tracking-[0.12em] text-white/30" style={{ fontFamily: "var(--font-mono)" }}>
-                {text}
-              </span>
-            ))}
+            <span className="text-[10px] uppercase tracking-[0.12em] text-white/30" style={{ fontFamily: "var(--font-mono)" }}>Sys.Ver 2.4</span>
+            <span className="hidden sm:block text-[10px] uppercase tracking-[0.12em] text-white/30" style={{ fontFamily: "var(--font-mono)" }}>Initialize Style Synthesis</span>
+            <span className="hidden md:block text-[10px] uppercase tracking-[0.12em] text-white/30" style={{ fontFamily: "var(--font-mono)" }}>Dynamic Weather Mapping</span>
           </div>
         </div>
       </section>
 
       {/* ==================== INTELLIGENCE ==================== */}
-      <section id="how-it-works" className="bg-[#FDF8F3] py-32 px-6">
-        <div className="mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center" style={{ maxWidth: "var(--max-w)" }}>
+      <section id="how-it-works" className="bg-[#FDF8F3] py-16 lg:py-32 px-6">
+        <div className="mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center" style={{ maxWidth: "var(--max-w)" }}>
           <div>
             <div className="flex items-center gap-3 mb-6">
               <span className="w-2 h-2 rounded-full bg-[#C4613A]" />
@@ -143,7 +141,7 @@ export function LandingPage() {
           </div>
           <div className="relative">
             <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <ImageWithFallback src={IMAGES.clothingRack} alt="Curated wardrobe" className="w-full h-[500px] object-cover" />
+              <ImageWithFallback src={IMAGES.clothingRack} alt="Curated wardrobe" className="w-full h-[300px] sm:h-[500px] object-cover" />
             </div>
             <div className="absolute -bottom-4 -left-4 bg-white rounded-xl px-5 py-3 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-center gap-3">
@@ -156,7 +154,7 @@ export function LandingPage() {
       </section>
 
       {/* ==================== CAPSULES IN MOTION ==================== */}
-      <section className="bg-[#FDF8F3] py-32 px-6">
+      <section className="bg-[#FDF8F3] py-16 lg:py-32 px-6">
         <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
           <div className="text-center mb-16">
             <h2 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: displayFont }}>

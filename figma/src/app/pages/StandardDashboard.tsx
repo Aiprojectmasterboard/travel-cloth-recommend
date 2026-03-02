@@ -109,10 +109,10 @@ export function StandardDashboard() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <PlanBadge label="Standard Plan" />
+            <span className="hidden sm:block"><PlanBadge label="Standard Plan" /></span>
             <SocialShareButton />
-            <button className="h-[36px] px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" /> Save PDF
+            <button className="h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+              <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" /> <span className="hidden sm:inline">Save PDF</span>
             </button>
           </div>
         </div>
@@ -241,7 +241,7 @@ export function StandardDashboard() {
                     Day {activeDay}: {DAY_PLANS.find(d => d.day === activeDay)?.activity}
                   </span>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                   {[
                     { icon: "thermostat", val: [9, 11, 8, 12, 10, 14, 9][activeDay - 1] + "°C", label: "Avg Temp" },
                     { icon: "water_drop", val: [30, 20, 45, 15, 25, 10, 35][activeDay - 1] + "%", label: "Rain" },

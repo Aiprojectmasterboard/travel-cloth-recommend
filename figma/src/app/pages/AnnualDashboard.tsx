@@ -132,10 +132,11 @@ export function AnnualDashboard() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <AnnualBadge />
+            <span className="hidden sm:block"><AnnualBadge /></span>
             <SocialShareButton />
-            <button onClick={() => navigate("/onboarding/1")} className="inline-flex items-center justify-center whitespace-nowrap h-[34px] px-5 bg-[#1A1410] text-white text-[11px] uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] transition-all cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              Plan Your Next Trip
+            <button onClick={() => navigate("/onboarding/1")} className="inline-flex items-center justify-center whitespace-nowrap h-[36px] px-3 sm:px-5 bg-[#1A1410] text-white text-[11px] uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] transition-all cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+              <span className="hidden sm:inline">Plan Your Next Trip</span>
+              <span className="sm:hidden">New Trip</span>
             </button>
             <button className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[#EFE8DF] transition-colors cursor-pointer">
               <Icon name="notifications" size={18} className="text-[#57534e]" />
@@ -187,10 +188,10 @@ export function AnnualDashboard() {
               </div>
               <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
                 <div>
-                  <span className="text-white text-[28px] italic block" style={{ fontFamily: "var(--font-display)" }}>{cityName}, {countryName}</span>
+                  <span className="text-white italic block" style={{ fontSize: "clamp(18px, 4vw, 28px)", fontFamily: "var(--font-display)" }}>{cityName}, {countryName}</span>
                   <span className="text-white/80 text-[14px] block" style={{ fontFamily: "var(--font-body)" }}>Oct 10 – 31, 2026 · 21 days</span>
                 </div>
-                <button className="h-[36px] px-4 bg-white/20 backdrop-blur-sm text-white rounded-none text-[12px] uppercase tracking-[0.08em] hover:bg-white/30 transition-colors cursor-pointer border border-white/30" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                <button className="hidden sm:block h-[36px] px-4 bg-white/20 backdrop-blur-sm text-white rounded-none text-[12px] uppercase tracking-[0.08em] hover:bg-white/30 transition-colors cursor-pointer border border-white/30" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                   Regenerate Itinerary
                 </button>
               </div>

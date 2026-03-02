@@ -248,10 +248,10 @@ export function ProDashboard() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <PlanBadge label="Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" />
+            <span className="hidden sm:block"><PlanBadge label="Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" /></span>
             <SocialShareButton />
-            <button className="h-[34px] px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              <Icon name="download" size={14} className="text-[#C4613A]" /> Hi-Res Export
+            <button className="h-[36px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+              <Icon name="download" size={14} className="text-[#C4613A]" /> <span className="hidden sm:inline">Hi-Res Export</span>
             </button>
           </div>
         </div>
