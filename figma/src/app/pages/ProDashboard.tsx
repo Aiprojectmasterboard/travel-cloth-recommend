@@ -87,7 +87,7 @@ export function ProDashboard() {
 
   /* ── AI Image Generation ── */
   const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
-  const [genStatus, setGenStatus] = useState<"idle" | "uploading" | "generating" | "done" | "error">("idle");
+  const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
   const generationStarted = useRef(false);
 
   interface AiItem { name: string; category: string; desc: string; essential: boolean; }
@@ -104,37 +104,9 @@ export function ProDashboard() {
 
     async function generateImages() {
       try {
-        // Step 1: Upload face photo if available
-        let face_url: string | undefined;
-        if (onboarding.photo) {
-          setGenStatus("uploading");
-          try {
-            const mimeMatch = onboarding.photo.match(/^data:(image\/\w+);base64,/);
-            const mimeType = mimeMatch?.[1] ?? "image/jpeg";
-            const base64Data = onboarding.photo.split(",")[1] ?? onboarding.photo;
-            const byteChars = atob(base64Data);
-            const byteArray = new Uint8Array(byteChars.length);
-            for (let i = 0; i < byteChars.length; i++) {
-              byteArray[i] = byteChars.charCodeAt(i);
-            }
-            const blob = new Blob([byteArray], { type: mimeType });
-            const fd = new FormData();
-            fd.append("photo", blob, "photo.jpg");
-            const uploadRes = await fetch(`${WORKER_URL}/api/upload-photo`, {
-              method: "POST",
-              body: fd,
-            });
-            if (uploadRes.ok) {
-              const uploadData = (await uploadRes.json()) as { face_url?: string };
-              face_url = uploadData.face_url;
-            }
-          } catch (err) {
-            console.warn("[ProDashboard] Photo upload failed, continuing without face:", err);
-          }
-        }
-
-        if (cancelled) return;
+        // Photo was already uploaded to R2 during OnboardingStep3; use the stored CDN URL directly
         setGenStatus("generating");
+        const face_url = onboarding.faceUrl || undefined;
 
         const resolvedCities =
           onboarding.cities.length > 0
@@ -295,10 +267,10 @@ export function ProDashboard() {
         </p>
         <div className="mt-3 flex items-center gap-3 flex-wrap">
           <AiGeneratedBadge confidence={allOutfits[0]?.aiConfidence || 90} bodyFitLabel={bodyFitLabel} />
-          {(genStatus === "uploading" || genStatus === "generating") && (
+          {genStatus === "generating" && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
               <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" />
-              {genStatus === "uploading" ? "Uploading photo…" : "Generating AI outfits…"}
+              Generating AI outfits…
             </span>
           )}
           {genStatus === "done" && aiImages.size > 0 && (
@@ -394,13 +366,12 @@ export function ProDashboard() {
                               const aiKey = `${currentSet.city}::outfit-${idx + 1}`;
                               const aiUrl = aiImages.get(aiKey);
                               const src = aiUrl || outfit.image;
-                              const isLoading =
-                                (genStatus === "uploading" || genStatus === "generating") && !aiUrl;
+                              const isLoading = genStatus === "generating" && !aiUrl;
                               return isLoading ? (
                                 <div className="w-full h-full bg-[#EFE8DF] animate-pulse flex flex-col items-center justify-center gap-3" style={{ minHeight: 260 }}>
                                   <Icon name="auto_awesome" size={32} className="text-[#C4613A]/40" filled />
                                   <span className="text-[12px] text-[#57534e]/60 text-center px-4" style={{ fontFamily: "var(--font-body)" }}>
-                                    {genStatus === "uploading" ? "Uploading your photo…" : "Generating AI outfit…"}
+                                    Generating AI outfit…
                                   </span>
                                 </div>
                               ) : (

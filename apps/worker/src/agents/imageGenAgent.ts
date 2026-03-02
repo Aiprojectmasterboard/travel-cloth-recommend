@@ -98,22 +98,42 @@ async function generateWithRetry(
     }
 
     try {
-      const textParts: Array<{ text: string }> = [];
+      const parts: GeminiPart[] = [];
 
+      // Fetch face reference image and attach as inline_data (multimodal input)
       if (faceUrl) {
-        textParts.push({
-          text: `Reference face for the model (preserve likeness with subtle similarity): ${faceUrl}`,
-        });
+        try {
+          const imgRes = await fetch(faceUrl, { signal: AbortSignal.timeout(10_000) });
+          if (imgRes.ok) {
+            const imgBuf = await imgRes.arrayBuffer();
+            const bytes = new Uint8Array(imgBuf);
+            let binary = '';
+            for (let i = 0; i < bytes.length; i++) {
+              binary += String.fromCharCode(bytes[i]);
+            }
+            const imgBase64 = btoa(binary);
+            const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg';
+            parts.push({ inline_data: { mime_type: mimeType, data: imgBase64 } });
+            parts.push({
+              text: 'Use the person in the reference image above as the model. Preserve their body proportions, skin tone, and general appearance.',
+            });
+          }
+        } catch (err) {
+          console.warn(
+            '[imageGenAgent] Could not fetch face reference, continuing without it:',
+            (err as Error).message
+          );
+        }
       }
 
       // Combine prompt with negative prompt instruction
       const fullPrompt = sp.negative_prompt
         ? `${sp.prompt}\n\nAvoid: ${sp.negative_prompt}`
         : sp.prompt;
-      textParts.push({ text: fullPrompt });
+      parts.push({ text: fullPrompt });
 
       const body = {
-        contents: [{ parts: textParts }],
+        contents: [{ parts }],
         generationConfig: {
           responseModalities: ['IMAGE', 'TEXT'],
           imageConfig: {
@@ -146,12 +166,12 @@ async function generateWithRetry(
         throw new Error(`Gemini API error: ${data.error.message}`);
       }
 
-      const parts = data.candidates?.[0]?.content?.parts;
-      if (!parts) {
+      const responseParts = data.candidates?.[0]?.content?.parts;
+      if (!responseParts) {
         throw new Error('Gemini returned no content parts');
       }
 
-      const imagePart = parts.find((p) => p.inline_data?.data);
+      const imagePart = responseParts.find((p) => p.inline_data?.data);
       if (!imagePart?.inline_data) {
         throw new Error('Gemini returned no image data');
       }

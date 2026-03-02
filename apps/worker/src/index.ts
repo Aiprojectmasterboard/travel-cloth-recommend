@@ -1576,6 +1576,24 @@ app.post('/api/generate', async (c) => {
       }),
     ]);
 
+    // Delete face photo from R2 immediately after generation (privacy policy).
+    // face_url format: {R2_PUBLIC_URL}/faces/temp-{uuid}.{ext}
+    // This is best-effort — a failed deletion must not fail the response.
+    if (face_url) {
+      try {
+        const r2Key = face_url.replace(`${c.env.R2_PUBLIC_URL}/`, '');
+        if (r2Key.startsWith('faces/temp-')) {
+          await c.env.R2.delete(r2Key);
+          console.log(`[POST /api/generate] Deleted face photo: ${r2Key}`);
+        }
+      } catch (err) {
+        console.warn(
+          '[POST /api/generate] Failed to delete face photo:',
+          (err as Error).message
+        );
+      }
+    }
+
     // Build "CityName::outfit-N" → items[] lookup
     const outfitItems: Record<string, OutfitItemAI[]> = {};
     for (const breakdown of breakdownResults) {

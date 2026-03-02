@@ -15,10 +15,12 @@ export interface OnboardingData {
   height: string;
   weight: string;
   aesthetics: string[];
-  /** Base64 data-URL of user's uploaded reference photo */
+  /** Base64 data-URL of user's uploaded reference photo — NOT persisted (too large) */
   photo: string;
   /** Original filename of the uploaded photo */
   photoName: string;
+  /** R2 CDN URL returned after uploading the photo to the Worker — persisted in sessionStorage */
+  faceUrl: string;
 }
 
 interface OnboardingContextType {
@@ -38,6 +40,7 @@ const DEFAULT_DATA: OnboardingData = {
   aesthetics: [],
   photo: "",
   photoName: "",
+  faceUrl: "",
 };
 
 function readStoredOnboarding(): OnboardingData {
@@ -45,7 +48,7 @@ function readStoredOnboarding(): OnboardingData {
     const raw = sessionStorage.getItem(ONBOARDING_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<OnboardingData>;
-      return { ...DEFAULT_DATA, ...parsed, photo: "", photoName: "" };
+      return { ...DEFAULT_DATA, ...parsed, photo: "" };
     }
   } catch {
     // sessionStorage unavailable or JSON parse failed — fall through to default
@@ -64,8 +67,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             ? (updater as (p: OnboardingData) => OnboardingData)(prev)
             : updater;
         try {
-          // Exclude photo (base64 — too large for sessionStorage)
-          const { photo: _p, photoName: _pn, ...toStore } = next;
+          // Exclude only photo (base64 — too large for sessionStorage); photoName and faceUrl are safe to persist
+          const { photo: _p, ...toStore } = next;
           sessionStorage.setItem(ONBOARDING_KEY, JSON.stringify(toStore));
         } catch {
           // QuotaExceededError or private browsing — silently ignore
