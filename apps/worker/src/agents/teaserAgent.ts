@@ -20,15 +20,15 @@ export interface TeaserResult {
   expires_at: string; // ISO 8601, 48 h from now
 }
 
-// Gemini API response shapes
+// Gemini API response shapes (camelCase from API)
 interface GeminiInlineData {
-  mime_type: string;
+  mimeType: string;
   data: string; // base64
 }
 
 interface GeminiPart {
   text?: string;
-  inline_data?: GeminiInlineData;
+  inlineData?: GeminiInlineData;
 }
 
 interface GeminiResponse {
@@ -116,13 +116,13 @@ async function generateNanoBanana(
     throw new Error('[teaserAgent] Gemini returned no content parts');
   }
 
-  const imagePart = parts.find((p) => p.inline_data?.data);
-  if (!imagePart?.inline_data) {
+  const imagePart = parts.find((p) => p.inlineData?.data);
+  if (!imagePart?.inlineData) {
     throw new Error('[teaserAgent] Gemini returned no image data');
   }
 
   // Decode base64 to ArrayBuffer
-  const binaryString = atob(imagePart.inline_data.data);
+  const binaryString = atob(imagePart.inlineData.data);
   const bytes = new Uint8Array(binaryString.length);
   for (let i = 0; i < binaryString.length; i++) {
     bytes[i] = binaryString.charCodeAt(i);

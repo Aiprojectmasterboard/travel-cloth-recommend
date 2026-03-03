@@ -41,15 +41,15 @@ export interface GeneratedImages {
   failed: number;
 }
 
-// Gemini API response shapes
+// Gemini API response shapes (camelCase from API)
 interface GeminiInlineData {
-  mime_type: string;
+  mimeType: string;
   data: string; // base64
 }
 
 interface GeminiPart {
   text?: string;
-  inline_data?: GeminiInlineData;
+  inlineData?: GeminiInlineData;
 }
 
 interface GeminiResponse {
@@ -113,7 +113,7 @@ async function generateWithRetry(
             }
             const imgBase64 = btoa(binary);
             const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg';
-            parts.push({ inline_data: { mime_type: mimeType, data: imgBase64 } });
+            parts.push({ inlineData: { mimeType, data: imgBase64 } });
             parts.push({
               text: 'Use the person in the reference image above as the model. Preserve their body proportions, skin tone, and general appearance.',
             });
@@ -167,13 +167,13 @@ async function generateWithRetry(
         throw new Error('Gemini returned no content parts');
       }
 
-      const imagePart = responseParts.find((p) => p.inline_data?.data);
-      if (!imagePart?.inline_data) {
+      const imagePart = responseParts.find((p) => p.inlineData?.data);
+      if (!imagePart?.inlineData) {
         throw new Error('Gemini returned no image data');
       }
 
       // Decode base64 to ArrayBuffer
-      const binaryString = atob(imagePart.inline_data.data);
+      const binaryString = atob(imagePart.inlineData.data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) {
         bytes[i] = binaryString.charCodeAt(i);
