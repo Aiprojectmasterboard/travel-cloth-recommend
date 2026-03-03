@@ -26,9 +26,10 @@ export function LandingPage() {
         <div className="relative z-20">
           <header className="w-full px-6 py-5">
             <div className="mx-auto flex items-center justify-between" style={{ maxWidth: "var(--max-w)" }}>
-              <div className="flex items-center gap-2">
-                <Icon name="luggage" size={28} className="text-white" />
-                <span className="text-[20px] tracking-tight text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                <Icon name="luggage" size={24} className="text-white sm:hidden" />
+                <Icon name="luggage" size={28} className="text-white hidden sm:block" />
+                <span className="text-[16px] sm:text-[20px] tracking-tight text-white whitespace-nowrap" style={{ fontFamily: displayFont, fontWeight: 700 }}>
                   Travel Capsule AI
                 </span>
               </div>
@@ -45,7 +46,7 @@ export function LandingPage() {
                   </a>
                 ))}
               </nav>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <LanguageSelector variant="light" />
                 {isLoggedIn ? (
                   <div className="w-8 h-8 rounded-full bg-[#C4613A] flex items-center justify-center cursor-pointer">
@@ -54,13 +55,21 @@ export function LandingPage() {
                 ) : (
                   <button
                     onClick={() => setShowLoginModal(true)}
-                    className="text-[12px] tracking-[0.08em] uppercase text-white/70 hover:text-white transition-colors cursor-pointer"
+                    className="hidden sm:inline text-[12px] tracking-[0.08em] uppercase text-white/70 hover:text-white transition-colors cursor-pointer"
                     style={{ fontFamily: bodyFont, fontWeight: 500 }}
                   >
                     {t("nav.login")}
                   </button>
                 )}
-                <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>{t("nav.startPlanning")}</BtnPrimary>
+                <button
+                  onClick={() => isLoggedIn ? navigate("/onboarding/1") : setShowLoginModal(true)}
+                  className="sm:hidden w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 cursor-pointer"
+                >
+                  <Icon name="person" size={18} className="text-white" />
+                </button>
+                <span className="hidden sm:inline">
+                  <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>{t("nav.startPlanning")}</BtnPrimary>
+                </span>
               </div>
             </div>
           </header>

@@ -24,10 +24,10 @@ export function Header({
     >
       <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
         {/* Logo */}
-        <div className="flex items-center gap-2">
-          <Icon name="luggage" size={28} className="text-[#C4613A]" />
+        <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <Icon name="luggage" size={24} className="text-[#C4613A]" />
           <span
-            className="text-[20px] tracking-tight text-[#1A1410]"
+            className="text-[16px] sm:text-[20px] tracking-tight text-[#1A1410] whitespace-nowrap"
             style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
           >
             Travel Capsule AI

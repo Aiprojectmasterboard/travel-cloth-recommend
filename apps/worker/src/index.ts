@@ -273,8 +273,9 @@ app.post('/api/preview', async (c) => {
     }
   }
 
-  // Rate limit: 5 previews per session_id OR IP per calendar day.
-  // Both checks are independent — either hitting 5 triggers 429.
+  // Rate limit: 20 previews per session_id OR IP per calendar day.
+  // Both checks are independent — either hitting 20 triggers 429.
+  const DAILY_LIMIT = 20;
   const clientIp = c.req.header('CF-Connecting-IP') ?? c.req.header('X-Forwarded-For') ?? '';
   const todayStart = new Date();
   todayStart.setUTCHours(0, 0, 0, 0);
@@ -290,11 +291,11 @@ app.post('/api/preview', async (c) => {
     sessionCountRes.headers.get('content-range')?.split('/')[1] ?? '0',
     10
   );
-  if (sessionCount >= 5) {
-    return c.json({ error: 'Daily limit reached', limit: 5 }, 429);
+  if (sessionCount >= DAILY_LIMIT) {
+    return c.json({ error: 'Daily limit reached', limit: DAILY_LIMIT }, 429);
   }
 
-  // Check IP rate limit (only when IP is available — trips.client_ip column from migration 004)
+  // Check IP rate limit (only when IP is available)
   if (clientIp) {
     const ipCountRes = await supabase(
       c.env,
@@ -305,8 +306,8 @@ app.post('/api/preview', async (c) => {
       ipCountRes.headers.get('content-range')?.split('/')[1] ?? '0',
       10
     );
-    if (ipCount >= 5) {
-      return c.json({ error: 'Daily limit reached', limit: 5 }, 429);
+    if (ipCount >= DAILY_LIMIT) {
+      return c.json({ error: 'Daily limit reached', limit: DAILY_LIMIT }, 429);
     }
   }
 
