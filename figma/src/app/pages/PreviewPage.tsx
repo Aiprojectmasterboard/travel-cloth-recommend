@@ -64,10 +64,10 @@ export function PreviewPage() {
       }));
 
       if (session.url) {
-        // Open Polar checkout in new tab — avoids Polar's Customer Portal redirect issue
-        window.open(session.url, "_blank");
-        // Navigate to our own success/waiting page immediately
-        navigate(`/checkout/success?plan=${plan}&tripId=${tripId || ""}&checkout_id=${session.id}`);
+        // Redirect to Polar checkout in the same tab.
+        // After payment, Polar redirects back to our success_url.
+        // Onboarding data survives in sessionStorage.
+        window.location.href = session.url;
       } else {
         navigate(`/checkout/success?plan=${plan}&session_id=${session.clientSecret}`);
       }

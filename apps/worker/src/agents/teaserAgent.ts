@@ -56,6 +56,28 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Fetches an image from a URL and returns base64-encoded data + mime type.
+ */
+async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) return null;
+    const contentType = res.headers.get('content-type') || 'image/jpeg';
+    const buffer = await res.arrayBuffer();
+    // Convert ArrayBuffer to base64
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.length; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return { data: btoa(binary), mimeType: contentType };
+  } catch (err) {
+    console.warn('[teaserAgent] Failed to fetch face image:', (err as Error).message);
+    return null;
+  }
+}
+
+/**
  * Calls Gemini Nano Banana 2 once to generate a single image.
  * Returns the raw image buffer (PNG).
  */
@@ -64,19 +86,21 @@ async function generateNanoBanana(
   apiKey: string,
   faceUrl?: string
 ): Promise<ArrayBuffer> {
-  const textParts: Array<{ text: string }> = [];
+  const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
 
-  // If face image is provided, reference it in the prompt
+  // If face image is provided, fetch it and send as inlineData for Gemini to use as reference
   if (faceUrl) {
-    textParts.push({
-      text: `Reference face for the model (preserve likeness with subtle similarity): ${faceUrl}`,
-    });
+    const faceData = await fetchImageAsBase64(faceUrl);
+    if (faceData) {
+      parts.push({ inlineData: { mimeType: faceData.mimeType, data: faceData.data } });
+      parts.push({ text: 'Use this person\'s face as the model in the generated image. Preserve their likeness.' });
+    }
   }
 
-  textParts.push({ text: prompt });
+  parts.push({ text: prompt });
 
   const body = {
-    contents: [{ parts: textParts }],
+    contents: [{ parts }],
     generationConfig: {
       responseModalities: ['IMAGE', 'TEXT'],
       imageConfig: {
@@ -111,12 +135,12 @@ async function generateNanoBanana(
   }
 
   // Extract base64 image from response
-  const parts = data.candidates?.[0]?.content?.parts;
-  if (!parts) {
+  const responseParts = data.candidates?.[0]?.content?.parts;
+  if (!responseParts) {
     throw new Error('[teaserAgent] Gemini returned no content parts');
   }
 
-  const imagePart = parts.find((p) => p.inlineData?.data);
+  const imagePart = responseParts.find((p) => p.inlineData?.data);
   if (!imagePart?.inlineData) {
     throw new Error('[teaserAgent] Gemini returned no image data');
   }
