@@ -56,8 +56,13 @@ const ITEMS = {
     "https://images.unsplash.com/photo-1523275335684-37898b6baf30?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjB3YXRjaCUyMGNsYXNzaWMlMjBsZWF0aGVyJTIwc3RyYXAlMjBtaW5pbWFsfGVufDF8fHx8MTc3MjQyOTUwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
 };
 
-/* ─── Outfit images — use local AI-generated asset for all outfits ─── */
-const ANNUAL_OUTFIT_IMG = "/examples/annual-outfit-1.png";
+/* ─── Outfit images — unique AI-generated asset per outfit ─── */
+const ANNUAL_OUTFIT_IMGS = [
+  "/examples/annual-outfit-1.png",
+  "/examples/annual-outfit-2.png",
+  "/examples/annual-outfit-3.png",
+  "/examples/annual-outfit-4.png",
+];
 
 /* ─── Persona: 185cm / 75kg male → BMI 21.9 (regular build) → L, EU 43 ─── */
 
@@ -86,7 +91,7 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     day: 1,
     title: "Eiffel Tower & Café Walk",
     subtitle: "Casual Chic",
-    image: ANNUAL_OUTFIT_IMG,
+    image: ANNUAL_OUTFIT_IMGS[0],
     confidence: 95,
     note: "Paris in March calls for effortless layering. A classic denim jacket over a clean white t-shirt pairs with slim chinos and white sneakers — comfortable enough for long walks along the Seine, stylish enough for any café terrace.",
     items: [
@@ -101,7 +106,7 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     day: 2,
     title: "Le Marais Exploration",
     subtitle: "Smart Casual",
-    image: ANNUAL_OUTFIT_IMG,
+    image: ANNUAL_OUTFIT_IMGS[1],
     confidence: 93,
     note: "Le Marais blends galleries, boutiques and bistros seamlessly. A light linen shirt with dark denim and brown loafers strikes the ideal balance between relaxed and polished for a full day of neighbourhood discovery.",
     items: [
@@ -116,7 +121,7 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     day: 3,
     title: "Colosseum & Forum Visit",
     subtitle: "Mediterranean Casual",
-    image: ANNUAL_OUTFIT_IMG,
+    image: ANNUAL_OUTFIT_IMGS[2],
     confidence: 94,
     note: "Rome rewards those who dress with intention. Olive chinos and a white t-shirt keep you cool as temperatures climb toward the afternoon. Swap sneakers for loafers when heading to dinner in Trastevere.",
     items: [
@@ -131,7 +136,7 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     day: 4,
     title: "Gothic Quarter & Beach",
     subtitle: "Coastal Casual",
-    image: ANNUAL_OUTFIT_IMG,
+    image: ANNUAL_OUTFIT_IMGS[3],
     confidence: 92,
     note: "Barcelona demands versatility — morning in the Gothic Quarter, afternoon on Barceloneta beach. Light linen and denim keep things breezy while the canvas bag handles beach essentials. Roll the chinos for the sand.",
     items: [
@@ -289,22 +294,32 @@ export function ExampleAnnualPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left */}
           <div className="lg:col-span-8 space-y-8">
-            {/* Map / Hero */}
-            <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <ImageWithFallback src={IMG.parisHero} alt="Paris skyline" className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-              <div className="absolute top-5 left-5 flex gap-2">
+            {/* 2x2 AI Outfit Grid Hero */}
+            <div className="relative rounded-2xl overflow-hidden bg-[#1A1410]">
+              <div className="grid grid-cols-2 gap-1">
+                {TOKYO_OUTFITS.map((outfit) => (
+                  <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                    <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <span className="text-white/60 text-[9px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
+                      <span className="text-white text-[13px] sm:text-[15px]" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="absolute top-3 left-3 flex gap-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                  <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                </span>
                 <div className="px-3 py-1 bg-white/90 rounded-full flex items-center gap-1.5" style={{ backdropFilter: "blur(8px)" }}>
                   <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Current Itinerary</span>
                 </div>
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                  <Icon name="hd" size={12} className="text-white" /> Ultra Hi-Res
-                </span>
               </div>
-              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
+              <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
                 <div>
-                  <span className="text-white text-[28px] italic block" style={{ fontFamily: "var(--font-display)" }}>Paris → Rome → Barcelona</span>
-                  <span className="text-white/80 text-[14px] block" style={{ fontFamily: "var(--font-body)" }}>Mar 15 – Apr 2, 2026 · 19 days</span>
+                  <span className="text-white text-[24px] sm:text-[28px] italic block" style={{ fontFamily: "var(--font-display)" }}>Paris → Rome → Barcelona</span>
+                  <span className="text-white/80 text-[13px] block" style={{ fontFamily: "var(--font-body)" }}>Mar 15 – Apr 2, 2026 · 19 days · 4 Looks</span>
                 </div>
               </div>
             </div>

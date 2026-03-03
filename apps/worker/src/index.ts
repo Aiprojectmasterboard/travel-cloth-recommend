@@ -515,14 +515,10 @@ app.post('/api/payment/checkout', async (c) => {
   const returnUrl = `${returnBase}/checkout/success?plan=${typedPlan}&tripId=${resolvedTripId}&checkout_id={CHECKOUT_ID}`;
 
   const checkoutPayload: Record<string, unknown> = {
-    // products array is the current non-deprecated field (product_id is deprecated)
-    products: [productId],
+    product_id: productId,
     metadata: { trip_id: resolvedTripId, plan: typedPlan },
     success_url: returnUrl,
-    // Always include customer_email so Polar skips email verification step
     ...(customer_email ? { customer_email } : {}),
-    // Skip Polar's post-checkout confirmation page — redirect directly to our success page
-    confirmation_url: returnUrl,
   };
 
   // Use /v1/checkouts/ (not the legacy /v1/checkouts/custom/ endpoint)
@@ -767,7 +763,7 @@ app.post('/api/payment/upgrade', async (c) => {
   const upgradeBase = upgradeAllowed.includes(upgradeReqOrigin) ? upgradeReqOrigin : 'https://travelscapsule.com';
   const upgradeReturnUrl = `${upgradeBase}/checkout/success?plan=pro&tripId=${trip_id}`;
   const checkoutPayload = {
-    products: [c.env.POLAR_PRODUCT_ID_PRO],
+    product_id: c.env.POLAR_PRODUCT_ID_PRO,
     metadata: {
       trip_id,
       plan: 'pro',

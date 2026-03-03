@@ -3,8 +3,8 @@ export const IMAGES = {
   hero: "https://images.unsplash.com/photo-1533026795897-5bb93fa969d4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0cmF2ZWwlMjB3b21hbiUyMHN1aXRjYXNlJTIwZWxlZ2FudCUyMG91dGZpdCUyMGV1cm9wZWFuJTIwc3RyZWV0JTIwd2FybSUyMGxpZ2h0fGVufDF8fHx8MTc3MjQyOTIzMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
   clothingRack: "https://images.unsplash.com/photo-1655252205431-5d0ef316837b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjbG90aGluZyUyMHJhY2slMjB3YXJkcm9iZSUyMG5ldXRyYWwlMjB0b25lc3xlbnwxfHx8fDE3NzI0MjYxMDd8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
   capsuleFlatlay: "https://images.unsplash.com/photo-1673710672680-944563ff9cce?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXBzdWxlJTIwd2FyZHJvYmUlMjBtaW5pbWFsJTIwb3V0Zml0JTIwZmxhdGxheXxlbnwxfHx8fDE3NzI0MjYxMDh8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  earthTone: "https://images.unsplash.com/photo-1764697907661-322b4e1b51a8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmYXNoaW9uJTIwbW9kZWwlMjBlYXJ0aCUyMHRvbmUlMjBvdXRmaXQlMjBlZGl0b3JpYWx8ZW58MXx8fHwxNzcyNDI2MTEwfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  streetwear: "https://images.unsplash.com/photo-1635650804263-1a1941e14df5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx1cmJhbiUyMHN0cmVldHdlYXIlMjBmYXNoaW9uJTIwbWFuJTIwY2l0eXxlbnwxfHx8fDE3NzI0MjYxMTB8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  earthTone: "/examples/pro-outfit-1.png",
+  streetwear: "/examples/annual-outfit-1.png",
   resort: "https://images.unsplash.com/photo-1722340319384-e3a9f24dff09?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxyZXNvcnQlMjBiZWFjaCUyMGZhc2hpb24lMjB3b21hbiUyMHN1bW1lcnxlbnwxfHx8fDE3NzI0MjYxMTF8MA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
 
   // Onboarding

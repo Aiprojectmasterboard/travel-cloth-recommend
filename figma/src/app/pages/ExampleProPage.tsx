@@ -59,8 +59,13 @@ const ITEMS = {
   hat: "https://images.unsplash.com/photo-1752014364743-e80acc2c9b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYW5hbWElMjBzdHJhdyUyMGhhdCUyMGZhc2hpb24lMjBzdW1tZXIlMjBlbGVnYW50fGVufDF8fHx8MTc3MjQyOTQ5N3ww&ixlib=rb-4.1.0&q=80&w=1080",
 };
 
-/* ─── Outfit image (AI-generated, local asset) ─── */
-const PRO_OUTFIT_IMG = "/examples/pro-outfit-1.png";
+/* ─── Outfit images (AI-generated, local assets) ─── */
+const PRO_OUTFIT_IMGS = [
+  "/examples/pro-outfit-1.png",
+  "/examples/pro-outfit-2.png",
+  "/examples/pro-outfit-3.png",
+  "/examples/pro-outfit-4.png",
+];
 
 /* ─── Persona: 170cm / 45kg female traveler ─── */
 /* BMI = 15.6 → S clothing, EU 41 shoes */
@@ -111,7 +116,7 @@ const EXAMPLE_CITIES: CityData[] = [
         day: 1,
         title: "Arrival & Champs-Élysées Stroll",
         subtitle: "Classic Layered Look",
-        image: PRO_OUTFIT_IMG,
+        image: PRO_OUTFIT_IMGS[0],
         confidence: 94,
         note: "A refined layering approach for Paris's mild May weather — the navy blazer over a crisp Oxford shirt with slim chinos strikes the perfect balance between relaxed and polished for the iconic avenue.",
         items: [
@@ -126,7 +131,7 @@ const EXAMPLE_CITIES: CityData[] = [
         day: 2,
         title: "Louvre & Musée d'Orsay",
         subtitle: "Smart Casual Museum Look",
-        image: PRO_OUTFIT_IMG,
+        image: PRO_OUTFIT_IMGS[1],
         confidence: 92,
         note: "Gallery-ready and comfortable for long hours on your feet. The merino rollneck with tailored trousers projects understated sophistication in France's finest museums.",
         items: [
@@ -141,7 +146,7 @@ const EXAMPLE_CITIES: CityData[] = [
         day: 3,
         title: "Montmartre & Café Culture",
         subtitle: "Refined Casual",
-        image: PRO_OUTFIT_IMG,
+        image: PRO_OUTFIT_IMGS[2],
         confidence: 91,
         note: "Effortlessly smart for Montmartre's artist quarter and café terrasses. The linen shirt left open over a classic tee keeps things relaxed yet considered on a warm May afternoon.",
         items: [
@@ -156,7 +161,7 @@ const EXAMPLE_CITIES: CityData[] = [
         day: 4,
         title: "Seine Dinner Cruise",
         subtitle: "Evening Smart Casual",
-        image: PRO_OUTFIT_IMG,
+        image: PRO_OUTFIT_IMGS[3],
         confidence: 96,
         note: "The Seine at dusk calls for quiet elegance. A well-cut navy blazer over a white Oxford shirt with pressed dark chinos delivers the smart-casual dress code of Parisian river dining.",
         items: [
@@ -285,21 +290,31 @@ export function ExampleProPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left — city content */}
           <div className="lg:col-span-8 space-y-10">
-            {/* City hero */}
-            <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <ImageWithFallback src={currentSet.heroImg} alt={currentSet.city} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute top-5 left-5 flex gap-2">
-                <TagChip label={`${currentSet.city}, ${currentSet.country}`} className="bg-white/20 text-white backdrop-blur-sm" />
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                  <Icon name="hd" size={12} className="text-white" /> Ultra Hi-Res
-                </span>
+            {/* 2x2 AI Outfit Grid Hero */}
+            <div className="relative rounded-2xl overflow-hidden bg-[#1A1410]" style={{ aspectRatio: "1/1" }}>
+              <div className="grid grid-cols-2 gap-2 h-full">
+                {currentSet.outfits.map((outfit) => (
+                  <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                    <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <span className="text-white/60 text-[9px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
+                      <span className="text-white text-[13px] sm:text-[15px]" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
-                <div>
-                  <span className="text-[10px] uppercase tracking-[0.15em] text-white/70 block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{currentSet.dates}</span>
-                  <span className="text-[28px] text-white italic" style={{ fontFamily: "var(--font-display)" }}>{currentSet.outfits.length} AI Outfits</span>
-                </div>
+              {/* Overlay badges */}
+              <div className="absolute top-3 left-3 flex gap-2">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                  <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                </span>
+                <TagChip label={`${currentSet.city}, ${currentSet.country}`} className="bg-white/20 text-white backdrop-blur-sm" />
+              </div>
+              <div className="absolute bottom-3 right-3">
+                <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                  {currentSet.dates} · {currentSet.outfits.length} Looks
+                </span>
               </div>
             </div>
 
