@@ -1,25 +1,28 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Icon } from "../components/travel-capsule";
+import { Icon, BtnPrimary } from "../components/travel-capsule";
 import { getDashboardRoute, type PlanKey } from "../services/polarCheckout";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
+import { WORKER_URL } from "../lib/api";
 
 /**
- * CheckoutSuccess — shown after Polar payment completes and redirects back.
- * Polar redirects here with ?plan=...&tripId=...&checkout_id=... in the URL.
- * Grants plan access, polls for AI-generated results, then navigates to dashboard.
+ * CheckoutSuccess — the user lands here BEFORE completing Polar payment.
+ *
+ * Flow:
+ *   1. PreviewPage navigates here with ?plan&tripId&checkout_id
+ *   2. This page auto-opens Polar checkout in a new tab
+ *   3. User completes payment in the Polar tab (Polar may redirect to their portal — we don't rely on that)
+ *   4. This page polls GET /api/result/:tripId until a paid order exists
+ *   5. Once confirmed: grant plan access → load AI results → navigate to dashboard
  */
 export function CheckoutSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<"waiting_payment" | "confirmed" | "loading_result" | "ready">("waiting_payment");
-  const [dots, setDots] = useState("");
   const { setPurchasedPlan } = useAuth();
   const { tripId: ctxTripId, loadResult } = useTrip();
 
-  // Read plan + tripId from URL params (primary, set by Polar redirect)
-  // Fallback to sessionStorage (set before redirect in PreviewPage)
+  // Read params from URL + sessionStorage fallbacks
   const pendingCheckout = (() => {
     try {
       const raw = sessionStorage.getItem("tc_pending_checkout");
@@ -29,6 +32,12 @@ export function CheckoutSuccess() {
 
   const plan = (searchParams.get("plan") || sessionStorage.getItem("tc_pending_plan") || pendingCheckout?.plan || "standard") as PlanKey;
   const tripId = searchParams.get("tripId") || ctxTripId || pendingCheckout?.tripId || "";
+  const polarUrl = sessionStorage.getItem("tc_polar_url") || "";
+
+  const [status, setStatus] = useState<"open_checkout" | "waiting_payment" | "confirmed" | "loading_result" | "ready">("open_checkout");
+  const [dots, setDots] = useState("");
+  const [popupBlocked, setPopupBlocked] = useState(false);
+  const pollStarted = useRef(false);
 
   // Animate dots
   useEffect(() => {
@@ -36,58 +45,103 @@ export function CheckoutSuccess() {
     return () => clearInterval(id);
   }, []);
 
-  // Auto-confirm after a brief wait (webhook will have processed by then)
-  const confirmAndProceed = useCallback(async () => {
-    // Grant plan access immediately — webhook handles backend state
-    setPurchasedPlan(plan);
-    setStatus("confirmed");
+  // Step 1: Auto-open Polar in new tab on mount
+  useEffect(() => {
+    if (!polarUrl) {
+      // No Polar URL — maybe came from Polar redirect directly, skip to polling
+      setStatus("waiting_payment");
+      return;
+    }
+    const win = window.open(polarUrl, "_blank");
+    if (!win || win.closed) {
+      // Popup blocked — show manual button
+      setPopupBlocked(true);
+    }
+    setStatus("waiting_payment");
+    // Clean up the URL from storage so a refresh doesn't re-open
+    sessionStorage.removeItem("tc_polar_url");
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-    // Brief pause for UX
-    await new Promise((r) => setTimeout(r, 2000));
-
-    if (tripId) {
-      setStatus("loading_result");
-      try {
-        await loadResult(tripId);
-      } catch { /* dashboard handles loading state */ }
+  // Step 2: Poll for payment confirmation
+  const pollForPayment = useCallback(async () => {
+    if (!tripId) {
+      // No tripId — grant plan immediately (webhook will handle backend)
+      setPurchasedPlan(plan);
+      setStatus("ready");
+      setTimeout(() => navigate(getDashboardRoute(plan), { replace: true }), 2000);
+      return;
     }
 
+    // Poll /api/result/:tripId — returns 402 until order is paid
+    const MAX_POLLS = 60; // 5 minutes max
+    const POLL_INTERVAL = 5000;
+
+    for (let i = 0; i < MAX_POLLS; i++) {
+      try {
+        const res = await fetch(`${WORKER_URL}/api/result/${tripId}`);
+        if (res.ok) {
+          // Payment confirmed — order exists and result is available
+          setPurchasedPlan(plan);
+          setStatus("confirmed");
+          await new Promise((r) => setTimeout(r, 1500));
+
+          setStatus("loading_result");
+          try {
+            await loadResult(tripId);
+          } catch { /* dashboard handles loading */ }
+
+          setStatus("ready");
+          sessionStorage.removeItem("tc_pending_checkout");
+          sessionStorage.removeItem("tc_pending_plan");
+
+          setTimeout(() => navigate(getDashboardRoute(plan), { replace: true }), 1500);
+          return;
+        }
+        // 402 = payment not yet received, keep polling
+      } catch {
+        // Network error — keep trying
+      }
+      await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+    }
+
+    // Timeout — grant plan anyway (webhook may still arrive)
+    setPurchasedPlan(plan);
     setStatus("ready");
-    // Clean up
-    sessionStorage.removeItem("tc_pending_checkout");
+    setTimeout(() => navigate(getDashboardRoute(plan), { replace: true }), 2000);
+  }, [tripId, plan, setPurchasedPlan, loadResult, navigate]);
 
-    // Navigate to dashboard
-    setTimeout(() => {
-      navigate(getDashboardRoute(plan), { replace: true });
-    }, 1500);
-  }, [plan, tripId, setPurchasedPlan, loadResult, navigate]);
-
-  // Start the flow: wait a moment for payment, then proceed
+  // Start polling when status becomes waiting_payment
   useEffect(() => {
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      if (!cancelled) confirmAndProceed();
-    }, 3000); // Wait 3s for user to complete payment in new tab
+    if (status === "waiting_payment" && !pollStarted.current) {
+      pollStarted.current = true;
+      pollForPayment();
+    }
+  }, [status, pollForPayment]);
 
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [confirmAndProceed]);
+  const handleOpenPolar = () => {
+    if (polarUrl) window.open(polarUrl, "_blank");
+  };
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">
       <div className="text-center max-w-[480px]">
-        {status === "waiting_payment" && (
+        {(status === "open_checkout" || status === "waiting_payment") && (
           <>
             <div className="w-20 h-20 mx-auto rounded-full bg-[#C4613A]/10 flex items-center justify-center">
               <Icon name="payment" size={36} className="text-[#C4613A] animate-pulse" />
             </div>
             <h1 className="mt-6 text-[#292524]" style={{ fontSize: "clamp(24px, 4vw, 32px)", fontFamily: "var(--font-display)" }}>
-              Completing Payment{dots}
+              Complete Your Payment{dots}
             </h1>
             <p className="mt-3 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-              Complete your payment in the checkout tab.
-              <br />We'll prepare your capsule wardrobe as soon as it's confirmed.
+              {popupBlocked
+                ? "Click below to open the payment page, then return here."
+                : "A payment window has opened. Complete the checkout and we'll detect it automatically."}
             </p>
-            <div className="mt-8 p-4 bg-white rounded-xl border border-[#E8DDD4]">
+
+            {/* Plan info card */}
+            <div className="mt-6 p-4 bg-white rounded-xl border border-[#E8DDD4]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#C4613A] flex items-center justify-center flex-shrink-0">
                   <Icon name="auto_awesome" size={20} className="text-white" filled />
@@ -97,14 +151,30 @@ export function CheckoutSuccess() {
                     {plan === "standard" ? "Standard Plan — $5" : plan === "pro" ? "Pro Plan — $12" : "Annual Plan — $29/yr"}
                   </span>
                   <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-                    {plan === "standard" ? "1 clear image + 3 unlocked, capsule list, daily plan" : plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regeneration" : "12 trips/yr, priority AI, VIP concierge"}
+                    {plan === "standard" ? "AI outfit + capsule list + daily plan" : plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regen" : "12 trips/yr, priority AI, VIP concierge"}
                   </span>
                 </div>
               </div>
             </div>
+
+            {/* Open payment button (fallback if popup blocked) */}
+            {popupBlocked && polarUrl && (
+              <div className="mt-6">
+                <BtnPrimary className="w-full" onClick={handleOpenPolar}>
+                  <span className="flex items-center justify-center gap-2">
+                    <Icon name="open_in_new" size={16} className="text-white" />
+                    Open Payment Page
+                  </span>
+                </BtnPrimary>
+              </div>
+            )}
+
             <div className="mt-6 w-full h-1.5 bg-[#EFE8DF] rounded-full overflow-hidden">
-              <div className="h-full bg-[#C4613A]/60 rounded-full animate-pulse" style={{ width: "60%" }} />
+              <div className="h-full bg-[#C4613A]/60 rounded-full animate-pulse" style={{ width: "40%" }} />
             </div>
+            <p className="mt-3 text-[12px] text-[#78716c]" style={{ fontFamily: "var(--font-body)" }}>
+              Waiting for payment confirmation{dots}
+            </p>
           </>
         )}
 

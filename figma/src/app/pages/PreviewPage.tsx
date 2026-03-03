@@ -66,10 +66,11 @@ export function PreviewPage() {
       sessionStorage.setItem("tc_pending_plan", plan);
 
       if (session.url) {
-        // Redirect to Polar checkout in the same tab.
-        // After payment, Polar redirects back to our success_url.
-        // Onboarding data survives in sessionStorage.
-        window.location.href = session.url;
+        // Save Polar URL so CheckoutSuccess can open it
+        sessionStorage.setItem("tc_polar_url", session.url);
+        // Navigate to OUR success page first — Polar opens from there
+        // This avoids Polar's Customer Portal redirect hijacking the flow
+        navigate(`/checkout/success?plan=${plan}&tripId=${tripId || ""}&checkout_id=${session.id}`);
       } else {
         navigate(`/checkout/success?plan=${plan}&session_id=${session.clientSecret}`);
       }
