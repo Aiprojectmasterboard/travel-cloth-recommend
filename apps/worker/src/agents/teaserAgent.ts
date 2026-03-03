@@ -44,10 +44,10 @@ interface GeminiResponse {
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL = 'gemini-3.1-flash-image-preview';
-const MAX_ATTEMPTS = 2;
-const BACKOFF_MS = [1_000, 2_000] as const;
-// Keep per-request timeout short so teaser failures don't block the Worker response
-const FETCH_TIMEOUT_MS = 10_000;
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [2_000, 4_000, 8_000] as const;
+// Gemini image generation needs 10–30 s; allow enough headroom
+const FETCH_TIMEOUT_MS = 45_000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -189,27 +189,30 @@ export async function teaserAgent(
   }
 
   // Build model descriptor from user profile
-  const modelDesc = userProfile?.gender === 'male'
-    ? 'Male model'
+  const genderDesc = userProfile?.gender === 'male'
+    ? 'a young Asian man'
     : userProfile?.gender === 'non-binary'
-    ? 'Androgynous model'
-    : 'Female model';
+    ? 'an androgynous person'
+    : 'a young woman';
   const heightDesc = userProfile?.height_cm
-    ? (userProfile.height_cm >= 175 ? 'tall figure' : userProfile.height_cm <= 160 ? 'petite figure' : '')
+    ? `, ${userProfile.height_cm}cm tall`
     : '';
   const styleDesc = userProfile?.aesthetics?.length
-    ? userProfile.aesthetics.slice(0, 2).join(' and ') + ' style'
+    ? ` wearing ${userProfile.aesthetics.slice(0, 2).join(' and ')} style outfit`
     : '';
 
-  // Build image prompt from vibe + user profile
+  // Extract city name for landmark background
+  const cityName = vibeResult.city || vibeResult.mood_label?.split(' — ')[0] || 'a famous city';
+
+  // Build image prompt: travel outfit with city landmark background
   const tagString = vibeResult.vibe_tags.join(', ');
-  const profilePrefix = [modelDesc, heightDesc, styleDesc].filter(Boolean).join(', ');
   const prompt =
-    `${profilePrefix}, ${vibeResult.mood_label} fashion editorial, ${tagString}, ` +
-    `${vibeResult.avoid_note ? `(not: ${vibeResult.avoid_note}), ` : ''}` +
-    'professional fashion photography, high fashion magazine editorial, ' +
-    'full body shot, studio or city street background, golden hour light, ' +
-    'photorealistic, 4K, sharp focus';
+    `Generate a photorealistic full-body fashion photograph of ${genderDesc}${heightDesc}${styleDesc}. ` +
+    `The person is standing in front of a famous landmark in ${cityName} as the background. ` +
+    `Style mood: ${vibeResult.mood_label}, ${tagString}. ` +
+    `The outfit should be stylish, travel-appropriate, and coordinated. ` +
+    `${vibeResult.avoid_note ? `Avoid: ${vibeResult.avoid_note}. ` : ''}` +
+    'Professional fashion editorial photography, natural lighting, sharp focus, 4K quality.';
 
   console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);
 

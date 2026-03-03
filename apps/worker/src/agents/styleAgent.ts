@@ -236,16 +236,17 @@ export async function styleAgent(
 ${cityBlocks}
 ${profileBlock ? `\n${profileBlock}\n` : ''}
 Rules for each prompt:
-1. mood: 2-3 word hyphenated English label (e.g. "morning-exploration", "golden-hour-cafe")
+1. mood: 2-3 word English label for the travel occasion (e.g. "city-exploration", "museum-visit", "cafe-afternoon", "evening-stroll")
 2. Each prompt MUST begin with: "${imagePrefix || 'A fashion model, '}" followed by the outfit description
 3. Each prompt must specify:
-   - Specific clothing items appropriate for the climate and city vibe${aestheticRule ? `\n${aestheticRule}` : ''}
-   - A recognizable location type in that city (cafe, street, market, rooftop, etc.)
+   - Specific clothing items appropriate for the climate, city vibe, AND the travel occasion${aestheticRule ? `\n${aestheticRule}` : ''}
+   - A SPECIFIC famous landmark or iconic location in that city as background (e.g. Eiffel Tower, Louvre Museum, Champs-Élysées)
+   - The person must be standing naturally in front of or near the landmark
    - Lighting style (golden hour, soft overcast, neon-lit evening, bright midday, etc.)
-   - Camera angle (full body, 3/4 shot, street-level)
-   - End with: "fashion editorial photography, professional model, high fashion magazine style, photorealistic, 4K"
+   - Camera angle: full body shot showing the complete outfit from head to toe
+   - End with: "fashion editorial photography, photorealistic, 4K, sharp focus"
 4. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
-5. Prompts for the same city must have different moods/times-of-day
+5. Prompts for the same city must have different travel occasions (e.g. one for museum/culture, one for city walk/cafe)
 
 Climate clothing guide:
 - cold (<10°C): heavy coats, thermal layers, knits, waterproof boots
