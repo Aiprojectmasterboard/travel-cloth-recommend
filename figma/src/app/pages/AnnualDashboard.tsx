@@ -145,6 +145,12 @@ export function AnnualDashboard() {
           <div className="flex items-center gap-3">
             <span className="hidden sm:block"><AnnualBadge /></span>
             <SocialShareButton />
+            <button onClick={() => window.print()} className="no-print hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e] hover:border-[#C4613A]/30 transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              <Icon name="picture_as_pdf" size={14} className="text-[#C4613A]" /> Save PDF
+            </button>
+            <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#D4AF37]/30 transition-colors cursor-pointer">
+              <Icon name="mail" size={16} className="text-[#57534e]" />
+            </button>
             <button onClick={() => navigate("/onboarding/1")} className="inline-flex items-center justify-center whitespace-nowrap h-[36px] px-3 sm:px-5 bg-[#1A1410] text-white text-[11px] uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] transition-all cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
               <span className="hidden sm:inline">Plan Your Next Trip</span>
               <span className="sm:hidden">New Trip</span>

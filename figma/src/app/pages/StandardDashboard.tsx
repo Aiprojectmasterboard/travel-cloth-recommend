@@ -133,7 +133,10 @@ export function StandardDashboard() {
           <div className="flex items-center gap-3">
             <span className="hidden sm:block"><PlanBadge label="Standard Plan" /></span>
             <SocialShareButton />
-            <button className="h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+            <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
+              <Icon name="mail" size={16} className="text-[#57534e]" />
+            </button>
+            <button onClick={() => window.print()} className="no-print h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
               <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" /> <span className="hidden sm:inline">Save PDF</span>
             </button>
           </div>

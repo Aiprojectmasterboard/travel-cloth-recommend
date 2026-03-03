@@ -260,3 +260,57 @@
     font-family: var(--font-mono);
   }
 }
+
+/* ─── Print / PDF export styles ─── */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Hide navigation, buttons, and interactive elements */
+  header,
+  nav,
+  button,
+  .no-print,
+  [class*="sticky"],
+  [class*="fixed"] {
+    display: none !important;
+  }
+
+  /* Collapse right sidebar — full-width main content */
+  .lg\:col-span-4 {
+    display: none !important;
+  }
+  .lg\:col-span-8 {
+    grid-column: span 12 !important;
+  }
+
+  /* Clean print background */
+  body {
+    background: white !important;
+  }
+  * {
+    box-shadow: none !important;
+  }
+
+  /* Ensure images print and don't break across pages */
+  img {
+    max-width: 100% !important;
+    break-inside: avoid;
+  }
+
+  /* Show print-only elements */
+  .print-only {
+    display: block !important;
+  }
+
+  /* Avoid orphaned section headers */
+  h1, h2, h3 {
+    break-after: avoid;
+  }
+
+  /* Page breaks between major sections */
+  .page-break-before {
+    break-before: page;
+  }
+}

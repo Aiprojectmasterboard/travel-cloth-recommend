@@ -278,108 +278,79 @@ export async function runPreview(
       })
     );
 
-    // ── 3. Vibe — parallel per city ──────────────────────────────────────────
-    const vibeResults = await Promise.all(
-      cities.map(async (city, i): Promise<VibeResult> => {
-        const weather = weatherResults[i] ?? {
-          city: city.name,
-          month,
-          temperature_day_avg: 20,
-          temperature_night_avg: 13,
-          precipitation_prob: 0.3,
-          climate_band: 'warm' as const,
-          style_hint: '',
-        };
-        try {
-          const result = await vibeAgent({ city: city.name, country: city.country, weather }, env);
-          // Inject city field so downstream code (PreviewClient, GET endpoint) can use it
-          return { ...result, city: city.name };
-        } catch (err) {
-          console.warn(`[runPreview] Vibe failed for ${city.name}:`, (err as Error).message);
-          return {
-            city: city.name,
-            mood_label: `${city.name} — City Style`,
-            mood_name: 'City Style',
-            vibe_tags: ['versatile', 'travel-ready', 'stylish'],
-            color_palette: ['#8B7355', '#C4B5A0', '#2C3E50'],
-            avoid_note: 'Pack for varied conditions.',
-          };
-        }
-      })
-    );
+    // ── 3. Vibe — STATIC (no Claude API call) ─────────────────────────────
+    // Cost savings: ~$0.004 per city per preview → $0
+    const vibeResults: VibeResult[] = cities.map((city) => {
+      const isWarm = month >= 5 && month <= 9;
+      const vibeDb: Record<string, { mood: string; tags: string[]; colors: string[]; avoid: string }> = {
+        paris: { mood: isWarm ? 'Sunlit Parisian Ease' : 'Parisian Twilight Layers', tags: ['effortless', 'refined', 'romantic', 'layered'], colors: ['#C9B99A', '#4A4E5A', '#D6CFC4'], avoid: isWarm ? 'Avoid heavy coats — light layers work best.' : 'Avoid thin fabrics without layering options.' },
+        rome: { mood: isWarm ? 'Roman Golden Hour' : 'Roman Terracotta Warmth', tags: ['sun-kissed', 'Mediterranean', 'relaxed', 'warm-toned'], colors: ['#C2956B', '#E8C9A0', '#8B6E4E'], avoid: isWarm ? 'Avoid dark heavy fabrics in the heat.' : 'Pack a light jacket for cool evenings.' },
+        barcelona: { mood: isWarm ? 'Coastal Barcelona Glow' : 'Barcelona Urban Breeze', tags: ['coastal', 'vibrant', 'casual', 'colorful'], colors: ['#E2A76F', '#5BA3C2', '#F5DEB3'], avoid: isWarm ? 'Avoid overdressing — coastal casual is key.' : 'Layer for variable Mediterranean weather.' },
+        tokyo: { mood: isWarm ? 'Tokyo Neon Minimal' : 'Tokyo Urban Layer', tags: ['structured', 'minimal', 'urban', 'clean'], colors: ['#2C2C2C', '#E8E0D5', '#8B7355'], avoid: isWarm ? 'Avoid bulky items — clean lines work best.' : 'Pack warm layers for chilly evenings.' },
+        london: { mood: isWarm ? 'London Garden Party' : 'London Understated Layer', tags: ['classic', 'tailored', 'understated', 'polished'], colors: ['#4A5568', '#C4A882', '#2C3E50'], avoid: 'Always pack a waterproof layer.' },
+        'new york': { mood: isWarm ? 'NYC Street Edge' : 'NYC Dark Minimal', tags: ['edgy', 'street', 'bold', 'urban'], colors: ['#1A1A1A', '#C4613A', '#E8DDD4'], avoid: 'Comfortable shoes are essential for walking.' },
+        seoul: { mood: isWarm ? 'Seoul Fresh Contemporary' : 'Seoul Clean Layer', tags: ['contemporary', 'clean', 'trendy', 'minimal'], colors: ['#E8E0D5', '#4A4E5A', '#A0C4B8'], avoid: isWarm ? 'Lightweight breathable fabrics recommended.' : 'Smart layering for variable temperatures.' },
+        milan: { mood: isWarm ? 'Milan Luxe Ease' : 'Milan Tailored Elegance', tags: ['luxurious', 'tailored', 'refined', 'designer'], colors: ['#8B7355', '#2C2C2C', '#D4C5B2'], avoid: 'Avoid overly casual looks — Milan appreciates style.' },
+        bali: { mood: 'Bali Coastal Ease', tags: ['tropical', 'relaxed', 'earthy', 'flowy'], colors: ['#8B6E4E', '#4A7C59', '#F0E0C8'], avoid: 'Pack light breathable fabrics only.' },
+      };
+      const key = city.name.toLowerCase();
+      const match = vibeDb[key] || { mood: `${city.name} Style`, tags: ['versatile', 'travel-ready', 'stylish'], colors: ['#8B7355', '#C4A882', '#4A5568'], avoid: 'Pack versatile pieces that mix and match.' };
+      return {
+        city: city.name,
+        mood_label: `${city.name} — ${match.mood}`,
+        mood_name: match.mood,
+        vibe_tags: match.tags,
+        color_palette: match.colors,
+        avoid_note: match.avoid,
+      };
+    });
 
-    // ── 4. Teaser image — first city only ────────────────────────────────────
-    let teaserUrl: string | null = null;
+    // ── 4. Teaser image — STATIC (no Gemini API call) ────────────────────
+    // Cost savings: ~$0.01 per preview → $0
+    const gender = user_profile?.gender || 'female';
+    const staticBase = 'https://travel-cloth-recommend.pages.dev/examples';
+    const teaserUrl = gender === 'male' || gender === 'non-binary'
+      ? `${staticBase}/annual-outfit-1.png`
+      : `${staticBase}/pro-outfit-1.png`;
     const firstVibe = vibeResults[0];
 
-    if (firstVibe) {
-      try {
-        const teaser = await teaserAgent(
-          {
-            tripId: trip_id,
-            vibeResult: firstVibe,
-            faceUrl: face_url,
-            userProfile: user_profile
-              ? {
-                  gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
-                  height_cm: user_profile.height_cm,
-                  aesthetics: user_profile.aesthetics,
-                }
-              : undefined,
-          },
-          env
-        );
-        teaserUrl = teaser.image_url;
-
-        // Insert generation_jobs row for the teaser
-        const jobInsertRes = await sbFetch(env, '/generation_jobs', {
-          method: 'POST',
-          body: JSON.stringify({
-            trip_id,
-            city: cities[0]?.name ?? '',
-            mood: firstVibe.mood_name,
-            prompt: firstVibe.mood_label,
-            status: 'completed',
-            image_url: teaserUrl,
-            job_type: 'teaser',
-            attempts: 1,
-          }),
-        });
-        if (!jobInsertRes.ok) {
-          const detail = await jobInsertRes.text();
-          console.error(`[runPreview] generation_jobs INSERT failed (${jobInsertRes.status}): ${detail}`);
-        }
-      } catch (err) {
-        console.error(`[runPreview] Teaser generation failed for trip ${trip_id}:`, (err as Error).message);
-        // Non-fatal — preview can proceed without teaser
-      }
-    }
-
-    // ── 5. Capsule — free mode ───────────────────────────────────────────────
-    let capsule: CapsuleResult;
+    // Still insert generation_jobs row for tracking
     try {
-      capsule = await capsuleAgent(
-        {
-          vibeResults,
-          weather: weatherResults,
-          plan: 'free',
-          cities: cities.map((c) => ({ name: c.name, days: c.days })),
-          month,
-        },
-        env
-      );
+      await sbFetch(env, '/generation_jobs', {
+        method: 'POST',
+        body: JSON.stringify({
+          trip_id,
+          city: cities[0]?.name ?? '',
+          mood: firstVibe?.mood_name ?? '',
+          prompt: 'static-teaser',
+          status: 'completed',
+          image_url: teaserUrl,
+          job_type: 'teaser',
+          attempts: 0,
+        }),
+      });
     } catch (err) {
-      console.error(`[runPreview] Capsule agent failed for trip ${trip_id}:`, (err as Error).message);
-      capsule = {
-        plan: 'free',
-        count: 10,
-        principles: [
-          'Layer for temperature swings between cities',
-          'Choose neutral base colors that mix and match',
-          'Pack one versatile outerwear piece',
-        ],
-      };
+      console.warn(`[runPreview] generation_jobs INSERT failed:`, (err as Error).message);
     }
+
+    // ── 5. Capsule — DETERMINISTIC (no Claude API call) ──────────────────
+    // Cost savings: ~$0.006 per preview → $0
+    const totalDays = cities.reduce((s, c) => s + c.days, 0);
+    const capsuleCount = Math.min(15, Math.max(8, Math.round(totalDays * 1.5)));
+    const isWarmMonth = month >= 5 && month <= 9;
+    const capsule: CapsuleResult = {
+      plan: 'free',
+      count: capsuleCount,
+      principles: [
+        isWarmMonth
+          ? `Pack lightweight breathable layers — a linen shirt or cotton tee transitions effortlessly from ${cities[0]?.name || 'the city'}'s warm days to cooler evenings.`
+          : `Build around one versatile outerwear piece that handles ${cities[0]?.name || 'the city'}'s variable temperatures without adding bulk.`,
+        `Choose ${Math.min(3, cities.length)} neutral base colors that mix and match across all ${totalDays} days, maximizing outfit combinations with fewer items.`,
+        cities.length > 1
+          ? `Select pieces that work across all ${cities.length} destinations — one pair of versatile shoes and one bag that handle both city walks and dining.`
+          : `Carry a compact packable layer for unexpected weather changes throughout your ${totalDays}-day trip.`,
+      ],
+    };
 
     // ── 6. Mark trip as completed (free stage) ───────────────────────────────
     await sbPatch(env, `/trips?id=eq.${trip_id}`, {
