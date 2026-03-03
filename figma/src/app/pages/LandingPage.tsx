@@ -211,7 +211,7 @@ export function LandingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[900px] mx-auto">
-            {/* Pro Example */}
+            {/* Pro Example — Paris, Classic, Female */}
             <div
               onClick={() => navigate("/examples/pro")}
               className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#C4613A]/30 transition-all"
@@ -219,8 +219,8 @@ export function LandingPage() {
             >
               <div className="relative h-[280px] overflow-hidden">
                 <ImageWithFallback
-                  src={IMAGES.earthTone}
-                  alt="Pro Example"
+                  src="/examples/pro-outfit-1.png"
+                  alt="Pro Example — Paris Style Guide"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -231,16 +231,16 @@ export function LandingPage() {
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <span className="text-white text-[24px] italic block" style={{ fontFamily: displayFont }}>
-                    Multi-City Style Guide
+                    Paris Style Guide
                   </span>
                   <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
-                    Paris · Rome · Barcelona
+                    Paris · May 2026 · Classic
                   </span>
                 </div>
               </div>
               <div className="p-5 flex items-center justify-between">
                 <div className="flex gap-2">
-                  {["3 Cities", "12 Items", "42 Looks"].map((s) => (
+                  {["1 City", "4 Looks", "Packing List"].map((s) => (
                     <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                       {s}
                     </span>
@@ -252,7 +252,7 @@ export function LandingPage() {
               </div>
             </div>
 
-            {/* Annual Example */}
+            {/* Annual Example — Paris/Rome/Barcelona, Casual, Male */}
             <div
               onClick={() => navigate("/examples/annual")}
               className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#D4AF37]/30 transition-all"
@@ -260,8 +260,8 @@ export function LandingPage() {
             >
               <div className="relative h-[280px] overflow-hidden">
                 <ImageWithFallback
-                  src={IMAGES.streetwear}
-                  alt="Annual Example"
+                  src="/examples/annual-outfit-1.png"
+                  alt="Annual Example — European Journey"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -272,16 +272,16 @@ export function LandingPage() {
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <span className="text-white text-[24px] italic block" style={{ fontFamily: displayFont }}>
-                    Annual Member Dashboard
+                    European Journey
                   </span>
                   <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
-                    Tokyo · Style DNA · Past Trips
+                    Paris · Rome · Barcelona
                   </span>
                 </div>
               </div>
               <div className="p-5 flex items-center justify-between">
                 <div className="flex gap-2">
-                  {["12 Trips/yr", "Style DNA", "VIP"].map((s) => (
+                  {["3 Cities", "4 Looks", "Style DNA"].map((s) => (
                     <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                       {s}
                     </span>
