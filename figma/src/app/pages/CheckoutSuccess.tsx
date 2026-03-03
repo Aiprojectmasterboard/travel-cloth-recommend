@@ -3,57 +3,71 @@ import { useNavigate, useSearchParams } from "react-router";
 import { Icon } from "../components/travel-capsule";
 import { getCheckoutStatus, getDashboardRoute, type PlanKey } from "../services/polarCheckout";
 import { useAuth } from "../context/AuthContext";
+import { useTrip } from "../context/TripContext";
 
-/**
- * Checkout Success Page
- *
- * Users are redirected here after completing a Polar checkout.
- * URL: /checkout/success?session_id=xxx&plan=standard|pro|annual
- *
- * This page:
- * 1. Verifies checkout status via Polar client API
- * 2. Records the purchased plan in AuthContext (+ sessionStorage)
- * 3. Shows a success animation
- * 4. Redirects to the appropriate dashboard
- */
 export function CheckoutSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [status, setStatus] = useState<"verifying" | "confirmed" | "failed">("verifying");
+  const [status, setStatus] = useState<"verifying" | "confirmed" | "loading_result" | "failed">("verifying");
+  const [progressMsg, setProgressMsg] = useState("");
   const { setPurchasedPlan } = useAuth();
+  const { tripId, loadResult } = useTrip();
 
   const plan = (searchParams.get("plan") || "standard") as PlanKey;
   const sessionId = searchParams.get("session_id") || searchParams.get("checkout_id") || "";
 
   useEffect(() => {
-    async function verify() {
+    let cancelled = false;
+
+    async function processPayment() {
       try {
-        const result = await getCheckoutStatus(sessionId);
-        if (result.status === "confirmed") {
-          setPurchasedPlan(plan);
-          setStatus("confirmed");
-          setTimeout(() => {
+        // Step 1: Verify checkout
+        if (sessionId) {
+          const result = await getCheckoutStatus(sessionId);
+          if (result.status !== "confirmed" && !cancelled) {
+            setStatus("failed");
+            return;
+          }
+        }
+
+        if (cancelled) return;
+
+        // Step 2: Set plan access
+        setPurchasedPlan(plan);
+        setStatus("confirmed");
+
+        // Step 3: Load result data (poll until ready)
+        if (tripId) {
+          await new Promise((r) => setTimeout(r, 1500)); // Brief pause for UX
+          if (cancelled) return;
+
+          setStatus("loading_result");
+          setProgressMsg("AI is generating your personalized capsule wardrobe...");
+
+          const resultData = await loadResult(tripId);
+
+          if (cancelled) return;
+
+          if (resultData) {
             navigate(getDashboardRoute(plan), { replace: true });
-          }, 2500);
+          } else {
+            // Still navigate even if result isn't fully ready — dashboard will handle loading
+            navigate(getDashboardRoute(plan), { replace: true });
+          }
         } else {
-          setStatus("failed");
+          // No trip_id — just go to dashboard
+          setTimeout(() => {
+            if (!cancelled) navigate(getDashboardRoute(plan), { replace: true });
+          }, 2500);
         }
       } catch {
-        setStatus("failed");
+        if (!cancelled) setStatus("failed");
       }
     }
 
-    if (sessionId) {
-      verify();
-    } else {
-      // No session ID — demo mode, auto-confirm
-      setPurchasedPlan(plan);
-      setStatus("confirmed");
-      setTimeout(() => {
-        navigate(getDashboardRoute(plan), { replace: true });
-      }, 2500);
-    }
-  }, [sessionId, plan, navigate, setPurchasedPlan]);
+    processPayment();
+    return () => { cancelled = true; };
+  }, [sessionId, plan, tripId, navigate, setPurchasedPlan, loadResult]);
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">
@@ -81,14 +95,44 @@ export function CheckoutSuccess() {
               Payment Confirmed!
             </h1>
             <p className="mt-3 text-[15px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-              Your {plan === "annual" ? "Annual membership" : plan === "pro" ? "Pro capsule" : "Standard capsule"} is ready.
-              Redirecting to your dashboard...
+              Preparing your AI-powered capsule wardrobe...
             </p>
             <div className="mt-6 w-full h-1.5 bg-[#EFE8DF] rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#C4613A] rounded-full"
-                style={{ animation: "grow 2.5s ease-in-out forwards" }}
-              />
+              <div className="h-full bg-[#C4613A] rounded-full" style={{ animation: "grow 2s ease-in-out forwards" }} />
+            </div>
+          </>
+        )}
+
+        {status === "loading_result" && (
+          <>
+            <div className="w-16 h-16 mx-auto rounded-full bg-[#C4613A]/10 flex items-center justify-center">
+              <Icon name="auto_awesome" size={28} className="text-[#C4613A] animate-pulse" filled />
+            </div>
+            <h1 className="mt-6 text-[#292524] text-[28px]" style={{ fontFamily: "var(--font-display)" }}>
+              Generating Your Capsule
+            </h1>
+            <p className="mt-3 text-[15px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
+              {progressMsg}
+            </p>
+            <div className="mt-8 space-y-3 text-left max-w-[300px] mx-auto">
+              {[
+                { label: "Weather analysis", done: true },
+                { label: "City vibe matching", done: true },
+                { label: "Style consulting", done: false },
+                { label: "Outfit generation", done: false },
+                { label: "Packing list", done: false },
+              ].map((step) => (
+                <div key={step.label} className="flex items-center gap-3">
+                  {step.done ? (
+                    <Icon name="check_circle" size={18} className="text-green-500" filled />
+                  ) : (
+                    <span className="w-[18px] h-[18px] border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" />
+                  )}
+                  <span className="text-[14px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
+                    {step.label}
+                  </span>
+                </div>
+              ))}
             </div>
           </>
         )}

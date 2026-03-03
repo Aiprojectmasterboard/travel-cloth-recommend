@@ -3,6 +3,7 @@ import { Outlet } from "react-router";
 import { OnboardingProvider } from "../context/OnboardingContext";
 import { LanguageProvider } from "../context/LanguageContext";
 import { AuthProvider } from "../context/AuthContext";
+import { TripProvider } from "../context/TripContext";
 import { LoginModal } from "../components/travel-capsule";
 
 export function RootLayout() {
@@ -10,8 +11,10 @@ export function RootLayout() {
     <LanguageProvider>
       <AuthProvider>
         <OnboardingProvider>
-          <Outlet />
-          <LoginModal />
+          <TripProvider>
+            <Outlet />
+            <LoginModal />
+          </TripProvider>
         </OnboardingProvider>
       </AuthProvider>
     </LanguageProvider>
