@@ -25,6 +25,12 @@ export function PreviewPage() {
   // Real data from AI preview
   const teaserUrl = preview?.teaser_url || FALLBACK_IMG;
   const moodLabel = preview?.mood_label || `${city} \u2014 Style Analysis`;
+
+  // 4 different preview images based on gender (blurred for locked slots)
+  const isMale = data.gender === "male" || data.gender === "non-binary";
+  const previewImages = isMale
+    ? ["/examples/annual-outfit-1.png", "/examples/annual-outfit-2.png", "/examples/annual-outfit-3.png", "/examples/annual-outfit-4.png"]
+    : ["/examples/pro-outfit-1.png", "/examples/pro-outfit-2.png", "/examples/pro-outfit-3.png", "/examples/pro-outfit-4.png"];
   const vibes = preview?.vibes || [];
   const weatherData = preview?.weather || [];
   const capsuleCount = preview?.capsule?.count || 9;
@@ -186,11 +192,12 @@ export function PreviewPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((idx) => {
               const isUnlocked = idx === 0 && preview?.teaser_url;
+              const imgSrc = isUnlocked ? teaserUrl : previewImages[idx];
               return (
                 <div key={idx} className="group">
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
                     <ImageWithFallback
-                      src={teaserUrl}
+                      src={imgSrc}
                       alt={`Outfit ${idx + 1}`}
                       className="w-full h-full object-cover transition-transform duration-500"
                       style={isUnlocked ? { transform: "scale(1)" } : { filter: "blur(12px) brightness(0.7)", transform: "scale(1.1)" }}

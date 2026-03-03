@@ -644,7 +644,7 @@ app.post('/api/payment/webhook', async (c) => {
       }
     }
 
-    // Run result pipeline in the background
+    // Run result pipeline in the background — auto-refund on failure
     c.executionCtx.waitUntil(
       runResult(tripId, plan, userEmail, c.env).catch(async (err: Error) => {
         console.error(`[Webhook] runResult failed for trip ${tripId}:`, err.message);
@@ -652,6 +652,35 @@ app.post('/api/payment/webhook', async (c) => {
           method: 'PATCH',
           body: JSON.stringify({ status: 'failed' }),
         });
+
+        // Auto-refund: if service fails, refund the customer via Polar API
+        try {
+          console.log(`[Webhook] Initiating auto-refund for order ${polarOrderId}`);
+          const refundRes = await fetch(`https://api.polar.sh/v1/refunds/`, {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${c.env.POLAR_ACCESS_TOKEN}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              order_id: polarOrderId,
+              reason: 'service_not_rendered',
+              comment: `Auto-refund: AI generation failed for trip ${tripId}`,
+            }),
+            signal: AbortSignal.timeout(15_000),
+          });
+          if (refundRes.ok) {
+            console.log(`[Webhook] Refund successful for order ${polarOrderId}`);
+            await supabase(c.env, `/orders?polar_order_id=eq.${encodeURIComponent(polarOrderId)}`, {
+              method: 'PATCH',
+              body: JSON.stringify({ status: 'refunded' }),
+            });
+          } else {
+            console.error(`[Webhook] Refund failed (${refundRes.status}):`, await refundRes.text());
+          }
+        } catch (refundErr) {
+          console.error(`[Webhook] Refund request failed:`, (refundErr as Error).message);
+        }
       })
     );
   }
