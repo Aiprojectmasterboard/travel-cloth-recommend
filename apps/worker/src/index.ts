@@ -507,19 +507,22 @@ app.post('/api/payment/checkout', async (c) => {
 
   // success_url: redirect to the checkout-success page so the frontend knows
   // which plan was purchased and can surface the correct result view.
-  // Format: /checkout/success?plan={plan}&tripId={tripId}
+  // {CHECKOUT_ID} is a Polar placeholder that gets replaced with the actual checkout ID.
   // Use the request Origin to support both travelscapsule.com and pages.dev.
   const reqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
   const allowedOrigins = ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
   const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelscapsule.com';
-  const returnUrl = `${returnBase}/checkout/success?plan=${typedPlan}&tripId=${resolvedTripId}`;
+  const returnUrl = `${returnBase}/checkout/success?plan=${typedPlan}&tripId=${resolvedTripId}&checkout_id={CHECKOUT_ID}`;
 
   const checkoutPayload: Record<string, unknown> = {
     // products array is the current non-deprecated field (product_id is deprecated)
     products: [productId],
     metadata: { trip_id: resolvedTripId, plan: typedPlan },
     success_url: returnUrl,
+    // Always include customer_email so Polar skips email verification step
     ...(customer_email ? { customer_email } : {}),
+    // Skip Polar's post-checkout confirmation page — redirect directly to our success page
+    confirmation_url: returnUrl,
   };
 
   // Use /v1/checkouts/ (not the legacy /v1/checkouts/custom/ endpoint)

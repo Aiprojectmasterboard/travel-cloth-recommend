@@ -38,6 +38,7 @@ export function CityRow({ city, country, imageUrl, fromDate = "", toDate = "", o
           <input
             type="date"
             value={toDate}
+            min={fromDate || undefined}
             onChange={(e) => onToChange?.(e.target.value)}
             className="h-[36px] px-3 bg-[#FDF8F3] border border-[#E8DDD4] rounded-[4px] text-[14px] text-[#292524] focus:border-[#C4613A] focus:outline-none"
             style={{ fontFamily: "var(--font-body)" }}

@@ -48,7 +48,18 @@ export function OnboardingStep1() {
   const updateCityDate = (id: string, field: "fromDate" | "toDate", value: string) => {
     setData((prev) => ({
       ...prev,
-      cities: prev.cities.map((c) => (c.id === id ? { ...c, [field]: value } : c)),
+      cities: prev.cities.map((c) => {
+        if (c.id !== id) return c;
+        if (field === "fromDate") {
+          // If new fromDate is after existing toDate, reset toDate
+          const updated = { ...c, fromDate: value };
+          if (c.toDate && value > c.toDate) updated.toDate = "";
+          return updated;
+        }
+        // toDate — ensure it's not before fromDate
+        if (c.fromDate && value < c.fromDate) return c;
+        return { ...c, toDate: value };
+      }),
     }));
   };
 
