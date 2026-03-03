@@ -16,7 +16,7 @@ export function PrivacyPage() {
           <button onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
             <Icon name="luggage" size={22} className="text-[#C4613A]" />
             <span className="text-[16px] tracking-tight text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
-              Travel Capsule
+              Travel Capsule AI
             </span>
           </button>
           <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-[12px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
@@ -190,7 +190,7 @@ function LegalFooter() {
       <div className="mx-auto flex flex-col sm:flex-row items-center justify-between gap-4" style={{ maxWidth: "720px" }}>
         <button onClick={() => navigate("/")} className="flex items-center gap-2 cursor-pointer">
           <Icon name="luggage" size={18} className="text-[#C4613A]" />
-          <span className="text-[14px] text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule</span>
+          <span className="text-[14px] text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
         </button>
         <div className="flex items-center gap-5">
           <button onClick={() => navigate("/privacy")} className="text-[11px] uppercase tracking-[0.08em] text-[#C4613A] cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Privacy</button>

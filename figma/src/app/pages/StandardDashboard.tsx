@@ -128,7 +128,7 @@ export function StandardDashboard() {
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <Icon name="luggage" size={24} className="text-[#C4613A]" />
-            <span className="text-[18px] tracking-tight text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule</span>
+            <span className="text-[18px] tracking-tight text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden sm:block"><PlanBadge label="Standard Plan" /></span>

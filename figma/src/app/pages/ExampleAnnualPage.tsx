@@ -110,10 +110,10 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     confidence: 93,
     note: "Le Marais blends galleries, boutiques and bistros seamlessly. A light linen shirt with dark denim and brown loafers strikes the ideal balance between relaxed and polished for a full day of neighbourhood discovery.",
     items: [
-      { id: "ep2-1", name: "Light Blue Linen Shirt", desc: "Relaxed fit, chest pocket", img: ITEMS.linen, size: "L" },
+      { id: "ep2-1", name: "Sage Green Linen Shirt", desc: "Relaxed fit, rolled sleeves", img: ITEMS.linen, size: "L" },
       { id: "ep2-2", name: "Dark Slim Denim", desc: "Indigo wash, tapered leg", img: ITEMS.denim, size: "L" },
       { id: "ep2-3", name: "Brown Leather Loafers", desc: "Penny loafer, leather sole", img: ITEMS.loafers, size: "EU 43" },
-      { id: "ep2-4", name: "Canvas Day Bag", desc: "Olive, zip-top, 20L", img: ITEMS.bag, size: "One Size" },
+      { id: "ep2-4", name: "Canvas Tote Bag", desc: "Natural fabric, shoulder carry", img: ITEMS.bag, size: "One Size" },
     ],
   },
   {
@@ -125,10 +125,10 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     confidence: 94,
     note: "Rome rewards those who dress with intention. Olive chinos and a white t-shirt keep you cool as temperatures climb toward the afternoon. Swap sneakers for loafers when heading to dinner in Trastevere.",
     items: [
-      { id: "er3-1", name: "White Graphic T-Shirt", desc: "Minimal print, relaxed", img: ITEMS.tshirt, size: "L" },
+      { id: "er3-1", name: "White Linen Polo", desc: "Relaxed collar, breathable", img: ITEMS.tshirt, size: "L" },
       { id: "er3-2", name: "Olive Casual Chinos", desc: "Lightweight, slim fit", img: ITEMS.chino2, size: "L" },
-      { id: "er3-3", name: "White Sneakers", desc: "Clean, low-profile", img: ITEMS.sneakers, size: "EU 43" },
-      { id: "er3-4", name: "Classic Watch", desc: "Leather strap, minimalist dial", img: ITEMS.watch, size: "One Size" },
+      { id: "er3-3", name: "Brown Leather Sandals", desc: "Woven straps, cushioned", img: ITEMS.loafers, size: "EU 43" },
+      { id: "er3-4", name: "Aviator Sunglasses", desc: "Gold frame, brown lens", img: ITEMS.watch, size: "One Size" },
     ],
   },
   {
@@ -140,10 +140,10 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     confidence: 92,
     note: "Barcelona demands versatility — morning in the Gothic Quarter, afternoon on Barceloneta beach. Light linen and denim keep things breezy while the canvas bag handles beach essentials. Roll the chinos for the sand.",
     items: [
-      { id: "eb4-1", name: "Light Linen Shirt", desc: "Short sleeve, cream/white", img: ITEMS.linen, size: "L" },
-      { id: "eb4-2", name: "Dark Denim Shorts", desc: "5-inch inseam, relaxed", img: ITEMS.denim, size: "L" },
-      { id: "eb4-3", name: "White Sneakers", desc: "Vulcanised sole, canvas", img: ITEMS.sneakers, size: "EU 43" },
-      { id: "eb4-4", name: "Canvas Tote Bag", desc: "Natural, zip closure", img: ITEMS.bag, size: "One Size" },
+      { id: "eb4-1", name: "Navy Bomber Jacket", desc: "Zip-up, ribbed collar", img: ITEMS.denimJacket, size: "L" },
+      { id: "eb4-2", name: "Grey Henley T-Shirt", desc: "Button placket, soft cotton", img: ITEMS.tshirt, size: "L" },
+      { id: "eb4-3", name: "Dark Wash Slim Jeans", desc: "Slim straight, deep indigo", img: ITEMS.denim, size: "L" },
+      { id: "eb4-4", name: "White Minimal Sneakers", desc: "Leather, low-top", img: ITEMS.sneakers, size: "EU 43" },
     ],
   },
 ];
@@ -246,7 +246,7 @@ export function ExampleAnnualPage() {
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <Icon name="luggage" size={24} className="text-[#C4613A]" />
-            <span className="text-[18px] tracking-tight text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule</span>
+            <span className="text-[18px] tracking-tight text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
             {["Dashboard", "My Trips", "Style DNA", "Account"].map((item) => (

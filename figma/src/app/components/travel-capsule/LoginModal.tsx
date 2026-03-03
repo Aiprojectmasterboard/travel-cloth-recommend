@@ -28,7 +28,7 @@ export function LoginModal() {
         <div className="flex items-center gap-2 mb-6">
           <Icon name="luggage" size={28} className="text-[#C4613A]" />
           <span className="text-[20px] tracking-tight text-[#1A1410]" style={{ fontFamily: displayFont, fontWeight: 700 }}>
-            Travel Capsule
+            Travel Capsule AI
           </span>
         </div>
 

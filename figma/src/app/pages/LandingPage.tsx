@@ -29,7 +29,7 @@ export function LandingPage() {
               <div className="flex items-center gap-2">
                 <Icon name="luggage" size={28} className="text-white" />
                 <span className="text-[20px] tracking-tight text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>
-                  Travel Capsule
+                  Travel Capsule AI
                 </span>
               </div>
               <nav className="hidden md:flex items-center gap-8">
@@ -401,7 +401,7 @@ export function LandingPage() {
           <div className="flex items-center gap-2">
             <Icon name="luggage" size={22} className="text-[#C4613A]" />
             <span className="text-[16px] tracking-tight text-[#1A1410]" style={{ fontFamily: displayFont, fontWeight: 700 }}>
-              Travel Capsule
+              Travel Capsule AI
             </span>
           </div>
           <div className="flex items-center gap-6 flex-wrap justify-center">

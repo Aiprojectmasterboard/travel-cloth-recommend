@@ -30,7 +30,7 @@ export function Header({
             className="text-[20px] tracking-tight text-[#1A1410]"
             style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
           >
-            Travel Capsule
+            Travel Capsule AI
           </span>
         </div>
 
