@@ -102,22 +102,29 @@ async function generateWithRetry(
       const parts: GeminiPart[] = [];
 
       // Fetch face reference image and attach as inline_data (multimodal input)
+      // Skip images > 1.5MB to avoid Gemini request-size failures
       if (faceUrl) {
         try {
           const imgRes = await fetch(faceUrl, { signal: AbortSignal.timeout(10_000) });
           if (imgRes.ok) {
             const imgBuf = await imgRes.arrayBuffer();
-            const bytes = new Uint8Array(imgBuf);
-            let binary = '';
-            for (let i = 0; i < bytes.length; i++) {
-              binary += String.fromCharCode(bytes[i]);
+            if (imgBuf.byteLength <= 1_500_000) {
+              const bytes = new Uint8Array(imgBuf);
+              const CHUNK = 8192;
+              let binary = '';
+              for (let i = 0; i < bytes.length; i += CHUNK) {
+                const slice = bytes.subarray(i, Math.min(i + CHUNK, bytes.length));
+                binary += String.fromCharCode(...slice);
+              }
+              const imgBase64 = btoa(binary);
+              const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg';
+              parts.push({ inlineData: { mimeType, data: imgBase64 } });
+              parts.push({
+                text: 'Use the person in the reference image above as the model. Preserve their body proportions, skin tone, and general appearance.',
+              });
+            } else {
+              console.warn(`[imageGenAgent] Face image too large (${(imgBuf.byteLength / 1024 / 1024).toFixed(1)}MB), skipping`);
             }
-            const imgBase64 = btoa(binary);
-            const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg';
-            parts.push({ inlineData: { mimeType, data: imgBase64 } });
-            parts.push({
-              text: 'Use the person in the reference image above as the model. Preserve their body proportions, skin tone, and general appearance.',
-            });
           }
         } catch (err) {
           console.warn(

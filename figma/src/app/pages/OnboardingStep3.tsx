@@ -55,6 +55,38 @@ export function OnboardingStep3() {
     }));
   };
 
+  /** Resize image to max 1200px on longest side, output as JPEG ≤ 1MB for AI processing */
+  const resizeForAI = (file: File): Promise<File> =>
+    new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX = 1200;
+        let { width, height } = img;
+        if (width > MAX || height > MAX) {
+          const scale = MAX / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          (blob) => {
+            if (blob && blob.size < file.size) {
+              resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+            } else {
+              resolve(file); // Original was already small enough
+            }
+          },
+          "image/jpeg",
+          0.85
+        );
+      };
+      img.onerror = () => resolve(file);
+      img.src = URL.createObjectURL(file);
+    });
+
   const handleFile = async (file: File) => {
     setUploadError("");
     if (!file.type.startsWith("image/")) {
@@ -66,6 +98,9 @@ export function OnboardingStep3() {
       return;
     }
 
+    // Resize for AI processing (max 1200px, JPEG ~85% quality)
+    const resized = await resizeForAI(file);
+
     // Show preview immediately via FileReader
     const reader = new FileReader();
     reader.onload = () => {
@@ -76,11 +111,11 @@ export function OnboardingStep3() {
         faceUrl: "",
       }));
     };
-    reader.readAsDataURL(file);
+    reader.readAsDataURL(resized);
 
-    // Upload to R2
+    // Upload resized version to R2
     setUploadStatus("uploading");
-    const faceUrl = await uploadToR2(file);
+    const faceUrl = await uploadToR2(resized);
     if (faceUrl) {
       setData((prev) => ({ ...prev, faceUrl }));
       setUploadStatus("done");

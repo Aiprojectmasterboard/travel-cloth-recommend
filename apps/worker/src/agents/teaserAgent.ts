@@ -55,21 +55,41 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Max face image size for Gemini inlineData (bytes). Larger images cause API failures. */
+const MAX_FACE_BYTES = 1_500_000; // 1.5 MB → ~2 MB base64
+
 /**
  * Fetches an image from a URL and returns base64-encoded data + mime type.
+ * Skips images larger than MAX_FACE_BYTES to avoid Gemini request-size failures.
+ * Uses chunked base64 encoding to avoid stack overflow on large buffers.
  */
 async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
-    if (!res.ok) return null;
-    const contentType = res.headers.get('content-type') || 'image/jpeg';
-    const buffer = await res.arrayBuffer();
-    // Convert ArrayBuffer to base64
-    const bytes = new Uint8Array(buffer);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) {
-      binary += String.fromCharCode(bytes[i]);
+    if (!res.ok) {
+      console.warn(`[teaserAgent] Face fetch HTTP ${res.status} for ${url}`);
+      return null;
     }
+
+    const buffer = await res.arrayBuffer();
+
+    // Skip oversized images — Gemini rejects large inlineData
+    if (buffer.byteLength > MAX_FACE_BYTES) {
+      console.warn(`[teaserAgent] Face image too large (${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB > 1.5MB limit), skipping face reference`);
+      return null;
+    }
+
+    const contentType = res.headers.get('content-type') || 'image/jpeg';
+    const bytes = new Uint8Array(buffer);
+
+    // Chunked base64 encoding — avoids call-stack overflow for large buffers
+    const CHUNK = 8192;
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      const slice = bytes.subarray(i, Math.min(i + CHUNK, bytes.length));
+      binary += String.fromCharCode(...slice);
+    }
+
     return { data: btoa(binary), mimeType: contentType };
   } catch (err) {
     console.warn('[teaserAgent] Failed to fetch face image:', (err as Error).message);
