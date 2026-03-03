@@ -72,31 +72,41 @@ export function OnboardingStep4() {
 
       {/* Summary Card */}
       <div className="mt-10 bg-white rounded-2xl overflow-hidden border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-        {/* City Image */}
-        <div className="relative h-[200px]">
-          <ImageWithFallback
-            src={cityImg}
-            alt={cityName}
-            className="w-full h-full object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
-          <div className="absolute top-4 left-4">
-            <span
-              className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]"
-              style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
-            >
-              Trip Summary
-            </span>
+        {/* City Image(s) */}
+        {data.cities.length <= 1 ? (
+          <div className="relative h-[200px]">
+            <ImageWithFallback src={cityImg} alt={cityName} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+            <div className="absolute top-4 left-4">
+              <span className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Trip Summary</span>
+            </div>
+            <div className="absolute bottom-4 left-5">
+              <h3 className="text-white text-[28px] italic" style={{ fontFamily: "var(--font-display)" }}>{cityName}, {countryName}</h3>
+            </div>
           </div>
-          <div className="absolute bottom-4 left-5">
-            <h3
-              className="text-white text-[28px] italic"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {cityName}, {countryName}
-            </h3>
+        ) : (
+          <div className="relative">
+            <div className={`grid ${data.cities.length === 2 ? "grid-cols-2" : data.cities.length === 3 ? "grid-cols-3" : "grid-cols-2"} gap-0.5`}>
+              {data.cities.slice(0, 4).map((c) => (
+                <div key={c.id} className="relative h-[140px]">
+                  <ImageWithFallback src={c.imageUrl || IMAGES.paris} alt={c.city} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <span className="text-white text-[16px] italic block" style={{ fontFamily: "var(--font-display)" }}>{c.city}</span>
+                    <span className="text-white/70 text-[10px]" style={{ fontFamily: "var(--font-mono)" }}>
+                      {c.fromDate ? new Date(c.fromDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""} {c.fromDate && c.toDate ? "–" : ""} {c.toDate ? new Date(c.toDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="absolute top-3 left-3">
+              <span className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                {data.cities.length} Cities · Trip Summary
+              </span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Info rows */}
         <div className="p-6">

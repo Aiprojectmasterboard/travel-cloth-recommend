@@ -52,8 +52,16 @@ export function PreviewPage() {
         successUrl: `${window.location.origin}/checkout/success?plan=${plan}`,
       });
 
+      // Save checkout info so success page can work independently of Polar redirect
+      sessionStorage.setItem("tc_pending_checkout", JSON.stringify({
+        plan, tripId, checkoutId: session.id, ts: Date.now(),
+      }));
+
       if (session.url) {
-        window.location.href = session.url;
+        // Open Polar checkout in new tab — avoids Polar's Customer Portal redirect issue
+        window.open(session.url, "_blank");
+        // Navigate to our own success/waiting page immediately
+        navigate(`/checkout/success?plan=${plan}&tripId=${tripId || ""}&checkout_id=${session.id}`);
       } else {
         navigate(`/checkout/success?plan=${plan}&session_id=${session.clientSecret}`);
       }

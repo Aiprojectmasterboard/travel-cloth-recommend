@@ -13,6 +13,8 @@ interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
   loginWithGoogle: () => void;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   showLoginModal: boolean;
   setShowLoginModal: (v: boolean) => void;
@@ -54,6 +56,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setShowSignupPrompt(false);
   }, []);
 
+  const loginWithEmail = useCallback(async (email: string, _password: string) => {
+    // TODO: integrate with Supabase auth — for now mock login
+    const name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    setUser({ name, email, avatar: "", initials });
+    setShowLoginModal(false);
+    setShowSignupPrompt(false);
+  }, []);
+
+  const signUpWithEmail = useCallback(async (name: string, email: string, _password: string) => {
+    // TODO: integrate with Supabase auth — for now mock signup
+    const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    setUser({ name, email, avatar: "", initials });
+    setShowLoginModal(false);
+    setShowSignupPrompt(false);
+  }, []);
+
   const logout = useCallback(() => {
     setUser(null);
   }, []);
@@ -71,6 +90,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       user,
       isLoggedIn: !!user,
       loginWithGoogle,
+      loginWithEmail,
+      signUpWithEmail,
       logout,
       showLoginModal,
       setShowLoginModal,
