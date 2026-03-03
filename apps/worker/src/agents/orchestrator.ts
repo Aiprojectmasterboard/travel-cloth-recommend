@@ -305,16 +305,48 @@ export async function runPreview(
       };
     });
 
-    // ── 4. Teaser image — STATIC (no Gemini API call) ────────────────────
-    // Cost savings: ~$0.01 per preview → $0
-    const gender = user_profile?.gender || 'female';
-    const staticBase = 'https://travel-cloth-recommend.pages.dev/examples';
-    const teaserUrl = gender === 'male' || gender === 'non-binary'
-      ? `${staticBase}/annual-outfit-1.png`
-      : `${staticBase}/pro-outfit-1.png`;
+    // ── 4. Teaser image — AI generated (Day 1 only, ~$0.01) ──────────────
+    // Day 1 uses real AI generation based on user info (city, gender, style).
+    // Days 2-4 use static blurred images on the frontend (no API cost).
+    let teaserUrl: string | null = null;
     const firstVibe = vibeResults[0];
 
-    // Still insert generation_jobs row for tracking
+    // Fallback static images in case AI generation fails
+    const gender = user_profile?.gender || 'female';
+    const staticBase = 'https://travel-cloth-recommend.pages.dev/examples';
+    const fallbackTeaser = gender === 'male' || gender === 'non-binary'
+      ? `${staticBase}/annual-outfit-1.png`
+      : `${staticBase}/pro-outfit-1.png`;
+
+    if (firstVibe) {
+      try {
+        const teaser = await teaserAgent(
+          {
+            tripId: trip_id,
+            vibeResult: firstVibe,
+            faceUrl: face_url || (gender === 'male' || gender === 'non-binary'
+              ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
+              : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png'),
+            userProfile: user_profile
+              ? {
+                  gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
+                  height_cm: user_profile.height_cm,
+                  aesthetics: user_profile.aesthetics,
+                }
+              : undefined,
+          },
+          env
+        );
+        teaserUrl = teaser.image_url;
+      } catch (err) {
+        console.warn(`[runPreview] Teaser AI generation failed, using fallback:`, (err as Error).message);
+        teaserUrl = fallbackTeaser;
+      }
+    } else {
+      teaserUrl = fallbackTeaser;
+    }
+
+    // Insert generation_jobs row for tracking
     try {
       await sbFetch(env, '/generation_jobs', {
         method: 'POST',
@@ -322,11 +354,11 @@ export async function runPreview(
           trip_id,
           city: cities[0]?.name ?? '',
           mood: firstVibe?.mood_name ?? '',
-          prompt: 'static-teaser',
+          prompt: firstVibe?.mood_label ?? 'teaser',
           status: 'completed',
           image_url: teaserUrl,
           job_type: 'teaser',
-          attempts: 0,
+          attempts: 1,
         }),
       });
     } catch (err) {
