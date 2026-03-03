@@ -14,60 +14,52 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE ANNUAL PAGE                                        */
-/*  Showcases what a 170cm / 50kg female supermodel would      */
-/*  receive as an Annual member ($29/yr). Standalone page.     */
+/*  Showcases what a 185cm / 75kg male would receive           */
+/*  as an Annual member ($29/yr). Standalone page.            */
 /* ═══════════════════════════════════════════════════════════ */
 
 /* ─── Static images ─── */
 const IMG = {
-  tokyoHero:
-    "https://images.unsplash.com/photo-1717084023989-20a9eef69fc3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxUb2t5byUyMFNoaWJ1eWElMjBhZXJpYWwlMjBzdW5zZXQlMjBza3lsaW5lJTIwd2FybXxlbnwxfHx8fDE3NzI0NDg2NjJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  milan:
-    "https://images.unsplash.com/photo-1771535641653-686927c8cda8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxNaWxhbiUyMEdhbGxlcmlhJTIwZ29sZGVuJTIwbGlnaHQlMjBsdXh0cnklMjBhcmNoaXRlY3R1cmV8ZW58MXx8fHwxNzcyNDI3NTk3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  seoul:
-    "https://images.unsplash.com/photo-1670735411734-c9725326de3f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxTZW91bCUyMEJ1a2Nob24lMjBoYW5vayUyMHZpbGxhZ2UlMjB3YXJtJTIwYXV0dW1ufGVufDF8fHx8MTc3MjQyNzU5OHww&ixlib=rb-4.1.0&q=80&w=1080",
-  tuscany:
-    "https://images.unsplash.com/photo-1655925244593-b648805087d8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxUdXNjYW55JTIwcm9sbGluZyUyMGhpbGxzJTIwZ29sZGVuJTIwaG91ciUyMHZpbmV5YXJkJTIwZHJlYW15fGVufDF8fHx8MTc3MjQyNzU5OHww&ixlib=rb-4.1.0&q=80&w=1080",
+  parisHero:
+    "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMEVpZmZlbCUyMFRvd2VyJTIwc3VucmlzZSUyMGdvbGRlbiUyMGhvdXJ8ZW58MXx8fHwxNzcyNDQ4NjYyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+  barcelona:
+    "https://images.unsplash.com/photo-1558642452-9d2a7deb7f62?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxCYXJjZWxvbmElMjBHb3RoaWMlMjBRdWFydGVyJTIwc3RyZWV0JTIwc3VubHl8ZW58MXx8fHwxNzcyNDI3NTk3fDA&ixlib=rb-4.1.0&q=80&w=1080",
+  rome:
+    "https://images.unsplash.com/photo-1552832230-c0197dd311b5?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxSb21lJTIwQ29sb3NzZXVtJTIwZ29sZGVuJTIwaG91ciUyMGFyY2hpdGVjdHVyZXxlbnwxfHx8fDE3NzI0Mjc1OTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  london:
+    "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxMb25kb24lMjBUb3dlciUyMEJyaWRnZSUyMGNsb3VkeXxlbnwxfHx8fDE3NzI0Mjc1OTh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  amsterdam:
+    "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxBbXN0ZXJkYW0lMjBjYW5hbCUyMHNwcmluZyUyMGNvbG9yZnVsJTIwaG91c2VzfGVufDF8fHx8MTc3MjQyNzU5OHww&ixlib=rb-4.1.0&q=80&w=1080",
 };
 
 /* ─── Item images ─── */
 const ITEMS = {
-  trench:
-    "https://images.unsplash.com/photo-1621912911625-c3b08f187953?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxiZWlnZSUyMHRyZW5jaCUyMGNvYXQlMjBoYW5naW5nJTIwbWluaW1hbGlzdCUyMGFlc3RoZXRpY3xlbnwxfHx8fDE3NzI0Mjc1ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  blazer:
-    "https://images.unsplash.com/photo-1770294758942-7ce9ca052986?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsaW5lbiUyMGJsYXplciUyMGJlaWdlJTIwc3VtbWVyJTIwZmFzaGlvbiUyMHByb2R1Y3R8ZW58MXx8fHwxNzcyNDI5NDk2fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  cashmere:
-    "https://images.unsplash.com/photo-1642761589121-ec47d4c425ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxmb2xkZWQlMjBjYXNobWVyZSUyMHN3ZWF0ZXIlMjBjcmVhbSUyMG5ldXRyYWwlMjBtaW5pbWFsJTIwZmxhdGxheXxlbnwxfHx8fDE3NzI0Mjk0ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  silkBlouse:
-    "https://images.unsplash.com/photo-1606603049788-24284ce70986?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzaWxrJTIwYmxvdXNlJTIwY3JlYW0lMjBpdm9yeSUyMGhhbmdlciUyMGVsZWdhbnR8ZW58MXx8fHwxNzcyNDI5NDg4fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  trousers:
-    "https://images.unsplash.com/photo-1738520420640-5818ce094b4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx0YWlsb3JlZCUyMHdvb2wlMjB0cm91c2VycyUyMGdyZXklMjBmYXNoaW9uJTIwZWRpdG9yaWFsJTIwcHJvZHVjdHxlbnwxfHx8fDE3NzI0Mjk0ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  denimJacket:
+    "https://images.unsplash.com/photo-1544441893-675973e31985?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBkZW5pbSUyMGphY2tldCUyMGJsdWUlMjBmYXNoaW9uJTIwcHJvZHVjdHxlbnwxfHx8fDE3NzI0Mjc1ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  chinos:
+    "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBjaGlubyUyMHRyb3VzZXJzJTIwYmVpZ2UlMjBmYXNoaW9uJTIwcHJvZHVjdHxlbnwxfHx8fDE3NzI0Mjk0OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  tshirt:
+    "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjB3aGl0ZSUyMHQtc2hpcnQlMjBjbGVhbiUyMG1pbmltYWwlMjBwcm9kdWN0fGVufDF8fHx8MTc3MjQyOTQ4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+  linen:
+    "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBsaW5lbiUyMHNoaXJ0JTIwc3VtbWVyJTIwbGlnaHQlMjBibHVlJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
   denim:
-    "https://images.unsplash.com/photo-1768851511869-b26ab0bbb5fc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibHVlJTIwZGVuaW0lMjBqZWFucyUyMGZvbGRlZCUyMGZhc2hpb258ZW58MXx8fHwxNzcyNDI2NjExfDA&ixlib=rb-4.1.0&q=80&w=1080",
-  boots:
-    "https://images.unsplash.com/photo-1737877398292-8762dd7b0907?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsZWF0aGVyJTIwYW5rbGUlMjBib290cyUyMGJyb3duJTIwZmFzaGlvbiUyMHByb2R1Y3QlMjBzdGlsbCUyMGxpZmV8ZW58MXx8fHwxNzcyNDI5NDg5fDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "https://images.unsplash.com/photo-1542272604-787c3835535d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBqZWFucyUyMGRhcmslMjBibHVlJTIwZm9sZGVkJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  chino2:
+    "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBjaGlubyUyMHBhbnRzJTIwb2xpdmUlMjBncmVlbiUyMGZhc2hpb24lMjBwcm9kdWN0fGVufDF8fHx8MTc3MjQyNjYxMXww&ixlib=rb-4.1.0&q=80&w=1080",
   sneakers:
-    "https://images.unsplash.com/photo-1663151860122-4890a08dc22b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3aGl0ZSUyMHNuZWFrZXJzJTIwY2xlYW4lMjBtaW5pbWFsJTIwZmFzaGlvbiUyMHByb2R1Y3R8ZW58MXx8fHwxNzcyNDI5NTAyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBzbmVha2VycyUyMHdoaXRlJTIwY2xlYW4lMjBtaW5pbWFsJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0ODl8MA&ixlib=rb-4.1.0&q=80&w=1080",
   loafers:
-    "https://images.unsplash.com/photo-1771965056079-92b0ce6d4601?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxsZWF0aGVyJTIwbG9hZmVycyUyMHdhcm0lMjB3b29kJTIwZmxvb3IlMjBhZXN0aGV0aWN8ZW58MXx8fHwxNzcyNDI3NTkzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-  bag: "https://images.unsplash.com/photo-1574274560399-d242e212c916?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzYWRkbGUlMjBsZWF0aGVyJTIwYmFnJTIwc3RpbGwlMjBsaWZlJTIwd2FybSUyMHRvbmV8ZW58MXx8fHwxNzcyNDI3NjAyfDA&ixlib=rb-4.1.0&q=80&w=1080",
-  scarf:
-    "https://images.unsplash.com/photo-1638256049278-0899dbe29aec?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXNobWVyZSUyMHNjYXJmJTIwZm9sZGVkJTIwd2FybSUyMG5ldXRyYWwlMjBhZXN0aGV0aWN8ZW58MXx8fHwxNzcyNDI3NTg5fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  earrings:
-    "https://images.unsplash.com/photo-1704637397679-f37e5e0dc429?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxnb2xkJTIwaG9vcCUyMGVhcnJpbmdzJTIwamV3ZWxyeSUyMG1pbmltYWwlMjBlbGVnYW50fGVufDF8fHx8MTc3MjQyOTQ4OXww&ixlib=rb-4.1.0&q=80&w=1080",
+    "https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBsb2FmZXJzJTIwYnJvd24lMjBsZWF0aGVyJTIwZmFzaGlvbiUyMHByb2R1Y3R8ZW58MXx8fHwxNzcyNDI3NTkzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+  bag:
+    "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBiYWNrcGFjayUyMGNhbnZhcyUyMHRyYXZlbCUyMHN0aWxsJTIwbGlmZXxlbnwxfHx8fDE3NzI0Mjc2MDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
   watch:
-    "https://images.unsplash.com/photo-1758887953059-ca6f8e454207?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3YXRjaCUyMG1pbmltYWwlMjBsZWF0aGVyJTIwc3RyYXAlMjB3cmlzdCUyMGZhc2hpb24lMjBhY2Nlc3Nvcnl8ZW58MXx8fHwxNzcyNDI5NTAzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+    "https://images.unsplash.com/photo-1523275335684-37898b6baf30?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjB3YXRjaCUyMGNsYXNzaWMlMjBsZWF0aGVyJTIwc3RyYXAlMjBtaW5pbWFsfGVufDF8fHx8MTc3MjQyOTUwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
 };
 
-/* ─── Outfit images (3:4 ratio, full body) ─── */
-const OUTFIT_IMGS = [
-  "https://images.unsplash.com/photo-1717167172685-374de9c948dd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHRva3lvJTIwaGFyYWp1a3UlMjBmYXNoaW9uJTIwbWluaW1hbGlzdCUyMG5ldXRyYWwlMjBlZGl0b3JpYWx8ZW58MXx8fHwxNzcyNDMzNDIzfDA&ixlib=rb-4.1.0&q=80&w=1080",
-  "https://images.unsplash.com/photo-1635431544454-21f9980954bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGtpbW9ubyUyMGluc3BpcmVkJTIwb3V0Zml0JTIwbW9kZXJuJTIwdG9reW8lMjBzdHJlZXR8ZW58MXx8fHwxNzcyNDQ4NjU3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  "https://images.unsplash.com/photo-1738773733452-b02b079a77af?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHdvb2wlMjBjb2F0JTIwd2ludGVyJTIwZWxlZ2FudCUyMHNjYXJmJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0NDg2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  "https://images.unsplash.com/photo-1734314019865-6c1486b9c5f2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHRhaWxvcmVkJTIwc3VpdCUyMHNtYXJ0JTIwY2FzdWFsJTIwc29waGlzdGljYXRlZHxlbnwxfHx8fDE3NzI0NDg2NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-];
+/* ─── Outfit images — use local AI-generated asset for all outfits ─── */
+const ANNUAL_OUTFIT_IMG = "/examples/annual-outfit-1.png";
 
-/* ─── Persona: 170cm / 50kg female → XS, EU 39 ─── */
+/* ─── Persona: 185cm / 75kg male → BMI 21.9 (regular build) → L, EU 43 ─── */
 
 interface ExItem {
   id: string;
@@ -90,68 +82,68 @@ interface ExOutfit {
 
 const TOKYO_OUTFITS: ExOutfit[] = [
   {
-    id: "ea-tokyo-1",
+    id: "ea-paris-1",
     day: 1,
-    title: "Shibuya Arrival",
-    subtitle: "Jet-Set Minimal",
-    image: OUTFIT_IMGS[0],
+    title: "Eiffel Tower & Café Walk",
+    subtitle: "Casual Chic",
+    image: ANNUAL_OUTFIT_IMG,
     confidence: 95,
-    note: "Clean lines and neutral tones navigate Tokyo's neon-lit streets. The structured overcoat layers effortlessly over a merino crew, with white sneakers for all-day comfort through Shibuya's bustling crossings.",
+    note: "Paris in March calls for effortless layering. A classic denim jacket over a clean white t-shirt pairs with slim chinos and white sneakers — comfortable enough for long walks along the Seine, stylish enough for any café terrace.",
     items: [
-      { id: "eat1-1", name: "Structured Wool Overcoat", desc: "Black, mid-length, tailored", img: ITEMS.trench, size: "XS" },
-      { id: "eat1-2", name: "Merino Crew Knit", desc: "Charcoal, fine gauge", img: ITEMS.cashmere, size: "XS" },
-      { id: "eat1-3", name: "Slim Tailored Trousers", desc: "Black, tapered leg", img: ITEMS.trousers, size: "XS" },
-      { id: "eat1-4", name: "White Leather Sneakers", desc: "Clean, minimal", img: ITEMS.sneakers, size: "EU 39" },
+      { id: "ep1-1", name: "Denim Jacket", desc: "Classic blue, relaxed fit", img: ITEMS.denimJacket, size: "L" },
+      { id: "ep1-2", name: "White Crew T-Shirt", desc: "100% cotton, clean cut", img: ITEMS.tshirt, size: "L" },
+      { id: "ep1-3", name: "Slim Beige Chinos", desc: "Stretch cotton, tapered", img: ITEMS.chinos, size: "L" },
+      { id: "ep1-4", name: "White Leather Sneakers", desc: "Low-top, minimal", img: ITEMS.sneakers, size: "EU 43" },
     ],
   },
   {
-    id: "ea-tokyo-2",
+    id: "ea-paris-2",
     day: 2,
-    title: "Harajuku Discovery",
-    subtitle: "Creative Layer",
-    image: OUTFIT_IMGS[1],
-    confidence: 92,
-    note: "Harajuku rewards individuality. An oversized oatmeal knit paired with wide cropped olive pants creates an effortlessly cool silhouette. The black nylon crossbody keeps essentials secure during street explorations.",
+    title: "Le Marais Exploration",
+    subtitle: "Smart Casual",
+    image: ANNUAL_OUTFIT_IMG,
+    confidence: 93,
+    note: "Le Marais blends galleries, boutiques and bistros seamlessly. A light linen shirt with dark denim and brown loafers strikes the ideal balance between relaxed and polished for a full day of neighbourhood discovery.",
     items: [
-      { id: "eat2-1", name: "Oversized Oatmeal Knit", desc: "Chunky, dropped shoulders", img: ITEMS.cashmere, size: "S" },
-      { id: "eat2-2", name: "Wide Cropped Pants", desc: "Olive, high-waist", img: ITEMS.trousers, size: "XS" },
-      { id: "eat2-3", name: "White Leather Sneakers", desc: "Platform, gum sole", img: ITEMS.sneakers, size: "EU 39" },
-      { id: "eat2-4", name: "Nylon Crossbody Bag", desc: "Black, compact", img: ITEMS.bag, size: "One Size" },
+      { id: "ep2-1", name: "Light Blue Linen Shirt", desc: "Relaxed fit, chest pocket", img: ITEMS.linen, size: "L" },
+      { id: "ep2-2", name: "Dark Slim Denim", desc: "Indigo wash, tapered leg", img: ITEMS.denim, size: "L" },
+      { id: "ep2-3", name: "Brown Leather Loafers", desc: "Penny loafer, leather sole", img: ITEMS.loafers, size: "EU 43" },
+      { id: "ep2-4", name: "Canvas Day Bag", desc: "Olive, zip-top, 20L", img: ITEMS.bag, size: "One Size" },
     ],
   },
   {
-    id: "ea-tokyo-3",
+    id: "ea-rome-3",
     day: 3,
-    title: "Temple & Garden Visit",
-    subtitle: "Refined Tradition",
-    image: OUTFIT_IMGS[2],
+    title: "Colosseum & Forum Visit",
+    subtitle: "Mediterranean Casual",
+    image: ANNUAL_OUTFIT_IMG,
     confidence: 94,
-    note: "A respectful yet stylish look for temple visits. The camel wool coat over a cream silk shirt creates warmth and elegance, while the cashmere scarf adds texture. Ankle boots handle gravel paths with grace.",
+    note: "Rome rewards those who dress with intention. Olive chinos and a white t-shirt keep you cool as temperatures climb toward the afternoon. Swap sneakers for loafers when heading to dinner in Trastevere.",
     items: [
-      { id: "eat3-1", name: "Camel Wool Coat", desc: "Belted, knee-length", img: ITEMS.trench, size: "XS" },
-      { id: "eat3-2", name: "Cream Silk Shirt", desc: "Ivory, classic collar", img: ITEMS.silkBlouse, size: "XS" },
-      { id: "eat3-3", name: "Slim Tailored Trousers", desc: "Charcoal, tapered", img: ITEMS.trousers, size: "XS" },
-      { id: "eat3-4", name: "Leather Ankle Boots", desc: "Black, 4cm heel", img: ITEMS.boots, size: "EU 39" },
+      { id: "er3-1", name: "White Graphic T-Shirt", desc: "Minimal print, relaxed", img: ITEMS.tshirt, size: "L" },
+      { id: "er3-2", name: "Olive Casual Chinos", desc: "Lightweight, slim fit", img: ITEMS.chino2, size: "L" },
+      { id: "er3-3", name: "White Sneakers", desc: "Clean, low-profile", img: ITEMS.sneakers, size: "EU 43" },
+      { id: "er3-4", name: "Classic Watch", desc: "Leather strap, minimalist dial", img: ITEMS.watch, size: "One Size" },
     ],
   },
   {
-    id: "ea-tokyo-4",
+    id: "ea-barcelona-4",
     day: 4,
-    title: "Omotesando Evening",
-    subtitle: "Polished Minimal",
-    image: OUTFIT_IMGS[3],
-    confidence: 96,
-    note: "Omotesando's architectural elegance demands equally refined dressing. An unstructured camel blazer over an ivory silk shirt with pleated trousers. Gold hoop earrings are the perfect finishing touch for dinner at a Michelin-starred restaurant.",
+    title: "Gothic Quarter & Beach",
+    subtitle: "Coastal Casual",
+    image: ANNUAL_OUTFIT_IMG,
+    confidence: 92,
+    note: "Barcelona demands versatility — morning in the Gothic Quarter, afternoon on Barceloneta beach. Light linen and denim keep things breezy while the canvas bag handles beach essentials. Roll the chinos for the sand.",
     items: [
-      { id: "eat4-1", name: "Unstructured Camel Blazer", desc: "Relaxed fit, rolled cuffs", img: ITEMS.blazer, size: "XS" },
-      { id: "eat4-2", name: "Cream Silk Shirt", desc: "Ivory, tucked", img: ITEMS.silkBlouse, size: "XS" },
-      { id: "eat4-3", name: "Pleated Wide Trousers", desc: "Light grey, flowing", img: ITEMS.trousers, size: "XS" },
-      { id: "eat4-4", name: "Gold Hoop Earrings", desc: "14K, minimal", img: ITEMS.earrings, size: "One Size" },
+      { id: "eb4-1", name: "Light Linen Shirt", desc: "Short sleeve, cream/white", img: ITEMS.linen, size: "L" },
+      { id: "eb4-2", name: "Dark Denim Shorts", desc: "5-inch inseam, relaxed", img: ITEMS.denim, size: "L" },
+      { id: "eb4-3", name: "White Sneakers", desc: "Vulcanised sole, canvas", img: ITEMS.sneakers, size: "EU 43" },
+      { id: "eb4-4", name: "Canvas Tote Bag", desc: "Natural, zip closure", img: ITEMS.bag, size: "One Size" },
     ],
   },
 ];
 
-/* ─── Packing list (derived from Tokyo outfits) ─── */
+/* ─── Packing list (derived from multi-city outfits) ─── */
 interface PackEntry {
   name: string;
   img: string;
@@ -185,19 +177,19 @@ const PACKING = derivePacking(TOKYO_OUTFITS);
 
 /* ─── Past Trips (for Annual member showcase) ─── */
 const PAST_TRIPS = [
-  { name: "Milan Fashion Week", date: "Sep 2025", mood: "Avant-Garde", img: IMG.milan, items: 14, outfits: 8, rating: 4.9 },
-  { name: "Seoul Exploration", date: "Jul 2025", mood: "Urban Minimal", img: IMG.seoul, items: 10, outfits: 6, rating: 4.7 },
-  { name: "Tuscany Retreat", date: "May 2025", mood: "Rustic Elegance", img: IMG.tuscany, items: 8, outfits: 5, rating: 4.8 },
+  { name: "Barcelona Summer Escape", date: "Aug 2025", mood: "Coastal Casual", img: IMG.barcelona, items: 11, outfits: 6, rating: 4.8 },
+  { name: "London City Break", date: "Jun 2025", mood: "Urban Smart", img: IMG.london, items: 9, outfits: 5, rating: 4.7 },
+  { name: "Amsterdam Weekend", date: "Apr 2025", mood: "Relaxed Modern", img: IMG.amsterdam, items: 8, outfits: 4, rating: 4.6 },
 ];
 
 /* ─── Style DNA (hardcoded for showcase) ─── */
 const STYLE_DNA = [
-  { label: "Minimalist", percent: 92 },
-  { label: "Classic", percent: 78 },
-  { label: "Casual", percent: 55 },
-  { label: "Business", percent: 42 },
-  { label: "Streetwear", percent: 35 },
-  { label: "Sporty", percent: 22 },
+  { label: "Casual", percent: 95 },
+  { label: "Classic", percent: 60 },
+  { label: "Minimalist", percent: 48 },
+  { label: "Streetwear", percent: 42 },
+  { label: "Sporty", percent: 35 },
+  { label: "Business", percent: 18 },
 ];
 
 /* ─── Helpers ─── */
@@ -276,7 +268,7 @@ export function ExampleAnnualPage() {
           </span>
         </div>
         <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-          Welcome Back, Sofia
+          Welcome Back, Alex
         </h1>
         <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
           Your annual membership is active. Ready for your next adventure?
@@ -284,11 +276,11 @@ export function ExampleAnnualPage() {
         <div className="mt-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
             <Icon name="auto_awesome" size={12} className="text-[#C4613A]" filled />
-            94% AI Confidence · Tailored for Female · 170cm · petite build
+            94% AI Confidence · Tailored for Male · 185cm · regular build
           </span>
         </div>
         <div className="mt-5 max-w-[400px]">
-          <TripUsageBar used={4} total={12} renewMonth="Jan 2027" />
+          <TripUsageBar used={3} total={12} renewMonth="Jan 2027" />
         </div>
       </div>
 
@@ -299,7 +291,7 @@ export function ExampleAnnualPage() {
           <div className="lg:col-span-8 space-y-8">
             {/* Map / Hero */}
             <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <ImageWithFallback src={IMG.tokyoHero} alt="Tokyo skyline" className="w-full h-full object-cover" />
+              <ImageWithFallback src={IMG.parisHero} alt="Paris skyline" className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
               <div className="absolute top-5 left-5 flex gap-2">
                 <div className="px-3 py-1 bg-white/90 rounded-full flex items-center gap-1.5" style={{ backdropFilter: "blur(8px)" }}>
@@ -311,8 +303,8 @@ export function ExampleAnnualPage() {
               </div>
               <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
                 <div>
-                  <span className="text-white text-[28px] italic block" style={{ fontFamily: "var(--font-display)" }}>Tokyo, Japan</span>
-                  <span className="text-white/80 text-[14px] block" style={{ fontFamily: "var(--font-body)" }}>Oct 10 – 31, 2026 · 21 days</span>
+                  <span className="text-white text-[28px] italic block" style={{ fontFamily: "var(--font-display)" }}>Paris → Rome → Barcelona</span>
+                  <span className="text-white/80 text-[14px] block" style={{ fontFamily: "var(--font-body)" }}>Mar 15 – Apr 2, 2026 · 19 days</span>
                 </div>
               </div>
             </div>
@@ -321,14 +313,14 @@ export function ExampleAnnualPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
-                  Your <em>Tokyo Capsule</em>
+                  Your <em>European Journey</em>
                 </h2>
                 <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                   {TOKYO_OUTFITS.length} Outfit Looks
                 </span>
               </div>
               <p className="text-[16px] text-[#57534e] mb-6" style={{ fontFamily: "var(--font-body)" }}>
-                AI-generated outfits based on your profile, Tokyo's autumn weather, and your minimalist aesthetic preference.
+                AI-generated outfits based on your profile, Paris/Rome/Barcelona spring weather, and your casual aesthetic preference.
               </p>
 
               {/* Outfit day cards */}
@@ -410,12 +402,12 @@ export function ExampleAnnualPage() {
                   <Icon name="person" size={24} className="text-[#C4613A]" />
                 </div>
                 <div>
-                  <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>Sofia (Example)</span>
-                  <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Female · 170cm · 50kg</span>
+                  <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>Alex (Example)</span>
+                  <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Male · 185cm · 75kg</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
-                {["Minimalist", "Classic"].map((a) => (
+                {["Casual"].map((a) => (
                   <span key={a} className="px-2 py-0.5 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{a}</span>
                 ))}
               </div>
@@ -424,10 +416,10 @@ export function ExampleAnnualPage() {
             {/* Weather */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Tokyo Weather</h3>
-                <TagChip label="Oct 10–31" />
+                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Paris Weather</h3>
+                <TagChip label="Mar 15–21" />
               </div>
-              <WeatherWidget temp={18} rain={38} wind={13} heatIndex={16} />
+              <WeatherWidget temp={11} rain={35} wind={15} heatIndex={9} />
             </div>
 
             {/* Packing List */}

@@ -11,7 +11,7 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE PRO PAGE                                          */
-/*  Showcases what a 170cm / 50kg female supermodel would     */
+/*  Showcases what a 170cm / 45kg female traveler would         */
 /*  receive after purchasing the Pro plan ($12 one-time).      */
 /*  This is a STANDALONE page — not the actual dashboard.     */
 /* ═══════════════════════════════════════════════════════════ */
@@ -20,9 +20,6 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 const CITY_HEROES: Record<string, string> = {
   paris:
     "https://images.unsplash.com/photo-1629624123501-7595e0193fe0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMGNhZmUlMjBnb2xkZW4lMjBob3VyJTIwd2FybSUyMGV1cm9wZWFuJTIwYXRtb3NwaGVyZXxlbnwxfHx8fDE3NzI0NDg2NjB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  rome: "https://images.unsplash.com/photo-1753901150571-6da7c0ba03e0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxSb21lJTIwY29sb3NzZXVtJTIwZ29sZGVuJTIwc3Vuc2V0JTIwYW5jaWVudCUyMHJ1aW5zJTIwd2FybXxlbnwxfHx8fDE3NzI0NDg2NjF8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  barcelona:
-    "https://images.unsplash.com/photo-1750589218004-3323a162fec3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxCYXJjZWxvbmElMjBiZWFjaCUyMHN1bnNldCUyMGNvYXN0YWwlMjBzdW1tZXIlMjB2aWV3fGVufDF8fHx8MTc3MjQ0ODY2MXww&ixlib=rb-4.1.0&q=80&w=1080",
 };
 
 /* ─── Item images ─── */
@@ -62,30 +59,11 @@ const ITEMS = {
   hat: "https://images.unsplash.com/photo-1752014364743-e80acc2c9b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYW5hbWElMjBzdHJhdyUyMGhhdCUyMGZhc2hpb24lMjBzdW1tZXIlMjBlbGVnYW50fGVufDF8fHx8MTc3MjQyOTQ5N3ww&ixlib=rb-4.1.0&q=80&w=1080",
 };
 
-/* ─── Outfit images (full-body, 3:4 ratio) ─── */
-const OUTFIT_IMGS = {
-  paris: [
-    "https://images.unsplash.com/photo-1677592737288-5ffcf72770d1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGVsZWdhbnQlMjB0cmVuY2glMjBjb2F0JTIwd2Fsa2luZyUyMHBhcmlzJTIwZ29sZGVuJTIwaG91ciUyMGVkaXRvcmlhbCUyMGZhc2hpb258ZW58MXx8fHwxNzcyNDQ4NjQ3fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1770294758942-7ce9ca052986?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHNpbGslMjBibG91c2UlMjB0dWNrZWQlMjBlbGVnYW50JTIwcGFyaXNpYW4lMjBiaXN0cm98ZW58MXx8fHwxNzcyNDQ4NjUxfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1738773733452-b02b079a77af?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHdvb2wlMjBjb2F0JTIwd2ludGVyJTIwZWxlZ2FudCUyMHNjYXJmJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0NDg2NTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1653152987833-1c1aa09ab3dd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGJsYWNrJTIwZXZlbmluZyUyMGRyZXNzJTIwZWxlZ2FudCUyMGRpbm5lciUyMHBhcnR5fGVufDF8fHx8MTc3MjQ0ODY0OXww&ixlib=rb-4.1.0&q=80&w=1080",
-  ],
-  rome: [
-    "https://images.unsplash.com/photo-1536967674045-00c29460c1a7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGxpbmVuJTIwb3V0Zml0JTIwcm9tZSUyMHRlcnJhY290dGElMjB3YXJtJTIwdG9uZXMlMjBlZGl0b3JpYWx8ZW58MXx8fHwxNzcyNDMzNDE5fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1533026795897-5bb93fa969d4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGxpbmVuJTIwZHJlc3MlMjByb21lJTIwZ29sZGVuJTIwbGlnaHQlMjBzdW1tZXJ8ZW58MXx8fHwxNzcyNDQ4NjU1fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1755059703487-8551d6875f54?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMG92ZXJzaXplZCUyMGJsYXplciUyMHdpZGUlMjB0cm91c2VycyUyMHN0cmVldCUyMHN0eWxlJTIwZWRpdG9yaWFsfGVufDF8fHx8MTc3MjQ0ODY1NHww&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1734314019865-6c1486b9c5f2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHRhaWxvcmVkJTIwc3VpdCUyMHNtYXJ0JTIwY2FzdWFsJTIwc29waGlzdGljYXRlZHxlbnwxfHx8fDE3NzI0NDg2NTd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  ],
-  barcelona: [
-    "https://images.unsplash.com/photo-1590493298956-fbfef69619ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMGRlbmltJTIwamFja2V0JTIwY2FzdWFsJTIwc3ByaW5nJTIwb3V0Zml0JTIwd2Fsa2luZ3xlbnwxfHx8fDE3NzI0Mjk1MDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1760377031122-6b20ef978277?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHN0cmF3JTIwaGF0JTIwc3VuZHJlc3MlMjBjb2FzdGFsJTIwYmVhY2glMjByZXNvcnR8ZW58MXx8fHwxNzcyNDQ4NjU2fDA&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1572030712991-5d489429598a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHN1bW1lciUyMGRyZXNzJTIwd2Fsa2luZyUyMGJhcmNlbG9uYSUyMGJlYWNoJTIwYnJlZXplfGVufDF8fHx8MTc3MjQ0ODY1MHww&ixlib=rb-4.1.0&q=80&w=1080",
-    "https://images.unsplash.com/photo-1759229874709-a8d0de083b91?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMG1pbmltYWxpc3QlMjBvdXRmaXQlMjBhdXR1bW4lMjBjb2F0JTIwbmV1dHJhbCUyMHRvbmVzfGVufDF8fHx8MTc3MjQ0ODY1NXww&ixlib=rb-4.1.0&q=80&w=1080",
-  ],
-};
+/* ─── Outfit image (AI-generated, local asset) ─── */
+const PRO_OUTFIT_IMG = "/examples/pro-outfit-1.png";
 
-/* ─── Persona: 170cm / 50kg female supermodel ─── */
-/* BMI = 17.3 → XS clothing, EU 39 shoes */
+/* ─── Persona: 170cm / 45kg female traveler ─── */
+/* BMI = 15.6 → S clothing, EU 41 shoes */
 
 interface ExampleItem {
   id: string;
@@ -122,212 +100,70 @@ const EXAMPLE_CITIES: CityData[] = [
   {
     city: "Paris",
     country: "France",
-    dates: "Mar 15 – Mar 21",
+    dates: "May 20 – May 24",
     heroImg: CITY_HEROES.paris,
-    weather: { temp: 9, rain: 30, wind: 12, condition: "Partly Cloudy" },
-    colorPalette: ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"],
-    activities: ["Cafe Culture", "Gallery Walk", "Bistro Dinner", "Seine Stroll", "Vintage Shopping"],
+    weather: { temp: 19, rain: 20, wind: 10, condition: "Partly Cloudy" },
+    colorPalette: ["#2C3E50", "#C9B99A", "#8B6F4E", "#E8DDD4"],
+    activities: ["Champs-Élysées Walk", "Museum Visit", "Café Terrasse", "River Cruise", "Vintage Shopping"],
     outfits: [
       {
         id: "ex-paris-1",
         day: 1,
-        title: "Arrival & Cafe Culture",
-        subtitle: "Classic Parisian Layering",
-        image: OUTFIT_IMGS.paris[0],
+        title: "Arrival & Champs-Élysées Stroll",
+        subtitle: "Classic Layered Look",
+        image: PRO_OUTFIT_IMG,
         confidence: 94,
-        note: "A refined layering approach for Paris's unpredictable spring weather — the beige trench over a Breton top is effortlessly Parisian, while ankle boots handle cobblestones with ease.",
+        note: "A refined layering approach for Paris's mild May weather — the navy blazer over a crisp Oxford shirt with slim chinos strikes the perfect balance between relaxed and polished for the iconic avenue.",
         items: [
-          { id: "ep1-1", name: "Classic Trench Coat", desc: "Beige, water-resistant, belted", img: ITEMS.trench, size: "XS", category: "Outerwear" },
-          { id: "ep1-2", name: "Breton Striped Top", desc: "Navy & white, boat neck", img: ITEMS.breton, size: "XS", category: "Top" },
-          { id: "ep1-3", name: "High-Waist Straight Jeans", desc: "Medium wash, cropped", img: ITEMS.denim, size: "24", category: "Bottom" },
-          { id: "ep1-4", name: "Leather Ankle Boots", desc: "Brown, 5cm heel", img: ITEMS.boots, size: "EU 39", category: "Shoes" },
+          { id: "ep1-1", name: "Navy Wool Blazer", desc: "Single-breasted, notch lapel", img: ITEMS.blazer, size: "S", category: "Outerwear" },
+          { id: "ep1-2", name: "Oxford Polo Shirt", desc: "White, button-down collar", img: ITEMS.breton, size: "S", category: "Top" },
+          { id: "ep1-3", name: "Slim Chinos", desc: "Stone, tapered leg", img: ITEMS.trousers, size: "S", category: "Bottom" },
+          { id: "ep1-4", name: "Oxford Brogues", desc: "Tan leather, classic toe cap", img: ITEMS.loafers, size: "EU 41", category: "Shoes" },
         ],
       },
       {
         id: "ex-paris-2",
         day: 2,
-        title: "Le Marais Gallery Walk",
-        subtitle: "Smart Casual Elegance",
-        image: OUTFIT_IMGS.paris[1],
+        title: "Louvre & Musée d'Orsay",
+        subtitle: "Smart Casual Museum Look",
+        image: PRO_OUTFIT_IMG,
         confidence: 92,
-        note: "Gallery-ready sophistication. The ivory silk blouse tucked into tailored trousers bridges art openings and afternoon espressos, while gold hoops add a delicate finishing touch.",
+        note: "Gallery-ready and comfortable for long hours on your feet. The merino rollneck with tailored trousers projects understated sophistication in France's finest museums.",
         items: [
-          { id: "ep2-1", name: "Silk Blouse", desc: "Ivory, relaxed fit", img: ITEMS.silkBlouse, size: "XS", category: "Top" },
-          { id: "ep2-2", name: "Tailored Wool Trousers", desc: "Charcoal, high-waist, tapered", img: ITEMS.trousers, size: "XS", category: "Bottom" },
-          { id: "ep2-3", name: "Leather Loafers", desc: "Cognac, hand-stitched", img: ITEMS.loafers, size: "EU 39", category: "Shoes" },
-          { id: "ep2-4", name: "Gold Hoop Earrings", desc: "14K gold, minimal", img: ITEMS.earrings, size: "One Size", category: "Accessory" },
+          { id: "ep2-1", name: "Merino Rollneck", desc: "Camel, fine knit, slim fit", img: ITEMS.cashmere, size: "S", category: "Top" },
+          { id: "ep2-2", name: "Tailored Wool Trousers", desc: "Charcoal, flat-front, slim", img: ITEMS.trousers, size: "S", category: "Bottom" },
+          { id: "ep2-3", name: "Suede Derby Shoes", desc: "Dark tan, crepe sole", img: ITEMS.boots, size: "EU 41", category: "Shoes" },
+          { id: "ep2-4", name: "Leather Dress Watch", desc: "Silver dial, cognac strap", img: ITEMS.watch, size: "One Size", category: "Accessory" },
         ],
       },
       {
         id: "ex-paris-3",
         day: 3,
-        title: "Musee & Montmartre",
-        subtitle: "Cozy Intellectual",
-        image: OUTFIT_IMGS.paris[2],
+        title: "Montmartre & Café Culture",
+        subtitle: "Refined Casual",
+        image: PRO_OUTFIT_IMG,
         confidence: 91,
-        note: "Warm camel tones for hours in temperature-controlled museums, transitioning seamlessly to Montmartre's cobblestone streets. The terracotta scarf adds a pop of warmth.",
+        note: "Effortlessly smart for Montmartre's artist quarter and café terrasses. The linen shirt left open over a classic tee keeps things relaxed yet considered on a warm May afternoon.",
         items: [
-          { id: "ep3-1", name: "Cashmere Crew Knit", desc: "Camel, soft-hand feel", img: ITEMS.cashmere, size: "XS", category: "Top" },
-          { id: "ep3-2", name: "High-Waist Straight Jeans", desc: "Medium wash, cropped", img: ITEMS.denim, size: "24", category: "Bottom" },
-          { id: "ep3-3", name: "Wool Blend Scarf", desc: "Terracotta, oversized knit", img: ITEMS.scarf, size: "One Size", category: "Accessory" },
-          { id: "ep3-4", name: "Leather Ankle Boots", desc: "Brown, 5cm heel", img: ITEMS.boots, size: "EU 39", category: "Shoes" },
+          { id: "ep3-1", name: "Linen Overshirt", desc: "Navy, relaxed fit, rolled cuffs", img: ITEMS.blazer, size: "S", category: "Top" },
+          { id: "ep3-2", name: "Classic Polo Shirt", desc: "Ivory, piqué cotton", img: ITEMS.breton, size: "S", category: "Top" },
+          { id: "ep3-3", name: "Slim Chinos", desc: "Mid-tan, tapered", img: ITEMS.trousers, size: "S", category: "Bottom" },
+          { id: "ep3-4", name: "White Leather Sneakers", desc: "Clean minimal, gum sole", img: ITEMS.sneakers, size: "EU 41", category: "Shoes" },
         ],
       },
       {
         id: "ex-paris-4",
         day: 4,
-        title: "Bistro Evening",
-        subtitle: "Parisian Elegance",
-        image: OUTFIT_IMGS.paris[3],
+        title: "Seine Dinner Cruise",
+        subtitle: "Evening Smart Casual",
+        image: PRO_OUTFIT_IMG,
         confidence: 96,
-        note: "A refined evening look for a candlelit bistro — the silk blouse paired with tailored trousers and the trench draped over shoulders adds a distinctly Parisian finishing touch.",
+        note: "The Seine at dusk calls for quiet elegance. A well-cut navy blazer over a white Oxford shirt with pressed dark chinos delivers the smart-casual dress code of Parisian river dining.",
         items: [
-          { id: "ep4-1", name: "Silk Blouse", desc: "Ivory, tucked styling", img: ITEMS.silkBlouse, size: "XS", category: "Top" },
-          { id: "ep4-2", name: "Tailored Wool Trousers", desc: "Charcoal, high-waist", img: ITEMS.trousers, size: "XS", category: "Bottom" },
-          { id: "ep4-3", name: "Leather Loafers", desc: "Black, polished", img: ITEMS.loafers, size: "EU 39", category: "Shoes" },
-          { id: "ep4-4", name: "Classic Trench Coat", desc: "Draped over shoulders", img: ITEMS.trench, size: "XS", category: "Outerwear" },
-        ],
-      },
-    ],
-  },
-  {
-    city: "Rome",
-    country: "Italy",
-    dates: "Mar 22 – Mar 26",
-    heroImg: CITY_HEROES.rome,
-    weather: { temp: 16, rain: 15, wind: 8, condition: "Sunny" },
-    colorPalette: ["#C2956B", "#E8C9A0", "#8B6E4E", "#F0E0C8"],
-    activities: ["Colosseum Visit", "Trastevere Dining", "Vatican Morning", "Rooftop Aperitivo"],
-    outfits: [
-      {
-        id: "ex-rome-1",
-        day: 1,
-        title: "Colosseum Morning",
-        subtitle: "Mediterranean Ease",
-        image: OUTFIT_IMGS.rome[0],
-        confidence: 93,
-        note: "Sun-kissed terracotta hues meet relaxed Mediterranean tailoring. The unstructured linen blazer paired with a classic stripe top transitions from sightseeing to trattoria lunch.",
-        items: [
-          { id: "er1-1", name: "Linen Blazer", desc: "Sand, unstructured, rolled cuffs", img: ITEMS.blazer, size: "XS", category: "Outerwear" },
-          { id: "er1-2", name: "Breton Striped Top", desc: "Navy & white, boat neck", img: ITEMS.breton, size: "XS", category: "Top" },
-          { id: "er1-3", name: "Wide-Leg Linen Pants", desc: "Ecru, high-waist, breathable", img: ITEMS.trousers, size: "XS", category: "Bottom" },
-          { id: "er1-4", name: "Leather Espadrilles", desc: "Woven jute, tan", img: ITEMS.espadrilles, size: "EU 39", category: "Shoes" },
-        ],
-      },
-      {
-        id: "ex-rome-2",
-        day: 2,
-        title: "Trastevere Stroll",
-        subtitle: "Rustic Elegance",
-        image: OUTFIT_IMGS.rome[1],
-        confidence: 90,
-        note: "Navigate cobblestones in effortless Italian style. The saddle leather crossbody keeps hands free for gelato while the oversized linen shirt provides a relaxed silhouette.",
-        items: [
-          { id: "er2-1", name: "Linen Shirt Dress", desc: "White, oversized, belted", img: ITEMS.silkBlouse, size: "XS", category: "Top" },
-          { id: "er2-2", name: "High-Waist Straight Jeans", desc: "Light wash, relaxed", img: ITEMS.denim, size: "24", category: "Bottom" },
-          { id: "er2-3", name: "Leather Espadrilles", desc: "Woven jute, tan", img: ITEMS.espadrilles, size: "EU 39", category: "Shoes" },
-          { id: "er2-4", name: "Saddle Crossbody Bag", desc: "Cognac leather, compact", img: ITEMS.bag, size: "One Size", category: "Accessory" },
-        ],
-      },
-      {
-        id: "ex-rome-3",
-        day: 3,
-        title: "Vatican & Culture",
-        subtitle: "Smart Layering",
-        image: OUTFIT_IMGS.rome[2],
-        confidence: 95,
-        note: "Modest yet fashionable coverage for religious sites. The structured blazer commands respect, while tailored trousers and loafers maintain polished sophistication all day.",
-        items: [
-          { id: "er3-1", name: "Linen Blazer", desc: "Sand, unstructured", img: ITEMS.blazer, size: "XS", category: "Outerwear" },
-          { id: "er3-2", name: "Silk Blouse", desc: "Cream, long sleeve", img: ITEMS.silkBlouse, size: "XS", category: "Top" },
-          { id: "er3-3", name: "Tailored Wool Trousers", desc: "Navy, tapered", img: ITEMS.trousers, size: "XS", category: "Bottom" },
-          { id: "er3-4", name: "Leather Loafers", desc: "Cognac, hand-stitched", img: ITEMS.loafers, size: "EU 39", category: "Shoes" },
-        ],
-      },
-      {
-        id: "ex-rome-4",
-        day: 4,
-        title: "Rooftop Aperitivo",
-        subtitle: "Sunset Glamour",
-        image: OUTFIT_IMGS.rome[3],
-        confidence: 93,
-        note: "Golden hour demands golden accessories. The linen blazer with rolled cuffs over a silk camisole creates a refined yet relaxed look for Roman rooftop bars.",
-        items: [
-          { id: "er4-1", name: "Linen Blazer", desc: "Camel, rolled cuffs", img: ITEMS.blazer, size: "XS", category: "Outerwear" },
-          { id: "er4-2", name: "Silk Blouse", desc: "Champagne, camisole styling", img: ITEMS.silkBlouse, size: "XS", category: "Top" },
-          { id: "er4-3", name: "High-Waist Straight Jeans", desc: "Dark indigo, slim", img: ITEMS.denim, size: "24", category: "Bottom" },
-          { id: "er4-4", name: "Tortoise Sunglasses", desc: "Aviator, UV protection", img: ITEMS.sunglasses, size: "One Size", category: "Accessory" },
-        ],
-      },
-    ],
-  },
-  {
-    city: "Barcelona",
-    country: "Spain",
-    dates: "Mar 27 – Apr 2",
-    heroImg: CITY_HEROES.barcelona,
-    weather: { temp: 20, rain: 10, wind: 14, condition: "Clear" },
-    colorPalette: ["#E2A76F", "#5BA3C2", "#F5DEB3", "#4A7C59"],
-    activities: ["Sagrada Familia", "Beach Morning", "El Born Markets", "Tapas Crawl", "Park Guell Sunset"],
-    outfits: [
-      {
-        id: "ex-bcn-1",
-        day: 1,
-        title: "Gothic Quarter Wander",
-        subtitle: "Urban Coastal Cool",
-        image: OUTFIT_IMGS.barcelona[0],
-        confidence: 91,
-        note: "Effortless coastal cool with structure. The light denim jacket adds just enough warmth for shaded alleys while white sneakers handle hours of exploring the Gothic Quarter.",
-        items: [
-          { id: "eb1-1", name: "Light Denim Jacket", desc: "Cropped, light wash", img: ITEMS.blazer, size: "XS", category: "Outerwear" },
-          { id: "eb1-2", name: "Breton Striped Top", desc: "Red & white, crew neck", img: ITEMS.breton, size: "XS", category: "Top" },
-          { id: "eb1-3", name: "High-Waist Straight Jeans", desc: "White, cropped", img: ITEMS.denim, size: "24", category: "Bottom" },
-          { id: "eb1-4", name: "White Sneakers", desc: "Clean, minimal leather", img: ITEMS.sneakers, size: "EU 39", category: "Shoes" },
-        ],
-      },
-      {
-        id: "ex-bcn-2",
-        day: 2,
-        title: "Sagrada Familia Visit",
-        subtitle: "Art Nouveau Chic",
-        image: OUTFIT_IMGS.barcelona[1],
-        confidence: 93,
-        note: "Gaudi's masterpiece calls for equally creative dressing. The terracotta cotton knit with wide-leg linen pants and a panama hat create an artful, comfortable look for outdoor exploration.",
-        items: [
-          { id: "eb2-1", name: "Cotton Knit Top", desc: "Terracotta, relaxed fit", img: ITEMS.cashmere, size: "XS", category: "Top" },
-          { id: "eb2-2", name: "Wide-Leg Linen Pants", desc: "Cream, high-waist", img: ITEMS.trousers, size: "XS", category: "Bottom" },
-          { id: "eb2-3", name: "Leather Espadrilles", desc: "Natural canvas, jute sole", img: ITEMS.espadrilles, size: "EU 39", category: "Shoes" },
-          { id: "eb2-4", name: "Panama Hat", desc: "Straw, wide brim", img: ITEMS.hat, size: "One Size", category: "Accessory" },
-        ],
-      },
-      {
-        id: "ex-bcn-3",
-        day: 3,
-        title: "Barceloneta Beach",
-        subtitle: "Sandy Minimalism",
-        image: OUTFIT_IMGS.barcelona[2],
-        confidence: 89,
-        note: "Beach to brunch transition made effortless. The oversized white linen shirt doubles as a cover-up, while the canvas tote carries everything from sunscreen to a change of shoes.",
-        items: [
-          { id: "eb3-1", name: "Oversized Linen Shirt", desc: "White, roll-up sleeves", img: ITEMS.silkBlouse, size: "S", category: "Top" },
-          { id: "eb3-2", name: "High-Waist Straight Jeans", desc: "Light wash, wide-leg", img: ITEMS.denim, size: "24", category: "Bottom" },
-          { id: "eb3-3", name: "White Sneakers", desc: "Leather slides, tan", img: ITEMS.sneakers, size: "EU 39", category: "Shoes" },
-          { id: "eb3-4", name: "Canvas Tote Bag", desc: "Natural fabric, oversized", img: ITEMS.tote, size: "One Size", category: "Accessory" },
-        ],
-      },
-      {
-        id: "ex-bcn-4",
-        day: 4,
-        title: "El Born Tapas Crawl",
-        subtitle: "Evening Glow",
-        image: OUTFIT_IMGS.barcelona[3],
-        confidence: 95,
-        note: "Tapas bars demand effortless style that transitions from bar to bar. The olive cotton blazer with a cream top and slim chinos is polished without trying too hard.",
-        items: [
-          { id: "eb4-1", name: "Cotton Blazer", desc: "Olive green, unstructured", img: ITEMS.blazer, size: "XS", category: "Outerwear" },
-          { id: "eb4-2", name: "Cashmere Crew Knit", desc: "Cream, lightweight", img: ITEMS.cashmere, size: "XS", category: "Top" },
-          { id: "eb4-3", name: "Slim Chinos", desc: "Charcoal, tapered", img: ITEMS.trousers, size: "XS", category: "Bottom" },
-          { id: "eb4-4", name: "Leather Watch", desc: "Brown strap, gold face", img: ITEMS.watch, size: "One Size", category: "Accessory" },
+          { id: "ep4-1", name: "Navy Blazer", desc: "Slim fit, gold buttons", img: ITEMS.blazer, size: "S", category: "Outerwear" },
+          { id: "ep4-2", name: "White Oxford Shirt", desc: "Crisp, classic collar", img: ITEMS.silkBlouse, size: "S", category: "Top" },
+          { id: "ep4-3", name: "Dark Navy Chinos", desc: "Slim, pressed crease", img: ITEMS.trousers, size: "S", category: "Bottom" },
+          { id: "ep4-4", name: "Oxford Brogues", desc: "Dark brown, polished", img: ITEMS.loafers, size: "EU 41", category: "Shoes" },
         ],
       },
     ],
@@ -423,12 +259,12 @@ export function ExampleProPage() {
           Multi-City Style Guide
         </h1>
         <p className="mt-2 text-[15px] text-[#57534e] max-w-[600px]" style={{ fontFamily: "var(--font-body)" }}>
-          3 cities, one seamlessly curated capsule wardrobe. Every piece earns its place across your entire European journey.
+          Paris in May, one seamlessly curated capsule wardrobe. Every piece earns its place across your entire Parisian journey.
         </p>
         <div className="mt-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
             <Icon name="auto_awesome" size={12} className="text-[#C4613A]" filled />
-            93% AI Confidence · Tailored for Female · 170cm · petite build
+            93% AI Confidence · Tailored for Female · 170cm · slim build
           </span>
         </div>
 
@@ -474,7 +310,7 @@ export function ExampleProPage() {
                   {currentSet.city} Outfits
                 </h2>
                 <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                  {currentSet.outfits.length} Looks · Womenswear · XS
+                  {currentSet.outfits.length} Looks · Womenswear · S
                 </span>
               </div>
 
@@ -568,11 +404,11 @@ export function ExampleProPage() {
                   </div>
                   <div>
                     <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>Example User</span>
-                    <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Female · 170cm · 50kg</span>
+                    <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Female · 170cm · 45kg</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {["Minimalist", "Classic", "Casual"].map((a) => (
+                  {["Classic"].map((a) => (
                     <span key={a} className="px-2 py-0.5 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{a}</span>
                   ))}
                 </div>
