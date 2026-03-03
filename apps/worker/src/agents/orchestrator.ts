@@ -436,20 +436,26 @@ export async function runResult(
   const trip = trips[0];
   const rawCities = Array.isArray(trip.cities) ? trip.cities : [];
   const cities = parseCities(rawCities);
-  const month = typeof trip.month === 'number' ? trip.month : 1;
+  // PostgREST may return NUMERIC columns as strings — coerce to number safely
+  const month = Number(trip.month) || 1;
   const faceUrl = typeof trip.face_url === 'string' ? trip.face_url : undefined;
 
   // ── Read user profile from trip row (written by /api/preview on insert) ──
+  // PostgREST returns NUMERIC(5,1) as strings (e.g. "180.0") — parse with Number()
   const tripGender   = typeof trip.gender === 'string' ? trip.gender : 'female';
   const tripAesthetics: string[] = Array.isArray(trip.aesthetics) ? (trip.aesthetics as string[]) : [];
+  const rawHeight = Number(trip.height_cm);
+  const rawWeight = Number(trip.weight_kg);
   const userProfile: UserProfile = {
     gender: (tripGender === 'male' || tripGender === 'non-binary')
       ? (tripGender as 'male' | 'non-binary')
       : 'female',
-    height_cm: typeof trip.height_cm === 'number' ? trip.height_cm : undefined,
-    weight_kg: typeof trip.weight_kg === 'number' ? trip.weight_kg : undefined,
+    height_cm: rawHeight > 0 ? rawHeight : undefined,
+    weight_kg: rawWeight > 0 ? rawWeight : undefined,
     aesthetics: tripAesthetics,
   };
+
+  console.log(`[runResult] User profile: gender=${userProfile.gender}, height=${userProfile.height_cm}, weight=${userProfile.weight_kg}, aesthetics=${userProfile.aesthetics.join(',')}, face=${faceUrl ? 'yes' : 'no'}`);
 
   // Retrieve cached vibe/weather from trip row (set by runPreview)
   const vibeResults: VibeResult[] = Array.isArray(trip.vibe_data)
