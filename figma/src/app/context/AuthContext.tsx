@@ -1,8 +1,11 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
+import { supabase } from "../lib/supabase";
+import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
 export type PlanKey = "standard" | "pro" | "annual";
 
 export interface User {
+  id: string;
   name: string;
   email: string;
   avatar: string;
@@ -20,68 +23,124 @@ interface AuthContextType {
   setShowLoginModal: (v: boolean) => void;
   showSignupPrompt: boolean;
   setShowSignupPrompt: (v: boolean) => void;
-  /** null = not yet paid; set after successful checkout */
   purchasedPlan: PlanKey | null;
   setPurchasedPlan: (plan: PlanKey | null) => void;
+  authLoading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const MOCK_USER: User = {
-  name: "Alex Kim",
-  email: "alex.kim@gmail.com",
-  avatar: "",
-  initials: "AK",
-};
-
-const SESSION_KEY = "tc_purchased_plan";
+const PLAN_KEY = "tc_purchased_plan";
 
 function readStoredPlan(): PlanKey | null {
   try {
-    const v = sessionStorage.getItem(SESSION_KEY);
+    const v = sessionStorage.getItem(PLAN_KEY);
     if (v === "standard" || v === "pro" || v === "annual") return v;
   } catch {}
   return null;
 }
 
+function mapSupabaseUser(su: SupabaseUser): User {
+  const meta = su.user_metadata || {};
+  const email = su.email || "";
+  const name = meta.full_name || meta.name || email.split("@")[0] || "";
+  const avatar = meta.avatar_url || meta.picture || "";
+  const initials = name
+    .split(" ")
+    .map((w: string) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "U";
+  return { id: su.id, name, email, avatar, initials };
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [purchasedPlan, setPurchasedPlanState] = useState<PlanKey | null>(readStoredPlan);
 
-  const loginWithGoogle = useCallback(() => {
-    setUser(MOCK_USER);
+  // Listen for Supabase auth state changes
+  useEffect(() => {
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser(mapSupabaseUser(session.user));
+      }
+      setAuthLoading(false);
+    });
+
+    // Subscribe to auth changes (login, logout, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (session?.user) {
+          setUser(mapSupabaseUser(session.user));
+        } else {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const loginWithGoogle = useCallback(async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/onboarding/1`,
+      },
+    });
+    if (error) {
+      console.error("[Auth] Google login error:", error.message);
+      throw error;
+    }
+    setShowLoginModal(false);
+  }, []);
+
+  const loginWithEmail = useCallback(async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      if (error.message.includes("Invalid login credentials")) {
+        throw new Error("Invalid email or password.");
+      }
+      throw new Error(error.message);
+    }
     setShowLoginModal(false);
     setShowSignupPrompt(false);
   }, []);
 
-  const loginWithEmail = useCallback(async (email: string, _password: string) => {
-    // TODO: integrate with Supabase auth — for now mock login
-    const name = email.split("@")[0].replace(/[._]/g, " ").replace(/\b\w/g, c => c.toUpperCase());
-    const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    setUser({ name, email, avatar: "", initials });
+  const signUpWithEmail = useCallback(async (name: string, email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { full_name: name },
+      },
+    });
+    if (error) {
+      if (error.message.includes("already registered")) {
+        throw new Error("This email is already registered. Please sign in.");
+      }
+      throw new Error(error.message);
+    }
+    // Supabase may require email confirmation depending on settings
+    // For now, auto-login after signup (if email confirmation is disabled)
     setShowLoginModal(false);
     setShowSignupPrompt(false);
   }, []);
 
-  const signUpWithEmail = useCallback(async (name: string, email: string, _password: string) => {
-    // TODO: integrate with Supabase auth — for now mock signup
-    const initials = name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
-    setUser({ name, email, avatar: "", initials });
-    setShowLoginModal(false);
-    setShowSignupPrompt(false);
-  }, []);
-
-  const logout = useCallback(() => {
+  const logout = useCallback(async () => {
+    await supabase.auth.signOut();
     setUser(null);
   }, []);
 
   const setPurchasedPlan = useCallback((plan: PlanKey | null) => {
     setPurchasedPlanState(plan);
     try {
-      if (plan) sessionStorage.setItem(SESSION_KEY, plan);
-      else sessionStorage.removeItem(SESSION_KEY);
+      if (plan) sessionStorage.setItem(PLAN_KEY, plan);
+      else sessionStorage.removeItem(PLAN_KEY);
     } catch {}
   }, []);
 
@@ -99,6 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setShowSignupPrompt,
       purchasedPlan,
       setPurchasedPlan,
+      authLoading,
     }}>
       {children}
     </AuthContext.Provider>
