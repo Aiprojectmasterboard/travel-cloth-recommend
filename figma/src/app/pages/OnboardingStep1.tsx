@@ -164,7 +164,7 @@ export function OnboardingStep1() {
       )}
 
       {/* Navigation */}
-      <div className="mt-8 flex items-center justify-between">
+      <div className="mt-8 flex items-center justify-between gap-3">
         <BtnSecondary size="sm" onClick={() => navigate("/")}>Back</BtnSecondary>
         <BtnPrimary size="sm" onClick={() => {
           if (data.cities.length === 0) {
@@ -175,7 +175,8 @@ export function OnboardingStep1() {
           navigate("/onboarding/2");
         }}>
           <span className="flex items-center gap-2">
-            Continue to Style Profile
+            <span className="hidden sm:inline">Continue to Style Profile</span>
+            <span className="sm:hidden">Continue</span>
             <Icon name="arrow_forward" size={16} className="text-white" />
           </span>
         </BtnPrimary>

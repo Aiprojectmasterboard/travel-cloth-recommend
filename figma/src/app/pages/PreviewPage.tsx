@@ -105,9 +105,9 @@ export function PreviewPage() {
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
-            <Icon name="luggage" size={28} className="text-[#C4613A]" />
-            <span className="text-[20px] tracking-tight text-[#1A1410]" style={{ fontFamily: displayFont, fontWeight: 700 }}>
+          <div className="flex items-center gap-1.5 cursor-pointer flex-shrink-0" onClick={() => navigate("/")}>
+            <Icon name="luggage" size={22} className="text-[#C4613A]" />
+            <span className="text-[15px] sm:text-[20px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: displayFont, fontWeight: 700 }}>
               Travel Capsule AI
             </span>
           </div>

@@ -230,11 +230,12 @@ export function OnboardingStep2() {
       </div>
 
       {/* Navigation */}
-      <div className="mt-12 flex items-center justify-between">
+      <div className="mt-12 flex items-center justify-between gap-3">
         <BtnSecondary size="sm" onClick={() => navigate("/onboarding/1")}>Back</BtnSecondary>
         <BtnPrimary size="sm" onClick={() => navigate("/onboarding/3")}>
           <span className="flex items-center gap-2">
-            Continue to Style Profile
+            <span className="hidden sm:inline">Continue to Style Profile</span>
+            <span className="sm:hidden">Continue</span>
             <Icon name="arrow_forward" size={16} className="text-white" />
           </span>
         </BtnPrimary>

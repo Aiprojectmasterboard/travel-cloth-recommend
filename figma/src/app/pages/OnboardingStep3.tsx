@@ -292,29 +292,29 @@ export function OnboardingStep3() {
       </div>
 
       {/* Navigation */}
-      <div className="mt-12 flex items-center justify-between">
-        <BtnSecondary size="sm" onClick={() => navigate("/onboarding/2")}>
-          Back
-        </BtnSecondary>
+      <div className="mt-12 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
+          <BtnSecondary size="sm" onClick={() => navigate("/onboarding/2")}>
+            Back
+          </BtnSecondary>
           <button
             onClick={() => navigate("/onboarding/4")}
-            className="text-[14px] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer underline underline-offset-4"
+            className="text-[13px] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer underline underline-offset-4"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            Skip, style me without a photo
+            Skip this step
           </button>
-          <BtnPrimary
-            size="sm"
-            onClick={() => navigate("/onboarding/4")}
-            disabled={uploadStatus === "uploading"}
-          >
-            <span className="flex items-center gap-2">
-              Continue to Itinerary
-              <Icon name="arrow_forward" size={16} className="text-white" />
-            </span>
-          </BtnPrimary>
         </div>
+        <BtnPrimary
+          size="sm"
+          onClick={() => navigate("/onboarding/4")}
+          disabled={uploadStatus === "uploading"}
+        >
+          <span className="flex items-center justify-center gap-2">
+            Continue
+            <Icon name="arrow_forward" size={16} className="text-white" />
+          </span>
+        </BtnPrimary>
       </div>
     </OnboardingLayout>
   );
