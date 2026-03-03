@@ -27,8 +27,7 @@ export function LandingPage() {
           <header className="w-full px-6 py-5">
             <div className="mx-auto flex items-center justify-between" style={{ maxWidth: "var(--max-w)" }}>
               <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-                <Icon name="luggage" size={24} className="text-white sm:hidden" />
-                <Icon name="luggage" size={28} className="text-white hidden sm:block" />
+                <Icon name="luggage" size={24} className="text-white" />
                 <span className="text-[16px] sm:text-[20px] tracking-tight text-white whitespace-nowrap" style={{ fontFamily: displayFont, fontWeight: 700 }}>
                   Travel Capsule AI
                 </span>

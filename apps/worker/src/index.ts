@@ -1064,6 +1064,11 @@ app.get('/api/result/:tripId', async (c) => {
     },
     images,
     teaser_url: teaserUrl,
+    // User profile fields (stored during /api/preview)
+    gender: (tripRow.gender as string) ?? undefined,
+    height_cm: (tripRow.height_cm as number) ?? undefined,
+    weight_kg: (tripRow.weight_kg as number) ?? undefined,
+    aesthetics: Array.isArray(tripRow.aesthetics) ? tripRow.aesthetics : [],
     growth: {
       share_url: (tripRow.share_url as string) ?? shareUrl,
       upgrade_token: (order.upgrade_token as string | undefined) ?? null,

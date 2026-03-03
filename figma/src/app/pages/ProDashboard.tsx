@@ -67,7 +67,16 @@ export function ProDashboard() {
   interface AiItem { name: string; category: string; desc: string; essential: boolean; }
   const [aiOutfitItems, setAiOutfitItems] = useState<Record<string, AiItem[]>>({});
 
+  // Skip client-side generation if API result already has images (webhook pipeline)
+  const apiResultImages: ResultImage[] = result?.images || [];
+  const hasApiImages = apiResultImages.length > 0;
+
   useEffect(() => {
+    // If the webhook pipeline already produced images, skip /api/generate
+    if (hasApiImages) {
+      setGenStatus("done");
+      return;
+    }
     if (generationStarted.current) return;
     generationStarted.current = true;
 
@@ -123,14 +132,13 @@ export function ProDashboard() {
     generateImages();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [hasApiImages]);
 
   // ─── Data sources ───
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
   const apiVibes: VibeData[] = result?.vibes || preview?.vibes || [];
   const apiCapsuleItems: CapsuleItem[] = result?.capsule?.items || [];
   const apiDailyPlan: DayPlan[] = result?.capsule?.daily_plan || [];
-  const apiResultImages: ResultImage[] = result?.images || [];
   const hasRealData = apiCapsuleItems.length > 0;
 
   const profile = useMemo(() => buildProfile(onboarding), [onboarding]);
