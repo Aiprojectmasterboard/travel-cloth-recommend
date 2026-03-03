@@ -6,10 +6,9 @@ import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 
 /**
- * CheckoutSuccess — shown immediately after user clicks checkout.
- * Polar payment opens in a new tab. This page waits for webhook
- * confirmation by polling, then grants plan access and navigates
- * to the appropriate dashboard.
+ * CheckoutSuccess — shown after Polar payment completes and redirects back.
+ * Polar redirects here with ?plan=...&tripId=...&checkout_id=... in the URL.
+ * Grants plan access, polls for AI-generated results, then navigates to dashboard.
  */
 export function CheckoutSuccess() {
   const navigate = useNavigate();
@@ -19,8 +18,17 @@ export function CheckoutSuccess() {
   const { setPurchasedPlan } = useAuth();
   const { tripId: ctxTripId, loadResult } = useTrip();
 
-  const plan = (searchParams.get("plan") || sessionStorage.getItem("tc_pending_plan") || "standard") as PlanKey;
-  const tripId = searchParams.get("tripId") || ctxTripId || "";
+  // Read plan + tripId from URL params (primary, set by Polar redirect)
+  // Fallback to sessionStorage (set before redirect in PreviewPage)
+  const pendingCheckout = (() => {
+    try {
+      const raw = sessionStorage.getItem("tc_pending_checkout");
+      return raw ? JSON.parse(raw) as { plan?: string; tripId?: string } : null;
+    } catch { return null; }
+  })();
+
+  const plan = (searchParams.get("plan") || sessionStorage.getItem("tc_pending_plan") || pendingCheckout?.plan || "standard") as PlanKey;
+  const tripId = searchParams.get("tripId") || ctxTripId || pendingCheckout?.tripId || "";
 
   // Animate dots
   useEffect(() => {

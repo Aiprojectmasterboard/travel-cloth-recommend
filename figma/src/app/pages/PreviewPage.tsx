@@ -58,10 +58,12 @@ export function PreviewPage() {
         successUrl: `${window.location.origin}/checkout/success?plan=${plan}`,
       });
 
-      // Save checkout info so success page can work independently of Polar redirect
+      // Save checkout info so success page has fallbacks after Polar redirect
       sessionStorage.setItem("tc_pending_checkout", JSON.stringify({
         plan, tripId, checkoutId: session.id, ts: Date.now(),
       }));
+      // Also persist plan key separately for CheckoutSuccess fallback
+      sessionStorage.setItem("tc_pending_plan", plan);
 
       if (session.url) {
         // Redirect to Polar checkout in the same tab.
