@@ -140,6 +140,33 @@ Respond ONLY with this JSON:
 
 // ─── Paid Mode ────────────────────────────────────────────────────────────────
 
+/** Optional user profile for personalised capsule wardrobe */
+export interface CapsuleUserProfile {
+  gender: 'male' | 'female' | 'non-binary';
+  height_cm?: number;
+  weight_kg?: number;
+  aesthetics: string[];
+}
+
+function buildUserProfileBlock(profile?: CapsuleUserProfile): string {
+  if (!profile) return '';
+  const genderLabel = profile.gender === 'male' ? "men's" : profile.gender === 'non-binary' ? 'gender-neutral' : "women's";
+  const lines = [
+    `\nTraveller Profile:`,
+    `- Gender: ${genderLabel} clothing`,
+  ];
+  if (profile.height_cm) lines.push(`- Height: ${profile.height_cm} cm`);
+  if (profile.height_cm && profile.weight_kg) {
+    const bmi = profile.weight_kg / ((profile.height_cm / 100) ** 2);
+    const build = bmi < 18.5 ? 'slender' : bmi < 25 ? 'slim' : bmi < 30 ? 'regular' : 'full-figured';
+    lines.push(`- Build: ${build}`);
+  }
+  if (profile.aesthetics.length > 0) {
+    lines.push(`- Style preferences: ${profile.aesthetics.join(', ')}`);
+  }
+  return lines.join('\n');
+}
+
 async function generatePaid(
   client: Anthropic,
   plan: PlanType,
@@ -147,19 +174,29 @@ async function generatePaid(
   vibeResults: VibeResult[],
   weatherResults: WeatherResult[],
   month: number,
-  tripDays?: number
+  tripDays?: number,
+  userProfile?: CapsuleUserProfile
 ): Promise<PaidCapsuleResult> {
   const cityContext = buildCityContext(cities, vibeResults, weatherResults, month);
   const totalDays = tripDays ?? cities.reduce((s, c) => s + c.days, 0);
+  const profileBlock = buildUserProfileBlock(userProfile);
+
+  const genderNote = userProfile
+    ? `All items must be ${userProfile.gender === 'male' ? "men's" : userProfile.gender === 'non-binary' ? 'gender-neutral' : "women's"} clothing. `
+    : '';
+  const aestheticNote = userProfile?.aesthetics?.length
+    ? `Style preferences: ${userProfile.aesthetics.join(', ')} — reflect these in clothing choices. `
+    : '';
 
   const systemPrompt =
     'You are an expert travel fashion consultant and capsule wardrobe specialist. ' +
     'Philosophy: maximum outfit combinations from minimum pieces — strictly carry-on only. ' +
+    genderNote + aestheticNote +
     'Always respond with valid JSON only — no markdown fences, no explanations.';
 
   const userPrompt = `Design a capsule wardrobe and daily outfit plan for this trip:
 
-${cityContext}
+${cityContext}${profileBlock}
 Total duration: ${totalDays} days
 
 CONSTRAINTS:
@@ -167,6 +204,7 @@ CONSTRAINTS:
 - Every item must pair with at least 3 others
 - Account for climate transitions between cities
 - No dry-clean-only or delicate fabrics
+${userProfile ? `- All clothing items must be appropriate for ${userProfile.gender === 'male' ? 'men' : userProfile.gender === 'non-binary' ? 'any gender' : 'women'}` : ''}
 
 Item fields:
 - name: specific item (e.g. "White linen button-down shirt")
@@ -253,10 +291,11 @@ export async function capsuleAgent(
     cities: Array<{ name: string; days: number }>;
     month: number;
     tripDays?: number;
+    userProfile?: CapsuleUserProfile;
   },
   env: Bindings
 ): Promise<CapsuleResult> {
-  const { vibeResults, weather, plan, cities, month, tripDays } = input;
+  const { vibeResults, weather, plan, cities, month, tripDays, userProfile } = input;
 
   const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
@@ -264,5 +303,5 @@ export async function capsuleAgent(
     return generateFree(client, cities, vibeResults, weather, month);
   }
 
-  return generatePaid(client, plan, cities, vibeResults, weather, month, tripDays);
+  return generatePaid(client, plan, cities, vibeResults, weather, month, tripDays, userProfile);
 }

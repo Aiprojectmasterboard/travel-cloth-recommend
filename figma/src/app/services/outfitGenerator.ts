@@ -288,6 +288,170 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
       { key: "loafers", name: "Leather Loafers", desc: "Cognac", category: "shoes" },
     ]},
   ],
+
+  /* ── Aesthetic-specific _default templates ── */
+
+  _default_casual: [
+    { title: "Relaxed City Walk", subtitle: "Casual Comfort", note: "Easygoing layers built for all-day comfort. Denim and sneakers keep things relaxed yet pulled-together.", items: [
+      { key: "denim", name: "Relaxed Jeans", desc: "Light wash, comfortable fit", category: "bottom" },
+      { key: "breton", name: "Striped Tee", desc: "Navy/white, soft cotton", category: "top" },
+      { key: "sneakers", name: "Canvas Sneakers", desc: "White, worn-in", category: "shoes" },
+      { key: "tote", name: "Canvas Tote", desc: "Natural, oversized", category: "accessory" },
+    ]},
+    { title: "Weekend Brunch", subtitle: "Casual Layering", note: "A light jacket over easy basics transitions from morning coffee to afternoon exploring without a wardrobe change.", items: [
+      { key: "blazer", name: "Denim Jacket", desc: "Mid wash, relaxed", category: "outerwear" },
+      { key: "cashmere", name: "Cotton Henley", desc: "Oatmeal, soft knit", category: "top" },
+      { key: "denim", name: "Chinos", desc: "Khaki, straight leg", category: "bottom" },
+      { key: "loafers", name: "Suede Loafers", desc: "Sand, unlined", category: "shoes" },
+    ]},
+    { title: "Market & Cafe Day", subtitle: "Casual Easy", note: "Comfortable and breathable for wandering local markets and lingering over espresso. Practical yet stylish.", items: [
+      { key: "cashmere", name: "Crew Sweatshirt", desc: "Grey marl, relaxed", category: "top" },
+      { key: "trousers", name: "Drawstring Pants", desc: "Olive, linen blend", category: "bottom" },
+      { key: "sneakers", name: "Slip-on Sneakers", desc: "White, clean", category: "shoes" },
+      { key: "sunglasses", name: "Sunglasses", desc: "Classic wayfarer", category: "accessory" },
+    ]},
+    { title: "Evening Out", subtitle: "Casual Elevated", note: "Dress up denim with a crisp shirt and leather accessories for a casual dinner that still feels intentional.", items: [
+      { key: "silkBlouse", name: "Oxford Shirt", desc: "White, rolled sleeves", category: "top" },
+      { key: "denim", name: "Dark Jeans", desc: "Slim, indigo wash", category: "bottom" },
+      { key: "boots", name: "Desert Boots", desc: "Tan suede", category: "shoes" },
+      { key: "watch", name: "Casual Watch", desc: "NATO strap, silver", category: "accessory" },
+    ]},
+  ],
+
+  _default_minimalist: [
+    { title: "Morning Commute", subtitle: "Minimalist Foundation", note: "A capsule-perfect base of monochrome essentials. Every piece interchangeable, nothing superfluous.", items: [
+      { key: "trench", name: "Structured Overcoat", desc: "Black, clean lines", category: "outerwear" },
+      { key: "cashmere", name: "Merino Crew", desc: "White, fine gauge", category: "top" },
+      { key: "trousers", name: "Slim Trousers", desc: "Black, tapered", category: "bottom" },
+      { key: "sneakers", name: "White Sneakers", desc: "Leather, minimal", category: "shoes" },
+    ]},
+    { title: "Gallery & Museum", subtitle: "Minimalist Clean", note: "Tonal dressing in muted neutrals. The absence of pattern lets silhouette and fabric quality speak.", items: [
+      { key: "cashmere", name: "Cashmere Crew", desc: "Grey, seamless", category: "top" },
+      { key: "trousers", name: "Tailored Trousers", desc: "Charcoal, high waist", category: "bottom" },
+      { key: "loafers", name: "Leather Loafers", desc: "Black, streamlined", category: "shoes" },
+      { key: "watch", name: "Minimal Watch", desc: "Black dial, thin", category: "accessory" },
+    ]},
+    { title: "Afternoon Exploration", subtitle: "Minimalist Essentials", note: "Pared-back simplicity in quality fabrics. A neutral palette that works in any neighborhood, any context.", items: [
+      { key: "silkBlouse", name: "Silk Tee", desc: "Ivory, boxy cut", category: "top" },
+      { key: "denim", name: "Straight Denim", desc: "Black, no distressing", category: "bottom" },
+      { key: "sneakers", name: "Low-top Sneakers", desc: "All white", category: "shoes" },
+      { key: "bag", name: "Structured Bag", desc: "Black leather, clean", category: "accessory" },
+    ]},
+    { title: "Evening Dinner", subtitle: "Minimalist Refined", note: "Monochrome elegance for the evening. Quality over quantity — three pieces, zero excess.", items: [
+      { key: "blazer", name: "Unstructured Blazer", desc: "Black, no lining", category: "outerwear" },
+      { key: "silkBlouse", name: "Silk Shirt", desc: "White, hidden placket", category: "top" },
+      { key: "trousers", name: "Pleated Trousers", desc: "Black, wide leg", category: "bottom" },
+      { key: "loafers", name: "Leather Loafers", desc: "Black, polished", category: "shoes" },
+    ]},
+  ],
+
+  _default_streetwear: [
+    { title: "City Arrival", subtitle: "Streetwear Edge", note: "Urban armor for the concrete jungle. Oversized proportions and bold textures set the tone from the first step.", items: [
+      { key: "blazer", name: "Bomber Jacket", desc: "Black, satin finish", category: "outerwear" },
+      { key: "breton", name: "Graphic Tee", desc: "Oversized, vintage print", category: "top" },
+      { key: "denim", name: "Cargo Pants", desc: "Olive, relaxed fit", category: "bottom" },
+      { key: "sneakers", name: "Chunky Sneakers", desc: "White/black, platform", category: "shoes" },
+    ]},
+    { title: "Neighborhood Exploration", subtitle: "Streetwear Layers", note: "Layered street style with utilitarian touches. Multiple pockets, crossbody bags, and bold kicks.", items: [
+      { key: "cashmere", name: "Oversized Hoodie", desc: "Washed black", category: "top" },
+      { key: "trousers", name: "Track Pants", desc: "Black, side stripe", category: "bottom" },
+      { key: "sneakers", name: "High-top Sneakers", desc: "White, leather", category: "shoes" },
+      { key: "bag", name: "Crossbody Bag", desc: "Black nylon, utility", category: "accessory" },
+    ]},
+    { title: "Market & Street Food", subtitle: "Streetwear Utility", note: "Functional street style that handles crowds and weather. The cap and crossbody keep hands free for food stalls.", items: [
+      { key: "trench", name: "Windbreaker", desc: "Color-block, packable", category: "outerwear" },
+      { key: "breton", name: "Logo Tee", desc: "White, boxy fit", category: "top" },
+      { key: "denim", name: "Wide-leg Jeans", desc: "Faded wash", category: "bottom" },
+      { key: "hat", name: "Snapback Cap", desc: "Black, minimal logo", category: "accessory" },
+    ]},
+    { title: "Night Out", subtitle: "Streetwear After Dark", note: "Elevated streetwear for the evening scene. Dark tones and statement sneakers transition from dinner to nightlife.", items: [
+      { key: "blazer", name: "Bomber Jacket", desc: "Navy, quilted", category: "outerwear" },
+      { key: "silkBlouse", name: "Mock Neck Top", desc: "Black, fitted", category: "top" },
+      { key: "trousers", name: "Slim Joggers", desc: "Black, tapered", category: "bottom" },
+      { key: "boots", name: "Combat Boots", desc: "Black, chunky sole", category: "shoes" },
+    ]},
+  ],
+
+  _default_classic: [
+    { title: "Morning Sightseeing", subtitle: "Classic Elegance", note: "Timeless pieces that transcend trends. A well-cut blazer and tailored trousers command respect in any city.", items: [
+      { key: "blazer", name: "Tailored Blazer", desc: "Navy, gold buttons", category: "outerwear" },
+      { key: "silkBlouse", name: "Cotton Shirt", desc: "White, crisp collar", category: "top" },
+      { key: "trousers", name: "Tailored Trousers", desc: "Grey, wool blend", category: "bottom" },
+      { key: "loafers", name: "Penny Loafers", desc: "Burgundy, polished", category: "shoes" },
+    ]},
+    { title: "Cultural Visits", subtitle: "Classic Refined", note: "A cashmere layer adds warmth for air-conditioned museums. Polished leather accessories complete the refined look.", items: [
+      { key: "cashmere", name: "Cashmere V-Neck", desc: "Camel, fine knit", category: "top" },
+      { key: "trousers", name: "Pressed Chinos", desc: "Navy, flat front", category: "bottom" },
+      { key: "belt", name: "Leather Belt", desc: "Brown, classic buckle", category: "accessory" },
+      { key: "loafers", name: "Leather Loafers", desc: "Brown, cap toe", category: "shoes" },
+    ]},
+    { title: "Afternoon Tea & Shopping", subtitle: "Classic Sophistication", note: "An understated ensemble for upscale shopping districts and afternoon tea. Quality fabrics and traditional cuts.", items: [
+      { key: "trench", name: "Classic Trench", desc: "Beige, double-breasted", category: "outerwear" },
+      { key: "breton", name: "Breton Top", desc: "Navy/white stripe", category: "top" },
+      { key: "denim", name: "Tailored Jeans", desc: "Dark indigo, straight", category: "bottom" },
+      { key: "scarf", name: "Silk Scarf", desc: "Paisley, navy/gold", category: "accessory" },
+    ]},
+    { title: "Fine Dining", subtitle: "Classic Evening", note: "Refined evening dressing rooted in tradition. The combination of blazer, silk, and leather speaks timeless elegance.", items: [
+      { key: "blazer", name: "Dinner Blazer", desc: "Charcoal, peaked lapel", category: "outerwear" },
+      { key: "silkBlouse", name: "Silk Blouse", desc: "Ivory, tucked", category: "top" },
+      { key: "trousers", name: "Dress Trousers", desc: "Black, creased", category: "bottom" },
+      { key: "earrings", name: "Pearl Earrings", desc: "Classic studs", category: "accessory" },
+    ]},
+  ],
+
+  _default_sporty: [
+    { title: "Active Morning", subtitle: "Sporty Start", note: "Performance fabrics that handle a morning jog and transition seamlessly to a cafe breakfast. Breathable and sharp.", items: [
+      { key: "trench", name: "Lightweight Shell", desc: "Black, waterproof", category: "outerwear" },
+      { key: "cashmere", name: "Performance Tee", desc: "White, moisture-wicking", category: "top" },
+      { key: "trousers", name: "Jogger Pants", desc: "Charcoal, tapered", category: "bottom" },
+      { key: "sneakers", name: "Running Sneakers", desc: "Grey/white, cushioned", category: "shoes" },
+    ]},
+    { title: "City Exploration", subtitle: "Sporty Comfort", note: "Athletic-inspired pieces styled for sightseeing. Stretch fabrics and supportive shoes for miles of walking.", items: [
+      { key: "blazer", name: "Zip-up Jacket", desc: "Navy, technical fabric", category: "outerwear" },
+      { key: "breton", name: "Polo Shirt", desc: "White, dry-fit", category: "top" },
+      { key: "denim", name: "Stretch Chinos", desc: "Olive, slim fit", category: "bottom" },
+      { key: "sneakers", name: "Mesh Sneakers", desc: "Black/white, lightweight", category: "shoes" },
+    ]},
+    { title: "Afternoon Activities", subtitle: "Sporty Versatile", note: "Ready for anything from a bike tour to a park picnic. Technical fabrics meet casual style for active afternoons.", items: [
+      { key: "cashmere", name: "Quarter-Zip Pullover", desc: "Grey, fleece-lined", category: "top" },
+      { key: "trousers", name: "Stretch Pants", desc: "Black, 4-way stretch", category: "bottom" },
+      { key: "sneakers", name: "Trail Sneakers", desc: "Grey, grippy sole", category: "shoes" },
+      { key: "bag", name: "Sport Crossbody", desc: "Black nylon, compact", category: "accessory" },
+    ]},
+    { title: "Evening Casual", subtitle: "Sporty Elevated", note: "Clean athleisure for dinner. A bomber jacket dresses up technical pieces for an effortlessly modern evening look.", items: [
+      { key: "blazer", name: "Bomber Jacket", desc: "Black, lightweight", category: "outerwear" },
+      { key: "silkBlouse", name: "Clean Tee", desc: "White, premium cotton", category: "top" },
+      { key: "denim", name: "Dark Joggers", desc: "Black, slim tapered", category: "bottom" },
+      { key: "sneakers", name: "Leather Sneakers", desc: "White, clean design", category: "shoes" },
+    ]},
+  ],
+
+  _default_bohemian: [
+    { title: "Morning Wandering", subtitle: "Bohemian Flow", note: "Free-spirited layers in earthy tones. Flowy silhouettes and natural textures for unhurried morning strolls.", items: [
+      { key: "cashmere", name: "Crochet Cardigan", desc: "Cream, open-front", category: "outerwear" },
+      { key: "silkBlouse", name: "Peasant Blouse", desc: "White, embroidered", category: "top" },
+      { key: "denim", name: "Flared Jeans", desc: "Medium wash, vintage", category: "bottom" },
+      { key: "espadrilles", name: "Leather Sandals", desc: "Tan, woven straps", category: "shoes" },
+    ]},
+    { title: "Market & Artisan Visit", subtitle: "Bohemian Earth", note: "Earthy, handcrafted textures for exploring local artisan markets. A woven bag carries treasures found along the way.", items: [
+      { key: "breton", name: "Printed Tunic", desc: "Terracotta, paisley", category: "top" },
+      { key: "trousers", name: "Palazzo Pants", desc: "Cream, linen", category: "bottom" },
+      { key: "espadrilles", name: "Espadrille Wedges", desc: "Natural jute", category: "shoes" },
+      { key: "tote", name: "Woven Tote", desc: "Straw, leather trim", category: "accessory" },
+    ]},
+    { title: "Sunset Lookout", subtitle: "Bohemian Spirit", note: "Layered accessories and flowing fabrics catch the golden hour light. A hat and sunglasses complete the free-spirited look.", items: [
+      { key: "cashmere", name: "Wrap Sweater", desc: "Sage, draped", category: "top" },
+      { key: "denim", name: "Maxi Skirt", desc: "Rust, tiered", category: "bottom" },
+      { key: "boots", name: "Western Boots", desc: "Tan suede, low heel", category: "shoes" },
+      { key: "hat", name: "Floppy Sun Hat", desc: "Straw, wide brim", category: "accessory" },
+    ]},
+    { title: "Evening Gathering", subtitle: "Bohemian Glow", note: "Romantic evening layers with candlelight-ready accessories. Gold accents catch warm light for bohemian glamour.", items: [
+      { key: "blazer", name: "Velvet Blazer", desc: "Deep olive, relaxed", category: "outerwear" },
+      { key: "silkBlouse", name: "Silk Camisole", desc: "Gold, delicate straps", category: "top" },
+      { key: "trousers", name: "Wide-leg Trousers", desc: "Black, flowing", category: "bottom" },
+      { key: "earrings", name: "Gold Earrings", desc: "Hammered hoops", category: "accessory" },
+    ]},
+  ],
 };
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -364,9 +528,23 @@ function getOutfitImages(gender: string, cityKey: string): string[] {
   return pool[key] || pool._default;
 }
 
-function getTemplates(cityKey: string): OutfitTemplate[] {
+function getTemplates(cityKey: string, aesthetic?: string): OutfitTemplate[] {
   const key = cityKey.toLowerCase();
-  return TEMPLATES[key] || TEMPLATES.paris;
+  const aestheticKey = aesthetic?.toLowerCase() || "";
+
+  // 1. City-specific templates exist — use them (subtitles adjusted by caller)
+  if (TEMPLATES[key]) {
+    return TEMPLATES[key];
+  }
+
+  // 2. No city-specific templates — try aesthetic-specific _default set
+  const aestheticDefault = `_default_${aestheticKey}`;
+  if (aestheticKey && TEMPLATES[aestheticDefault]) {
+    return TEMPLATES[aestheticDefault];
+  }
+
+  // 3. Fallback to paris templates (original behavior)
+  return TEMPLATES.paris;
 }
 
 /**
@@ -384,28 +562,50 @@ export function generateCityOutfits(
 ): GeneratedOutfit[] {
   const gender = profile.gender || "female";
   const cityKey = city.city.toLowerCase();
+  const primaryAesthetic = profile.aesthetics?.[0] || "";
   const images = getOutfitImages(gender, cityKey);
-  const templates = getTemplates(cityKey);
+  const templates = getTemplates(cityKey, primaryAesthetic);
   const bodyFitLabel = buildBodyFitLabel(profile);
 
-  return templates.slice(0, count).map((tpl, i) => ({
-    id: `${cityKey}-outfit-${i + 1}`,
-    day: i + 1,
-    title: tpl.title,
-    subtitle: tpl.subtitle,
-    image: images[i % images.length],
-    items: tpl.items.map((item, j) => ({
-      id: `${cityKey}-item-${i}-${j}`,
-      name: item.name,
-      desc: item.desc,
-      img: ITEM_IMAGES[item.key],
-      category: item.category,
-      recommendedSize: recommendSize(item.category, gender, profile.height, profile.weight),
-    })),
-    note: tpl.note,
-    aiConfidence: 85 + Math.floor(Math.random() * 12),
-    bodyFitLabel,
-  }));
+  // Capitalize aesthetic name for display in subtitles
+  const aestheticLabel = primaryAesthetic
+    ? primaryAesthetic.charAt(0).toUpperCase() + primaryAesthetic.slice(1)
+    : "";
+
+  return templates.slice(0, count).map((tpl, i) => {
+    // For city-specific templates, inject the aesthetic into the subtitle
+    // e.g. "Classic Layering" becomes "Casual Layering" when aesthetic is Casual
+    let subtitle = tpl.subtitle;
+    if (aestheticLabel && TEMPLATES[cityKey]) {
+      // Replace the first word of the subtitle with the aesthetic label
+      const parts = subtitle.split(" ");
+      if (parts.length > 1) {
+        parts[0] = aestheticLabel;
+        subtitle = parts.join(" ");
+      } else {
+        subtitle = `${aestheticLabel} ${subtitle}`;
+      }
+    }
+
+    return {
+      id: `${cityKey}-outfit-${i + 1}`,
+      day: i + 1,
+      title: tpl.title,
+      subtitle,
+      image: images[i % images.length],
+      items: tpl.items.map((item, j) => ({
+        id: `${cityKey}-item-${i}-${j}`,
+        name: item.name,
+        desc: item.desc,
+        img: ITEM_IMAGES[item.key],
+        category: item.category,
+        recommendedSize: recommendSize(item.category, gender, profile.height, profile.weight),
+      })),
+      note: tpl.note,
+      aiConfidence: 85 + Math.floor(Math.random() * 12),
+      bodyFitLabel,
+    };
+  });
 }
 
 /**

@@ -108,7 +108,7 @@ async function generateWithRetry(
           const imgRes = await fetch(faceUrl, { signal: AbortSignal.timeout(10_000) });
           if (imgRes.ok) {
             const imgBuf = await imgRes.arrayBuffer();
-            if (imgBuf.byteLength <= 1_500_000) {
+            if (imgBuf.byteLength <= 4_000_000) {
               const bytes = new Uint8Array(imgBuf);
               const CHUNK = 8192;
               let binary = '';
@@ -123,7 +123,7 @@ async function generateWithRetry(
                 text: 'Use the person in the reference image above as the model. Preserve their body proportions, skin tone, and general appearance.',
               });
             } else {
-              console.warn(`[imageGenAgent] Face image too large (${(imgBuf.byteLength / 1024 / 1024).toFixed(1)}MB), skipping`);
+              console.warn(`[imageGenAgent] Face image too large (${(imgBuf.byteLength / 1024 / 1024).toFixed(1)}MB > 4MB limit), skipping`);
             }
           }
         } catch (err) {

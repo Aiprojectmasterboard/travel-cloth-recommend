@@ -268,5 +268,545 @@
     "vibe_cluster": "nordic-dramatic",
     "style_keywords": ["thermal base layer", "waterproof parka", "chunky knit", "wool hat", "waterproof hiking boot"],
     "mood_name": "Aurora Rugged"
+  },
+  {
+    "city": "Milan",
+    "country": "Italy",
+    "lat": 45.464204,
+    "lon": 9.189982,
+    "vibe_cluster": "high-fashion-sharp",
+    "style_keywords": ["tailored blazer", "pointed heel", "structured handbag", "monochrome palette", "designer sunglasses"],
+    "mood_name": "Runway Ready"
+  },
+  {
+    "city": "Osaka",
+    "country": "Japan",
+    "lat": 34.693738,
+    "lon": 135.502165,
+    "vibe_cluster": "playful-street",
+    "style_keywords": ["graphic tee", "wide-leg pant", "chunky sneaker", "colorful accessory", "crossbody bag"],
+    "mood_name": "Neon Grit"
+  },
+  {
+    "city": "Hanoi",
+    "country": "Vietnam",
+    "lat": 21.028511,
+    "lon": 105.834160,
+    "vibe_cluster": "heritage-tropical",
+    "style_keywords": ["lightweight cotton", "neutral palette", "comfortable walking shoe", "bamboo hat", "linen tote"],
+    "mood_name": "Old Quarter Charm"
+  },
+  {
+    "city": "Taipei",
+    "country": "Taiwan",
+    "lat": 25.032969,
+    "lon": 121.565418,
+    "vibe_cluster": "night-market-chic",
+    "style_keywords": ["relaxed streetwear", "lightweight jacket", "slip-on sneaker", "mini backpack", "graphic cap"],
+    "mood_name": "Night Market Glow"
+  },
+  {
+    "city": "Hong Kong",
+    "country": "China",
+    "lat": 22.396428,
+    "lon": 114.109497,
+    "vibe_cluster": "urban-tropical-luxe",
+    "style_keywords": ["smart-casual linen", "designer sneaker", "structured clutch", "breathable polo", "tailored shorts"],
+    "mood_name": "Harbor Pulse"
+  },
+  {
+    "city": "Shanghai",
+    "country": "China",
+    "lat": 31.230416,
+    "lon": 121.473701,
+    "vibe_cluster": "neo-deco-modern",
+    "style_keywords": ["sharp tailoring", "silk blend top", "statement heel", "minimalist bag", "bold lip color"],
+    "mood_name": "Bund Deco"
+  },
+  {
+    "city": "Beijing",
+    "country": "China",
+    "lat": 39.904200,
+    "lon": 116.407396,
+    "vibe_cluster": "imperial-modern",
+    "style_keywords": ["structured coat", "dark palette", "quality leather boot", "crossbody bag", "layered knit"],
+    "mood_name": "Dynasty Modern"
+  },
+  {
+    "city": "Kuala Lumpur",
+    "country": "Malaysia",
+    "lat": 3.139003,
+    "lon": 101.686855,
+    "vibe_cluster": "tropical-multicultural",
+    "style_keywords": ["breathable cotton blend", "modest-friendly layer", "comfortable flat", "colorful scarf", "structured tote"],
+    "mood_name": "Twin Tower Mix"
+  },
+  {
+    "city": "Manila",
+    "country": "Philippines",
+    "lat": 14.599512,
+    "lon": 120.984222,
+    "vibe_cluster": "tropical-urban",
+    "style_keywords": ["lightweight blouse", "comfortable sneaker", "denim shorts", "crossbody bag", "sun visor"],
+    "mood_name": "Island Metro"
+  },
+  {
+    "city": "Jakarta",
+    "country": "Indonesia",
+    "lat": -6.208763,
+    "lon": 106.845599,
+    "vibe_cluster": "tropical-eclectic",
+    "style_keywords": ["batik-inspired print", "breathable palazzo pant", "platform sandal", "woven clutch", "statement ring"],
+    "mood_name": "Archipelago Beat"
+  },
+  {
+    "city": "Delhi",
+    "country": "India",
+    "lat": 28.613939,
+    "lon": 77.209021,
+    "vibe_cluster": "mogul-fusion",
+    "style_keywords": ["embroidered kurta", "dupatta wrap", "comfortable jutti", "gold-tone jewelry", "relaxed palazzo"],
+    "mood_name": "Mogul Twilight"
+  },
+  {
+    "city": "Jaipur",
+    "country": "India",
+    "lat": 26.912434,
+    "lon": 75.787270,
+    "vibe_cluster": "royal-vibrant",
+    "style_keywords": ["block print fabric", "embellished sandal", "bold color mix", "bangles", "cotton maxi"],
+    "mood_name": "Pink City Glow"
+  },
+  {
+    "city": "Kathmandu",
+    "country": "Nepal",
+    "lat": 27.717245,
+    "lon": 85.323961,
+    "vibe_cluster": "mountain-bohemian",
+    "style_keywords": ["layered fleece", "hiking boot", "woven scarf", "cargo pant", "beanie"],
+    "mood_name": "Himalayan Layer"
+  },
+  {
+    "city": "Colombo",
+    "country": "Sri Lanka",
+    "lat": 6.927079,
+    "lon": 79.861244,
+    "vibe_cluster": "tropical-heritage",
+    "style_keywords": ["lightweight cotton", "earth-tone palette", "leather sandal", "simple tote", "wide-brim hat"],
+    "mood_name": "Ceylon Breeze"
+  },
+  {
+    "city": "Tel Aviv",
+    "country": "Israel",
+    "lat": 32.085300,
+    "lon": 34.781768,
+    "vibe_cluster": "mediterranean-casual",
+    "style_keywords": ["relaxed linen", "flat sandal", "minimal jewelry", "cotton tee", "straw tote"],
+    "mood_name": "Bauhaus Beach"
+  },
+  {
+    "city": "Doha",
+    "country": "Qatar",
+    "lat": 25.285447,
+    "lon": 51.531040,
+    "vibe_cluster": "desert-luxe",
+    "style_keywords": ["luxury modest wear", "tailored abaya detail", "designer flat", "structured clutch", "gold accent"],
+    "mood_name": "Pearl Coast"
+  },
+  {
+    "city": "Abu Dhabi",
+    "country": "UAE",
+    "lat": 24.453884,
+    "lon": 54.377344,
+    "vibe_cluster": "oasis-modern",
+    "style_keywords": ["flowing silhouette", "neutral linen", "elegant sandal", "minimal gold jewelry", "designer sunglasses"],
+    "mood_name": "Oasis Luxe"
+  },
+  {
+    "city": "Amman",
+    "country": "Jordan",
+    "lat": 31.956578,
+    "lon": 35.945695,
+    "vibe_cluster": "ancient-modern",
+    "style_keywords": ["modest-friendly layer", "comfortable walking shoe", "earth tone palette", "light scarf", "structured day bag"],
+    "mood_name": "Citadel Dusk"
+  },
+  {
+    "city": "Nairobi",
+    "country": "Kenya",
+    "lat": -1.286389,
+    "lon": 36.817223,
+    "vibe_cluster": "safari-urban",
+    "style_keywords": ["khaki utility jacket", "comfortable boot", "earth tone layer", "sun hat", "canvas crossbody"],
+    "mood_name": "Savanna Edge"
+  },
+  {
+    "city": "Lagos",
+    "country": "Nigeria",
+    "lat": 6.524379,
+    "lon": 3.379206,
+    "vibe_cluster": "afro-vibrant",
+    "style_keywords": ["ankara print", "bold color block", "statement earring", "platform sandal", "structured clutch"],
+    "mood_name": "Lagos Pulse"
+  },
+  {
+    "city": "Accra",
+    "country": "Ghana",
+    "lat": 5.603717,
+    "lon": -0.186964,
+    "vibe_cluster": "west-african-chic",
+    "style_keywords": ["kente-inspired detail", "bold print", "comfortable wedge", "woven bag", "gold bangle"],
+    "mood_name": "Gold Coast Beat"
+  },
+  {
+    "city": "Dar es Salaam",
+    "country": "Tanzania",
+    "lat": -6.792354,
+    "lon": 39.208328,
+    "vibe_cluster": "coastal-african",
+    "style_keywords": ["lightweight cotton dress", "kanga wrap", "flat sandal", "woven tote", "beaded jewelry"],
+    "mood_name": "Swahili Shore"
+  },
+  {
+    "city": "Casablanca",
+    "country": "Morocco",
+    "lat": 33.573110,
+    "lon": -7.589843,
+    "vibe_cluster": "moroccan-modern",
+    "style_keywords": ["draped silhouette", "pointed babouche", "neutral palette", "structured bag", "gold cuff"],
+    "mood_name": "Atlantic Medina"
+  },
+  {
+    "city": "Johannesburg",
+    "country": "South Africa",
+    "lat": -26.204103,
+    "lon": 28.047305,
+    "vibe_cluster": "urban-african",
+    "style_keywords": ["streetwear layer", "bold sneaker", "statement jacket", "crossbody bag", "graphic print"],
+    "mood_name": "Jozi Street"
+  },
+  {
+    "city": "Melbourne",
+    "country": "Australia",
+    "lat": -37.813628,
+    "lon": 144.963058,
+    "vibe_cluster": "artsy-layered",
+    "style_keywords": ["vintage-inspired coat", "wide-leg trouser", "platform boot", "tote bag", "layered knit"],
+    "mood_name": "Laneway Art"
+  },
+  {
+    "city": "Auckland",
+    "country": "New Zealand",
+    "lat": -36.848460,
+    "lon": 174.763332,
+    "vibe_cluster": "pacific-casual",
+    "style_keywords": ["rain-ready jacket", "merino knit", "comfortable sneaker", "relaxed denim", "canvas backpack"],
+    "mood_name": "Pacific Breeze"
+  },
+  {
+    "city": "Queenstown",
+    "country": "New Zealand",
+    "lat": -45.031162,
+    "lon": 168.662643,
+    "vibe_cluster": "alpine-adventure",
+    "style_keywords": ["puffer jacket", "hiking boot", "merino base layer", "cargo pant", "wool beanie"],
+    "mood_name": "Southern Alps"
+  },
+  {
+    "city": "Fiji",
+    "country": "Fiji",
+    "lat": -17.713371,
+    "lon": 178.065033,
+    "vibe_cluster": "island-paradise",
+    "style_keywords": ["resort wear", "flowy sundress", "flat sandal", "straw hat", "woven beach bag"],
+    "mood_name": "Island Glow"
+  },
+  {
+    "city": "Toronto",
+    "country": "Canada",
+    "lat": 43.653226,
+    "lon": -79.383184,
+    "vibe_cluster": "multicultural-urban",
+    "style_keywords": ["layered streetwear", "quality parka", "sneaker", "structured bag", "knit beanie"],
+    "mood_name": "Mosaic City"
+  },
+  {
+    "city": "Vancouver",
+    "country": "Canada",
+    "lat": 49.282729,
+    "lon": -123.120738,
+    "vibe_cluster": "pacific-northwest",
+    "style_keywords": ["rain jacket", "athleisure layer", "trail sneaker", "backpack", "fleece pullover"],
+    "mood_name": "Rainforest Urban"
+  },
+  {
+    "city": "Los Angeles",
+    "country": "USA",
+    "lat": 34.052234,
+    "lon": -118.243685,
+    "vibe_cluster": "california-cool",
+    "style_keywords": ["oversized sunglasses", "relaxed denim", "white sneaker", "crop top", "canvas tote"],
+    "mood_name": "Golden State"
+  },
+  {
+    "city": "San Francisco",
+    "country": "USA",
+    "lat": 37.774929,
+    "lon": -122.419416,
+    "vibe_cluster": "tech-casual-layer",
+    "style_keywords": ["light jacket", "smart sneaker", "minimal backpack", "quality knit", "clean-line trouser"],
+    "mood_name": "Fog Layer"
+  },
+  {
+    "city": "Miami",
+    "country": "USA",
+    "lat": 25.761680,
+    "lon": -80.191790,
+    "vibe_cluster": "tropical-glam",
+    "style_keywords": ["bold print dress", "strappy sandal", "statement sunglasses", "designer clutch", "gold jewelry"],
+    "mood_name": "Neon Tropic"
+  },
+  {
+    "city": "Chicago",
+    "country": "USA",
+    "lat": 41.878114,
+    "lon": -87.629798,
+    "vibe_cluster": "midwestern-sharp",
+    "style_keywords": ["tailored coat", "quality boot", "cashmere knit", "structured bag", "classic denim"],
+    "mood_name": "Windy Sophisticate"
+  },
+  {
+    "city": "Havana",
+    "country": "Cuba",
+    "lat": 23.113592,
+    "lon": -82.366592,
+    "vibe_cluster": "vintage-tropical",
+    "style_keywords": ["linen guayabera", "vintage dress", "leather sandal", "straw fedora", "woven basket bag"],
+    "mood_name": "Vintage Havana"
+  },
+  {
+    "city": "Lima",
+    "country": "Peru",
+    "lat": -12.046374,
+    "lon": -77.042793,
+    "vibe_cluster": "pacific-latin",
+    "style_keywords": ["alpaca knit", "earth tone layer", "comfortable walking shoe", "woven bag", "light scarf"],
+    "mood_name": "Misty Pacific"
+  },
+  {
+    "city": "Bogota",
+    "country": "Colombia",
+    "lat": 4.710989,
+    "lon": -74.072092,
+    "vibe_cluster": "andean-urban",
+    "style_keywords": ["layered knit", "leather boot", "ruana wrap", "structured bag", "bold accessory"],
+    "mood_name": "Andean Pulse"
+  },
+  {
+    "city": "Rio de Janeiro",
+    "country": "Brazil",
+    "lat": -22.906847,
+    "lon": -43.172897,
+    "vibe_cluster": "tropical-festive",
+    "style_keywords": ["flowing sundress", "havaianas sandal", "bold color", "minimal jewelry", "beach tote"],
+    "mood_name": "Carioca Sun"
+  },
+  {
+    "city": "Sao Paulo",
+    "country": "Brazil",
+    "lat": -23.550520,
+    "lon": -46.633309,
+    "vibe_cluster": "cosmopolitan-street",
+    "style_keywords": ["urban streetwear", "designer sneaker", "structured blazer", "statement bag", "dark denim"],
+    "mood_name": "Paulista Drive"
+  },
+  {
+    "city": "Cartagena",
+    "country": "Colombia",
+    "lat": 10.391049,
+    "lon": -75.514320,
+    "vibe_cluster": "caribbean-colonial",
+    "style_keywords": ["colorful linen dress", "wedge espadrille", "statement earring", "straw hat", "woven clutch"],
+    "mood_name": "Colonial Tropic"
+  },
+  {
+    "city": "Madrid",
+    "country": "Spain",
+    "lat": 40.416775,
+    "lon": -3.703790,
+    "vibe_cluster": "iberian-polished",
+    "style_keywords": ["tailored blazer", "leather loafer", "quality denim", "silk blouse", "structured tote"],
+    "mood_name": "Paseo Elegance"
+  },
+  {
+    "city": "Florence",
+    "country": "Italy",
+    "lat": 43.769560,
+    "lon": 11.255814,
+    "vibe_cluster": "renaissance-luxe",
+    "style_keywords": ["leather goods", "warm earth tones", "Italian-cut blazer", "quality loafer", "silk scarf"],
+    "mood_name": "Renaissance Glow"
+  },
+  {
+    "city": "Santorini",
+    "country": "Greece",
+    "lat": 36.393156,
+    "lon": 25.461510,
+    "vibe_cluster": "aegean-white",
+    "style_keywords": ["white linen dress", "gold sandal", "straw bag", "minimal gold jewelry", "flowing cover-up"],
+    "mood_name": "Caldera White"
+  },
+  {
+    "city": "Dubrovnik",
+    "country": "Croatia",
+    "lat": 42.650661,
+    "lon": 18.094424,
+    "vibe_cluster": "adriatic-heritage",
+    "style_keywords": ["cotton sundress", "comfortable walking sandal", "linen shorts", "sun hat", "canvas tote"],
+    "mood_name": "Adriatic Light"
+  },
+  {
+    "city": "Budapest",
+    "country": "Hungary",
+    "lat": 47.497912,
+    "lon": 19.040235,
+    "vibe_cluster": "thermal-romantic",
+    "style_keywords": ["vintage-inspired dress", "ankle boot", "structured coat", "crossbody bag", "wool scarf"],
+    "mood_name": "Danube Glow"
+  },
+  {
+    "city": "Edinburgh",
+    "country": "UK",
+    "lat": 55.953252,
+    "lon": -3.188267,
+    "vibe_cluster": "highland-literary",
+    "style_keywords": ["tartan scarf", "waterproof boot", "wool coat", "layered knit", "leather satchel"],
+    "mood_name": "Highland Mist"
+  },
+  {
+    "city": "Stockholm",
+    "country": "Sweden",
+    "lat": 59.329323,
+    "lon": 18.068581,
+    "vibe_cluster": "scandi-sleek",
+    "style_keywords": ["minimalist coat", "neutral knit", "quality leather boot", "structured tote", "clean-line trouser"],
+    "mood_name": "Stockholm Sleek"
+  },
+  {
+    "city": "Helsinki",
+    "country": "Finland",
+    "lat": 60.169856,
+    "lon": 24.938379,
+    "vibe_cluster": "nordic-functional",
+    "style_keywords": ["technical outerwear", "warm wool layer", "waterproof boot", "minimalist bag", "thermal accessory"],
+    "mood_name": "Baltic Minimal"
+  },
+  {
+    "city": "Moscow",
+    "country": "Russia",
+    "lat": 55.755826,
+    "lon": 37.617300,
+    "vibe_cluster": "imperial-bold",
+    "style_keywords": ["fur-trimmed coat", "statement boot", "rich fabric", "structured bag", "bold lip"],
+    "mood_name": "Red Square Luxe"
+  },
+  {
+    "city": "Warsaw",
+    "country": "Poland",
+    "lat": 52.229676,
+    "lon": 21.012229,
+    "vibe_cluster": "eastern-european-modern",
+    "style_keywords": ["smart coat", "ankle boot", "quality knit", "minimal bag", "tailored trouser"],
+    "mood_name": "Vistula Modern"
+  },
+  {
+    "city": "Seville",
+    "country": "Spain",
+    "lat": 37.389092,
+    "lon": -5.984459,
+    "vibe_cluster": "andalusian-passionate",
+    "style_keywords": ["flamenco-inspired detail", "flowing skirt", "espadrille", "fan accessory", "bold earring"],
+    "mood_name": "Flamenco Dusk"
+  },
+  {
+    "city": "Nice",
+    "country": "France",
+    "lat": 43.710173,
+    "lon": 7.261953,
+    "vibe_cluster": "riviera-elegant",
+    "style_keywords": ["striped top", "wide-leg linen trouser", "espadrille", "oversized sunglasses", "straw market bag"],
+    "mood_name": "Riviera Ease"
+  },
+  {
+    "city": "Chiang Mai",
+    "country": "Thailand",
+    "lat": 18.787747,
+    "lon": 98.993120,
+    "vibe_cluster": "northern-thai-calm",
+    "style_keywords": ["loose cotton pant", "handwoven detail", "comfortable sandal", "simple crossbody", "light scarf"],
+    "mood_name": "Temple Trail"
+  },
+  {
+    "city": "Phnom Penh",
+    "country": "Cambodia",
+    "lat": 11.556374,
+    "lon": 104.928210,
+    "vibe_cluster": "southeast-asian-heritage",
+    "style_keywords": ["lightweight cotton", "comfortable flat", "modest shoulder cover", "simple tote", "neutral palette"],
+    "mood_name": "Khmer Calm"
+  },
+  {
+    "city": "Siem Reap",
+    "country": "Cambodia",
+    "lat": 13.361430,
+    "lon": 103.860656,
+    "vibe_cluster": "temple-explorer",
+    "style_keywords": ["breathable long pant", "comfortable walking shoe", "light scarf", "small backpack", "sun hat"],
+    "mood_name": "Angkor Dawn"
+  },
+  {
+    "city": "Petra",
+    "country": "Jordan",
+    "lat": 30.328611,
+    "lon": 35.441389,
+    "vibe_cluster": "desert-explorer",
+    "style_keywords": ["hiking boot", "sun-protective layer", "breathable cargo pant", "wide-brim hat", "hydration pack"],
+    "mood_name": "Rose Rock"
+  },
+  {
+    "city": "Cusco",
+    "country": "Peru",
+    "lat": -13.531950,
+    "lon": -71.967461,
+    "vibe_cluster": "andean-heritage",
+    "style_keywords": ["alpaca sweater", "hiking boot", "warm layer", "woven poncho", "wool hat"],
+    "mood_name": "Inca Altitude"
+  },
+  {
+    "city": "Maldives",
+    "country": "Maldives",
+    "lat": 3.202778,
+    "lon": 73.220680,
+    "vibe_cluster": "island-luxury",
+    "style_keywords": ["resort wear", "flowing cover-up", "elegant sandal", "straw hat", "minimal gold jewelry"],
+    "mood_name": "Atoll Serenity"
+  },
+  {
+    "city": "Phuket",
+    "country": "Thailand",
+    "lat": 7.878978,
+    "lon": 98.398392,
+    "vibe_cluster": "beach-vibrant",
+    "style_keywords": ["beach cover-up", "thai print short", "flat sandal", "waterproof pouch", "sun visor"],
+    "mood_name": "Andaman Blue"
+  },
+  {
+    "city": "Zanzibar",
+    "country": "Tanzania",
+    "lat": -6.165917,
+    "lon": 39.202641,
+    "vibe_cluster": "spice-island",
+    "style_keywords": ["light cotton kaftan", "beaded sandal", "colorful wrap", "shell jewelry", "woven basket bag"],
+    "mood_name": "Spice Island"
   }
 ]

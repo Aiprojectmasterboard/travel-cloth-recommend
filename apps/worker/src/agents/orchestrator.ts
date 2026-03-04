@@ -314,7 +314,7 @@ export async function runPreview(
     // Fallback static images in case AI generation fails
     const gender = user_profile?.gender || 'female';
     const staticBase = 'https://travel-cloth-recommend.pages.dev/examples';
-    const fallbackTeaser = gender === 'male' || gender === 'non-binary'
+    const fallbackTeaser = gender === 'male'
       ? `${staticBase}/annual-outfit-1.png`
       : `${staticBase}/pro-outfit-1.png`;
 
@@ -324,7 +324,7 @@ export async function runPreview(
           {
             tripId: trip_id,
             vibeResult: firstVibe,
-            faceUrl: face_url || (gender === 'male' || gender === 'non-binary'
+            faceUrl: face_url || (gender === 'male'
               ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
               : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png'),
             userProfile: user_profile
@@ -548,18 +548,25 @@ export async function runResult(
       console.warn('[runResult] Failed to insert generation_jobs:', (err as Error).message);
     }
 
-    // c. Generate images (Promise.allSettled internally — never throws)
+    // c. Apply gender-based default face if user didn't upload a photo
+    const effectiveFaceUrl = faceUrl || (
+      userProfile.gender === 'male'
+        ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
+        : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png'
+    );
+
+    // d. Generate images (Promise.allSettled internally — never throws)
     await imageGenAgent(
       {
         prompts: stylePrompts,
         tripId,
         jobIds,
-        faceUrl,
+        faceUrl: effectiveFaceUrl,
       },
       env
     );
 
-    // d. Privacy cleanup: delete face immediately after ALL image generation is done
+    // e. Privacy cleanup: delete user-uploaded face only (not default images)
     //    (both success and failure paths — imageGenAgent uses Promise.allSettled so always returns)
     if (faceUrl) {
       await cleanupFace(tripId, faceUrl, env);
@@ -583,6 +590,12 @@ export async function runResult(
         cities: cities.map((c) => ({ name: c.name, days: c.days })),
         month,
         tripDays: totalDays,
+        userProfile: {
+          gender: userProfile.gender,
+          height_cm: userProfile.height_cm,
+          weight_kg: userProfile.weight_kg,
+          aesthetics: userProfile.aesthetics,
+        },
       },
       env
     );

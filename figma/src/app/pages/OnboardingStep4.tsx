@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { OnboardingLayout } from "../components/travel-capsule/OnboardingLayout";
 import { ProgressBar, BtnPrimary, BtnSecondary, Icon } from "../components/travel-capsule";
 import { useOnboarding } from "../context/OnboardingContext";
 import { useTrip } from "../context/TripContext";
+import { useAuth } from "../context/AuthContext";
 import { IMAGES } from "../constants/images";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
@@ -11,8 +12,10 @@ export function OnboardingStep4() {
   const navigate = useNavigate();
   const { data } = useOnboarding();
   const { startPreview, loading: tripLoading } = useTrip();
+  const { isLoggedIn, setShowLoginModal, setLoginModalContext } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   // Derive display data
   const primaryCity = data.cities[0];
@@ -38,7 +41,7 @@ export function OnboardingStep4() {
     : "Not specified";
   const styleLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : "Not selected";
 
-  const handleSubmit = async () => {
+  const doSubmit = async () => {
     if (submitting || tripLoading) return;
     setSubmitting(true);
     setError(null);
@@ -52,6 +55,24 @@ export function OnboardingStep4() {
       setSubmitting(false);
     }
   };
+
+  const handleSubmit = async () => {
+    if (!isLoggedIn) {
+      setLoginModalContext("onboarding_gate");
+      setShowLoginModal(true);
+      setPendingSubmit(true);
+      return;
+    }
+    await doSubmit();
+  };
+
+  // Auto-submit after user logs in with a pending submit
+  useEffect(() => {
+    if (isLoggedIn && pendingSubmit) {
+      setPendingSubmit(false);
+      doSubmit();
+    }
+  }, [isLoggedIn, pendingSubmit]);
 
   return (
     <OnboardingLayout
@@ -194,7 +215,7 @@ export function OnboardingStep4() {
             ) : (
               <>
                 <Icon name="auto_awesome" size={20} className="text-white" filled />
-                Analyze My Trip
+                {isLoggedIn ? "Analyze My Trip" : "Sign Up & Analyze"}
               </>
             )}
           </span>
@@ -228,7 +249,7 @@ export function OnboardingStep4() {
             </span>
           </div>
           <p className="text-[14px] text-[#57534e] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-            Once you click "Analyze My Trip," our AI will process weather forecasts, cultural context, and your style preferences to generate a complete capsule wardrobe in under 30 seconds.
+            Once you click "{isLoggedIn ? "Analyze My Trip" : "Sign Up & Analyze"}," our AI will process weather forecasts, cultural context, and your style preferences to generate a complete capsule wardrobe in under 30 seconds.
           </p>
         </div>
       )}
@@ -236,7 +257,7 @@ export function OnboardingStep4() {
       {/* Footer legal */}
       <div className="mt-10 pt-6 border-t border-[#E8DDD4]">
         <p className="text-[11px] text-[#57534e]/50 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-          By clicking "Analyze My Trip" you agree to our Terms of Service and Privacy Policy. Your data is encrypted and never shared with third parties.
+          By clicking "{isLoggedIn ? "Analyze My Trip" : "Sign Up & Analyze"}" you agree to our Terms of Service and Privacy Policy. Your data is encrypted and never shared with third parties.
         </p>
       </div>
 

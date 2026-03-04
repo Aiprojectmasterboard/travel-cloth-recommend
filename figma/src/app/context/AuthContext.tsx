@@ -12,6 +12,8 @@ export interface User {
   initials: string;
 }
 
+export type LoginModalContext = "default" | "onboarding_gate";
+
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
@@ -26,6 +28,12 @@ interface AuthContextType {
   purchasedPlan: PlanKey | null;
   setPurchasedPlan: (plan: PlanKey | null) => void;
   authLoading: boolean;
+  loginModalContext: LoginModalContext;
+  setLoginModalContext: (v: LoginModalContext) => void;
+  showPasswordReset: boolean;
+  setShowPasswordReset: (v: boolean) => void;
+  resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -60,6 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showSignupPrompt, setShowSignupPrompt] = useState(false);
   const [purchasedPlan, setPurchasedPlanState] = useState<PlanKey | null>(readStoredPlan);
+  const [loginModalContext, setLoginModalContext] = useState<LoginModalContext>("default");
+  const [showPasswordReset, setShowPasswordReset] = useState(false);
 
   // Listen for Supabase auth state changes
   useEffect(() => {
@@ -71,9 +81,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthLoading(false);
     });
 
-    // Subscribe to auth changes (login, logout, token refresh)
+    // Subscribe to auth changes (login, logout, token refresh, password recovery)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event === "PASSWORD_RECOVERY") {
+          setShowPasswordReset(true);
+        }
         if (session?.user) {
           setUser(mapSupabaseUser(session.user));
         } else {
@@ -136,6 +149,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  const resetPassword = useCallback(async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    if (error) {
+      throw new Error(error.message);
+    }
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) {
+      throw new Error(error.message);
+    }
+    setShowPasswordReset(false);
+  }, []);
+
   const setPurchasedPlan = useCallback((plan: PlanKey | null) => {
     setPurchasedPlanState(plan);
     try {
@@ -159,6 +189,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       purchasedPlan,
       setPurchasedPlan,
       authLoading,
+      loginModalContext,
+      setLoginModalContext,
+      showPasswordReset,
+      setShowPasswordReset,
+      resetPassword,
+      updatePassword,
     }}>
       {children}
     </AuthContext.Provider>

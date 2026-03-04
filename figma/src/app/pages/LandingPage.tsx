@@ -48,7 +48,7 @@ export function LandingPage() {
               <div className="flex items-center gap-2 sm:gap-3">
                 <LanguageSelector variant="light" />
                 {isLoggedIn ? (
-                  <div className="w-8 h-8 rounded-full bg-[#C4613A] flex items-center justify-center cursor-pointer">
+                  <div className="w-8 h-8 rounded-full bg-[#C4613A] flex items-center justify-center cursor-pointer" onClick={() => navigate("/mypage")}>
                     <span className="text-white text-[12px]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{user?.initials}</span>
                   </div>
                 ) : (
@@ -230,16 +230,16 @@ export function LandingPage() {
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <span className="text-white text-[24px] italic block" style={{ fontFamily: displayFont }}>
-                    Paris Style Guide
+                    {t("section.examples.pro.title")}
                   </span>
                   <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
-                    Paris · May 2026 · Classic
+                    {t("section.examples.pro.subtitle")}
                   </span>
                 </div>
               </div>
               <div className="p-5 flex items-center justify-between">
                 <div className="flex gap-2">
-                  {["1 City", "4 Looks", "Packing List"].map((s) => (
+                  {[t("section.examples.pro.tag1"), t("section.examples.pro.tag2"), t("section.examples.pro.tag3")].map((s) => (
                     <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                       {s}
                     </span>
@@ -271,16 +271,16 @@ export function LandingPage() {
                 </div>
                 <div className="absolute bottom-4 left-4 right-4">
                   <span className="text-white text-[24px] italic block" style={{ fontFamily: displayFont }}>
-                    European Journey
+                    {t("section.examples.annual.title")}
                   </span>
                   <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
-                    Paris · Rome · Barcelona
+                    {t("section.examples.annual.subtitle")}
                   </span>
                 </div>
               </div>
               <div className="p-5 flex items-center justify-between">
                 <div className="flex gap-2">
-                  {["3 Cities", "4 Looks", "Style DNA"].map((s) => (
+                  {[t("section.examples.annual.tag1"), t("section.examples.annual.tag2"), t("section.examples.annual.tag3")].map((s) => (
                     <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                       {s}
                     </span>

@@ -20,7 +20,7 @@ export { UpgradeBanner } from "./UpgradeBanner";
 export { TripUsageBar } from "./TripUsageBar";
 export { OnboardingLayout } from "./OnboardingLayout";
 export { LanguageSelector } from "./LanguageSelector";
-export { LoginModal } from "./LoginModal";
+export { LoginModal, PasswordResetModal } from "./LoginModal";
 export { SignupPrompt } from "./SignupPrompt";
 export { SocialShareButton } from "./SocialShare";
 export { ProfileBadge, AiGeneratedBadge, SizeChip } from "./ProfileBadge";

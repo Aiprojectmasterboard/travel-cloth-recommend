@@ -12,10 +12,12 @@ import { AnnualDashboard } from "./pages/AnnualDashboard";
 import { CheckoutSuccess } from "./pages/CheckoutSuccess";
 import { SiteMap } from "./pages/SiteMap";
 import { ExampleProPage } from "./pages/ExampleProPage";
+import { DemoProPage } from "./pages/DemoProPage";
 import { ExampleAnnualPage } from "./pages/ExampleAnnualPage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { TermsPage } from "./pages/TermsPage";
 import { ContactPage } from "./pages/ContactPage";
+import { MyPage } from "./pages/MyPage";
 
 export const router = createBrowserRouter([
   {
@@ -34,10 +36,12 @@ export const router = createBrowserRouter([
       { path: "dashboard/pro", Component: ProDashboard },
       { path: "dashboard/annual", Component: AnnualDashboard },
       { path: "examples/pro", Component: ExampleProPage },
+      { path: "demo/pro", Component: DemoProPage },
       { path: "examples/annual", Component: ExampleAnnualPage },
       { path: "privacy", Component: PrivacyPage },
       { path: "terms", Component: TermsPage },
       { path: "contact", Component: ContactPage },
+      { path: "mypage", Component: MyPage },
     ],
   },
 ]);

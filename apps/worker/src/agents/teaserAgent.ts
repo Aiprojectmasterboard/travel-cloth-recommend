@@ -55,8 +55,8 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/** Max face image size for Gemini inlineData (bytes). Larger images cause API failures. */
-const MAX_FACE_BYTES = 1_500_000; // 1.5 MB → ~2 MB base64
+/** Max face image size for Gemini inlineData (bytes). Default images are ~2.4 MB PNG. */
+const MAX_FACE_BYTES = 4_000_000; // 4 MB → ~5.3 MB base64 (Gemini accepts up to 20 MB)
 
 /**
  * Fetches an image from a URL and returns base64-encoded data + mime type.

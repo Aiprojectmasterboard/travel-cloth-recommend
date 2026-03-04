@@ -4,7 +4,7 @@ import { OnboardingProvider } from "../context/OnboardingContext";
 import { LanguageProvider } from "../context/LanguageContext";
 import { AuthProvider } from "../context/AuthContext";
 import { TripProvider } from "../context/TripContext";
-import { LoginModal } from "../components/travel-capsule";
+import { LoginModal, PasswordResetModal } from "../components/travel-capsule";
 
 /** Scroll to top on every route change */
 function ScrollToTop() {
@@ -22,6 +22,7 @@ export function RootLayout() {
             <ScrollToTop />
             <Outlet />
             <LoginModal />
+            <PasswordResetModal />
           </TripProvider>
         </OnboardingProvider>
       </AuthProvider>

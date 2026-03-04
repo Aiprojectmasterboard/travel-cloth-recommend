@@ -163,6 +163,33 @@ function polarProductId(plan: PlanType, env: Bindings): string {
   return env.POLAR_PRODUCT_ID_STANDARD;
 }
 
+// ─── JWT Auth Helper ──────────────────────────────────────────────────────────
+
+/**
+ * Extract Supabase user ID from Authorization: Bearer <jwt> header.
+ * Returns null if not authenticated. Does NOT throw — callers decide
+ * whether authentication is required or optional.
+ */
+async function getUserIdFromAuth(c: { req: { header: (name: string) => string | undefined }; env: Bindings }): Promise<{ userId: string; email: string } | null> {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice(7);
+  try {
+    // Verify JWT by calling Supabase's /auth/v1/user endpoint
+    const res = await fetch(`${c.env.SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        apikey: c.env.SUPABASE_SERVICE_ROLE_KEY,
+      },
+    });
+    if (!res.ok) return null;
+    const user = await res.json() as { id: string; email?: string };
+    return { userId: user.id, email: user.email || '' };
+  } catch {
+    return null;
+  }
+}
+
 // ─── Hono App ─────────────────────────────────────────────────────────────────
 
 const ALLOWED_ORIGINS = [
@@ -361,6 +388,16 @@ app.post('/api/preview', async (c) => {
   }
   const tripId = trip.id;
 
+  // Optionally associate trip with logged-in user (auth is NOT required for preview)
+  const previewAuthUser = await getUserIdFromAuth(c);
+  if (previewAuthUser) {
+    await supabase(c.env, `/trips?id=eq.${tripId}`, {
+      method: 'PATCH',
+      headers: { Prefer: 'return=minimal' },
+      body: JSON.stringify({ user_id: previewAuthUser.userId }),
+    });
+  }
+
   // Run preview pipeline (async — results written to DB)
   try {
     const preview = await runPreview(
@@ -515,9 +552,16 @@ app.post('/api/payment/checkout', async (c) => {
   const returnBase = allowedOrigins.includes(reqOrigin) ? reqOrigin : 'https://travelscapsule.com';
   const returnUrl = `${returnBase}/checkout/success?plan=${typedPlan}&tripId=${resolvedTripId}&checkout_id={CHECKOUT_ID}`;
 
+  // Optionally attach user_id from auth header so the webhook can associate the order
+  const checkoutAuthUser = await getUserIdFromAuth(c);
+
   const checkoutPayload: Record<string, unknown> = {
     product_id: productId,
-    metadata: { trip_id: resolvedTripId, plan: typedPlan },
+    metadata: {
+      trip_id: resolvedTripId,
+      plan: typedPlan,
+      ...(checkoutAuthUser ? { user_id: checkoutAuthUser.userId } : {}),
+    },
     success_url: returnUrl,
     ...(customer_email ? { customer_email } : {}),
   };
@@ -591,6 +635,9 @@ app.post('/api/payment/webhook', async (c) => {
     const amount = event.data.net_amount ?? event.data.amount ?? 500;
     const userEmail = event.data.customer?.email ?? '';
 
+    // Extract optional user_id from checkout metadata (set by /api/payment/checkout)
+    const metaUserId = (meta.user_id as string | undefined) ?? undefined;
+
     if (!tripId || !isValidUUID(tripId)) {
       return c.json({ error: 'Missing or invalid trip_id in metadata' }, 400);
     }
@@ -605,7 +652,7 @@ app.post('/api/payment/webhook', async (c) => {
       return c.json({ received: true, idempotent: true });
     }
 
-    // Insert order record
+    // Insert order record (include user_id if provided in checkout metadata)
     const orderRes = await supabase(c.env, '/orders', {
       method: 'POST',
       body: JSON.stringify({
@@ -614,6 +661,7 @@ app.post('/api/payment/webhook', async (c) => {
         status: 'paid',
         amount,
         plan,
+        ...(metaUserId ? { user_id: metaUserId } : {}),
       }),
     });
     if (!orderRes.ok) {
@@ -621,10 +669,13 @@ app.post('/api/payment/webhook', async (c) => {
       return c.json({ error: 'Failed to record order' }, 500);
     }
 
-    // Mark trip as processing
+    // Mark trip as processing (and set user_id if available from checkout metadata)
     await supabase(c.env, `/trips?id=eq.${tripId}`, {
       method: 'PATCH',
-      body: JSON.stringify({ status: 'processing' }),
+      body: JSON.stringify({
+        status: 'processing',
+        ...(metaUserId ? { user_id: metaUserId } : {}),
+      }),
     });
 
     // Standard plan: generate upgrade token and store on order
@@ -918,12 +969,12 @@ app.post('/api/upload-photo', async (c) => {
   const photoBlob = photo as Blob & { name?: string; type: string; size: number };
 
   if (photoBlob.size > 5 * 1024 * 1024) {
-    return c.json({ error: 'Photo must be under 5MB' }, 400);
+    return c.json({ error: 'File too large. Maximum size is 5MB.', code: 'TOO_LARGE' }, 400);
   }
 
   const allowed = ['image/jpeg', 'image/png', 'image/webp'];
   if (!allowed.includes(photoBlob.type)) {
-    return c.json({ error: 'Only JPEG, PNG, WebP allowed' }, 400);
+    return c.json({ error: 'Invalid file type. Please upload a JPG, PNG, or WebP image.', code: 'INVALID_TYPE' }, 400);
   }
 
   const ext = photoBlob.type === 'image/png' ? 'png' : photoBlob.type === 'image/webp' ? 'webp' : 'jpg';
@@ -938,7 +989,7 @@ app.post('/api/upload-photo', async (c) => {
     return c.json({ face_url });
   } catch (err) {
     console.error('[POST /api/upload-photo] R2 upload error:', (err as Error).message);
-    return c.json({ error: 'Upload failed' }, 500);
+    return c.json({ error: 'Upload failed. Please try again.', code: 'UPLOAD_FAILED' }, 500);
   }
 });
 
@@ -1131,47 +1182,92 @@ app.get('/api/share/:tripId', async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 10. POST /api/account/delete
+// 10. GET /api/user/trips
+// ─────────────────────────────────────────────────────────────────────────────
+// Returns all trips for the authenticated user, ordered by most recent.
+// Includes associated orders and generation_jobs images for paid trips.
+
+app.get('/api/user/trips', async (c) => {
+  const authUser = await getUserIdFromAuth(c);
+  if (!authUser) return c.json({ error: 'Unauthorized' }, 401);
+
+  // Fetch all trips for this user, ordered by most recent
+  const tripsRes = await supabase(
+    c.env,
+    `/trips?user_id=eq.${authUser.userId}&order=created_at.desc&limit=50&select=id,cities,month,status,created_at,vibe_data,weather_data,capsule_free,share_url`
+  );
+
+  if (!tripsRes.ok) {
+    console.error('[GET /api/user/trips] Failed to fetch trips:', await tripsRes.text());
+    return c.json({ error: 'Failed to fetch trips' }, 500);
+  }
+  const trips = (await tripsRes.json()) as Array<Record<string, unknown>>;
+
+  // Also fetch orders for these trips
+  const tripIds = trips.map((t) => t.id as string);
+  let orders: Array<Record<string, unknown>> = [];
+  if (tripIds.length > 0) {
+    const ordersRes = await supabase(
+      c.env,
+      `/orders?trip_id=in.(${tripIds.join(',')})&status=eq.paid&select=id,trip_id,plan,amount,created_at`
+    );
+    if (ordersRes.ok) {
+      orders = (await ordersRes.json()) as Array<Record<string, unknown>>;
+    }
+  }
+
+  // Also fetch generation_jobs images for paid trips
+  const paidTripIds = orders.map((o) => o.trip_id as string);
+  let images: Array<Record<string, unknown>> = [];
+  if (paidTripIds.length > 0) {
+    const imagesRes = await supabase(
+      c.env,
+      `/generation_jobs?trip_id=in.(${paidTripIds.join(',')})&status=eq.completed&select=trip_id,city,image_url,job_type`
+    );
+    if (imagesRes.ok) {
+      images = (await imagesRes.json()) as Array<Record<string, unknown>>;
+    }
+  }
+
+  return c.json({ trips, orders, images });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11. POST /api/account/delete
 // ─────────────────────────────────────────────────────────────────────────────
 // Deletes a user account and associated data. Requires a valid Supabase JWT.
 
 app.post('/api/account/delete', async (c) => {
-  // Verify the user's JWT via Supabase Auth
-  const authHeader = c.req.header('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
+  // Verify the user's JWT via the reusable auth helper
+  const authUser = await getUserIdFromAuth(c);
+  if (!authUser) {
     return c.json({ error: 'Authorization required' }, 401);
   }
-  const token = authHeader.slice(7);
-
-  // Validate JWT by fetching the user from Supabase Auth
-  const userRes = await fetch(`${c.env.SUPABASE_URL}/auth/v1/user`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      apikey: c.env.SUPABASE_SERVICE_ROLE_KEY,
-    },
-  });
-  if (!userRes.ok) {
-    return c.json({ error: 'Invalid or expired session' }, 401);
-  }
-  const authUser = (await userRes.json()) as { id: string; email?: string };
-  const userId = authUser.id;
+  const userId = authUser.userId;
 
   // Clean up user data from our tables (best-effort)
-  // Delete in order: generation_jobs, capsule_results, orders, email_captures → trips
-  const tripRes = await supabase(c.env, `/trips?session_id=eq.${encodeURIComponent(userId)}&select=id`);
+  // Query trips by user_id (NOT session_id — session_id is a client-generated string,
+  // not the Supabase Auth UUID)
+  const tripRes = await supabase(c.env, `/trips?user_id=eq.${encodeURIComponent(userId)}&select=id`);
   const trips = tripRes.ok ? ((await tripRes.json()) as Array<{ id: string }>) : [];
   const tripIds = trips.map((t) => t.id);
 
   if (tripIds.length > 0) {
     const tripFilter = `trip_id=in.(${tripIds.join(',')})`;
+    // Delete child rows first (generation_jobs, capsule_results, email_captures)
+    // and orders by trip_id
     await Promise.allSettled([
       supabase(c.env, `/generation_jobs?${tripFilter}`, { method: 'DELETE' }),
       supabase(c.env, `/capsule_results?${tripFilter}`, { method: 'DELETE' }),
       supabase(c.env, `/orders?${tripFilter}`, { method: 'DELETE' }),
       supabase(c.env, `/email_captures?${tripFilter}`, { method: 'DELETE' }),
     ]);
-    await supabase(c.env, `/trips?session_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' });
+    // Delete the trips themselves by user_id
+    await supabase(c.env, `/trips?user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' });
   }
+
+  // Also delete any orders linked directly by user_id (in case of orphaned orders)
+  await supabase(c.env, `/orders?user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' });
 
   // Delete usage_records by email
   if (authUser.email) {
@@ -1198,7 +1294,7 @@ app.post('/api/account/delete', async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 11. POST /api/regenerate
+// 12. POST /api/regenerate
 // ─────────────────────────────────────────────────────────────────────────────
 // Regenerates one outfit image for a given city in an existing trip.
 // Allowed plans: pro (1 regen lifetime per trip), annual (1 regen per trip).

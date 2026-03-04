@@ -72,7 +72,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
         const from = c.fromDate ? new Date(c.fromDate) : new Date();
         const to = c.toDate ? new Date(c.toDate) : new Date(from.getTime() + 7 * 86400000);
         const days = Math.max(1, Math.round((to.getTime() - from.getTime()) / 86400000));
-        return { name: c.city, country: c.country, days };
+        return {
+          name: c.city,
+          country: c.country,
+          days,
+          ...(c.lat != null ? { lat: c.lat } : {}),
+          ...(c.lon != null ? { lon: c.lon } : {}),
+        };
       });
 
       // Derive month from first city's date

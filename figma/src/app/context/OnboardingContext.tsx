@@ -7,6 +7,8 @@ export interface CityEntry {
   imageUrl: string;
   fromDate: string;
   toDate: string;
+  lat?: number;
+  lon?: number;
 }
 
 export interface OnboardingData {
@@ -31,6 +33,7 @@ interface OnboardingContextType {
 const OnboardingContext = createContext<OnboardingContextType | null>(null);
 
 const ONBOARDING_KEY = "tc_onboarding_data";
+const ONBOARDING_BACKUP_KEY = "tc_onboarding_backup";
 
 const DEFAULT_DATA: OnboardingData = {
   cities: [],
@@ -45,13 +48,20 @@ const DEFAULT_DATA: OnboardingData = {
 
 function readStoredOnboarding(): OnboardingData {
   try {
+    // Try sessionStorage first (primary)
     const raw = sessionStorage.getItem(ONBOARDING_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<OnboardingData>;
       return { ...DEFAULT_DATA, ...parsed, photo: "" };
     }
+    // Fall back to localStorage backup (survives payment redirects)
+    const backup = localStorage.getItem(ONBOARDING_BACKUP_KEY);
+    if (backup) {
+      const parsed = JSON.parse(backup) as Partial<OnboardingData>;
+      return { ...DEFAULT_DATA, ...parsed, photo: "" };
+    }
   } catch {
-    // sessionStorage unavailable or JSON parse failed — fall through to default
+    // storage unavailable or JSON parse failed — fall through to default
   }
   return { ...DEFAULT_DATA };
 }
@@ -67,9 +77,12 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
             ? (updater as (p: OnboardingData) => OnboardingData)(prev)
             : updater;
         try {
-          // Exclude only photo (base64 — too large for sessionStorage); photoName and faceUrl are safe to persist
+          // Exclude only photo (base64 — too large for storage); photoName and faceUrl are safe to persist
           const { photo: _p, ...toStore } = next;
-          sessionStorage.setItem(ONBOARDING_KEY, JSON.stringify(toStore));
+          const json = JSON.stringify(toStore);
+          sessionStorage.setItem(ONBOARDING_KEY, json);
+          // Also persist to localStorage as backup (survives payment redirect / tab close)
+          localStorage.setItem(ONBOARDING_BACKUP_KEY, json);
         } catch {
           // QuotaExceededError or private browsing — silently ignore
         }

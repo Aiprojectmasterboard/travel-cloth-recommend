@@ -12,3 +12,7 @@ dist/
 .vercel/
 *.tsbuildinfo
 .idx/
+
+# User photos
+IMG_7868.jpeg
+Gemini_Generated_Image*

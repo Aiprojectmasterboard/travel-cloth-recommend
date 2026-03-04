@@ -14,12 +14,12 @@ export const IMAGES = {
   airport: "https://images.unsplash.com/photo-1769084701646-eb49280dae4e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxhaXJwb3J0JTIwdGVybWluYWwlMjBhaXJwbGFuZSUyMHdpbmRvdyUyMGRlcGFydHVyZSUyMHRyYXZlbGVyJTIwc3VpdGNhc2V8ZW58MXx8fHwxNzcyNDI4Nzk3fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
 
   // Aesthetic cards
-  casual: "https://images.unsplash.com/photo-1661099508870-5f959f1e151a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYXN1YWwlMjBvdXRmaXQlMjBqZWFucyUyMHdoaXRlJTIwcmVsYXhlZCUyMGRheXRpbWV8ZW58MXx8fHwxNzcyNDI4Nzk5fDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  minimalist: "https://images.unsplash.com/photo-1615453590051-9cc24146d6ae?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwb3V0Zml0JTIwd29tYW4lMjBtb25vY2hyb21lJTIwY2xlYW4lMjB3aGl0ZSUyMGJlaWdlfGVufDF8fHx8MTc3MjQyODc5OXww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  streetwearCard: "https://images.unsplash.com/photo-1766830423628-b4b636d0d907?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzdHJlZXR3ZWFyJTIwaG9vZGllJTIwc25lYWtlcnMlMjB1cmJhbiUyMGdyYWZmaXRpJTIwbWFufGVufDF8fHx8MTc3MjQyODgwMHww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  classic: "https://images.unsplash.com/photo-1560233144-905d47165782?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3b21hbiUyMHdvb2wlMjBjb2F0JTIwdHVydGxlbmVjayUyMHBlYXJsJTIwZWFycmluZ3MlMjBjbGFzc2ljJTIwZWxlZ2FudCUyMHRpbWVsZXNzfGVufDF8fHx8MTc3MjQyODgyM3ww&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  sporty: "https://images.unsplash.com/photo-1759476532333-b392aec13318?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzcG9ydHklMjBhdGhsZXRpYyUyMGxlZ2dpbmdzJTIwcnVubmluZyUyMHdvbWFuJTIwb3V0ZG9vciUyMGZpdG5lc3N8ZW58MXx8fHwxNzcyNDI4ODAxfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
-  bohemian: "https://images.unsplash.com/photo-1650623206556-fc1a59dd6c96?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxib2hlbWlhbiUyMGZsb3JhbCUyMGRyZXNzJTIwd29tYW4lMjBoYXQlMjBmaWVsZCUyMGJvaG98ZW58MXx8fHwxNzcyNDI4ODAyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
+  casual: "https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&auto=format&fit=crop",
+  minimalist: "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&auto=format&fit=crop",
+  streetwearCard: "https://images.unsplash.com/photo-1523398002811-999ca8dec234?w=800&auto=format&fit=crop",
+  classic: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&auto=format&fit=crop",
+  sporty: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=800&auto=format&fit=crop",
+  bohemian: "https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=800&auto=format&fit=crop",
   business: "https://images.unsplash.com/photo-1762163831325-7e54185ae70f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxidXNpbmVzcyUyMGZvcm1hbCUyMHN1aXQlMjBtYW4lMjBvZmZpY2UlMjBwcm9mZXNzaW9uYWx8ZW58MXx8fHwxNzcyNDI4ODAyfDA&ixlib=rb-4.1.0&q=80&w=1080&utm_source=figma&utm_medium=referral",
 
   // Cities

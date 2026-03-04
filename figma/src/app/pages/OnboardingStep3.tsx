@@ -20,9 +20,19 @@ const AESTHETICS = [
   { label: "Bohemian", img: IMAGES.bohemian },
 ];
 
-type UploadStatus = "idle" | "uploading" | "done" | "error";
+type UploadStatus = "idle" | "compressing" | "uploading" | "done" | "error";
 
-async function uploadToR2(file: File): Promise<string | null> {
+type UploadResult =
+  | { success: true; face_url: string }
+  | { success: false; errorMessage: string };
+
+const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
+  TOO_LARGE: "Your photo is too large. Please use an image under 5MB.",
+  INVALID_TYPE: "Please upload a JPG, PNG, or WebP image.",
+  UPLOAD_FAILED: "Upload failed. Please try again.",
+};
+
+async function uploadToR2(file: File): Promise<UploadResult> {
   const fd = new FormData();
   fd.append("photo", file, file.name);
   try {
@@ -30,11 +40,25 @@ async function uploadToR2(file: File): Promise<string | null> {
       method: "POST",
       body: fd,
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      try {
+        const body = (await res.json()) as { error?: string; code?: string };
+        const msg =
+          (body.code && UPLOAD_ERROR_MESSAGES[body.code]) ||
+          body.error ||
+          "Something went wrong. Please try again.";
+        return { success: false, errorMessage: msg };
+      } catch {
+        return { success: false, errorMessage: "Something went wrong. Please try again." };
+      }
+    }
     const data = (await res.json()) as { face_url?: string };
-    return data.face_url ?? null;
+    if (data.face_url) {
+      return { success: true, face_url: data.face_url };
+    }
+    return { success: false, errorMessage: "Something went wrong. Please try again." };
   } catch {
-    return null;
+    return { success: false, errorMessage: "Something went wrong. Please try again." };
   }
 }
 
@@ -55,33 +79,74 @@ export function OnboardingStep3() {
     }));
   };
 
-  /** Resize image to max 1200px on longest side, output as JPEG ≤ 1MB for AI processing */
+  /** Resize and compress image to fit under 5MB for upload. Iteratively reduces quality/size. */
   const resizeForAI = (file: File): Promise<File> =>
     new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const MAX = 1200;
-        let { width, height } = img;
-        if (width > MAX || height > MAX) {
-          const scale = MAX / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
+        const TARGET = 5 * 1024 * 1024; // 5MB
+        const QUALITY_STEPS = [0.85, 0.7, 0.5, 0.3];
+        const MAX_SIZES = [1200, 800];
+
+        const tryCompress = (maxDim: number, qualityIdx: number): void => {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            const scale = maxDim / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+          const quality = QUALITY_STEPS[qualityIdx] ?? 0.3;
+          canvas.toBlob(
+            (blob) => {
+              if (blob && blob.size <= TARGET) {
+                resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+              } else if (qualityIdx + 1 < QUALITY_STEPS.length) {
+                tryCompress(maxDim, qualityIdx + 1);
+              } else if (maxDim === MAX_SIZES[0] && MAX_SIZES.length > 1) {
+                tryCompress(MAX_SIZES[1], 0);
+              } else if (blob) {
+                // Best effort — return whatever we got
+                resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+              } else {
+                resolve(file);
+              }
+            },
+            "image/jpeg",
+            quality
+          );
+        };
+
+        // If already small enough, just do a single pass at high quality
+        if (file.size <= TARGET) {
+          const MAX = 1200;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            const scale = MAX / Math.max(width, height);
+            width = Math.round(width * scale);
+            height = Math.round(height * scale);
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+          canvas.toBlob(
+            (blob) => {
+              if (blob && blob.size < file.size) {
+                resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+              } else {
+                resolve(file);
+              }
+            },
+            "image/jpeg",
+            0.85
+          );
+        } else {
+          tryCompress(MAX_SIZES[0], 0);
         }
-        const canvas = document.createElement("canvas");
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          (blob) => {
-            if (blob && blob.size < file.size) {
-              resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
-            } else {
-              resolve(file); // Original was already small enough
-            }
-          },
-          "image/jpeg",
-          0.85
-        );
       };
       img.onerror = () => resolve(file);
       img.src = URL.createObjectURL(file);
@@ -93,12 +158,10 @@ export function OnboardingStep3() {
       setUploadError("Please upload an image file.");
       return;
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setUploadError("Photo must be under 5MB.");
-      return;
-    }
 
-    // Resize for AI processing (max 1200px, JPEG ~85% quality)
+    // Auto-compress if needed (iterative quality/size reduction)
+    const needsCompression = file.size > 5 * 1024 * 1024;
+    if (needsCompression) setUploadStatus("compressing");
     const resized = await resizeForAI(file);
 
     // Show preview immediately via FileReader
@@ -115,13 +178,13 @@ export function OnboardingStep3() {
 
     // Upload resized version to R2
     setUploadStatus("uploading");
-    const faceUrl = await uploadToR2(resized);
-    if (faceUrl) {
-      setData((prev) => ({ ...prev, faceUrl }));
+    const result = await uploadToR2(resized);
+    if (result.success) {
+      setData((prev) => ({ ...prev, faceUrl: result.face_url }));
       setUploadStatus("done");
     } else {
       setUploadStatus("error");
-      setUploadError("Upload failed — please try again.");
+      setUploadError(result.errorMessage);
       setData((prev) => ({ ...prev, photo: "", photoName: "", faceUrl: "" }));
     }
   };
@@ -209,12 +272,29 @@ export function OnboardingStep3() {
           Personalize with AI
         </h4>
         <p
-          className="text-[14px] text-[#57534e] mb-5"
+          className="text-[14px] text-[#57534e] mb-3"
           style={{ fontFamily: "var(--font-body)" }}
         >
           Upload a reference photo so AI can tailor outfit proportions to your body type.
           Photo is deleted immediately after generation.
         </p>
+
+        <div className="mb-5 rounded-lg bg-[#F5EFE6] px-4 py-3 flex flex-col gap-1.5">
+          <p
+            className="text-[13px] text-[#78716c] flex items-center gap-2"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            <Icon name="photo_camera" size={16} className="text-[#78716c] flex-shrink-0" />
+            Best results: A clear photo of one person, facing the camera
+          </p>
+          <p
+            className="text-[13px] text-[#78716c] flex items-center gap-2"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            <Icon name="lightbulb" size={16} className="text-[#78716c] flex-shrink-0" />
+            Use a well-lit photo showing your full or upper body
+          </p>
+        </div>
 
         {data.photo ? (
           /* Preview state */
@@ -234,6 +314,17 @@ export function OnboardingStep3() {
               </button>
             </div>
             <div className="px-4 py-3 flex items-center gap-2">
+              {uploadStatus === "compressing" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-ping flex-shrink-0" />
+                  <span
+                    className="text-[13px] text-amber-600"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    Compressing photo...
+                  </span>
+                </>
+              )}
               {uploadStatus === "uploading" && (
                 <>
                   <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping flex-shrink-0" />
@@ -303,7 +394,7 @@ export function OnboardingStep3() {
                 className="mt-1 text-[12px] text-[#57534e]"
                 style={{ fontFamily: "var(--font-body)" }}
               >
-                JPG, PNG or WEBP · Max 5 MB
+                JPG, PNG or WEBP · Auto-compressed if needed
               </p>
             </div>
             {uploadError && (
@@ -343,7 +434,7 @@ export function OnboardingStep3() {
         <BtnPrimary
           size="sm"
           onClick={() => navigate("/onboarding/4")}
-          disabled={uploadStatus === "uploading"}
+          disabled={uploadStatus === "uploading" || uploadStatus === "compressing"}
         >
           <span className="flex items-center justify-center gap-2">
             Continue
