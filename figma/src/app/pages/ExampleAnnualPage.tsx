@@ -295,32 +295,33 @@ export function ExampleAnnualPage() {
           {/* Left */}
           <div className="lg:col-span-8 space-y-8">
             {/* 2x2 AI Outfit Grid Hero */}
-            <div className="relative rounded-2xl overflow-hidden bg-[#1A1410]">
-              <div className="grid grid-cols-2 gap-1">
-                {TOKYO_OUTFITS.map((outfit) => (
-                  <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                    <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <span className="text-white/60 text-[9px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
-                      <span className="text-white text-[13px] sm:text-[15px]" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+            <div className="rounded-2xl overflow-hidden bg-[#1A1410]">
+              <div className="relative">
+                <div className="grid grid-cols-2 gap-1">
+                  {TOKYO_OUTFITS.map((outfit) => (
+                    <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                      <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                      <div className="absolute bottom-2 left-2 right-2">
+                        <span className="text-white/60 text-[9px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
+                        <span className="text-white text-[13px] sm:text-[15px]" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+                      </div>
                     </div>
+                  ))}
+                </div>
+                <div className="absolute top-3 left-3 flex gap-2">
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                    <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                  </span>
+                  <div className="px-3 py-1 bg-white/90 rounded-full flex items-center gap-1.5" style={{ backdropFilter: "blur(8px)" }}>
+                    <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Current Itinerary</span>
                   </div>
-                ))}
-              </div>
-              <div className="absolute top-3 left-3 flex gap-2">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                  <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
-                </span>
-                <div className="px-3 py-1 bg-white/90 rounded-full flex items-center gap-1.5" style={{ backdropFilter: "blur(8px)" }}>
-                  <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Current Itinerary</span>
                 </div>
               </div>
-              <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                <div>
-                  <span className="text-white text-[24px] sm:text-[28px] italic block" style={{ fontFamily: "var(--font-display)" }}>Paris → Rome → Barcelona</span>
-                  <span className="text-white/80 text-[13px] block" style={{ fontFamily: "var(--font-body)" }}>Mar 15 – Apr 2, 2026 · 19 days · 4 Looks</span>
-                </div>
+              {/* Route info — separated below the grid to prevent overlap */}
+              <div className="px-4 py-3 bg-[#1A1410]">
+                <span className="text-white text-[22px] sm:text-[26px] italic block" style={{ fontFamily: "var(--font-display)" }}>Paris → Rome → Barcelona</span>
+                <span className="text-white/70 text-[13px] block mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Mar 15 – Apr 2, 2026 · 19 days · 4 Looks</span>
               </div>
             </div>
 
