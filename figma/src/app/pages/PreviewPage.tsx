@@ -47,9 +47,14 @@ export function PreviewPage() {
   const vibeTags = vibes[0]?.vibe_tags || [];
 
   const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [showCityLimitModal, setShowCityLimitModal] = useState(false);
 
-  const handleCheckout = async (plan: PlanKey) => {
+  const cityCount = data.cities.length;
+
+  const doCheckout = async (plan: PlanKey) => {
     setCheckoutLoading(plan);
+    setCheckoutError(null);
     try {
       const session = await createCheckoutSession({
         plan,
@@ -58,25 +63,34 @@ export function PreviewPage() {
         successUrl: `${window.location.origin}/checkout/success?plan=${plan}`,
       });
 
+      if (!session.url) {
+        // Worker returned success but no checkout URL — surface an error
+        throw new Error("No checkout URL received. Please try again.");
+      }
+
       // Save checkout info so success page has fallbacks after Polar redirect
       sessionStorage.setItem("tc_pending_checkout", JSON.stringify({
         plan, tripId, checkoutId: session.id, ts: Date.now(),
       }));
       // Also persist plan key separately for CheckoutSuccess fallback
       sessionStorage.setItem("tc_pending_plan", plan);
-
-      if (session.url) {
-        // Save Polar URL so CheckoutSuccess can open it
-        sessionStorage.setItem("tc_polar_url", session.url);
-        // Navigate to OUR success page first — Polar opens from there
-        // This avoids Polar's Customer Portal redirect hijacking the flow
-        navigate(`/checkout/success?plan=${plan}&tripId=${tripId || ""}&checkout_id=${session.id}`);
-      } else {
-        navigate(`/checkout/success?plan=${plan}&session_id=${session.clientSecret}`);
-      }
-    } catch {
+      // Save Polar URL so CheckoutSuccess can open it
+      sessionStorage.setItem("tc_polar_url", session.url);
+      // Navigate to OUR success page first — Polar opens from there
+      navigate(`/checkout/success?plan=${plan}&tripId=${tripId || ""}&checkout_id=${session.id}`);
+    } catch (err) {
       setCheckoutLoading(null);
+      setCheckoutError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
     }
+  };
+
+  const handleCheckout = (plan: PlanKey) => {
+    // Standard plan is limited to 1 city — show warning if user has multiple cities
+    if (plan === "standard" && cityCount > 1) {
+      setShowCityLimitModal(true);
+      return;
+    }
+    doCheckout(plan);
   };
 
   // If no preview data and not loading, redirect to onboarding
@@ -105,6 +119,49 @@ export function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      {/* City limit modal — Standard plan only supports 1 city */}
+      {showCityLimitModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ backgroundColor: "rgba(26,20,16,0.6)", backdropFilter: "blur(4px)" }}
+          onClick={() => setShowCityLimitModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl p-8 max-w-[420px] w-full"
+            style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-[#FEF3C7] flex items-center justify-center flex-shrink-0">
+                <Icon name="warning" size={22} className="text-[#D97706]" />
+              </div>
+              <h3 className="text-[20px] text-[#292524]" style={{ fontFamily: displayFont }}>
+                Standard plan supports 1 city only
+              </h3>
+            </div>
+            <p className="text-[15px] text-[#57534e] leading-relaxed mb-6" style={{ fontFamily: bodyFont }}>
+              You've selected {cityCount} cities. To get AI outfits for all your cities, upgrade to Pro.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => { setShowCityLimitModal(false); doCheckout("pro"); }}
+                className="h-[52px] w-full bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
+                style={{ fontFamily: bodyFont, fontWeight: 600 }}
+              >
+                Select Pro Plan ($12)
+              </button>
+              <button
+                onClick={() => { setShowCityLimitModal(false); doCheckout("standard"); }}
+                className="h-[52px] w-full border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#FDF8F3] transition-colors cursor-pointer"
+                style={{ fontFamily: bodyFont, fontWeight: 600 }}
+              >
+                Continue with 1 city ($5)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
@@ -324,6 +381,16 @@ export function PreviewPage() {
               {t("preview.selectPlan")}
             </p>
           </div>
+
+          {checkoutError && (
+            <div className="mb-6 max-w-[1000px] mx-auto p-4 bg-red-50 border border-red-200 rounded-xl flex items-center gap-3">
+              <Icon name="error" size={20} className="text-red-500 flex-shrink-0" />
+              <p className="text-[14px] text-red-700" style={{ fontFamily: bodyFont }}>{checkoutError}</p>
+              <button onClick={() => setCheckoutError(null)} className="ml-auto text-red-400 hover:text-red-600 cursor-pointer">
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
             {/* Standard */}

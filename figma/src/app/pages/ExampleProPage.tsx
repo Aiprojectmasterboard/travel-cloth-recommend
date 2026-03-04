@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
@@ -8,6 +8,7 @@ import {
   SizeChip,
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useLang } from "../context/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE PRO PAGE                                          */
@@ -215,20 +216,30 @@ const ALL_OUTFITS = EXAMPLE_CITIES.flatMap((c) => c.outfits);
 
 export function ExampleProPage() {
   const navigate = useNavigate();
+  const { t, displayFont, bodyFont } = useLang();
   const [activeCity, setActiveCity] = useState(0);
   const [expandedOutfit, setExpandedOutfit] = useState(0);
 
   const currentSet = EXAMPLE_CITIES[activeCity];
 
+  // Set scroll target so browser back returns to the examples section
+  useEffect(() => {
+    sessionStorage.setItem("tc_scroll_target", "examples");
+    return () => {
+      // On explicit forward navigation (e.g. to onboarding), clear the flag
+      // so ScrollToTop works normally for non-back navigations
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
       {/* Banner */}
       <div className="bg-[#C4613A] text-white text-center py-2">
-        <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-          Example Preview — This is what you receive with the Pro Plan ($12)
+        <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+          {t("examples.banner.pro")}
         </span>
-        <button onClick={() => navigate("/onboarding/1")} className="ml-4 inline-flex items-center gap-1 px-3 py-0.5 bg-white text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] cursor-pointer hover:bg-white/90 transition-colors" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-          Get Started <span className="text-[13px]">&rarr;</span>
+        <button onClick={() => navigate("/onboarding/1")} className="ml-4 inline-flex items-center gap-1 px-3 py-0.5 bg-white text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] cursor-pointer hover:bg-white/90 transition-colors" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+          {t("examples.banner.getStarted")} <span className="text-[13px]">&rarr;</span>
         </button>
       </div>
 
@@ -237,17 +248,17 @@ export function ExampleProPage() {
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <Icon name="luggage" size={24} className="text-[#C4613A]" />
-            <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
+            <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: displayFont, fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            {["Dashboard", "My Capsules", "Shop", "Account"].map((item) => (
-              <span key={item} className="text-[11px] tracking-[0.1em] uppercase text-[#57534e]/50 cursor-default" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item}</span>
+            {[t("nav.dashboard"), t("nav.myCapsules"), t("nav.shop"), t("nav.account")].map((item) => (
+              <span key={item} className="text-[11px] tracking-[0.1em] uppercase text-[#57534e]/50 cursor-default" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item}</span>
             ))}
           </nav>
           <div className="flex items-center gap-3">
             <PlanBadge label="Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" />
             <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]/60 hidden sm:inline" style={{ fontFamily: "var(--font-mono)" }}>
-              Example Mode
+              {t("examples.mode")}
             </span>
           </div>
         </div>
@@ -257,19 +268,19 @@ export function ExampleProPage() {
       <div className="mx-auto px-6 pt-10 pb-2" style={{ maxWidth: "var(--max-w)" }}>
         <div className="flex items-center gap-2 mb-2">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-            <Icon name="auto_awesome" size={10} className="text-[#C4613A]" filled /> AI Generated
+            <Icon name="auto_awesome" size={10} className="text-[#C4613A]" filled /> {t("examples.aiGenerated")}
           </span>
         </div>
-        <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-          Multi-City Style Guide
+        <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: displayFont, lineHeight: 1.1 }}>
+          {t("examples.pro.pageTitle")}
         </h1>
-        <p className="mt-2 text-[15px] text-[#57534e] max-w-[600px]" style={{ fontFamily: "var(--font-body)" }}>
-          Paris in May, one seamlessly curated capsule wardrobe. Every piece earns its place across your entire Parisian journey.
+        <p className="mt-2 text-[15px] text-[#57534e] max-w-[600px]" style={{ fontFamily: bodyFont }}>
+          {t("examples.pro.pageSubtitle")}
         </p>
         <div className="mt-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
             <Icon name="auto_awesome" size={12} className="text-[#C4613A]" filled />
-            93% AI Confidence · Tailored for Female · 170cm · slim build
+            {t("examples.pro.confidence")}
           </span>
         </div>
 
@@ -307,13 +318,13 @@ export function ExampleProPage() {
               {/* Overlay badges */}
               <div className="absolute top-3 left-3 flex gap-2">
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                  <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                  <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
                 </span>
                 <TagChip label={`${currentSet.city}, ${currentSet.country}`} className="bg-white/20 text-white backdrop-blur-sm" />
               </div>
               <div className="absolute bottom-3 right-3">
-                <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                  {currentSet.dates} · {currentSet.outfits.length} Looks
+                <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+                  {currentSet.dates} · {currentSet.outfits.length} {t("examples.pro.looks")}
                 </span>
               </div>
             </div>
@@ -321,11 +332,11 @@ export function ExampleProPage() {
             {/* Outfit cards */}
             <div>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
-                  {currentSet.city} Outfits
+                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: displayFont }}>
+                  {currentSet.city} {t("examples.pro.outfitsLabel")}
                 </h2>
                 <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                  {currentSet.outfits.length} Looks · Womenswear · S
+                  {currentSet.outfits.length} {t("examples.pro.looks")} · {t("examples.pro.womenswear")}
                 </span>
               </div>
 
@@ -339,12 +350,12 @@ export function ExampleProPage() {
                       <div className="flex items-center gap-4">
                         <span className="w-10 h-10 rounded-full bg-[#C4613A]/10 flex items-center justify-center text-[14px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{outfit.day}</span>
                         <div className="text-left">
-                          <span className="text-[18px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>{outfit.title}</span>
-                          <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{outfit.subtitle}</span>
+                          <span className="text-[18px] text-[#292524] block" style={{ fontFamily: displayFont }}>{outfit.title}</span>
+                          <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{outfit.subtitle}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{outfit.confidence}% match</span>
+                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{outfit.confidence}{t("examples.pro.match")}</span>
                         <Icon name={expandedOutfit === idx ? "expand_less" : "expand_more"} size={24} className="text-[#57534e]" />
                       </div>
                     </button>
@@ -357,7 +368,7 @@ export function ExampleProPage() {
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                             <div className="absolute top-3 left-3">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                                <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                                <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
                               </span>
                             </div>
                             <div className="absolute bottom-4 left-4 right-4">
@@ -370,8 +381,8 @@ export function ExampleProPage() {
                           </div>
 
                           <div>
-                            <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                              Outfit Breakdown · Your Sizes
+                            <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                              {t("examples.pro.outfitBreakdown")}
                             </span>
                             <div className="space-y-2">
                               {outfit.items.map((item) => (
@@ -379,22 +390,22 @@ export function ExampleProPage() {
                                   <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                      <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                      <span className="text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                                       <SizeChip size={item.size} />
                                     </div>
-                                    <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
+                                    <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{item.desc}</span>
                                   </div>
                                 </div>
                               ))}
                             </div>
-                            <p className="mt-5 text-[14px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: "var(--font-display)" }}>
+                            <p className="mt-5 text-[14px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: displayFont }}>
                               "{outfit.note}"
                             </p>
                             <div className="mt-4 pt-3 border-t border-[#EFE8DF]">
-                              <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Activities</span>
+                              <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-2" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.pro.activities")}</span>
                               <div className="flex flex-wrap gap-2">
                                 {currentSet.activities.map((a) => (
-                                  <span key={a} className="px-2.5 py-1 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{a}</span>
+                                  <span key={a} className="px-2.5 py-1 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{a}</span>
                                 ))}
                               </div>
                             </div>
@@ -418,8 +429,8 @@ export function ExampleProPage() {
                     <Icon name="person" size={24} className="text-[#C4613A]" />
                   </div>
                   <div>
-                    <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>Example User</span>
-                    <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Female · 170cm · 45kg</span>
+                    <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>{t("examples.pro.profile")}</span>
+                    <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.pro.persona")}</span>
                   </div>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -432,13 +443,13 @@ export function ExampleProPage() {
               {/* Multi-City Packing */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Multi-City Packing</h3>
+                  <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.pro.packingTitle")}</h3>
                   <span className="px-2 py-0.5 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                    Auto-derived
+                    {t("examples.pro.packingAuto")}
                   </span>
                 </div>
-                <p className="text-[12px] text-[#57534e] mb-4" style={{ fontFamily: "var(--font-body)" }}>
-                  Consolidated from {ALL_OUTFITS.length} outfits across {EXAMPLE_CITIES.length} cities
+                <p className="text-[12px] text-[#57534e] mb-4" style={{ fontFamily: bodyFont }}>
+                  {t("examples.pro.packingFrom")} {ALL_OUTFITS.length} {t("examples.pro.packingOutfits")} {EXAMPLE_CITIES.length} {t("examples.pro.packingCities")}
                 </p>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {PACKING.map((item, i) => (
@@ -446,33 +457,33 @@ export function ExampleProPage() {
                       <ImageWithFallback src={item.img} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                          <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                           <SizeChip size={item.size} />
                         </div>
                         <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                          Used in {item.usageCount} look{item.usageCount > 1 ? "s" : ""} · {item.cities.join(", ")}
+                          {t("examples.pro.usedIn")} {item.usageCount} {t("examples.pro.look")}{item.usageCount > 1 ? "s" : ""} · {item.cities.join(", ")}
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="mt-4 pt-3 border-t border-[#EFE8DF]">
-                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-                    {PACKING.length} unique items for {ALL_OUTFITS.length} looks
+                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+                    {PACKING.length} {t("examples.pro.packingUnique")} {ALL_OUTFITS.length} {t("examples.pro.packingLooks")}
                   </span>
                 </div>
               </div>
 
               {/* Weather */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>Weather Forecast</h3>
+                <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: displayFont }}>{t("examples.pro.weatherTitle")}</h3>
                 <div className="space-y-4">
                   {EXAMPLE_CITIES.map((cs) => (
                     <div key={cs.city} className="py-3 border-b border-[#EFE8DF] last:border-0">
                       <div className="flex items-center justify-between mb-2">
                         <div>
-                          <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{cs.city}</span>
-                          <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{cs.dates} · {cs.weather.condition}</span>
+                          <span className="text-[14px] text-[#292524] block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{cs.city}</span>
+                          <span className="text-[11px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{cs.dates} · {cs.weather.condition}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-4 text-[12px]" style={{ fontFamily: "var(--font-mono)" }}>
@@ -487,19 +498,19 @@ export function ExampleProPage() {
 
               {/* Stats */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>Capsule Stats</h3>
+                <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: displayFont }}>{t("examples.pro.statsTitle")}</h3>
                 <div className="space-y-3">
                   {[
-                    { icon: "public", label: "Cities", value: `${EXAMPLE_CITIES.length}` },
-                    { icon: "style", label: "AI Outfits", value: `${ALL_OUTFITS.length} looks` },
-                    { icon: "checkroom", label: "Packing Items", value: `${PACKING.length} pieces` },
-                    { icon: "hd", label: "Export Quality", value: "Ultra Hi-Res" },
-                    { icon: "refresh", label: "Regenerations", value: "1 included" },
+                    { icon: "public", labelKey: "examples.pro.statCities", value: `${EXAMPLE_CITIES.length}` },
+                    { icon: "style", labelKey: "examples.pro.statOutfits", value: `${ALL_OUTFITS.length} ${t("examples.pro.looks")}` },
+                    { icon: "checkroom", labelKey: "examples.pro.statPacking", value: `${PACKING.length} pieces` },
+                    { icon: "hd", labelKey: "examples.pro.statQuality", value: t("examples.pro.statQualityVal") },
+                    { icon: "refresh", labelKey: "examples.pro.statRegen", value: t("examples.pro.statRegenVal") },
                   ].map((stat) => (
-                    <div key={stat.label} className="flex items-center justify-between py-2 border-b border-[#EFE8DF] last:border-0">
+                    <div key={stat.labelKey} className="flex items-center justify-between py-2 border-b border-[#EFE8DF] last:border-0">
                       <div className="flex items-center gap-2">
                         <Icon name={stat.icon} size={16} className="text-[#C4613A]" />
-                        <span className="text-[13px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{stat.label}</span>
+                        <span className="text-[13px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t(stat.labelKey)}</span>
                       </div>
                       <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{stat.value}</span>
                     </div>
@@ -509,13 +520,13 @@ export function ExampleProPage() {
 
               {/* CTA */}
               <div className="bg-[#C4613A] rounded-xl p-6 text-white">
-                <h3 className="text-[18px] text-white mb-2" style={{ fontFamily: "var(--font-display)" }}>Get Your Own Capsule</h3>
-                <p className="text-[13px] text-white/80 mb-4" style={{ fontFamily: "var(--font-body)" }}>
-                  Create your personalized multi-city style guide with AI-generated outfits tailored to your body, style preferences, and travel itinerary.
+                <h3 className="text-[18px] text-white mb-2" style={{ fontFamily: displayFont }}>{t("examples.pro.ctaTitle")}</h3>
+                <p className="text-[13px] text-white/80 mb-4" style={{ fontFamily: bodyFont }}>
+                  {t("examples.pro.ctaBody")}
                 </p>
                 <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>
                   <span className="flex items-center gap-2 text-[#C4613A]">
-                    Start Planning
+                    {t("examples.pro.ctaBtn")}
                     <Icon name="arrow_forward" size={16} className="text-[#C4613A]" />
                   </span>
                 </BtnPrimary>

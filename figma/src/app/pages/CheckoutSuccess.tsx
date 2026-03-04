@@ -202,7 +202,11 @@ export function CheckoutSuccess() {
 
   const plan = (searchParams.get("plan") || sessionStorage.getItem("tc_pending_plan") || pendingCheckout?.plan || "standard") as PlanKey;
   const tripId = searchParams.get("tripId") || ctxTripId || pendingCheckout?.tripId || "";
+  const checkoutId = searchParams.get("checkout_id") || "";
   const polarUrl = sessionStorage.getItem("tc_polar_url") || "";
+
+  // Detect invalid state: no Polar URL and no checkout_id to poll
+  const hasNoPaymentContext = !polarUrl && !checkoutId;
 
   const [status, setStatus] = useState<"open_checkout" | "waiting_payment" | "confirmed" | "loading_result" | "ready">("open_checkout");
   const [popupBlocked, setPopupBlocked] = useState(false);
@@ -366,6 +370,35 @@ export function CheckoutSuccess() {
         return "Redirecting to your personalized style dashboard...";
     }
   })();
+
+  // Show error state if we arrived here with no valid payment context
+  if (hasNoPaymentContext) {
+    return (
+      <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">
+        <div className="text-center max-w-[420px] w-full">
+          <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-6">
+            <Icon name="error_outline" size={32} className="text-red-500" />
+          </div>
+          <h1
+            className="text-[#1A1410]"
+            style={{ fontSize: "clamp(22px, 4vw, 28px)", fontFamily: "var(--font-display)", fontWeight: 700 }}
+          >
+            Payment Not Started
+          </h1>
+          <p className="mt-3 text-[15px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
+            No payment session was found. This may happen if checkout creation failed or the page was refreshed.
+          </p>
+          <button
+            onClick={() => navigate(-1)}
+            className="mt-8 h-[52px] px-8 bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
+            style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+          >
+            Go Back
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">

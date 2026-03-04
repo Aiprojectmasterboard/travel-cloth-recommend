@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router";
 import { BtnPrimary, Icon, LanguageSelector } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -10,6 +10,19 @@ export function LandingPage() {
   const navigate = useNavigate();
   const { t, lang, displayFont, bodyFont } = useLang();
   const { isLoggedIn, user, setShowLoginModal } = useAuth();
+
+  // If returning from an examples page, scroll to the examples section
+  useEffect(() => {
+    const target = sessionStorage.getItem("tc_scroll_target");
+    if (target === "examples") {
+      sessionStorage.removeItem("tc_scroll_target");
+      // Wait for the page to render before scrolling
+      requestAnimationFrame(() => {
+        const el = document.getElementById("examples");
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      });
+    }
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">

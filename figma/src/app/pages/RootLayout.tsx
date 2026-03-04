@@ -6,10 +6,16 @@ import { AuthProvider } from "../context/AuthContext";
 import { TripProvider } from "../context/TripContext";
 import { LoginModal, PasswordResetModal } from "../components/travel-capsule";
 
-/** Scroll to top on every route change */
+/** Scroll to top on every route change, unless landing page has a scroll target */
 function ScrollToTop() {
   const { pathname } = useLocation();
-  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  useEffect(() => {
+    // If navigating to landing page with a pending scroll target, let LandingPage handle it
+    if (pathname === "/" && sessionStorage.getItem("tc_scroll_target")) return;
+    // For all other navigations, clear any stale scroll target and scroll to top
+    sessionStorage.removeItem("tc_scroll_target");
+    window.scrollTo(0, 0);
+  }, [pathname]);
   return null;
 }
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
@@ -11,6 +11,7 @@ import {
   SizeChip,
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { useLang } from "../context/LanguageContext";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE ANNUAL PAGE                                        */
@@ -227,17 +228,23 @@ function BarStat({ label, percent }: { label: string; percent: number }) {
 
 export function ExampleAnnualPage() {
   const navigate = useNavigate();
+  const { t, displayFont, bodyFont } = useLang();
   const [activeDayIdx, setActiveDayIdx] = useState(0);
+
+  // Set scroll target so browser back returns to the examples section
+  useEffect(() => {
+    sessionStorage.setItem("tc_scroll_target", "examples");
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
       {/* Banner */}
       <div className="gold-gradient text-white text-center py-2">
-        <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-          Example Preview — This is what you receive with the Annual Plan ($29/yr)
+        <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+          {t("examples.banner.annual")}
         </span>
-        <button onClick={() => navigate("/onboarding/1")} className="ml-4 inline-flex items-center gap-1 px-3 py-0.5 bg-white text-[#D4AF37] rounded-full text-[11px] uppercase tracking-[0.08em] cursor-pointer hover:bg-white/90 transition-colors" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-          Get Started <span className="text-[13px]">&rarr;</span>
+        <button onClick={() => navigate("/onboarding/1")} className="ml-4 inline-flex items-center gap-1 px-3 py-0.5 bg-white text-[#D4AF37] rounded-full text-[11px] uppercase tracking-[0.08em] cursor-pointer hover:bg-white/90 transition-colors" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+          {t("examples.banner.getStarted")} <span className="text-[13px]">&rarr;</span>
         </button>
       </div>
 
@@ -246,17 +253,17 @@ export function ExampleAnnualPage() {
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <Icon name="luggage" size={24} className="text-[#C4613A]" />
-            <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
+            <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: displayFont, fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <nav className="hidden md:flex items-center gap-8">
-            {["Dashboard", "My Trips", "Style DNA", "Account"].map((item) => (
-              <span key={item} className="text-[11px] tracking-[0.1em] uppercase text-[#57534e]/50 cursor-default" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item}</span>
+            {[t("nav.dashboard"), t("nav.myTrips"), t("nav.styleDna"), t("nav.account")].map((item) => (
+              <span key={item} className="text-[11px] tracking-[0.1em] uppercase text-[#57534e]/50 cursor-default" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item}</span>
             ))}
           </nav>
           <div className="flex items-center gap-3">
             <AnnualBadge />
             <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]/60 hidden sm:inline" style={{ fontFamily: "var(--font-mono)" }}>
-              Example Mode
+              {t("examples.mode")}
             </span>
           </div>
         </div>
@@ -266,22 +273,22 @@ export function ExampleAnnualPage() {
       <div className="mx-auto px-6 pt-10 pb-4" style={{ maxWidth: "var(--max-w)" }}>
         <div className="flex items-center gap-2 mb-3">
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-            <Icon name="bolt" size={10} className="text-green-600" /> Priority AI
+            <Icon name="bolt" size={10} className="text-green-600" /> {t("examples.annual.priorityAi")}
           </span>
           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#D4AF37]/8 text-[#D4AF37] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-            <Icon name="support_agent" size={10} /> VIP Concierge
+            <Icon name="support_agent" size={10} /> {t("examples.annual.vipConcierge")}
           </span>
         </div>
-        <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-          Welcome Back, Alex
+        <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: displayFont, lineHeight: 1.1 }}>
+          {t("examples.annual.pageTitle")}
         </h1>
-        <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-          Your annual membership is active. Ready for your next adventure?
+        <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
+          {t("examples.annual.pageSubtitle")}
         </p>
         <div className="mt-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
             <Icon name="auto_awesome" size={12} className="text-[#C4613A]" filled />
-            94% AI Confidence · Tailored for Male · 185cm · regular build
+            {t("examples.annual.confidence")}
           </span>
         </div>
         <div className="mt-5 max-w-[400px]">
@@ -303,40 +310,40 @@ export function ExampleAnnualPage() {
                       <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                       <div className="absolute bottom-2 left-2 right-2">
-                        <span className="text-white/60 text-[9px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
-                        <span className="text-white text-[13px] sm:text-[15px]" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+                        <span className="text-white/60 text-[9px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.day")} {outfit.day}</span>
+                        <span className="text-white text-[13px] sm:text-[15px]" style={{ fontFamily: displayFont }}>{outfit.subtitle}</span>
                       </div>
                     </div>
                   ))}
                 </div>
                 <div className="absolute top-3 left-3 flex gap-2">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                    <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                    <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
                   </span>
                   <div className="px-3 py-1 bg-white/90 rounded-full flex items-center gap-1.5" style={{ backdropFilter: "blur(8px)" }}>
-                    <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Current Itinerary</span>
+                    <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.annual.currentItinerary")}</span>
                   </div>
                 </div>
               </div>
               {/* Route info — separated below the grid to prevent overlap */}
               <div className="px-4 py-3 bg-[#1A1410]">
-                <span className="text-white text-[22px] sm:text-[26px] italic block" style={{ fontFamily: "var(--font-display)" }}>Paris → Rome → Barcelona</span>
-                <span className="text-white/70 text-[13px] block mt-0.5" style={{ fontFamily: "var(--font-body)" }}>Mar 15 – Apr 2, 2026 · 19 days · 4 Looks</span>
+                <span className="text-white text-[22px] sm:text-[26px] italic block" style={{ fontFamily: displayFont }}>Paris → Rome → Barcelona</span>
+                <span className="text-white/70 text-[13px] block mt-0.5" style={{ fontFamily: bodyFont }}>Mar 15 – Apr 2, 2026 · 19 days · 4 Looks</span>
               </div>
             </div>
 
             {/* AI Outfits */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
-                  Your <em>European Journey</em>
+                <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>
+                  {t("examples.annual.journeyTitle")}
                 </h2>
-                <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  {TOKYO_OUTFITS.length} Outfit Looks
+                <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                  {TOKYO_OUTFITS.length} {t("examples.annual.outfitLooks")}
                 </span>
               </div>
-              <p className="text-[16px] text-[#57534e] mb-6" style={{ fontFamily: "var(--font-body)" }}>
-                AI-generated outfits based on your profile, Paris/Rome/Barcelona spring weather, and your casual aesthetic preference.
+              <p className="text-[16px] text-[#57534e] mb-6" style={{ fontFamily: bodyFont }}>
+                {t("examples.annual.journeySubtitle")}
               </p>
 
               {/* Outfit day cards */}
@@ -353,9 +360,9 @@ export function ExampleAnnualPage() {
                         </span>
                       </div>
                       <div className="absolute bottom-3 left-3 right-3">
-                        <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Day {outfit.day}</span>
-                        <span className="text-white text-[18px] italic block" style={{ fontFamily: "var(--font-display)" }}>{outfit.title.split(" ")[0]}</span>
-                        <span className="text-white/60 text-[11px] block mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{outfit.subtitle}</span>
+                        <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("examples.annual.day")} {outfit.day}</span>
+                        <span className="text-white text-[18px] italic block" style={{ fontFamily: displayFont }}>{outfit.title.split(" ")[0]}</span>
+                        <span className="text-white/60 text-[11px] block mt-0.5" style={{ fontFamily: bodyFont }}>{outfit.subtitle}</span>
                       </div>
                     </div>
                   </button>
@@ -369,11 +376,11 @@ export function ExampleAnnualPage() {
                     {TOKYO_OUTFITS[activeDayIdx].day}
                   </span>
                   <div className="flex-1">
-                    <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>
+                    <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>
                       {TOKYO_OUTFITS[activeDayIdx].title}: {TOKYO_OUTFITS[activeDayIdx].subtitle}
                     </span>
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] mt-1" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                      {TOKYO_OUTFITS[activeDayIdx].confidence}% match
+                      {TOKYO_OUTFITS[activeDayIdx].confidence}{t("examples.annual.match")}
                     </span>
                   </div>
                 </div>
@@ -385,25 +392,25 @@ export function ExampleAnnualPage() {
                       <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                          <span className="text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                           <SizeChip size={item.size} />
                         </div>
-                        <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
+                        <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{item.desc}</span>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                <p className="mt-4 text-[13px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: "var(--font-display)" }}>
+                <p className="mt-4 text-[13px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: displayFont }}>
                   "{TOKYO_OUTFITS[activeDayIdx].note}"
                 </p>
               </div>
 
               {/* Actions */}
               <div className="mt-6 flex flex-wrap gap-3">
-                <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>Get Your Own Capsule</BtnPrimary>
+                <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>{t("examples.annual.getOwnCapsule")}</BtnPrimary>
                 <BtnSecondary size="sm">
-                  <span className="flex items-center gap-2"><Icon name="download" size={16} className="text-[#C4613A]" /> Hi-Res Export</span>
+                  <span className="flex items-center gap-2"><Icon name="download" size={16} className="text-[#C4613A]" /> {t("examples.annual.hiResExport")}</span>
                 </BtnSecondary>
               </div>
             </div>
@@ -418,8 +425,8 @@ export function ExampleAnnualPage() {
                   <Icon name="person" size={24} className="text-[#C4613A]" />
                 </div>
                 <div>
-                  <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>Alex (Example)</span>
-                  <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Male · 185cm · 75kg</span>
+                  <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>{t("examples.annual.profile")}</span>
+                  <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.persona")}</span>
                 </div>
               </div>
               <div className="flex flex-wrap gap-1.5">
@@ -432,7 +439,7 @@ export function ExampleAnnualPage() {
             {/* Weather */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Paris Weather</h3>
+                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.annual.weatherTitle")}</h3>
                 <TagChip label="Mar 15–21" />
               </div>
               <WeatherWidget temp={11} rain={35} wind={15} heatIndex={9} />
@@ -441,13 +448,13 @@ export function ExampleAnnualPage() {
             {/* Packing List */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Packing List</h3>
+                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.annual.packingTitle")}</h3>
                 <span className="px-2 py-0.5 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                  Auto-derived
+                  {t("examples.annual.packingAuto")}
                 </span>
               </div>
-              <p className="text-[11px] text-[#57534e] mb-4" style={{ fontFamily: "var(--font-body)" }}>
-                From {TOKYO_OUTFITS.length} AI outfits · {PACKING.length} unique items
+              <p className="text-[11px] text-[#57534e] mb-4" style={{ fontFamily: bodyFont }}>
+                {t("examples.annual.packingFrom")} {TOKYO_OUTFITS.length} {t("examples.annual.packingOutfits")} {PACKING.length} {t("examples.annual.packingUnique")}
               </p>
               <div className="space-y-2">
                 {PACKING.map((item, i) => (
@@ -455,7 +462,7 @@ export function ExampleAnnualPage() {
                     <ImageWithFallback src={item.img} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-1.5">
-                        <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                        <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                         <SizeChip size={item.size} />
                       </div>
                       <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
@@ -469,15 +476,15 @@ export function ExampleAnnualPage() {
 
             {/* Style DNA */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <h3 className="text-[18px] text-[#292524] mb-2" style={{ fontFamily: "var(--font-display)" }}>Style DNA</h3>
-              <p className="text-[14px] text-[#57534e] mb-5" style={{ fontFamily: "var(--font-body)" }}>
-                Your AI-analyzed fashion profile based on your preferences and past trips.
+              <h3 className="text-[18px] text-[#292524] mb-2" style={{ fontFamily: displayFont }}>{t("examples.annual.styleDnaTitle")}</h3>
+              <p className="text-[14px] text-[#57534e] mb-5" style={{ fontFamily: bodyFont }}>
+                {t("examples.annual.styleDnaBody")}
               </p>
               <div className="flex items-center gap-5 mb-6">
                 <DonutChart percent={STYLE_DNA[0].percent} />
                 <div>
-                  <span className="text-[18px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>{STYLE_DNA[0].label}</span>
-                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>Primary aesthetic</span>
+                  <span className="text-[18px] text-[#292524] block" style={{ fontFamily: displayFont }}>{STYLE_DNA[0].label}</span>
+                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t("examples.annual.primaryAesthetic")}</span>
                 </div>
               </div>
               <div className="space-y-4">
@@ -491,13 +498,13 @@ export function ExampleAnnualPage() {
             <div className="gold-gradient rounded-xl p-6 text-white">
               <div className="flex items-center gap-2 mb-3">
                 <Icon name="support_agent" size={20} className="text-white" />
-                <h3 className="text-[18px] text-white" style={{ fontFamily: "var(--font-display)" }}>VIP Concierge</h3>
+                <h3 className="text-[18px] text-white" style={{ fontFamily: displayFont }}>{t("examples.annual.vipTitle")}</h3>
               </div>
-              <p className="text-[13px] text-white/80 mb-4" style={{ fontFamily: "var(--font-body)" }}>
-                Your dedicated style concierge is available for personalized recommendations, last-minute trip changes, and exclusive shopping assistance.
+              <p className="text-[13px] text-white/80 mb-4" style={{ fontFamily: bodyFont }}>
+                {t("examples.annual.vipBody")}
               </p>
-              <button onClick={() => navigate("/onboarding/1")} className="w-full h-[40px] bg-white text-[#D4AF37] text-[12px] uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                Start Your Annual Membership
+              <button onClick={() => navigate("/onboarding/1")} className="w-full h-[40px] bg-white text-[#D4AF37] text-[12px] uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                {t("examples.annual.vipBtn")}
               </button>
             </div>
           </div>
@@ -507,8 +514,8 @@ export function ExampleAnnualPage() {
       {/* Past Trips */}
       <div className="mx-auto px-6 pb-16" style={{ maxWidth: "var(--max-w)" }}>
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Past Trips</h2>
-          <span className="text-[12px] uppercase tracking-[0.08em] text-[#57534e]/50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>View All Archive</span>
+          <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.annual.pastTrips")}</h2>
+          <span className="text-[12px] uppercase tracking-[0.08em] text-[#57534e]/50" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.annual.viewAll")}</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {PAST_TRIPS.map((trip) => (
@@ -521,9 +528,9 @@ export function ExampleAnnualPage() {
                 </div>
               </div>
               <div className="p-5">
-                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{trip.name}</h3>
+                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: displayFont }}>{trip.name}</h3>
                 <div className="mt-2 flex items-center gap-3">
-                  <span className="text-[13px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{trip.date}</span>
+                  <span className="text-[13px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{trip.date}</span>
                   <TagChip label={trip.mood} />
                 </div>
                 <div className="mt-3 pt-3 border-t border-[#EFE8DF] flex items-center gap-4 text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>

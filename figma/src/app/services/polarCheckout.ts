@@ -167,6 +167,8 @@ export async function createCheckoutSession(
    * └─────────────────────────────────────────────────────┘
    */
 
+  const isLocalDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+
   const res = await fetch(`${WORKER_URL}/api/payment/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -179,9 +181,18 @@ export async function createCheckoutSession(
     }),
   })
   if (!res.ok) {
-    // Fall back to demo mode if Worker not available
-    const mockId = `chk_demo_${Date.now()}_${request.plan}`
-    return { id: mockId, url: ``, clientSecret: `cs_demo_${mockId}`, status: 'open' as const }
+    if (isLocalDev) {
+      // Mock response for local development only
+      const mockId = `chk_demo_${Date.now()}_${request.plan}`
+      return { id: mockId, url: ``, clientSecret: `cs_demo_${mockId}`, status: 'open' as const }
+    }
+    // In production, surface the error so the UI can handle it
+    let errMsg = `Checkout failed (${res.status})`;
+    try {
+      const errData = await res.json() as { error?: string; message?: string };
+      errMsg = errData.error || errData.message || errMsg;
+    } catch { /* ignore parse errors */ }
+    throw new Error(errMsg);
   }
   // Worker returns { checkout_url, checkout_id, trip_id } — map to CheckoutSessionResponse shape
   const data = await res.json() as { checkout_url?: string; checkout_id?: string; url?: string; id?: string }

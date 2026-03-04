@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signUpWithEmail = useCallback(async (name: string, email: string, password: string) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -138,8 +138,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       throw new Error(error.message);
     }
-    // Supabase may require email confirmation depending on settings
-    // For now, auto-login after signup (if email confirmation is disabled)
+    // If Supabase returns no session, email confirmation is required
+    if (!data.session) {
+      // onAuthStateChange will handle login once confirmed; close modal and inform user
+      setShowLoginModal(false);
+      setShowSignupPrompt(false);
+      throw new Error("Please check your email to confirm your account.");
+    }
+    // Session returned — user is auto-logged in via onAuthStateChange
     setShowLoginModal(false);
     setShowSignupPrompt(false);
   }, []);
