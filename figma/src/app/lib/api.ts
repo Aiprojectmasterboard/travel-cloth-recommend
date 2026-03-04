@@ -1,9 +1,25 @@
+import { supabase } from './supabase'
+
 export const WORKER_URL = import.meta.env.VITE_WORKER_URL || 'https://travel-capsule-worker.netson94.workers.dev'
 
+/** Get the current Supabase access token if user is logged in */
+async function getAuthToken(): Promise<string | null> {
+  try {
+    const { data } = await supabase.auth.getSession()
+    return data.session?.access_token ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function apiPost<T>(path: string, body: unknown): Promise<T> {
+  const token = await getAuthToken()
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
   const res = await fetch(WORKER_URL + path, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(body),
   })
   if (!res.ok) {
@@ -14,7 +30,11 @@ export async function apiPost<T>(path: string, body: unknown): Promise<T> {
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const res = await fetch(WORKER_URL + path)
+  const token = await getAuthToken()
+  const headers: Record<string, string> = {}
+  if (token) headers['Authorization'] = `Bearer ${token}`
+
+  const res = await fetch(WORKER_URL + path, { headers })
   if (!res.ok) {
     const text = await res.text()
     throw new Error(`API error ${res.status}: ${text}`)

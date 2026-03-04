@@ -75,7 +75,7 @@ async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType
 
     // Skip oversized images — Gemini rejects large inlineData
     if (buffer.byteLength > MAX_FACE_BYTES) {
-      console.warn(`[teaserAgent] Face image too large (${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB > 1.5MB limit), skipping face reference`);
+      console.warn(`[teaserAgent] Face image too large (${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB > 4MB limit), skipping face reference`);
       return null;
     }
 
