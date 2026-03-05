@@ -20,11 +20,11 @@ export const LANGUAGES: { code: Lang; label: string; nativeLabel: string }[] = [
 const translations: Record<Lang, Record<string, string>> = {
   en: {
     /* Hero */
-    "hero.tagline": "The End of\nWeather Guesswork.",
-    "hero.pill": "Algorithm Active",
-    "hero.subtitle": "AI-Powered Capsule Wardrobe System",
-    "hero.body": "Weather-adaptive, destination-aware outfit planning that eliminates packing anxiety forever.",
-    "hero.cta": "Curate My Capsule",
+    "hero.tagline": "Your AI Stylist\nFor Every Trip.",
+    "hero.pill": "AI-Powered Styling",
+    "hero.subtitle": "Tell us your destination — AI builds your perfect wardrobe.",
+    "hero.body": "Our AI analyzes weather, city vibe, and your body profile to generate personalized outfits and a capsule packing list.",
+    "hero.cta": "Start AI Styling",
     /* Nav */
     "nav.howItWorks": "How It Works",
     "nav.pricing": "Pricing",
@@ -296,11 +296,11 @@ const translations: Record<Lang, Record<string, string>> = {
   },
 
   ko: {
-    "hero.tagline": "날씨 고민,\n이제 그만.",
-    "hero.pill": "알고리즘 작동 중",
-    "hero.subtitle": "AI 기반 캡슐 워드로브 시스템",
-    "hero.body": "날씨에 맞춘, 여행지를 이해하는 스타일링. 짐 싸기 스트레스에서 완전히 해방됩니다.",
-    "hero.cta": "나만의 캡슐 만들기",
+    "hero.tagline": "AI가 만드는\n나만의 여행 코디.",
+    "hero.pill": "AI 스타일링",
+    "hero.subtitle": "여행지를 알려주세요 — AI가 완벽한 옷장을 만들어 드립니다.",
+    "hero.body": "AI가 날씨, 도시 분위기, 체형을 분석하여 맞춤 코디와 캡슐 패킹 리스트를 자동 생성합니다.",
+    "hero.cta": "AI 스타일링 시작",
     "nav.howItWorks": "서비스 소개",
     "nav.pricing": "요금제",
     "nav.examples": "예시 보기",
@@ -557,11 +557,11 @@ const translations: Record<Lang, Record<string, string>> = {
   },
 
   ja: {
-    "hero.tagline": "天気に惑わない、\n旅のスタイル。",
-    "hero.pill": "アルゴリズム稼働中",
-    "hero.subtitle": "AI搭載カプセルワードローブシステム",
-    "hero.body": "天候適応型・目的地対応のスタイリングで、パッキングの不安から完全に解放されます。",
-    "hero.cta": "カプセルを作成する",
+    "hero.tagline": "AIスタイリスト、\nあなた専属。",
+    "hero.pill": "AIスタイリング",
+    "hero.subtitle": "行き先を教えてください — AIが最適なワードローブを作成します。",
+    "hero.body": "AIが天気、都市の雰囲気、体型を分析し、パーソナライズされたコーデとカプセルパッキングリストを自動生成。",
+    "hero.cta": "AIスタイリング開始",
     "nav.howItWorks": "使い方",
     "nav.pricing": "料金プラン",
     "nav.examples": "実例",
@@ -818,11 +818,11 @@ const translations: Record<Lang, Record<string, string>> = {
   },
 
   zh: {
-    "hero.tagline": "告别天气困扰，\n从容出发。",
-    "hero.pill": "算法运行中",
-    "hero.subtitle": "AI驱动胶囊衣橱系统",
-    "hero.body": "适应天气、了解目的地的穿搭规划，彻底告别收拾行李的焦虑。",
-    "hero.cta": "打造我的胶囊",
+    "hero.tagline": "AI造型师，\n为你而来。",
+    "hero.pill": "AI造型",
+    "hero.subtitle": "告诉我们你的目的地 — AI为你打造完美衣橱。",
+    "hero.body": "AI分析天气、城市氛围和你的身体数据，自动生成个性化搭配和胶囊打包清单。",
+    "hero.cta": "开始AI造型",
     "nav.howItWorks": "使用方式",
     "nav.pricing": "价格方案",
     "nav.examples": "案例展示",
@@ -1079,11 +1079,11 @@ const translations: Record<Lang, Record<string, string>> = {
   },
 
   fr: {
-    "hero.tagline": "L'élégance\nau-delà de la météo.",
-    "hero.pill": "Algorithme actif",
-    "hero.subtitle": "Système de garde-robe capsule alimenté par l'IA",
-    "hero.body": "Un style adapté à la météo et au lieu de destination, qui élimine à jamais le stress de faire sa valise.",
-    "hero.cta": "Créer ma capsule",
+    "hero.tagline": "Votre styliste IA\npour chaque voyage.",
+    "hero.pill": "Styling par IA",
+    "hero.subtitle": "Indiquez votre destination — l'IA crée votre garde-robe idéale.",
+    "hero.body": "Notre IA analyse la météo, l'ambiance de la ville et votre morphologie pour générer des tenues personnalisées et une liste de bagages capsule.",
+    "hero.cta": "Lancer le styling IA",
     "nav.howItWorks": "Comment ça marche",
     "nav.pricing": "Tarifs",
     "nav.examples": "Exemples",
@@ -1340,11 +1340,11 @@ const translations: Record<Lang, Record<string, string>> = {
   },
 
   es: {
-    "hero.tagline": "El fin de las dudas\nante el clima.",
-    "hero.pill": "Algoritmo activo",
-    "hero.subtitle": "Sistema de armario cápsula con IA",
-    "hero.body": "Planificación de outfits adaptada al clima y al destino, que elimina para siempre la ansiedad de hacer la maleta.",
-    "hero.cta": "Crear mi cápsula",
+    "hero.tagline": "Tu estilista IA\npara cada viaje.",
+    "hero.pill": "Estilismo con IA",
+    "hero.subtitle": "Dinos tu destino — la IA crea tu armario perfecto.",
+    "hero.body": "Nuestra IA analiza el clima, el ambiente de la ciudad y tu perfil corporal para generar outfits personalizados y una lista de equipaje cápsula.",
+    "hero.cta": "Iniciar estilismo IA",
     "nav.howItWorks": "Cómo funciona",
     "nav.pricing": "Precios",
     "nav.examples": "Ejemplos",

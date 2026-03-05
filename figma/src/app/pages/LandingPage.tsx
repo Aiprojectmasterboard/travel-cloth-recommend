@@ -103,13 +103,13 @@ export function LandingPage() {
               {t("hero.tagline")}
             </h1>
 
-            <div className="w-16 h-0.5 bg-[#C4613A] mx-auto my-8" />
+            <div className="w-16 h-0.5 bg-[#C4613A] mx-auto mt-8 mb-6" />
 
-            <p className="text-[11px] uppercase tracking-[0.2em] text-white/50 mb-4" style={{ fontFamily: "var(--font-mono)" }}>
+            <p className="text-[16px] sm:text-[20px] tracking-[0.04em] text-white/90 mb-4" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
               {t("hero.subtitle")}
             </p>
 
-            <p className="text-[18px] text-white/70 max-w-[520px] mx-auto mb-10" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
+            <p className="text-[16px] sm:text-[18px] text-white/60 max-w-[560px] mx-auto mb-10" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
               {t("hero.body")}
             </p>
 
