@@ -16,6 +16,7 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
 import { useOnboarding } from "../context/OnboardingContext";
 import { useTrip } from "../context/TripContext";
+import { useLang } from "../context/LanguageContext";
 import {
   buildProfile,
   generateCityOutfits,
@@ -43,6 +44,7 @@ export function ProDashboard() {
   const { isLoggedIn, setShowSignupPrompt, purchasedPlan } = useAuth();
   const { data: onboarding } = useOnboarding();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
+  const { t } = useLang();
 
   useEffect(() => {
     if (!purchasedPlan) navigate("/preview", { replace: true });
@@ -258,7 +260,7 @@ export function ProDashboard() {
       {/* Title */}
       <div className="mx-auto px-6 pt-10 pb-2" style={{ maxWidth: "var(--max-w)" }}>
         <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-          Your Multi-City Style Guide
+          {t("dashboard.multiCityStyleGuide")}
         </h1>
         <p className="mt-2 text-[15px] text-[#57534e] max-w-[600px]" style={{ fontFamily: "var(--font-body)" }}>
           {cities.length} cities, one seamlessly curated capsule wardrobe.
@@ -425,7 +427,7 @@ export function ProDashboard() {
               {/* Multi-City Packing */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Multi-City Packing</h3>
+                  <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.multiCityPacking")}</h3>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-[0.1em] ${hasRealData ? "bg-[#C4613A]/10 text-[#C4613A]" : "bg-[#EFE8DF] text-[#57534e]"}`} style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
                     {hasRealData ? "AI curated" : "Auto-derived"}
                   </span>
@@ -466,7 +468,7 @@ export function ProDashboard() {
 
               {/* Weather */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>Weather Forecast</h3>
+                <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.weatherForecast")}</h3>
                 <div className="space-y-4">
                   {citySets.map((cs) => (
                     <div key={cs.city} className="py-3 border-b border-[#EFE8DF] last:border-0">
@@ -483,7 +485,7 @@ export function ProDashboard() {
 
               {/* Stats */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>Capsule Stats</h3>
+                <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.capsuleStats")}</h3>
                 <div className="space-y-3">
                   {[
                     { icon: "public", label: "Cities", value: `${citySets.length}` },

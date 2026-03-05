@@ -17,6 +17,7 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useOnboarding } from "../context/OnboardingContext";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
+import { useLang } from "../context/LanguageContext";
 import {
   buildProfile,
   generateCityOutfits,
@@ -71,6 +72,7 @@ export function AnnualDashboard() {
   const navigate = useNavigate();
   const [activeDayIdx, setActiveDayIdx] = useState(0);
   const { data: onboarding } = useOnboarding();
+  const { t } = useLang();
   const { purchasedPlan } = useAuth();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
 
@@ -295,7 +297,7 @@ export function AnnualDashboard() {
             {/* Packing */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Packing List</h3>
+                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.packingList")}</h3>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-[0.1em] ${hasRealData ? "bg-[#C4613A]/10 text-[#C4613A]" : "bg-[#EFE8DF] text-[#57534e]"}`} style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
                   {hasRealData ? "AI curated" : "Auto-derived"}
                 </span>
@@ -321,7 +323,7 @@ export function AnnualDashboard() {
 
             {/* Style DNA */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>Style DNA</h3>
+              <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.styleDna")}</h3>
               <div className="flex items-center gap-5 mb-6">
                 <DonutChart percent={primaryPercent} />
                 <div>
@@ -339,7 +341,7 @@ export function AnnualDashboard() {
 
       {/* Past Trips */}
       <div className="mx-auto px-6 pb-16" style={{ maxWidth: "var(--max-w)" }}>
-        <h2 className="text-[28px] text-[#292524] mb-8" style={{ fontFamily: "var(--font-display)" }}>Past Trips</h2>
+        <h2 className="text-[28px] text-[#292524] mb-8" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.pastTrips")}</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {PAST_TRIPS.map((trip) => (
             <div key={trip.name} className="bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#C4613A]/20 transition-all cursor-pointer group" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>

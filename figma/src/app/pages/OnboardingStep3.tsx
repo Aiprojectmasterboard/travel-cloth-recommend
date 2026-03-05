@@ -390,14 +390,14 @@ export function OnboardingStep3() {
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
                 Drop your photo here or{" "}
-                <button
-                  type="button"
-                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
-                  className="text-[#C4613A] underline underline-offset-2 font-medium cursor-pointer bg-transparent border-none p-0"
+                <label
+                  htmlFor="photo-upload-input"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[#C4613A] underline underline-offset-2 font-medium cursor-pointer"
                   style={{ fontFamily: "var(--font-body)", fontSize: "14px" }}
                 >
                   Browse
-                </button>
+                </label>
               </p>
               <p
                 className="mt-1 text-[12px] text-[#57534e]"
@@ -418,10 +418,11 @@ export function OnboardingStep3() {
         )}
 
         <input
+          id="photo-upload-input"
           ref={fileInputRef}
           type="file"
           accept="image/*"
-          className="hidden"
+          className="sr-only"
           onChange={handleInputChange}
         />
 

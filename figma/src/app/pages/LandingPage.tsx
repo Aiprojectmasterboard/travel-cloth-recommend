@@ -274,7 +274,7 @@ export function LandingPage() {
             >
               <div className="relative h-[280px] overflow-hidden">
                 <ImageWithFallback
-                  src="/examples/annual-outfit-1.png"
+                  src="/examples/annual-hero.png"
                   alt="Annual Example — European Journey"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />

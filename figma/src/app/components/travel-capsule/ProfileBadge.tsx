@@ -88,9 +88,14 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
             <Icon name="photo_camera" size={14} className="text-[#57534e]" /> Reference Photo
           </span>
           {hasPhoto ? (
-            <span className="text-[11px] text-green-600 flex items-center gap-1" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-              <Icon name="check_circle" size={12} className="text-green-600" filled /> Uploaded
-            </span>
+            <div className="flex items-center gap-2">
+              {faceUrl && (
+                <img src={faceUrl} alt="Reference" className="w-6 h-6 rounded-full object-cover border border-green-300" />
+              )}
+              <span className="text-[11px] text-green-600 flex items-center gap-1" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                <Icon name="check_circle" size={12} className="text-green-600" filled /> Uploaded
+              </span>
+            </div>
           ) : (
             <span className="text-[11px] text-[#57534e]/50" style={{ fontFamily: "var(--font-mono)" }}>
               Not provided

@@ -133,7 +133,7 @@ export function OnboardingStep4() {
             </div>
             <div className="absolute top-3 left-3">
               <span className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                {data.cities.length} Cities \u00B7 {t("onboarding4.tripSummary")}
+                {data.cities.length} {t("onboarding4.cities")} \u00B7 {t("onboarding4.tripSummary")}
               </span>
             </div>
           </div>

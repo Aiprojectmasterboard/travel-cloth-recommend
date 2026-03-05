@@ -48,9 +48,9 @@ export function CityRow({ city, country, imageUrl, fromDate = "", toDate = "", o
       <button
         onClick={onDelete}
         aria-label="Remove city"
-        className="sm:opacity-0 sm:group-hover:opacity-100 p-2 text-[#57534e] hover:text-[#d4183d] active:text-[#d4183d] transition-all cursor-pointer flex-shrink-0"
+        className="w-8 h-8 rounded-full bg-[#F5EFE6] flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 text-[#57534e] hover:text-[#d4183d] hover:bg-red-50 active:text-[#d4183d] transition-all cursor-pointer flex-shrink-0"
       >
-        <Icon name="close" size={20} />
+        <Icon name="close" size={18} />
       </button>
     </div>
   );

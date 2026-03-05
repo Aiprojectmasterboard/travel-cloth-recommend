@@ -20,6 +20,7 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
 import { useOnboarding } from "../context/OnboardingContext";
 import { useTrip } from "../context/TripContext";
+import { useLang } from "../context/LanguageContext";
 import {
   buildProfile,
   generateCityOutfits,
@@ -39,6 +40,7 @@ export function StandardDashboard() {
   const { isLoggedIn, setShowSignupPrompt, purchasedPlan } = useAuth();
   const { data: onboarding } = useOnboarding();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
+  const { t } = useLang();
 
   // Payment gate
   useEffect(() => {
@@ -167,7 +169,7 @@ export function StandardDashboard() {
             <div>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
-                  {hasRealData ? "AI-Curated Outfits" : "Your Style Preview"}
+                  {hasRealData ? t("dashboard.aiCuratedOutfits") : t("dashboard.yourStylePreview")}
                 </h2>
                 <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                   {hasRealData ? `${Math.min(apiCapsuleItems.length, 4)} Looks` : "4 Looks"}
@@ -282,7 +284,7 @@ export function StandardDashboard() {
             {/* Day-by-Day Itinerary */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Your Itinerary</h2>
+                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.yourItinerary")}</h2>
               </div>
               <DayPlanStrip days={dayPlanData} activeDay={activeDay} onDaySelect={setActiveDay} />
               <div className="mt-4 bg-white rounded-xl border border-[#E8DDD4] p-5" style={{ boxShadow: "0 2px 8px rgba(0,0,0,.03)" }}>
@@ -325,7 +327,7 @@ export function StandardDashboard() {
             {/* Packing Checklist */}
             <div>
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Your Packing List</h2>
+                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.yourPackingList")}</h2>
                 <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                   {displayItems.length} items {hasRealData && "· AI curated"}
                 </span>
@@ -389,7 +391,7 @@ export function StandardDashboard() {
 
             {/* Capsule Summary */}
             <div className="bg-white rounded-xl border border-[#E8DDD4] p-6" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>Capsule Summary</h3>
+              <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.capsuleSummary")}</h3>
               <div className="space-y-3">
                 {[
                   { icon: "checkroom", label: "Packing Items", value: `${displayItems.length} pieces` },
