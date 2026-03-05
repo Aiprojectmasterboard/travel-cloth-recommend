@@ -176,16 +176,27 @@ export function LandingPage() {
             ))}
           </div>
 
-          {/* Stats + Image */}
+          {/* Stats + Before/After Showcase */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             <div className="relative">
-              <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <ImageWithFallback src={IMAGES.clothingRack} alt="Curated wardrobe" className="w-full h-[250px] sm:h-[400px] object-cover" />
+              <div className="grid grid-cols-2 gap-3 sm:gap-4">
+                <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                  <ImageWithFallback src="/examples/pro-outfit-1.png" alt="AI-styled outfit — Paris" className="w-full aspect-[3/4] object-cover" />
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                    <span className="text-white text-[11px] sm:text-[13px]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Paris · Rainy Chic</span>
+                  </div>
+                </div>
+                <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                  <ImageWithFallback src="/examples/annual-outfit-3.png" alt="AI-styled outfit — Rome" className="w-full aspect-[3/4] object-cover" />
+                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
+                    <span className="text-white text-[11px] sm:text-[13px]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Rome · Golden Hour</span>
+                  </div>
+                </div>
               </div>
-              <div className="absolute -bottom-3 -left-2 sm:-bottom-4 sm:-left-4 bg-white rounded-xl px-4 py-2.5 sm:px-5 sm:py-3 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white rounded-xl px-4 py-2.5 sm:px-5 sm:py-3 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                 <div className="flex items-center gap-2 sm:gap-3">
                   <Icon name="auto_awesome" size={18} className="text-[#C4613A]" filled />
-                  <span className="text-[12px] sm:text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>AI-curated selections</span>
+                  <span className="text-[12px] sm:text-[14px] text-[#292524] whitespace-nowrap" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("section.intelligence.badge")}</span>
                 </div>
               </div>
             </div>
@@ -195,11 +206,11 @@ export function LandingPage() {
               </p>
               <div className="flex gap-8 sm:gap-12">
                 <div>
-                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>12+</span>
+                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>30{t("section.intelligence.stat1Unit")}</span>
                   <p className="text-[12px] sm:text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat1")}</p>
                 </div>
                 <div>
-                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>100%</span>
+                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>4–6</span>
                   <p className="text-[12px] sm:text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat2")}</p>
                 </div>
               </div>
