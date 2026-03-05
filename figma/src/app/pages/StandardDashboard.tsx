@@ -231,10 +231,13 @@ export function StandardDashboard() {
                                     const capsuleItem = typeof name === "string"
                                       ? apiCapsuleItems.find((c) => c.name === name) || { name, category: "", why: "", versatility_score: 0 }
                                       : name;
+                                    const catIcon: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                                    const itemCat = typeof capsuleItem !== "string" ? capsuleItem.category?.toLowerCase() : "";
+                                    const iconName = catIcon[itemCat] ?? "checkroom";
                                     return (
                                       <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
                                         <div className="w-12 h-12 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                                          <Icon name="checkroom" size={20} className="text-[#57534e]" />
+                                          <Icon name={iconName} size={20} className="text-[#57534e]" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2">
@@ -292,7 +295,7 @@ export function StandardDashboard() {
                 <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
                   {primaryWeather ? (
                     [
-                      { icon: "thermostat", val: `${Math.round(primaryWeather.temperature_day_avg)}\u00B0C`, label: "Avg Temp" },
+                      { icon: "thermostat", val: `${Math.round(primaryWeather.temperature_day_avg)}°C`, label: "Avg Temp" },
                       { icon: "water_drop", val: `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: "Rain" },
                       { icon: "explore", val: primaryWeather.climate_band, label: "Climate" },
                     ].map((s) => (
@@ -304,7 +307,7 @@ export function StandardDashboard() {
                     ))
                   ) : (
                     [
-                      { icon: "thermostat", val: "9\u00B0C", label: "Avg Temp" },
+                      { icon: "thermostat", val: "9°C", label: "Avg Temp" },
                       { icon: "water_drop", val: "30%", label: "Rain" },
                       { icon: "explore", val: "mild", label: "Climate" },
                     ].map((s) => (
@@ -324,15 +327,18 @@ export function StandardDashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>Your Packing List</h2>
                 <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  {displayItems.length} items {hasRealData && "\u00B7 AI curated"}
+                  {displayItems.length} items {hasRealData && "· AI curated"}
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                {displayItems.map((item, i) => (
+                {displayItems.map((item, i) => {
+                  const CAT_ICON: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                  const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
+                  return (
                   <div key={i} className="group bg-white rounded-xl border border-[#E8DDD4] overflow-hidden hover:border-[#C4613A]/30 transition-colors">
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-2">
-                        <Icon name="checkroom" size={16} className="text-[#C4613A]" />
+                        <Icon name={iconName} size={16} className="text-[#C4613A]" />
                         <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
                       </div>
                       <span className="text-[10px] text-[#57534e] capitalize block" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
@@ -341,7 +347,8 @@ export function StandardDashboard() {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
@@ -359,6 +366,7 @@ export function StandardDashboard() {
               weight={profile.weight}
               aesthetics={profile.aesthetics}
               photo={profile.photo}
+              faceUrl={onboarding.faceUrl}
               bodyFitLabel={bodyFitLabel}
             />
 

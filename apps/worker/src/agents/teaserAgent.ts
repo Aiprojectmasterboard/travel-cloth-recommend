@@ -113,7 +113,7 @@ async function generateNanoBanana(
     const faceData = await fetchImageAsBase64(faceUrl);
     if (faceData) {
       parts.push({ inlineData: { mimeType: faceData.mimeType, data: faceData.data } });
-      parts.push({ text: 'Use this person\'s face as the model in the generated image. Preserve their likeness.' });
+      parts.push({ text: 'Use this person as the model in the generated image. You MUST preserve their exact facial features, face shape, skin tone, hair style, and natural appearance. Do NOT alter, beautify, smooth, or photoshop the face. The person in the output must be clearly recognizable as the same person in this reference photo.' });
     }
   }
 

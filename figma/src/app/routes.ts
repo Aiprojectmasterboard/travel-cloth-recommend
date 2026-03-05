@@ -18,6 +18,7 @@ import { PrivacyPage } from "./pages/PrivacyPage";
 import { TermsPage } from "./pages/TermsPage";
 import { ContactPage } from "./pages/ContactPage";
 import { MyPage } from "./pages/MyPage";
+import { SharePage } from "./pages/SharePage";
 
 export const router = createBrowserRouter([
   {
@@ -35,6 +36,7 @@ export const router = createBrowserRouter([
       { path: "dashboard/standard", Component: StandardDashboard },
       { path: "dashboard/pro", Component: ProDashboard },
       { path: "dashboard/annual", Component: AnnualDashboard },
+      { path: "share/:tripId", Component: SharePage },
       { path: "examples/pro", Component: ExampleProPage },
       { path: "demo/pro", Component: DemoProPage },
       { path: "examples/annual", Component: ExampleAnnualPage },

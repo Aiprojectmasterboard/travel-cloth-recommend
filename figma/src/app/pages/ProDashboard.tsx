@@ -283,7 +283,7 @@ export function ProDashboard() {
             <button key={cs.city} onClick={() => { setActiveCity(i); setExpandedOutfit(0); }}
               className={`px-4 py-1.5 rounded-full text-[12px] uppercase tracking-[0.08em] transition-colors cursor-pointer border ${activeCity === i ? "bg-[#C4613A] text-white border-[#C4613A]" : "bg-white text-[#57534e] border-[#E8DDD4] hover:border-[#C4613A]/40"}`}
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              {cs.city} \u00B7 {cs.dates}
+              {cs.city} · {cs.dates}
             </button>
           ))}
         </div>
@@ -374,10 +374,13 @@ export function ProDashboard() {
                       </h3>
                       <div className="space-y-2">
                         {hasRealData ? (
-                          apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5).map((item, i) => (
+                          apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5).map((item, i) => {
+                            const catIcon: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                            const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
+                            return (
                             <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
                               <div className="w-12 h-12 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                                <Icon name="checkroom" size={20} className="text-[#57534e]" />
+                                <Icon name={iconName} size={20} className="text-[#57534e]" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
@@ -387,7 +390,8 @@ export function ProDashboard() {
                                 <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
                               </div>
                             </div>
-                          ))
+                            );
+                          })
                         ) : (
                           currentSet.outfits[expandedOutfit].items.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
@@ -416,7 +420,7 @@ export function ProDashboard() {
           {/* Right sidebar */}
           <aside className="lg:col-span-4">
             <div className="lg:sticky lg:top-[88px] space-y-6">
-              <ProfileBadge gender={profile.gender} height={profile.height} weight={profile.weight} aesthetics={profile.aesthetics} photo={profile.photo} bodyFitLabel={bodyFitLabel} />
+              <ProfileBadge gender={profile.gender} height={profile.height} weight={profile.weight} aesthetics={profile.aesthetics} photo={profile.photo} faceUrl={onboarding.faceUrl} bodyFitLabel={bodyFitLabel} />
 
               {/* Multi-City Packing */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
@@ -467,9 +471,9 @@ export function ProDashboard() {
                   {citySets.map((cs) => (
                     <div key={cs.city} className="py-3 border-b border-[#EFE8DF] last:border-0">
                       <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{cs.city}</span>
-                      <span className="text-[11px] text-[#57534e] block mb-2" style={{ fontFamily: "var(--font-body)" }}>{cs.dates} \u00B7 {cs.weather.condition}</span>
+                      <span className="text-[11px] text-[#57534e] block mb-2" style={{ fontFamily: "var(--font-body)" }}>{cs.dates} · {cs.weather.condition}</span>
                       <div className="flex items-center gap-4 text-[12px]" style={{ fontFamily: "var(--font-mono)" }}>
-                        <span className="flex items-center gap-1 text-[#292524]"><Icon name="thermostat" size={14} className="text-[#C4613A]" />{cs.weather.temp}\u00B0C</span>
+                        <span className="flex items-center gap-1 text-[#292524]"><Icon name="thermostat" size={14} className="text-[#C4613A]" />{cs.weather.temp}°C</span>
                         <span className="flex items-center gap-1 text-[#57534e]"><Icon name="water_drop" size={14} />{cs.weather.rain}%</span>
                       </div>
                     </div>

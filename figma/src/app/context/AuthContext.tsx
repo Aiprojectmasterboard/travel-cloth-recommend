@@ -17,7 +17,6 @@ export type LoginModalContext = "default" | "onboarding_gate";
 interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
-  loginWithGoogle: () => void;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   signUpWithEmail: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -98,20 +97,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const loginWithGoogle = useCallback(async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/onboarding/1`,
-      },
-    });
-    if (error) {
-      console.error("[Auth] Google login error:", error.message);
-      throw error;
-    }
-    setShowLoginModal(false);
-  }, []);
-
   const loginWithEmail = useCallback(async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
@@ -184,7 +169,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider value={{
       user,
       isLoggedIn: !!user,
-      loginWithGoogle,
       loginWithEmail,
       signUpWithEmail,
       logout,

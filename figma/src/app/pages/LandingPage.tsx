@@ -73,12 +73,14 @@ export function LandingPage() {
                     {t("nav.login")}
                   </button>
                 )}
-                <button
-                  onClick={() => isLoggedIn ? navigate("/onboarding/1") : setShowLoginModal(true)}
-                  className="sm:hidden w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 cursor-pointer"
-                >
-                  <Icon name="person" size={18} className="text-white" />
-                </button>
+                {!isLoggedIn && (
+                  <button
+                    onClick={() => setShowLoginModal(true)}
+                    className="sm:hidden w-9 h-9 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center border border-white/20 cursor-pointer"
+                  >
+                    <Icon name="person" size={18} className="text-white" />
+                  </button>
+                )}
                 <span className="hidden sm:inline">
                   <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>{t("nav.startPlanning")}</BtnPrimary>
                 </span>

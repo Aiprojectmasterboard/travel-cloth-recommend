@@ -290,8 +290,9 @@ export function OnboardingStep1() {
           if (c.toDate && value > c.toDate) updated.toDate = "";
           return updated;
         }
-        // toDate — ensure it's not before fromDate
-        if (c.fromDate && value < c.fromDate) return c;
+        // toDate — always accept the value; the min attribute on the input
+        // already prevents selecting dates before fromDate in the native picker.
+        // Silently rejecting caused mobile date pickers to "bounce back".
         return { ...c, toDate: value };
       }),
     }));

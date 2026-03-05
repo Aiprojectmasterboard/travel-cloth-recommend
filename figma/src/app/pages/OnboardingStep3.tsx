@@ -5,6 +5,7 @@ import { ProgressBar, BtnPrimary, BtnSecondary } from "../components/travel-caps
 import { AestheticCard } from "../components/travel-capsule/AestheticCard";
 import { Icon } from "../components/travel-capsule/Icon";
 import { useOnboarding } from "../context/OnboardingContext";
+import { useLang } from "../context/LanguageContext";
 import { IMAGES } from "../constants/images";
 
 const WORKER_URL =
@@ -65,6 +66,7 @@ async function uploadToR2(file: File): Promise<UploadResult> {
 export function OnboardingStep3() {
   const navigate = useNavigate();
   const { data, setData } = useOnboarding();
+  const { t } = useLang();
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
   const [uploadError, setUploadError] = useState("");
   const [dragOver, setDragOver] = useState(false);
@@ -388,7 +390,14 @@ export function OnboardingStep3() {
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
                 Drop your photo here or{" "}
-                <span className="text-[#C4613A] underline underline-offset-2">browse</span>
+                <button
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                  className="text-[#C4613A] underline underline-offset-2 font-medium cursor-pointer bg-transparent border-none p-0"
+                  style={{ fontFamily: "var(--font-body)", fontSize: "14px" }}
+                >
+                  Browse
+                </button>
               </p>
               <p
                 className="mt-1 text-[12px] text-[#57534e]"
@@ -415,6 +424,15 @@ export function OnboardingStep3() {
           className="hidden"
           onChange={handleInputChange}
         />
+
+        {/* Default image notice */}
+        <p
+          className="mt-3 text-[13px] text-[#78716c] flex items-start gap-2"
+          style={{ fontFamily: "var(--font-body)" }}
+        >
+          <Icon name="info" size={16} className="text-[#78716c] flex-shrink-0 mt-0.5" />
+          {t("onboarding.photoDefaultNotice")}
+        </p>
       </div>
 
       {/* Navigation */}

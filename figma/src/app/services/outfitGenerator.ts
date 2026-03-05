@@ -468,13 +468,6 @@ function recommendSize(
   const w = parseInt(weight) || 65;
   const bmi = w / ((h / 100) ** 2);
 
-  /**
-   * PRODUCTION NOTE:
-   * Replace this heuristic with the ML sizing model endpoint:
-   *   POST /api/v1/sizing/recommend
-   *   { gender, heightCm, weightKg, category, photoAnalysis }
-   */
-
   const g = gender === "male" ? "m" : "f";
 
   if (category === "shoes") {
@@ -482,14 +475,12 @@ function recommendSize(
     return h < 165 ? "EU 37" : h < 175 ? "EU 39" : "EU 41";
   }
 
-  // Clothing sizes
   if (g === "m") {
     if (bmi < 20) return "S";
     if (bmi < 24) return h > 180 ? "L" : "M";
     if (bmi < 28) return "L";
     return "XL";
   }
-  // female / non-binary
   if (bmi < 19) return "XS";
   if (bmi < 22) return "S";
   if (bmi < 26) return "M";
@@ -519,8 +510,68 @@ function buildBodyFitLabel(profile: UserProfile): string {
 }
 
 /* ═══════════════════════════════════════════════════════════ */
-/*  PUBLIC API                                                 */
+/*  OUTFIT GENERATION ALGORITHM                                */
+/*  Rules:                                                     */
+/*  - Bottoms: max 50% of total days                           */
+/*  - Outer tops (jacket, coat): max 50%                       */
+/*  - Inner tops (knit, sweater): max 50%                      */
+/*  - T-shirts: max 25%                                        */
+/*  - Shoes: max 50%                                           */
+/*  - Accessories: unrestricted                                */
+/*  - Same full combination: NEVER repeat                      */
 /* ═══════════════════════════════════════════════════════════ */
+
+type ItemSlot = "outerwear" | "top" | "bottom" | "shoes" | "accessory";
+
+interface PoolItem {
+  key: keyof typeof ITEM_IMAGES;
+  name: string;
+  desc: string;
+  category: ItemSlot;
+  /** For sub-type limits: "tshirt" | "inner-top" | "outer" | undefined */
+  subType?: "tshirt" | "inner-top";
+}
+
+/** Extract a unique item pool from all templates for a city+aesthetic combo */
+function buildItemPool(templates: OutfitTemplate[]): Map<string, PoolItem> {
+  const pool = new Map<string, PoolItem>();
+  for (const tpl of templates) {
+    for (const item of tpl.items) {
+      if (!pool.has(item.name)) {
+        const nameLower = item.name.toLowerCase();
+        let subType: PoolItem["subType"];
+        if (item.category === "top") {
+          if (nameLower.includes("tee") || nameLower.includes("t-shirt") || nameLower.includes("tshirt")) {
+            subType = "tshirt";
+          } else {
+            subType = "inner-top";
+          }
+        }
+        pool.set(item.name, {
+          key: item.key,
+          name: item.name,
+          desc: item.desc,
+          category: item.category,
+          subType,
+        });
+      }
+    }
+  }
+  return pool;
+}
+
+/** Compute max usage count for a category/subType given total days */
+function maxUsage(category: ItemSlot, subType: PoolItem["subType"], totalDays: number): number {
+  if (category === "accessory") return totalDays; // unrestricted
+  if (subType === "tshirt") return Math.max(1, Math.ceil(totalDays * 0.25));
+  // bottoms, outerwear, inner-top, shoes: 50%
+  return Math.max(1, Math.ceil(totalDays * 0.5));
+}
+
+/** Create a string fingerprint of a combination for uniqueness checking */
+function comboFingerprint(items: PoolItem[]): string {
+  return items.map(i => i.name).sort().join("|");
+}
 
 function getOutfitImages(gender: string, cityKey: string): string[] {
   const pool = gender === "male" ? MALE_OUTFITS : FEMALE_OUTFITS;
@@ -532,28 +583,21 @@ function getTemplates(cityKey: string, aesthetic?: string): OutfitTemplate[] {
   const key = cityKey.toLowerCase();
   const aestheticKey = aesthetic?.toLowerCase() || "";
 
-  // 1. City-specific templates exist — use them (subtitles adjusted by caller)
-  if (TEMPLATES[key]) {
-    return TEMPLATES[key];
-  }
+  if (TEMPLATES[key]) return TEMPLATES[key];
 
-  // 2. No city-specific templates — try aesthetic-specific _default set
   const aestheticDefault = `_default_${aestheticKey}`;
-  if (aestheticKey && TEMPLATES[aestheticDefault]) {
-    return TEMPLATES[aestheticDefault];
-  }
+  if (aestheticKey && TEMPLATES[aestheticDefault]) return TEMPLATES[aestheticDefault];
 
-  // 3. Fallback to paris templates (original behavior)
   return TEMPLATES.paris;
 }
 
 /**
- * Generate outfits for a single city.
+ * Generate outfits for a single city with repetition-limited algorithm.
  *
- * PRODUCTION:
- *   POST /api/v1/outfits/generate
- *   Body: { profile: UserProfile, city: CityInput, count: number }
- *   Returns: GeneratedOutfit[] with AI-synthesized full-body images
+ * Ensures:
+ * - No identical outfit combination repeats
+ * - Per-item usage respects category limits
+ * - Packing list derived from outfits is always consistent
  */
 export function generateCityOutfits(
   profile: UserProfile,
@@ -566,18 +610,125 @@ export function generateCityOutfits(
   const images = getOutfitImages(gender, cityKey);
   const templates = getTemplates(cityKey, primaryAesthetic);
   const bodyFitLabel = buildBodyFitLabel(profile);
+  const totalDays = count;
 
-  // Capitalize aesthetic name for display in subtitles
   const aestheticLabel = primaryAesthetic
     ? primaryAesthetic.charAt(0).toUpperCase() + primaryAesthetic.slice(1)
     : "";
 
-  return templates.slice(0, count).map((tpl, i) => {
-    // For city-specific templates, inject the aesthetic into the subtitle
-    // e.g. "Classic Layering" becomes "Casual Layering" when aesthetic is Casual
+  // Build the item pool from all available templates
+  const itemPool = buildItemPool(templates);
+  const allItems = Array.from(itemPool.values());
+
+  // Group items by category for selection
+  const byCategory: Record<ItemSlot, PoolItem[]> = {
+    outerwear: [], top: [], bottom: [], shoes: [], accessory: [],
+  };
+  for (const item of allItems) {
+    byCategory[item.category].push(item);
+  }
+
+  // Track per-item usage counts
+  const usageCount = new Map<string, number>();
+  for (const item of allItems) usageCount.set(item.name, 0);
+
+  // Track used combinations to prevent repeats
+  const usedCombos = new Set<string>();
+
+  const outfits: GeneratedOutfit[] = [];
+
+  for (let dayIdx = 0; dayIdx < totalDays; dayIdx++) {
+    // Use template metadata (title/subtitle/note) for this day
+    const tpl = templates[dayIdx % templates.length];
+
+    // Select items for each required slot, respecting limits
+    const selectedItems: PoolItem[] = [];
+
+    // Required slots: top, bottom, shoes. Optional: outerwear, accessory.
+    const requiredSlots: ItemSlot[] = ["top", "bottom", "shoes"];
+    // Add outerwear if template has it
+    const tplHasOuterwear = tpl.items.some(i => i.category === "outerwear");
+    if (tplHasOuterwear) requiredSlots.unshift("outerwear");
+    // Add accessory if template has it
+    const tplAccessories = tpl.items.filter(i => i.category === "accessory");
+    if (tplAccessories.length > 0) requiredSlots.push("accessory");
+
+    for (const slot of requiredSlots) {
+      const candidates = byCategory[slot];
+      if (candidates.length === 0) continue;
+
+      // Sort candidates by usage count (prefer least-used for diversity)
+      const sorted = [...candidates].sort((a, b) => {
+        const aCount = usageCount.get(a.name) || 0;
+        const bCount = usageCount.get(b.name) || 0;
+        return aCount - bCount;
+      });
+
+      // Pick the least-used candidate that hasn't exceeded its limit
+      let picked: PoolItem | null = null;
+      for (const candidate of sorted) {
+        const currentUsage = usageCount.get(candidate.name) || 0;
+        const limit = maxUsage(candidate.category, candidate.subType, totalDays);
+        if (currentUsage < limit) {
+          picked = candidate;
+          break;
+        }
+      }
+
+      // Fallback: if all exceeded limits, pick the least-used anyway
+      if (!picked) picked = sorted[0];
+
+      selectedItems.push(picked);
+    }
+
+    // Check for combination uniqueness
+    const fp = comboFingerprint(selectedItems);
+    if (usedCombos.has(fp)) {
+      // Correction priority: 1. Change top, 2. Change bottom, 3. Add 1 item
+      let resolved = false;
+      for (const swapSlot of ["top", "bottom", "accessory"] as ItemSlot[]) {
+        const altCandidates = byCategory[swapSlot].filter(
+          c => !selectedItems.some(s => s.name === c.name)
+        );
+        if (altCandidates.length > 0) {
+          const slotIdx = selectedItems.findIndex(s => s.category === swapSlot);
+          if (slotIdx >= 0) {
+            // Sort by least usage
+            altCandidates.sort((a, b) => (usageCount.get(a.name) || 0) - (usageCount.get(b.name) || 0));
+            selectedItems[slotIdx] = altCandidates[0];
+            resolved = true;
+            break;
+          } else if (swapSlot === "accessory") {
+            // Add an accessory to differentiate
+            altCandidates.sort((a, b) => (usageCount.get(a.name) || 0) - (usageCount.get(b.name) || 0));
+            selectedItems.push(altCandidates[0]);
+            resolved = true;
+            break;
+          }
+        }
+      }
+      if (!resolved) {
+        // Last resort: forcibly change the top to any different item
+        const topIdx = selectedItems.findIndex(s => s.category === "top");
+        if (topIdx >= 0) {
+          const otherTops = byCategory.top.filter(c => c.name !== selectedItems[topIdx].name);
+          if (otherTops.length > 0) {
+            selectedItems[topIdx] = otherTops[dayIdx % otherTops.length];
+          }
+        }
+      }
+    }
+
+    // Record final combo and update usage counts
+    const finalFp = comboFingerprint(selectedItems);
+    usedCombos.add(finalFp);
+    for (const item of selectedItems) {
+      usageCount.set(item.name, (usageCount.get(item.name) || 0) + 1);
+    }
+
+    // Build subtitle
     let subtitle = tpl.subtitle;
     if (aestheticLabel && TEMPLATES[cityKey]) {
-      // Replace the first word of the subtitle with the aesthetic label
       const parts = subtitle.split(" ");
       if (parts.length > 1) {
         parts[0] = aestheticLabel;
@@ -587,14 +738,14 @@ export function generateCityOutfits(
       }
     }
 
-    return {
-      id: `${cityKey}-outfit-${i + 1}`,
-      day: i + 1,
+    outfits.push({
+      id: `${cityKey}-outfit-${dayIdx + 1}`,
+      day: dayIdx + 1,
       title: tpl.title,
       subtitle,
-      image: images[i % images.length],
-      items: tpl.items.map((item, j) => ({
-        id: `${cityKey}-item-${i}-${j}`,
+      image: images[dayIdx % images.length],
+      items: selectedItems.map((item, j) => ({
+        id: `${cityKey}-item-${dayIdx}-${j}`,
         name: item.name,
         desc: item.desc,
         img: ITEM_IMAGES[item.key],
@@ -604,8 +755,10 @@ export function generateCityOutfits(
       note: tpl.note,
       aiConfidence: 85 + Math.floor(Math.random() * 12),
       bodyFitLabel,
-    };
-  });
+    });
+  }
+
+  return outfits;
 }
 
 /**

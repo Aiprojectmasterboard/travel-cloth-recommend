@@ -240,10 +240,13 @@ export function AnnualDashboard() {
                 </div>
                 <div className="space-y-2 mt-4">
                   {hasRealData ? (
-                    apiCapsuleItems.slice(activeDayIdx * 3, activeDayIdx * 3 + 5).map((item, i) => (
+                    apiCapsuleItems.slice(activeDayIdx * 3, activeDayIdx * 3 + 5).map((item, i) => {
+                      const catIcon: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                      const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
+                      return (
                       <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
                         <div className="w-12 h-12 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                          <Icon name="checkroom" size={20} className="text-[#57534e]" />
+                          <Icon name={iconName} size={20} className="text-[#57534e]" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
@@ -253,7 +256,8 @@ export function AnnualDashboard() {
                           <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
                         </div>
                       </div>
-                    ))
+                      );
+                    })
                   ) : (
                     outfits[activeDayIdx].items.map((item) => (
                       <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
@@ -275,7 +279,7 @@ export function AnnualDashboard() {
 
           {/* Right */}
           <div className="lg:col-span-4 space-y-6">
-            <ProfileBadge gender={profile.gender} height={profile.height} weight={profile.weight} aesthetics={profile.aesthetics} photo={profile.photo} bodyFitLabel={bodyFitLabel} />
+            <ProfileBadge gender={profile.gender} height={profile.height} weight={profile.weight} aesthetics={profile.aesthetics} photo={profile.photo} faceUrl={onboarding.faceUrl} bodyFitLabel={bodyFitLabel} />
 
             {/* Weather */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
@@ -297,17 +301,21 @@ export function AnnualDashboard() {
                 </span>
               </div>
               <div className="space-y-2">
-                {displayPackingItems.slice(0, 10).map((item, i) => (
+                {displayPackingItems.slice(0, 10).map((item, i) => {
+                  const CAT_ICON: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                  const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
+                  return (
                   <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
                     <div className="w-10 h-10 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                      <Icon name="checkroom" size={18} className="text-[#57534e]" />
+                      <Icon name={iconName} size={18} className="text-[#57534e]" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <span className="text-[13px] text-[#292524] truncate block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                      <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
+                      <span className="text-[10px] text-[#57534e] capitalize" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

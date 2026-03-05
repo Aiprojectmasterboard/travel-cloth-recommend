@@ -11,11 +11,18 @@ import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
 /* Fallback images when AI teaser is not available */
 const FALLBACK_IMG = "https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMEZyYW5jZSUyMEVpZmZlbCUyMHRvd2VyJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc3MjQyNjYwM3ww&ixlib=rb-4.1.0&q=80&w=1080";
 
+/** Format a date string as "Mon DD" using locale-aware short month */
+function fmtShort(dateStr: string, locale: string): string {
+  if (!dateStr) return "\u2014";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
+}
+
 export function PreviewPage() {
   const navigate = useNavigate();
   const { data } = useOnboarding();
   const { preview, tripId, loading: tripLoading, error: tripError } = useTrip();
-  const { t, displayFont, bodyFont } = useLang();
+  const { t, displayFont, bodyFont, lang } = useLang();
   const { isLoggedIn, user, setShowLoginModal } = useAuth();
 
   const city = data.cities[0]?.city || "Paris";
@@ -40,7 +47,7 @@ export function PreviewPage() {
   const primaryWeather = weatherData[0];
   const weatherDisplay = primaryWeather
     ? `${Math.round(primaryWeather.temperature_day_avg)}\u00B0C, ${Math.round(primaryWeather.precipitation_prob * 100)}% rain`
-    : "Analyzing...";
+    : t("preview.processing");
 
   // Vibe color palette
   const vibeColors = vibes[0]?.color_palette || ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"];
@@ -51,6 +58,16 @@ export function PreviewPage() {
   const [showCityLimitModal, setShowCityLimitModal] = useState(false);
 
   const cityCount = data.cities.length;
+
+  // Duration display: "Aug 15 - Aug 20 (5 nights)"
+  const fromDate = data.cities[0]?.fromDate || "";
+  const toDate = data.cities[0]?.toDate || "";
+  const nightCount = fromDate && toDate
+    ? Math.max(1, Math.round((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86400000))
+    : 7;
+  const durationValue = fromDate && toDate
+    ? `${fmtShort(fromDate, lang)} - ${fmtShort(toDate, lang)} (${nightCount} ${t("general.nights")})`
+    : `${nightCount} ${t("general.nights")}`;
 
   const doCheckout = async (plan: PlanKey) => {
     setCheckoutLoading(plan);
@@ -64,19 +81,14 @@ export function PreviewPage() {
       });
 
       if (!session.url) {
-        // Worker returned success but no checkout URL — surface an error
         throw new Error("No checkout URL received. Please try again.");
       }
 
-      // Save checkout info so success page has fallbacks after Polar redirect
       sessionStorage.setItem("tc_pending_checkout", JSON.stringify({
         plan, tripId, checkoutId: session.id, ts: Date.now(),
       }));
-      // Also persist plan key separately for CheckoutSuccess fallback
       sessionStorage.setItem("tc_pending_plan", plan);
-      // Save Polar URL so CheckoutSuccess can open it
       sessionStorage.setItem("tc_polar_url", session.url);
-      // Navigate to OUR success page first — Polar opens from there
       navigate(`/checkout/success?plan=${plan}&tripId=${tripId || ""}&checkout_id=${session.id}`);
     } catch (err) {
       setCheckoutLoading(null);
@@ -85,7 +97,6 @@ export function PreviewPage() {
   };
 
   const handleCheckout = (plan: PlanKey) => {
-    // Standard plan is limited to 1 city — show warning if user has multiple cities
     if (plan === "standard" && cityCount > 1) {
       setShowCityLimitModal(true);
       return;
@@ -100,17 +111,17 @@ export function PreviewPage() {
         <div className="text-center max-w-[400px]">
           <Icon name="auto_awesome" size={40} className="text-[#C4613A] mx-auto mb-4" />
           <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: displayFont }}>
-            No preview available
+            {t("preview.noPreview")}
           </h2>
           <p className="mt-3 text-[15px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
-            Start by entering your trip details to get AI-powered style recommendations.
+            {t("preview.noPreviewBody")}
           </p>
           <button
             onClick={() => navigate("/onboarding/1")}
             className="mt-6 h-[48px] px-8 bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
             style={{ fontFamily: bodyFont, fontWeight: 600 }}
           >
-            Start Your Trip
+            {t("preview.startTrip")}
           </button>
         </div>
       </div>
@@ -208,14 +219,14 @@ export function PreviewPage() {
                 <Icon name="auto_awesome" size={20} className="text-white" filled />
               </div>
               <span className="text-[20px] text-white italic" style={{ fontFamily: displayFont }}>
-                {preview ? "AI Analysis Complete" : "Generating..."}
+                {preview ? t("preview.analysisComplete") : t("preview.generating")}
               </span>
             </div>
             <div className="w-full h-1.5 bg-white/20 rounded-full overflow-hidden">
               <div className={`h-full bg-[#C4613A] rounded-full transition-all duration-1000 ${preview ? "w-full" : "w-[40%]"}`} />
             </div>
             <span className="mt-2 block text-[10px] uppercase tracking-[0.12em] text-white/70" style={{ fontFamily: "var(--font-mono)" }}>
-              {preview ? "100% AI Analysis Complete" : "Processing..."}
+              {preview ? t("preview.analysisPercent") : t("preview.processing")}
             </span>
           </div>
         </div>
@@ -240,12 +251,12 @@ export function PreviewPage() {
         <div className="mt-12">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-[#292524]" style={{ fontSize: "clamp(24px, 3vw, 36px)", fontFamily: displayFont }}>
-              AI Outfit Preview
+              {t("preview.outfitPreview")}
             </h2>
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1410] rounded-full">
               <span className="material-symbols-outlined text-white" style={{ fontSize: 14 }}>lock</span>
               <span className="text-[10px] uppercase tracking-[0.12em] text-white" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                Preview locked \u2014 unlock after purchase
+                {t("preview.previewLocked")}
               </span>
             </div>
           </div>
@@ -263,27 +274,26 @@ export function PreviewPage() {
                       style={isUnlocked ? { transform: "scale(1)" } : { filter: "blur(12px) brightness(0.7)", transform: "scale(1.1)" }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    {/* Lock overlay for blurred images */}
                     {!isUnlocked && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
                         <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center">
                           <span className="material-symbols-outlined text-white" style={{ fontSize: 22 }}>lock</span>
                         </div>
                         <span className="text-white/80 text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                          Unlock
+                          {t("preview.unlock")}
                         </span>
                       </div>
                     )}
                     {isUnlocked && (
                       <div className="absolute top-2 left-2">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                          <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                          <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
                         </span>
                       </div>
                     )}
                     <div className="absolute bottom-3 left-3 right-3">
                       <span className="text-white/70 text-[10px] uppercase tracking-[0.1em] block" style={{ fontFamily: "var(--font-mono)" }}>
-                        Day {idx + 1} Look
+                        {t("preview.dayLook").replace("{n}", String(idx + 1))}
                       </span>
                     </div>
                   </div>
@@ -293,14 +303,14 @@ export function PreviewPage() {
           </div>
           <div className="mt-5 flex items-center justify-between px-1">
             <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
-              4 personalized looks waiting for you
+              4 {t("preview.looksWaiting")}
             </span>
             <button
               onClick={() => document.getElementById("pricing-section")?.scrollIntoView({ behavior: "smooth" })}
               className="flex items-center gap-1.5 text-[12px] uppercase tracking-[0.08em] text-[#C4613A] hover:text-[#A84A25] transition-colors cursor-pointer"
               style={{ fontFamily: bodyFont, fontWeight: 600 }}
             >
-              Unlock all
+              {t("preview.unlockAll")}
               <span className="material-symbols-outlined" style={{ fontSize: 16 }}>arrow_downward</span>
             </button>
           </div>
@@ -319,7 +329,7 @@ export function PreviewPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
               { labelKey: "preview.destination", value: `${city}, ${country}` },
-              { labelKey: "preview.duration", value: `${data.cities[0] ? Math.max(1, Math.round((new Date(data.cities[0].toDate).getTime() - new Date(data.cities[0].fromDate).getTime()) / 86400000)) : 7} ${t("general.days")}` },
+              { labelKey: "preview.duration", value: durationValue },
               { labelKey: "preview.aesthetic", value: aestheticLabel },
               { labelKey: "preview.weather", value: weatherDisplay },
             ].map((item) => (
@@ -339,7 +349,7 @@ export function PreviewPage() {
             <div className="flex items-center gap-3 mb-6">
               <Icon name="checkroom" size={24} className="text-[#C4613A]" />
               <h3 className="text-[22px] text-[#292524]" style={{ fontFamily: displayFont }}>
-                AI Capsule Estimate: {capsuleCount} pieces
+                {t("preview.capsuleEstimate")}: {capsuleCount} {t("preview.capsulePieces")}
               </h3>
             </div>
             <div className="space-y-3">
@@ -354,7 +364,7 @@ export function PreviewPage() {
             </div>
             <div className="mt-6 pt-4 border-t border-[#EFE8DF]">
               <p className="text-[13px] text-[#57534e]/70 italic" style={{ fontFamily: displayFont }}>
-                Full item list, daily plans, and AI-generated outfit images unlock after purchase.
+                {t("preview.capsuleNote")}
               </p>
             </div>
           </div>
@@ -365,7 +375,7 @@ export function PreviewPage() {
           <div className="mt-6 p-4 bg-[#FEF3C7] border border-[#FCD34D]/30 rounded-xl">
             <div className="flex items-center gap-2 mb-2">
               <Icon name="info" size={16} className="text-[#D97706]" />
-              <span className="text-[11px] uppercase tracking-[0.1em] text-[#D97706]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>Style Tip</span>
+              <span className="text-[11px] uppercase tracking-[0.1em] text-[#D97706]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("preview.styleTip")}</span>
             </div>
             <p className="text-[14px] text-[#92400E]" style={{ fontFamily: bodyFont }}>{vibes[0].avoid_note}</p>
           </div>
@@ -410,7 +420,7 @@ export function PreviewPage() {
               </div>
               <div className="mt-8">
                 <BtnSecondary onClick={() => handleCheckout("standard")} className="w-full">
-                  {checkoutLoading === "standard" ? "Processing..." : t("pricing.standard.cta")}
+                  {checkoutLoading === "standard" ? t("preview.processing") : t("pricing.standard.cta")}
                 </BtnSecondary>
               </div>
             </div>
@@ -437,7 +447,7 @@ export function PreviewPage() {
                 ))}
               </div>
               <button onClick={() => handleCheckout("pro")} className="mt-8 h-[56px] w-full bg-white text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                {checkoutLoading === "pro" ? "Processing..." : t("pricing.pro.cta")}
+                {checkoutLoading === "pro" ? t("preview.processing") : t("pricing.pro.cta")}
               </button>
             </div>
 
@@ -458,7 +468,7 @@ export function PreviewPage() {
               </div>
               <div className="mt-8">
                 <BtnDark onClick={() => handleCheckout("annual")} className="w-full">
-                  {checkoutLoading === "annual" ? "Processing..." : t("pricing.annual.cta")}
+                  {checkoutLoading === "annual" ? t("preview.processing") : t("pricing.annual.cta")}
                 </BtnDark>
               </div>
             </div>

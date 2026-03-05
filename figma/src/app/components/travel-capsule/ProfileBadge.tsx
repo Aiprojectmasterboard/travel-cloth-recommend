@@ -7,6 +7,8 @@ interface ProfileBadgeProps {
   weight: string;
   aesthetics: string[];
   photo: string;
+  /** R2 CDN URL of uploaded face photo — survives payment redirect */
+  faceUrl?: string;
   bodyFitLabel: string;
 }
 
@@ -14,7 +16,8 @@ interface ProfileBadgeProps {
  * Displays the user's profile summary that was used for AI outfit generation.
  * Shows gender, body info, aesthetics, and photo status.
  */
-export function ProfileBadge({ gender, height, weight, aesthetics, photo, bodyFitLabel }: ProfileBadgeProps) {
+export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUrl, bodyFitLabel }: ProfileBadgeProps) {
+  const hasPhoto = !!(photo || faceUrl);
   const genderIcon = gender === "male" ? "male" : gender === "non-binary" ? "transgender" : "female";
   const genderLabel = gender === "male" ? "Male" : gender === "non-binary" ? "Non-binary" : "Female";
 
@@ -84,7 +87,7 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, bodyFi
           <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
             <Icon name="photo_camera" size={14} className="text-[#57534e]" /> Reference Photo
           </span>
-          {photo ? (
+          {hasPhoto ? (
             <span className="text-[11px] text-green-600 flex items-center gap-1" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
               <Icon name="check_circle" size={12} className="text-green-600" filled /> Uploaded
             </span>

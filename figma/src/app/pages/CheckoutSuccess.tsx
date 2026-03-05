@@ -252,7 +252,7 @@ export function CheckoutSuccess() {
 
         return next;
       });
-    }, status === "ready" ? 100 : 800);
+    }, status === "ready" ? 100 : 500);
 
     return () => {
       if (progressInterval.current) {
@@ -291,8 +291,8 @@ export function CheckoutSuccess() {
     }
 
     // Poll /api/result/:tripId — returns 402 until order is paid
-    const MAX_POLLS = 60; // 5 minutes max
-    const POLL_INTERVAL = 5000;
+    const MAX_POLLS = 150; // 5 minutes max at 2s intervals
+    const POLL_INTERVAL = 2000;
 
     for (let i = 0; i < MAX_POLLS; i++) {
       try {

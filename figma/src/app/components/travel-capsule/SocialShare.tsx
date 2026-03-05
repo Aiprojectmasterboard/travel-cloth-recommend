@@ -7,7 +7,17 @@ export function SocialShareButton() {
   const [copied, setCopied] = useState(false);
   const { t, displayFont, bodyFont } = useLang();
 
-  const shareUrl = typeof window !== "undefined" ? window.location.href : "";
+  // Build share URL: use /share/:tripId if on a dashboard page with a tripId
+  const buildShareUrl = (): string => {
+    if (typeof window === "undefined") return "";
+    const tripId = sessionStorage.getItem("tc_trip_id");
+    if (tripId) {
+      const base = window.location.origin;
+      return `${base}/share/${tripId}?utm_source=share&utm_medium=direct`;
+    }
+    return window.location.href;
+  };
+  const shareUrl = buildShareUrl();
 
   const handleCopy = async () => {
     try {

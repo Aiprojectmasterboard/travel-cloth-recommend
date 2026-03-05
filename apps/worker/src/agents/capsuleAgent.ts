@@ -206,6 +206,22 @@ CONSTRAINTS:
 - No dry-clean-only or delicate fabrics
 ${userProfile ? `- All clothing items must be appropriate for ${userProfile.gender === 'male' ? 'men' : userProfile.gender === 'non-binary' ? 'any gender' : 'women'}` : ''}
 
+REPETITION RULES (MUST follow strictly):
+- Bottoms: each bottom worn at most 50% of total days (e.g. 4-day trip = max 2 wears per bottom)
+- Outerwear (jacket, coat): each piece worn at most 50% of total days
+- Inner tops (knit, sweater): each piece worn at most 50% of total days
+- T-shirts: each t-shirt worn at most 25% of total days
+- Shoes: each pair worn at most 50% of total days
+- Accessories (scarf, earrings, hat): unrestricted
+- Same full combination of items: NEVER repeat across any two days
+- Even when repeating a bottom, you MUST vary the look by changing the top, shoes, or layering
+- Correction priority if a combination would repeat: 1. Change top, 2. Change bottom, 3. Add 1 accessory
+
+OPTIMIZATION:
+- Minimize total items (packing weight) while maximizing look diversity
+- All days must be covered with a complete outfit
+- If rain is likely for a city day, include a waterproof layer + umbrella in that day's outfit
+
 Item fields:
 - name: specific item (e.g. "White linen button-down shirt")
 - category: one of [top, bottom, outerwear, shoes, dress/jumpsuit, accessory]
@@ -213,6 +229,7 @@ Item fields:
 - versatility_score: 1–10
 
 Daily plan: assign each day to a city, list 3–5 item names as the outfit, add a short activity note.
+IMPORTANT: Every item name in daily_plan.outfit[] MUST exactly match an item name from the items[] array. No outfit may reference an item not in the capsule list.
 
 Respond ONLY with:
 {
@@ -260,12 +277,29 @@ Respond ONLY with:
     versatility_score: Math.min(10, Math.max(1, Number(item.versatility_score ?? 5))),
   }));
 
+  // Build a set of valid item names for consistency validation
+  const validItemNames = new Set(items.map((i) => i.name));
+
   const daily_plan: DailyOutfit[] = parsed.daily_plan.map((p) => ({
     day: Number(p.day ?? 1),
     city: String(p.city ?? ''),
-    outfit: Array.isArray(p.outfit) ? p.outfit.map(String) : [],
+    // Filter outfit items to only include names that exist in the capsule items list
+    outfit: Array.isArray(p.outfit)
+      ? p.outfit.map(String).filter((name) => validItemNames.has(name))
+      : [],
     note: String(p.note ?? ''),
   }));
+
+  // Validate: check for duplicate full combinations
+  const combos = new Set<string>();
+  for (const day of daily_plan) {
+    const combo = [...day.outfit].sort().join('|');
+    if (combos.has(combo)) {
+      // Log warning but don't fail — the AI sometimes slips
+      console.warn(`[capsuleAgent] Duplicate outfit combination on day ${day.day}`);
+    }
+    combos.add(combo);
+  }
 
   return { plan, items, daily_plan };
 }

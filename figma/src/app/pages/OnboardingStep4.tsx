@@ -5,6 +5,7 @@ import { ProgressBar, BtnPrimary, BtnSecondary, Icon } from "../components/trave
 import { useOnboarding } from "../context/OnboardingContext";
 import { useTrip } from "../context/TripContext";
 import { useAuth } from "../context/AuthContext";
+import { useLang } from "../context/LanguageContext";
 import { IMAGES } from "../constants/images";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
@@ -13,6 +14,7 @@ export function OnboardingStep4() {
   const { data } = useOnboarding();
   const { startPreview, loading: tripLoading } = useTrip();
   const { isLoggedIn, setShowLoginModal, setLoginModalContext } = useAuth();
+  const { t, lang } = useLang();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingSubmit, setPendingSubmit] = useState(false);
@@ -25,21 +27,23 @@ export function OnboardingStep4() {
   const fromDate = primaryCity?.fromDate || "2026-04-12";
   const toDate = primaryCity?.toDate || "2026-04-18";
 
-  // Calculate days
-  const dayCount = fromDate && toDate
+  // Calculate nights
+  const nightCount = fromDate && toDate
     ? Math.max(1, Math.round((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86400000))
     : 6;
 
   const formatDate = (d: string) => {
     if (!d) return "\u2014";
     const date = new Date(d);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    return date.toLocaleDateString(lang, { month: "short", day: "numeric", year: "numeric" });
   };
 
   const genderLabel = data.gender
     ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1)
-    : "Not specified";
-  const styleLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : "Not selected";
+    : t("onboarding4.notSpecified");
+  const styleLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : t("onboarding4.notSelected");
+
+  const ctaLabel = isLoggedIn ? t("auth.analyzeMyTrip") : t("auth.signUpAndAnalyze");
 
   const doSubmit = async () => {
     if (submitting || tripLoading) return;
@@ -74,6 +78,12 @@ export function OnboardingStep4() {
     }
   }, [isLoggedIn, pendingSubmit]);
 
+  const photoValue = data.faceUrl
+    ? t("onboarding4.uploaded")
+    : data.photo
+      ? t("onboarding4.readyUpload")
+      : t("onboarding4.notProvided");
+
   return (
     <OnboardingLayout
       imageUrl={IMAGES.airport}
@@ -84,10 +94,10 @@ export function OnboardingStep4() {
 
       <div className="mt-10">
         <h1 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-          Ready for your <em>getaway?</em>
+          {t("onboarding4.title")} <em>{t("onboarding4.titleEm")}</em>
         </h1>
         <p className="mt-4 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-          Review your trip details before we analyze the perfect capsule wardrobe.
+          {t("onboarding4.subtitle")}
         </p>
       </div>
 
@@ -99,7 +109,7 @@ export function OnboardingStep4() {
             <ImageWithFallback src={cityImg} alt={cityName} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
             <div className="absolute top-4 left-4">
-              <span className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Trip Summary</span>
+              <span className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("onboarding4.tripSummary")}</span>
             </div>
             <div className="absolute bottom-4 left-5">
               <h3 className="text-white text-[28px] italic" style={{ fontFamily: "var(--font-display)" }}>{cityName}, {countryName}</h3>
@@ -115,7 +125,7 @@ export function OnboardingStep4() {
                   <div className="absolute bottom-2 left-2 right-2">
                     <span className="text-white text-[16px] italic block" style={{ fontFamily: "var(--font-display)" }}>{c.city}</span>
                     <span className="text-white/70 text-[10px]" style={{ fontFamily: "var(--font-mono)" }}>
-                      {c.fromDate ? new Date(c.fromDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""} {c.fromDate && c.toDate ? "–" : ""} {c.toDate ? new Date(c.toDate).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : ""}
+                      {c.fromDate ? new Date(c.fromDate).toLocaleDateString(lang, { month: "short", day: "numeric" }) : ""} {c.fromDate && c.toDate ? "\u2013" : ""} {c.toDate ? new Date(c.toDate).toLocaleDateString(lang, { month: "short", day: "numeric" }) : ""}
                     </span>
                   </div>
                 </div>
@@ -123,7 +133,7 @@ export function OnboardingStep4() {
             </div>
             <div className="absolute top-3 left-3">
               <span className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                {data.cities.length} Cities · Trip Summary
+                {data.cities.length} Cities \u00B7 {t("onboarding4.tripSummary")}
               </span>
             </div>
           </div>
@@ -133,13 +143,13 @@ export function OnboardingStep4() {
         <div className="p-6">
           <div className="space-y-4">
             {[
-              { icon: "calendar_today", label: "Dates", value: `${formatDate(fromDate)} \u2014 ${formatDate(toDate)}` },
-              { icon: "schedule", label: "Duration", value: `${dayCount} days` },
-              { icon: "palette", label: "Style", value: styleLabel },
-              { icon: "person", label: "Gender", value: genderLabel },
-              { icon: "photo_camera", label: "Reference Photo", value: data.faceUrl ? "Uploaded" : data.photo ? "Ready to upload" : "Not provided" },
+              { icon: "calendar_today", label: t("onboarding4.dates"), value: `${formatDate(fromDate)} \u2014 ${formatDate(toDate)}` },
+              { icon: "schedule", label: t("onboarding4.duration"), value: `${nightCount} ${t("general.nights")}` },
+              { icon: "palette", label: t("onboarding4.style"), value: styleLabel },
+              { icon: "person", label: t("onboarding4.gender"), value: genderLabel },
+              { icon: "photo_camera", label: t("onboarding4.refPhoto"), value: photoValue },
             ].map((row) => (
-              <div key={row.label} className="flex items-center gap-3">
+              <div key={row.icon} className="flex items-center gap-3">
                 <Icon name={row.icon} size={18} className="text-[#C4613A] flex-shrink-0" />
                 <div className="flex items-baseline gap-2 min-w-0">
                   <span className="text-[12px] uppercase tracking-[0.08em] text-[#57534e] flex-shrink-0" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
@@ -158,7 +168,7 @@ export function OnboardingStep4() {
                 <Icon name="public" size={18} className="text-[#C4613A] flex-shrink-0 mt-0.5" />
                 <div>
                   <span className="text-[12px] uppercase tracking-[0.08em] text-[#57534e] block mb-1" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                    All Cities
+                    {t("onboarding4.allCities")}
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {data.cities.map((c) => (
@@ -174,14 +184,14 @@ export function OnboardingStep4() {
 
           <div className="mt-6 pt-4 border-t border-[#E8DDD4]">
             <p className="text-[14px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-              Everything correct?
+              {t("onboarding4.everythingCorrect")}
             </p>
             <button
               onClick={() => navigate("/onboarding/1")}
               className="mt-1 inline-flex items-center gap-1 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:text-[#A84A25] transition-colors cursor-pointer"
               style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
             >
-              Edit Details
+              {t("onboarding4.editDetails")}
               <Icon name="edit" size={14} className="text-[#C4613A]" />
             </button>
           </div>
@@ -210,12 +220,12 @@ export function OnboardingStep4() {
             {submitting ? (
               <>
                 <span className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Analyzing your trip...
+                {t("auth.analyzingTrip")}
               </>
             ) : (
               <>
                 <Icon name="auto_awesome" size={20} className="text-white" filled />
-                {isLoggedIn ? "Analyze My Trip" : "Sign Up & Analyze"}
+                {ctaLabel}
               </>
             )}
           </span>
@@ -226,12 +236,12 @@ export function OnboardingStep4() {
       {submitting && (
         <div className="mt-6 space-y-3">
           {[
-            "Fetching weather data...",
-            "Analyzing city vibes...",
-            "Generating style preview...",
-            "Building capsule estimate...",
+            t("onboarding4.fetchingWeather"),
+            t("onboarding4.analyzingVibes"),
+            t("onboarding4.generatingStyle"),
+            t("onboarding4.buildingCapsule"),
           ].map((step, i) => (
-            <div key={step} className="flex items-center gap-3 animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
+            <div key={i} className="flex items-center gap-3 animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
               <span className="w-2 h-2 rounded-full bg-[#C4613A]" />
               <span className="text-[13px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{step}</span>
             </div>
@@ -245,11 +255,11 @@ export function OnboardingStep4() {
           <div className="flex items-center gap-3 mb-4">
             <span className="w-1.5 h-1.5 rounded-full bg-[#C4613A]" />
             <span className="text-[11px] uppercase tracking-[0.15em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-              The Next Step
+              {t("onboarding4.theNextStep")}
             </span>
           </div>
           <p className="text-[14px] text-[#57534e] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-            Once you click "{isLoggedIn ? "Analyze My Trip" : "Sign Up & Analyze"}," our AI will process weather forecasts, cultural context, and your style preferences to generate a complete capsule wardrobe in under 30 seconds.
+            {t("onboarding4.nextStepBody").replace("{cta}", ctaLabel)}
           </p>
         </div>
       )}
@@ -257,13 +267,13 @@ export function OnboardingStep4() {
       {/* Footer legal */}
       <div className="mt-10 pt-6 border-t border-[#E8DDD4]">
         <p className="text-[11px] text-[#57534e]/50 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
-          By clicking "{isLoggedIn ? "Analyze My Trip" : "Sign Up & Analyze"}" you agree to our Terms of Service and Privacy Policy. Your data is encrypted and never shared with third parties.
+          {t("onboarding4.legalText").replace("{cta}", ctaLabel)}
         </p>
       </div>
 
       {/* Navigation */}
       <div className="mt-8 flex items-center justify-between pb-6">
-        <BtnSecondary size="sm" onClick={() => navigate("/onboarding/3")}>Back</BtnSecondary>
+        <BtnSecondary size="sm" onClick={() => navigate("/onboarding/3")}>{t("onboarding4.back")}</BtnSecondary>
       </div>
     </OnboardingLayout>
   );
