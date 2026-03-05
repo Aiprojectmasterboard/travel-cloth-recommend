@@ -292,9 +292,33 @@ export async function runPreview(
         seoul: { mood: isWarm ? 'Seoul Fresh Contemporary' : 'Seoul Clean Layer', tags: ['contemporary', 'clean', 'trendy', 'minimal'], colors: ['#E8E0D5', '#4A4E5A', '#A0C4B8'], avoid: isWarm ? 'Lightweight breathable fabrics recommended.' : 'Smart layering for variable temperatures.' },
         milan: { mood: isWarm ? 'Milan Luxe Ease' : 'Milan Tailored Elegance', tags: ['luxurious', 'tailored', 'refined', 'designer'], colors: ['#8B7355', '#2C2C2C', '#D4C5B2'], avoid: 'Avoid overly casual looks — Milan appreciates style.' },
         bali: { mood: 'Bali Coastal Ease', tags: ['tropical', 'relaxed', 'earthy', 'flowy'], colors: ['#8B6E4E', '#4A7C59', '#F0E0C8'], avoid: 'Pack light breathable fabrics only.' },
+        bangkok: { mood: isWarm ? 'Bangkok Tropical Heat' : 'Bangkok Golden Temple', tags: ['tropical', 'vibrant', 'cultural', 'colorful'], colors: ['#D4AF37', '#E85D3A', '#4A7C59'], avoid: 'Lightweight loose clothing for extreme humidity.' },
+        'ho chi minh': { mood: 'Saigon Street Chic', tags: ['eclectic', 'vibrant', 'casual', 'warm'], colors: ['#C2956B', '#4A7C59', '#E8DDD4'], avoid: 'Breathable fabrics essential — avoid heavy layers.' },
+        singapore: { mood: 'Singapore Modern Tropic', tags: ['modern', 'sleek', 'tropical', 'polished'], colors: ['#2C2C2C', '#4A7C59', '#E8E0D5'], avoid: 'Air conditioning is cold — carry a light layer.' },
+        osaka: { mood: isWarm ? 'Osaka Street Food Style' : 'Osaka Cozy Layer', tags: ['playful', 'casual', 'food-culture', 'urban'], colors: ['#E85D3A', '#E8E0D5', '#4A4E5A'], avoid: isWarm ? 'Comfortable walking shoes for food markets.' : 'Layer for cool temple visits.' },
+        kyoto: { mood: isWarm ? 'Kyoto Garden Zen' : 'Kyoto Autumn Elegance', tags: ['serene', 'traditional', 'refined', 'nature'], colors: ['#8B7355', '#4A7C59', '#C9B99A'], avoid: 'Modest clothing for temple visits.' },
+        lisbon: { mood: isWarm ? 'Lisbon Coastal Sun' : 'Lisbon Tiled Charm', tags: ['coastal', 'relaxed', 'artistic', 'sun-soaked'], colors: ['#5BA3C2', '#E2A76F', '#F5DEB3'], avoid: 'Comfortable shoes for hilly cobblestone streets.' },
+        amsterdam: { mood: isWarm ? 'Amsterdam Canal Breeze' : 'Amsterdam Cozy Layer', tags: ['casual', 'creative', 'layered', 'cycling'], colors: ['#4A5568', '#E8C9A0', '#5BA3C2'], avoid: 'Rain jacket essential — weather changes fast.' },
+        vienna: { mood: isWarm ? 'Vienna Imperial Garden' : 'Vienna Classical Elegance', tags: ['classical', 'elegant', 'refined', 'cultural'], colors: ['#D4AF37', '#4A4E5A', '#C9B99A'], avoid: 'Smart casual for concert halls and cafés.' },
+        prague: { mood: isWarm ? 'Prague Golden Summer' : 'Prague Gothic Romance', tags: ['romantic', 'historic', 'bohemian', 'layered'], colors: ['#C2956B', '#4A4E5A', '#D4AF37'], avoid: 'Cobblestone streets — comfortable shoes needed.' },
+        'san francisco': { mood: isWarm ? 'SF Foggy Cool' : 'SF Urban Layer', tags: ['casual', 'layered', 'tech', 'relaxed'], colors: ['#4A5568', '#E8DDD4', '#C4613A'], avoid: 'Always bring layers — SF fog is unpredictable.' },
+        sydney: { mood: isWarm ? 'Sydney Beach Glow' : 'Sydney Harbour Breeze', tags: ['coastal', 'active', 'relaxed', 'sun-kissed'], colors: ['#5BA3C2', '#F0E0C8', '#E2A76F'], avoid: 'High SPF and breathable fabrics for beach days.' },
+        dubai: { mood: 'Dubai Luxe Heat', tags: ['luxurious', 'modern', 'glamorous', 'desert'], colors: ['#D4AF37', '#C2956B', '#2C2C2C'], avoid: 'Modest coverage in public — lightweight luxury fabrics.' },
+        istanbul: { mood: isWarm ? 'Istanbul Bazaar Glow' : 'Istanbul Layered Mystique', tags: ['cultural', 'vibrant', 'layered', 'warm-toned'], colors: ['#C2956B', '#E85D3A', '#4A4E5A'], avoid: 'Modest layers for mosque visits.' },
+        florence: { mood: isWarm ? 'Florentine Sun' : 'Florentine Renaissance', tags: ['artistic', 'warm-toned', 'elegant', 'Mediterranean'], colors: ['#C2956B', '#D4AF37', '#8B6E4E'], avoid: isWarm ? 'Light breathable fabrics for gallery days.' : 'Smart layers for cooler gallery interiors.' },
       };
-      const key = city.name.toLowerCase();
-      const match = vibeDb[key] || { mood: `${city.name} Style`, tags: ['versatile', 'travel-ready', 'stylish'], colors: ['#8B7355', '#C4A882', '#4A5568'], avoid: 'Pack versatile pieces that mix and match.' };
+      // Flexible city name matching: lowercase + check aliases
+      const aliases: Record<string, string> = {
+        'denpasar': 'bali', 'ubud': 'bali', 'seminyak': 'bali', 'kuta': 'bali', 'canggu': 'bali',
+        'nyc': 'new york', 'manhattan': 'new york', 'brooklyn': 'new york',
+        'saigon': 'ho chi minh', 'hcmc': 'ho chi minh',
+        'firenze': 'florence',
+        'sf': 'san francisco',
+        'milano': 'milan',
+      };
+      const key = city.name.toLowerCase().trim();
+      const resolvedKey = aliases[key] || key;
+      const match = vibeDb[resolvedKey] || { mood: `${city.name} Style`, tags: ['versatile', 'travel-ready', 'stylish'], colors: ['#8B7355', '#C4A882', '#4A5568'], avoid: 'Pack versatile pieces that mix and match.' };
       return {
         city: city.name,
         mood_label: `${city.name} — ${match.mood}`,

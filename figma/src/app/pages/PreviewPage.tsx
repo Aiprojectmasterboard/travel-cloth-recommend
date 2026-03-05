@@ -33,11 +33,8 @@ export function PreviewPage() {
   const teaserUrl = preview?.teaser_url || FALLBACK_IMG;
   const moodLabel = preview?.mood_label || `${city} \u2014 Style Analysis`;
 
-  // 4 different preview images based on gender (blurred for locked slots)
-  const isMale = data.gender === "male" || data.gender === "non-binary";
-  const previewImages = isMale
-    ? ["/examples/annual-outfit-1.png", "/examples/annual-outfit-2.png", "/examples/annual-outfit-3.png", "/examples/annual-outfit-4.png"]
-    : ["/examples/pro-outfit-1.png", "/examples/pro-outfit-2.png", "/examples/pro-outfit-3.png", "/examples/pro-outfit-4.png"];
+  // All 4 slots use the same teaser image — slot 0 clear, slots 1-3 CSS-blurred
+  // Per spec: "[1][2][3] 동일 이미지 + CSS blur(8px) + tint overlay + lock icon"
   const vibes = preview?.vibes || [];
   const weatherData = preview?.weather || [];
   const capsuleCount = preview?.capsule?.count || 9;
@@ -262,8 +259,8 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((idx) => {
-              const isUnlocked = idx === 0 && preview?.teaser_url;
-              const imgSrc = isUnlocked ? teaserUrl : previewImages[idx];
+              const isUnlocked = idx === 0 && !!preview?.teaser_url;
+              const imgSrc = teaserUrl; // All 4 slots use the same teaser image
               return (
                 <div key={idx} className="group">
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
