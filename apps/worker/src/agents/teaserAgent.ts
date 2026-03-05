@@ -113,7 +113,7 @@ async function generateNanoBanana(
     const faceData = await fetchImageAsBase64(faceUrl);
     if (faceData) {
       parts.push({ inlineData: { mimeType: faceData.mimeType, data: faceData.data } });
-      parts.push({ text: 'Use this person as the model in the generated image. You MUST preserve their exact facial features, face shape, skin tone, hair style, and natural appearance. Do NOT alter, beautify, smooth, or photoshop the face. The person in the output must be clearly recognizable as the same person in this reference photo.' });
+      parts.push({ text: 'Use this person as the model in the generated image. You MUST preserve their exact facial features, face shape, skin tone, hair style, and natural appearance. Do NOT alter, beautify, smooth, or photoshop the face. The person in the output must be clearly recognizable as the same person in this reference photo. IMPORTANT: Generate a COMPLETELY DIFFERENT outfit from what the person is currently wearing in the reference photo. The new outfit must be entirely new clothing items appropriate for the travel destination.' });
     }
   }
 

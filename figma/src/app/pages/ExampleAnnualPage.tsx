@@ -271,11 +271,11 @@ export function ExampleAnnualPage() {
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
       {/* Banner */}
-      <div className="gold-gradient text-white text-center py-2">
-        <span className="text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+      <div className="gold-gradient text-white text-center py-2 px-4">
+        <span className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
           {t("examples.banner.annual")}
         </span>
-        <button onClick={() => navigate("/onboarding/1")} className="ml-4 inline-flex items-center gap-1 px-3 py-0.5 bg-white text-[#D4AF37] rounded-full text-[11px] uppercase tracking-[0.08em] cursor-pointer hover:bg-white/90 transition-colors" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+        <button onClick={() => navigate("/onboarding/1")} className="ml-2 sm:ml-4 inline-flex items-center gap-1 px-3 py-0.5 bg-white text-[#D4AF37] rounded-full text-[10px] sm:text-[11px] uppercase tracking-[0.08em] cursor-pointer hover:bg-white/90 transition-colors whitespace-nowrap" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
           {t("examples.banner.getStarted")} <span className="text-[13px]">&rarr;</span>
         </button>
       </div>

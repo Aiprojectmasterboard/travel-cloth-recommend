@@ -92,9 +92,9 @@ export function LandingPage() {
         {/* Hero Content */}
         <div className="relative z-10 flex-1 flex items-center justify-center px-6">
           <div className="text-center max-w-[800px]">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/20 bg-white/5 backdrop-blur-sm mb-6 sm:mb-8">
               <span className="w-1.5 h-1.5 rounded-full bg-[#C4613A] animate-pulse" />
-              <span className="text-[10px] uppercase tracking-[0.15em] text-white/80" style={{ fontFamily: "var(--font-mono)" }}>
+              <span className="text-[11px] sm:text-[12px] uppercase tracking-[0.12em] text-white/80" style={{ fontFamily: "var(--font-mono)" }}>
                 {t("hero.pill")}
               </span>
             </div>
@@ -131,45 +131,77 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ==================== INTELLIGENCE ==================== */}
+      {/* ==================== HOW IT WORKS ==================== */}
       <section id="how-it-works" className="bg-[#FDF8F3] py-16 lg:py-32 px-6">
-        <div className="mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center" style={{ maxWidth: "var(--max-w)" }}>
-          <div>
-            <div className="flex items-center gap-3 mb-6">
+        <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
+          {/* Header */}
+          <div className="text-center mb-12 lg:mb-16">
+            <div className="inline-flex items-center gap-3 mb-6">
               <span className="w-2 h-2 rounded-full bg-[#C4613A]" />
               <span className="text-[11px] uppercase tracking-[0.15em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                 {t("section.intelligence.label")}
               </span>
             </div>
-            <h2 className="text-[#292524] whitespace-pre-line" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: displayFont }}>
+            <h2 className="text-[#292524] whitespace-pre-line" style={{ fontSize: "clamp(28px, 4vw, 56px)", fontFamily: displayFont }}>
               {t("section.intelligence.title")}
             </h2>
-            <div className="w-12 h-0.5 bg-[#C4613A] my-8" />
-            <p className="text-[18px] text-[#57534e] mb-4" style={{ fontFamily: bodyFont, fontWeight: 300, lineHeight: 1.7 }}>
+            <div className="w-12 h-0.5 bg-[#C4613A] mx-auto my-6 lg:my-8" />
+            <p className="text-[15px] sm:text-[18px] text-[#57534e] max-w-[640px] mx-auto" style={{ fontFamily: bodyFont, fontWeight: 300, lineHeight: 1.7 }}>
               {t("section.intelligence.body1")}
             </p>
-            <p className="text-[18px] text-[#57534e] mb-10" style={{ fontFamily: bodyFont, fontWeight: 300, lineHeight: 1.7 }}>
-              {t("section.intelligence.body2")}
-            </p>
-            <div className="flex gap-12">
-              <div>
-                <span className="text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>12+</span>
-                <p className="text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat1")}</p>
-              </div>
-              <div>
-                <span className="text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>100%</span>
-                <p className="text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat2")}</p>
-              </div>
-            </div>
           </div>
-          <div className="relative">
-            <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <ImageWithFallback src={IMAGES.clothingRack} alt="Curated wardrobe" className="w-full h-[300px] sm:h-[500px] object-cover" />
+
+          {/* 3 Steps */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-10 mb-12 lg:mb-16">
+            {[
+              { num: "01", icon: "flight_takeoff", titleKey: "section.intelligence.step1.title", bodyKey: "section.intelligence.step1.body" },
+              { num: "02", icon: "auto_awesome", titleKey: "section.intelligence.step2.title", bodyKey: "section.intelligence.step2.body" },
+              { num: "03", icon: "checkroom", titleKey: "section.intelligence.step3.title", bodyKey: "section.intelligence.step3.body" },
+            ].map((step, i) => (
+              <div key={step.num} className="relative bg-white rounded-2xl p-6 sm:p-8 border border-[#E8DDD4] group hover:border-[#C4613A]/30 transition-all" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#C4613A]/10 flex items-center justify-center">
+                    <Icon name={step.icon} size={20} className="text-[#C4613A]" filled={i === 1} />
+                  </span>
+                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]/20" style={{ fontFamily: displayFont, fontWeight: 700 }}>{step.num}</span>
+                </div>
+                <h3 className="text-[18px] sm:text-[22px] text-[#292524] mb-2" style={{ fontFamily: displayFont }}>{t(step.titleKey)}</h3>
+                <p className="text-[13px] sm:text-[15px] text-[#57534e] leading-relaxed" style={{ fontFamily: bodyFont }}>{t(step.bodyKey)}</p>
+                {i < 2 && (
+                  <div className="hidden md:block absolute -right-5 lg:-right-6 top-1/2 -translate-y-1/2 z-10">
+                    <Icon name="arrow_forward" size={20} className="text-[#C4613A]/30" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Stats + Image */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+            <div className="relative">
+              <div className="rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <ImageWithFallback src={IMAGES.clothingRack} alt="Curated wardrobe" className="w-full h-[250px] sm:h-[400px] object-cover" />
+              </div>
+              <div className="absolute -bottom-3 -left-2 sm:-bottom-4 sm:-left-4 bg-white rounded-xl px-4 py-2.5 sm:px-5 sm:py-3 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <Icon name="auto_awesome" size={18} className="text-[#C4613A]" filled />
+                  <span className="text-[12px] sm:text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>AI-curated selections</span>
+                </div>
+              </div>
             </div>
-            <div className="absolute -bottom-4 -left-4 bg-white rounded-xl px-5 py-3 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <div className="flex items-center gap-3">
-                <Icon name="auto_awesome" size={20} className="text-[#C4613A]" filled />
-                <span className="text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>AI-curated selections</span>
+            <div>
+              <p className="text-[15px] sm:text-[18px] text-[#57534e] mb-8" style={{ fontFamily: bodyFont, fontWeight: 300, lineHeight: 1.7 }}>
+                {t("section.intelligence.body2")}
+              </p>
+              <div className="flex gap-8 sm:gap-12">
+                <div>
+                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>12+</span>
+                  <p className="text-[12px] sm:text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat1")}</p>
+                </div>
+                <div>
+                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>100%</span>
+                  <p className="text-[12px] sm:text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat2")}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -213,7 +245,7 @@ export function LandingPage() {
       </section>
 
       {/* ==================== EXAMPLES ==================== */}
-      <section id="examples" className="bg-[#FDF8F3] py-32 px-6">
+      <section id="examples" className="bg-[#FDF8F3] py-16 sm:py-32 px-6">
         <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
           <div className="text-center mb-16">
             <h2 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: displayFont }}>
@@ -311,7 +343,7 @@ export function LandingPage() {
       </section>
 
       {/* ==================== DARK CTA ==================== */}
-      <section className="relative bg-[#1A1410] py-32 px-6 overflow-hidden">
+      <section className="relative bg-[#1A1410] py-16 sm:py-32 px-6 overflow-hidden">
         <div className="absolute inset-0 grain-overlay" />
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: `linear-gradient(rgba(196,97,58,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(196,97,58,0.15) 1px, transparent 1px)`, backgroundSize: "80px 80px" }} />
         <div className="relative z-10 mx-auto text-center" style={{ maxWidth: "var(--max-w)" }}>
@@ -330,7 +362,7 @@ export function LandingPage() {
       </section>
 
       {/* ==================== PRICING ==================== */}
-      <section id="pricing" className="bg-[#FDF8F3] py-32 px-6">
+      <section id="pricing" className="bg-[#FDF8F3] py-16 sm:py-32 px-6">
         <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
           <div className="text-center mb-16">
             <h2 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: displayFont }}>

@@ -120,7 +120,7 @@ async function generateWithRetry(
               const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg';
               parts.push({ inlineData: { mimeType, data: imgBase64 } });
               parts.push({
-                text: 'Use the person in the reference image above as the model. You MUST preserve their exact facial features, face shape, skin tone, hair style, body proportions, and natural appearance. Do NOT alter, beautify, smooth, or photoshop the face. The person in the output must be clearly recognizable as the same person in this reference photo.',
+                text: 'Use the person in the reference image above as the model. You MUST preserve their exact facial features, face shape, skin tone, hair style, body proportions, and natural appearance. Do NOT alter, beautify, smooth, or photoshop the face. The person in the output must be clearly recognizable as the same person in this reference photo. IMPORTANT: Generate a COMPLETELY DIFFERENT outfit from what the person is currently wearing in the reference photo. The new outfit must be entirely new clothing items as specified in the prompt below.',
               });
             } else {
               console.warn(`[imageGenAgent] Face image too large (${(imgBuf.byteLength / 1024 / 1024).toFixed(1)}MB > 4MB limit), skipping`);
