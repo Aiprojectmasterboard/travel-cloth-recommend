@@ -37,15 +37,19 @@ const IMG = {
 const ITEMS = {
   denimJacket:
     "https://images.unsplash.com/photo-1544441893-675973e31985?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBkZW5pbSUyMGphY2tldCUyMGJsdWUlMjBmYXNoaW9uJTIwcHJvZHVjdHxlbnwxfHx8fDE3NzI0Mjc1ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  bomber:
+    "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXZ5JTIwYm9tYmVyJTIwamFja2V0JTIwbWVuJTIwZmFzaGlvbiUyMHByb2R1Y3R8ZW58MXx8fHwxNzcyNDI3NTg4fDA&ixlib=rb-4.1.0&q=80&w=1080",
   chinos:
     "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBjaGlubyUyMHRyb3VzZXJzJTIwYmVpZ2UlMjBmYXNoaW9uJTIwcHJvZHVjdHxlbnwxfHx8fDE3NzI0Mjk0OTZ8MA&ixlib=rb-4.1.0&q=80&w=1080",
   tshirt:
     "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjB3aGl0ZSUyMHQtc2hpcnQlMjBjbGVhbiUyMG1pbmltYWwlMjBwcm9kdWN0fGVufDF8fHx8MTc3MjQyOTQ4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
   linen:
     "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBsaW5lbiUyMHNoaXJ0JTIwc3VtbWVyJTIwbGlnaHQlMjBibHVlJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  henley:
+    "https://images.unsplash.com/photo-1618517351616-38fb9c5210c6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxncmV5JTIwaGVubGV5JTIwdCUyMHNoaXJ0JTIwbWVuJTIwZmFzaGlvbiUyMHByb2R1Y3R8ZW58MXx8fHwxNzcyNDI5NDg3fDA&ixlib=rb-4.1.0&q=80&w=1080",
   denim:
     "https://images.unsplash.com/photo-1542272604-787c3835535d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBqZWFucyUyMGRhcmslMjBibHVlJTIwZm9sZGVkJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0ODd8MA&ixlib=rb-4.1.0&q=80&w=1080",
-  chino2:
+  oliveChinos:
     "https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBjaGlubyUyMHBhbnRzJTIwb2xpdmUlMjBncmVlbiUyMGZhc2hpb24lMjBwcm9kdWN0fGVufDF8fHx8MTc3MjQyNjYxMXww&ixlib=rb-4.1.0&q=80&w=1080",
   sneakers:
     "https://images.unsplash.com/photo-1542291026-7eec264c27ff?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBzbmVha2VycyUyMHdoaXRlJTIwY2xlYW4lMjBtaW5pbWFsJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0ODl8MA&ixlib=rb-4.1.0&q=80&w=1080",
@@ -55,6 +59,12 @@ const ITEMS = {
     "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBiYWNrcGFjayUyMGNhbnZhcyUyMHRyYXZlbCUyMHN0aWxsJTIwbGlmZXxlbnwxfHx8fDE3NzI0Mjc2MDJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
   watch:
     "https://images.unsplash.com/photo-1523275335684-37898b6baf30?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjB3YXRjaCUyMGNsYXNzaWMlMjBsZWF0aGVyJTIwc3RyYXAlMjBtaW5pbWFsfGVufDF8fHx8MTc3MjQyOTUwM3ww&ixlib=rb-4.1.0&q=80&w=1080",
+  sunglasses:
+    "https://images.unsplash.com/photo-1511499767150-a48a237f0083?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBzdW5nbGFzc2VzJTIwYXZpYXRvciUyMGdvbGQlMjBmcmFtZXxlbnwxfHx8fDE3NzI0Mjk1MDN8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  umbrella:
+    "https://images.unsplash.com/photo-1557821552-17105176677c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjb21wYWN0JTIwdW1icmVsbGElMjByYWluJTIwbWluaW1hbCUyMGZhc2hpb24lMjBhY2Nlc3Nvcnl8ZW58MXx8fHwxNzcyNDMwMDAwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+  tote:
+    "https://images.unsplash.com/photo-1622560480654-d96214fdc887?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxjYW52YXMlMjB0b3RlJTIwYmFnJTIwbWVuJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0OTV8MA&ixlib=rb-4.1.0&q=80&w=1080",
 };
 
 /* ─── Outfit images — unique AI-generated asset per outfit ─── */
@@ -86,6 +96,23 @@ interface ExOutfit {
   confidence: number;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   CAPSULE WARDROBE ALGORITHM — Applied to 4-day multi-city itinerary
+
+   Rules applied:
+   • Bottoms: max 50% of days (2/4) → Beige Chinos ×2, Dark Denim ×2
+   • Outerwear: max 50% (2/4) → Denim Jacket ×2, Navy Bomber ×2
+   • Inner top (knit/shirt): max 50% → Linen Shirt ×2
+   • T-shirt: max 25% (1/4) → White T-Shirt ×1
+   • Shoes: max 50% → White Sneakers ×2, Brown Loafers ×2
+   • Accessories: free → no limit
+   • Same full combo: NEVER repeated — all 4 combos unique
+   • Rain day (Day 2): umbrella + rainy backdrop
+   • Backgrounds: city landmark per day
+
+   Packing efficiency: 9 unique items → 4 complete outfits (20 total slots)
+   ═══════════════════════════════════════════════════════════════════════════════ */
+
 const TOKYO_OUTFITS: ExOutfit[] = [
   {
     id: "ea-paris-1",
@@ -94,57 +121,62 @@ const TOKYO_OUTFITS: ExOutfit[] = [
     subtitle: "Casual Chic",
     image: ANNUAL_OUTFIT_IMGS[0],
     confidence: 95,
-    note: "Paris in March calls for effortless layering. A classic denim jacket over a clean white t-shirt pairs with slim chinos and white sneakers — comfortable enough for long walks along the Seine, stylish enough for any café terrace.",
+    note: "Paris in March calls for effortless layering. The denim jacket over a white crew tee paired with slim beige chinos and white sneakers is the perfect arrival look — comfortable for the Champ de Mars stroll, stylish enough for any café terrace with the Eiffel Tower in view.",
     items: [
       { id: "ep1-1", name: "Denim Jacket", desc: "Classic blue, relaxed fit", img: ITEMS.denimJacket, size: "L" },
       { id: "ep1-2", name: "White Crew T-Shirt", desc: "100% cotton, clean cut", img: ITEMS.tshirt, size: "L" },
       { id: "ep1-3", name: "Slim Beige Chinos", desc: "Stretch cotton, tapered", img: ITEMS.chinos, size: "L" },
       { id: "ep1-4", name: "White Leather Sneakers", desc: "Low-top, minimal", img: ITEMS.sneakers, size: "EU 43" },
+      { id: "ep1-5", name: "Classic Watch", desc: "Leather strap, minimal face", img: ITEMS.watch, size: "One Size" },
     ],
   },
   {
     id: "ea-paris-2",
     day: 2,
-    title: "Le Marais Exploration",
-    subtitle: "Smart Casual",
+    title: "Louvre in the Rain",
+    subtitle: "Rainy Smart Layer",
     image: ANNUAL_OUTFIT_IMGS[1],
     confidence: 93,
-    note: "Le Marais blends galleries, boutiques and bistros seamlessly. A light linen shirt with dark denim and brown loafers strikes the ideal balance between relaxed and polished for a full day of neighbourhood discovery.",
+    note: "12°C and 70% rain chance — the Louvre demands a pulled-together rainy look. The navy bomber does the heavy lifting over a sage linen shirt, paired with dark denim for a polished feel. Brown loafers handle wet museum floors. A compact umbrella is essential for the walk across Cour Napoléon.",
     items: [
-      { id: "ep2-1", name: "Sage Green Linen Shirt", desc: "Relaxed fit, rolled sleeves", img: ITEMS.linen, size: "L" },
-      { id: "ep2-2", name: "Dark Slim Denim", desc: "Indigo wash, tapered leg", img: ITEMS.denim, size: "L" },
-      { id: "ep2-3", name: "Brown Leather Loafers", desc: "Penny loafer, leather sole", img: ITEMS.loafers, size: "EU 43" },
-      { id: "ep2-4", name: "Canvas Tote Bag", desc: "Natural fabric, shoulder carry", img: ITEMS.bag, size: "One Size" },
+      { id: "ep2-1", name: "Navy Bomber Jacket", desc: "Zip-up, ribbed collar, water-resistant", img: ITEMS.bomber, size: "L" },
+      { id: "ep2-2", name: "Sage Green Linen Shirt", desc: "Relaxed fit, rolled sleeves", img: ITEMS.linen, size: "L" },
+      { id: "ep2-3", name: "Dark Slim Denim", desc: "Indigo wash, tapered leg", img: ITEMS.denim, size: "L" },
+      { id: "ep2-4", name: "Brown Leather Loafers", desc: "Penny loafer, leather sole", img: ITEMS.loafers, size: "EU 43" },
+      { id: "ep2-5", name: "Compact Umbrella", desc: "Windproof, auto-open, navy", img: ITEMS.umbrella, size: "One Size" },
     ],
   },
   {
     id: "ea-rome-3",
     day: 3,
-    title: "Colosseum & Forum Visit",
+    title: "Colosseum & Trastevere",
     subtitle: "Mediterranean Casual",
     image: ANNUAL_OUTFIT_IMGS[2],
     confidence: 94,
-    note: "Rome rewards those who dress with intention. Olive chinos and a white t-shirt keep you cool as temperatures climb toward the afternoon. Swap sneakers for loafers when heading to dinner in Trastevere.",
+    note: "Sunny 22°C in Rome — the linen shirt re-worn from Paris transitions beautifully to warmer weather. Slim beige chinos (re-worn from Day 1) pair with white sneakers for Colosseum exploration. Aviator sunglasses are non-negotiable under the Roman sun. The canvas tote handles water and a guidebook.",
     items: [
-      { id: "er3-1", name: "White Linen Polo", desc: "Relaxed collar, breathable", img: ITEMS.tshirt, size: "L" },
-      { id: "er3-2", name: "Olive Casual Chinos", desc: "Lightweight, slim fit", img: ITEMS.chino2, size: "L" },
-      { id: "er3-3", name: "Brown Leather Sandals", desc: "Woven straps, cushioned", img: ITEMS.loafers, size: "EU 43" },
-      { id: "er3-4", name: "Aviator Sunglasses", desc: "Gold frame, brown lens", img: ITEMS.watch, size: "One Size" },
+      { id: "er3-1", name: "Sage Green Linen Shirt", desc: "Relaxed fit — re-worn", img: ITEMS.linen, size: "L" },
+      { id: "er3-2", name: "Slim Beige Chinos", desc: "Stretch cotton — re-worn", img: ITEMS.chinos, size: "L" },
+      { id: "er3-3", name: "White Leather Sneakers", desc: "Low-top — re-worn", img: ITEMS.sneakers, size: "EU 43" },
+      { id: "er3-4", name: "Aviator Sunglasses", desc: "Gold frame, brown lens", img: ITEMS.sunglasses, size: "One Size" },
+      { id: "er3-5", name: "Canvas Tote Bag", desc: "Natural fabric, shoulder carry", img: ITEMS.tote, size: "One Size" },
     ],
   },
   {
     id: "ea-barcelona-4",
     day: 4,
-    title: "Gothic Quarter & Beach",
-    subtitle: "Coastal Casual",
+    title: "Gothic Quarter & La Rambla",
+    subtitle: "Coastal Smart",
     image: ANNUAL_OUTFIT_IMGS[3],
     confidence: 92,
-    note: "Barcelona demands versatility — morning in the Gothic Quarter, afternoon on Barceloneta beach. Light linen and denim keep things breezy while the canvas bag handles beach essentials. Roll the chinos for the sand.",
+    note: "Barcelona demands versatility — morning in the Gothic Quarter, afternoon along La Rambla. The denim jacket (re-worn from Paris Day 1) over the grey henley keeps things relaxed yet sharp. Dark denim (re-worn from Day 2) with brown loafers elevates the look for a Barri Gòtic evening. Sunglasses and tote complete the Mediterranean vibe.",
     items: [
-      { id: "eb4-1", name: "Navy Bomber Jacket", desc: "Zip-up, ribbed collar", img: ITEMS.denimJacket, size: "L" },
-      { id: "eb4-2", name: "Grey Henley T-Shirt", desc: "Button placket, soft cotton", img: ITEMS.tshirt, size: "L" },
-      { id: "eb4-3", name: "Dark Wash Slim Jeans", desc: "Slim straight, deep indigo", img: ITEMS.denim, size: "L" },
-      { id: "eb4-4", name: "White Minimal Sneakers", desc: "Leather, low-top", img: ITEMS.sneakers, size: "EU 43" },
+      { id: "eb4-1", name: "Denim Jacket", desc: "Classic blue — re-worn", img: ITEMS.denimJacket, size: "L" },
+      { id: "eb4-2", name: "Grey Henley T-Shirt", desc: "Button placket, soft cotton", img: ITEMS.henley, size: "L" },
+      { id: "eb4-3", name: "Dark Slim Denim", desc: "Indigo wash — re-worn", img: ITEMS.denim, size: "L" },
+      { id: "eb4-4", name: "Brown Leather Loafers", desc: "Penny loafer — re-worn", img: ITEMS.loafers, size: "EU 43" },
+      { id: "eb4-5", name: "Aviator Sunglasses", desc: "Gold frame — re-worn", img: ITEMS.sunglasses, size: "One Size" },
+      { id: "eb4-6", name: "Canvas Tote Bag", desc: "Natural fabric — re-worn", img: ITEMS.tote, size: "One Size" },
     ],
   },
 ];
@@ -328,7 +360,7 @@ export function ExampleAnnualPage() {
               {/* Route info — separated below the grid to prevent overlap */}
               <div className="px-4 py-3 bg-[#1A1410]">
                 <span className="text-white text-[22px] sm:text-[26px] italic block" style={{ fontFamily: displayFont }}>Paris → Rome → Barcelona</span>
-                <span className="text-white/70 text-[13px] block mt-0.5" style={{ fontFamily: bodyFont }}>Mar 15 – Apr 2, 2026 · 19 days · 4 Looks</span>
+                <span className="text-white/70 text-[13px] block mt-0.5" style={{ fontFamily: bodyFont }}>Mar 15 – Mar 18, 2026 · 4 days · 4 Looks · 9 unique items</span>
               </div>
             </div>
 
@@ -442,7 +474,7 @@ export function ExampleAnnualPage() {
                 <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.annual.weatherTitle")}</h3>
                 <TagChip label="Mar 15–21" />
               </div>
-              <WeatherWidget temp={11} rain={35} wind={15} heatIndex={9} />
+              <WeatherWidget temp={16} rain={40} wind={12} heatIndex={14} />
             </div>
 
             {/* Packing List */}

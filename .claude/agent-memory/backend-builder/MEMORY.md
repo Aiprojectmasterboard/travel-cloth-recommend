@@ -114,6 +114,16 @@ All agents accept `env: Bindings` as last param.
 - `compatibility_date = "2025-01-01"` (updated from 2024-01-01)
 - Must include SKIP_TURNSTILE in [vars] so `c.env.SKIP_TURNSTILE` resolves without TS errors
 
+## Face Reference Image — imageGenAgent (updated 2026-03-02)
+- `generateWithRetry` now fetches `faceUrl` as binary and passes as `inline_data` to Gemini (multimodal)
+- Build: `fetch(faceUrl, AbortSignal.timeout(10_000))` → `arrayBuffer()` → byte loop → `btoa()` → `{ inline_data: { mime_type, data } }`
+- If fetch fails (network error, timeout, non-2xx): warn and continue without face reference — graceful degradation
+- Request `parts` array order: [image inline_data, face instruction text, main prompt text] when face present
+- Variable naming: request array is `parts: GeminiPart[]`, response array renamed `responseParts` to avoid same-scope collision
+- Face photo R2 deletion in `/api/generate`: `c.env.R2.delete(r2Key)` after `Promise.all([imageGenAgent, ...])` resolves
+  - Only deletes keys starting with `faces/temp-` (guards against stripping producing wrong key)
+  - Best-effort try/catch — deletion failure must never fail the API response
+
 ## Error Handling / Resilience Patterns (added 2026-03-01)
 - `teaserAgent`: Has 3-attempt exponential backoff (1s/2s/4s) via `generateWithRetry` — same as imageGenAgent
 - `orchestrator runResult`: `capsuleAgent` wrapped in try/catch with `PaidCapsuleResult` fallback

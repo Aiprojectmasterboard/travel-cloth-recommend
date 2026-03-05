@@ -23,6 +23,22 @@
 
 ## Pages Deployment Status
 
+### Seventh QA Run 2026-03-04 (commit 5488f40 — payment flow, auth, i18n, city limits)
+- Deployment was in-flight at QA time (commit pushed at 15:23 UTC, QA at ~15:25 UTC)
+- Root (/) returns 200 with age:77545 (cached from previous deployment ~21.5h old)
+- Sub-routes return 404 because deployed version predates latest commit
+- _redirects file is present and correct in figma/dist/ — will work once new build deploys
+- CRITICAL FIND: polarCheckout.ts still shows "YOUR_STANDARD_PRODUCT_ID" as placeholder comments
+  BUT createCheckoutSession() uses WORKER_URL POST which correctly delegates to server
+  The placeholder productId strings in POLAR_PRODUCTS are NOT used at runtime (server uses wrangler.toml IDs)
+  This is a false positive — actual product IDs come from Worker via c.env.*
+- Polar checkout confirmed WORKING: returns real polar.sh checkout URL (confirmed live test)
+- SUPABASE_SERVICE_ROLE_KEY grep hit in figma/ is node_modules only — safe false positive
+- stripe grep hit is in api-endpoints.md doc file and CSS "stripe" text — safe false positive
+- Discount code "0623": NOT implemented in frontend or Worker — manual Polar coupon code needed
+- t() is a function in figma LanguageContext (key: string) => string — NOT an object
+  (The user-facing MEMORY.md note that "t is not a function" is for the OLD apps/web/ — outdated)
+
 ### Sixth QA Run 2026-03-02 (post Figma v15 migration — commit bf09c4b)
 - BOTH domains returning HTTP 404 — deployment likely still in-flight after recent push
 - Commit bf09c4b was pushed at 08:22:39 UTC — "Figma v15 migration"
