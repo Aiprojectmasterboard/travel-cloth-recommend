@@ -371,8 +371,8 @@ export function ExampleProPage() {
 
                     {expandedOutfit === idx && (
                       <div className="px-5 pb-6">
-                        <div className="flex flex-col md:flex-row gap-6">
-                          <div className="relative rounded-xl overflow-hidden flex-shrink-0 w-full md:w-[280px] lg:w-[320px]" style={{ aspectRatio: "3/4" }}>
+                        <div className="space-y-6">
+                          <div className="relative rounded-xl overflow-hidden w-full max-w-[400px]" style={{ aspectRatio: "3/4" }}>
                             <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                             <div className="absolute top-3 left-3">
@@ -389,7 +389,7 @@ export function ExampleProPage() {
                             </div>
                           </div>
 
-                          <div className="flex-1 min-w-0">
+                          <div>
                             <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                               {t("examples.pro.outfitBreakdown")}
                             </span>
