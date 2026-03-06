@@ -155,7 +155,7 @@ export function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-10 mb-12 lg:mb-16">
             {[
               { num: "01", icon: "flight_takeoff", titleKey: "section.intelligence.step1.title", bodyKey: "section.intelligence.step1.body", img: IMAGES.paris, imgAlt: "Paris destination", overlay: "Paris, 7 days" },
-              { num: "02", icon: "auto_awesome", titleKey: "section.intelligence.step2.title", bodyKey: "section.intelligence.step2.body", img: "/examples/mood-mediterranean.png", imgAlt: "AI vibe analysis", overlay: null },
+              { num: "02", icon: "auto_awesome", titleKey: "section.intelligence.step2.title", bodyKey: "section.intelligence.step2.body", img: IMAGES.tokyo, imgAlt: "AI city analysis", overlay: null },
               { num: "03", icon: "checkroom", titleKey: "section.intelligence.step3.title", bodyKey: "section.intelligence.step3.body", img: "/examples/pro-outfit-2.png", imgAlt: "AI-generated outfit", overlay: null },
             ].map((step, i) => (
               <div key={step.num} className="relative bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] group hover:border-[#C4613A]/30 transition-all" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
@@ -313,6 +313,118 @@ export function LandingPage() {
           <div className="mt-12 text-center">
             <BtnPrimary onClick={() => navigate("/onboarding/1")} className="px-10">
               {t("section.capsules.cta")}
+            </BtnPrimary>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== PACK LESS, LOOK BETTER ==================== */}
+      <section className="bg-[#1A1410] py-16 lg:py-28 px-6 overflow-hidden">
+        <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
+          <div className="text-center mb-10 lg:mb-14">
+            <span className="text-[10px] uppercase tracking-[0.15em] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+              {t("section.packless.label")}
+            </span>
+            <h2 className="mt-3 text-white" style={{ fontSize: "clamp(32px, 4vw, 52px)", fontFamily: displayFont }}>
+              {t("section.packless.title")}
+            </h2>
+            <p className="mt-3 text-[16px] text-white/60 max-w-[520px] mx-auto" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
+              {t("section.packless.subtitle")}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-10 max-w-[900px] mx-auto items-start">
+            {/* BEFORE — without AI */}
+            <div className="relative bg-white/5 border border-white/10 rounded-2xl p-6 sm:p-8">
+              <div className="flex items-center gap-2 mb-5">
+                <div className="w-8 h-8 rounded-full bg-red-500/15 flex items-center justify-center">
+                  <Icon name="close" size={16} className="text-red-400" />
+                </div>
+                <span className="text-[13px] uppercase tracking-[0.1em] text-white/60" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                  {t("section.packless.before")}
+                </span>
+              </div>
+              {/* Suitcase visual */}
+              <div className="relative mb-5">
+                <div className="flex items-center justify-center gap-1 py-8 bg-white/5 rounded-xl border border-white/10">
+                  <Icon name="luggage" size={48} className="text-white/20" />
+                  <Icon name="luggage" size={48} className="text-white/20" />
+                  <Icon name="add" size={20} className="text-white/15 mx-1" />
+                  <Icon name="backpack" size={40} className="text-white/20" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { icon: "checkroom", text: t("section.packless.before1"), val: "20+" },
+                  { icon: "style", text: t("section.packless.before2"), val: "3-4" },
+                  { icon: "luggage", text: t("section.packless.before3"), val: "23kg" },
+                  { icon: "sentiment_dissatisfied", text: t("section.packless.before4"), val: "" },
+                ].map((item) => (
+                  <div key={item.text} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Icon name={item.icon} size={16} className="text-white/30" />
+                      <span className="text-[13px] text-white/50" style={{ fontFamily: bodyFont }}>{item.text}</span>
+                    </div>
+                    {item.val && <span className="text-[13px] text-red-400/80" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{item.val}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* AFTER — with Travel Capsule AI */}
+            <div className="relative bg-[#C4613A]/10 border border-[#C4613A]/30 rounded-2xl p-6 sm:p-8">
+              {/* Glow effect */}
+              <div className="absolute -top-px -left-px -right-px h-px bg-gradient-to-r from-transparent via-[#C4613A] to-transparent" />
+              <div className="flex items-center gap-2 mb-5">
+                <div className="w-8 h-8 rounded-full bg-[#C4613A]/20 flex items-center justify-center">
+                  <Icon name="auto_awesome" size={16} className="text-[#C4613A]" filled />
+                </div>
+                <span className="text-[13px] uppercase tracking-[0.1em] text-[#C4613A]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                  {t("section.packless.after")}
+                </span>
+              </div>
+              {/* Compact suitcase visual */}
+              <div className="relative mb-5">
+                <div className="flex items-center justify-center gap-3 py-8 bg-[#C4613A]/5 rounded-xl border border-[#C4613A]/20">
+                  <Icon name="luggage" size={48} className="text-[#C4613A]/50" />
+                  <div className="flex flex-col items-center">
+                    <Icon name="check_circle" size={20} className="text-green-400" />
+                    <span className="text-[9px] text-white/40 mt-1" style={{ fontFamily: "var(--font-mono)" }}>carry-on</span>
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {[
+                  { icon: "checkroom", text: t("section.packless.after1"), val: "12" },
+                  { icon: "style", text: t("section.packless.after2"), val: "7+" },
+                  { icon: "luggage", text: t("section.packless.after3"), val: "8kg" },
+                  { icon: "auto_awesome", text: t("section.packless.after4"), val: "" },
+                ].map((item) => (
+                  <div key={item.text} className="flex items-center justify-between">
+                    <div className="flex items-center gap-2.5">
+                      <Icon name={item.icon} size={16} className="text-[#C4613A]/70" />
+                      <span className="text-[13px] text-white/70" style={{ fontFamily: bodyFont }}>{item.text}</span>
+                    </div>
+                    {item.val && <span className="text-[13px] text-green-400" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{item.val}</span>}
+                  </div>
+                ))}
+              </div>
+              {/* Savings highlight */}
+              <div className="mt-5 pt-4 border-t border-[#C4613A]/20 text-center">
+                <span className="text-[28px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>
+                  -65%
+                </span>
+                <span className="block text-[11px] text-white/50 mt-0.5" style={{ fontFamily: bodyFont }}>
+                  {t("section.packless.savings")}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom CTA */}
+          <div className="mt-10 lg:mt-14 text-center">
+            <BtnPrimary onClick={() => navigate("/onboarding/1")} className="px-10">
+              {t("section.packless.cta")}
             </BtnPrimary>
           </div>
         </div>
