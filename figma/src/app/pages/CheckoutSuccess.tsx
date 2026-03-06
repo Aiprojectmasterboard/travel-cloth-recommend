@@ -1,39 +1,38 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Icon, BtnPrimary } from "../components/travel-capsule";
+import { Icon } from "../components/travel-capsule";
 import { getDashboardRoute, type PlanKey } from "../services/polarCheckout";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { WORKER_URL } from "../lib/api";
 
 /**
- * CheckoutSuccess — the user lands here BEFORE completing Polar payment.
+ * CheckoutSuccess — the user lands here AFTER completing Polar payment.
  *
  * Flow:
- *   1. PreviewPage navigates here with ?plan&tripId&checkout_id
- *   2. This page auto-opens Polar checkout in a new tab
- *   3. User completes payment in the Polar tab (Polar may redirect to their portal — we don't rely on that)
+ *   1. User clicks checkout on PreviewPage → redirects to Polar checkout (same tab)
+ *   2. User completes payment on Polar
+ *   3. Polar redirects back here with ?plan&tripId&checkout_id
  *   4. This page polls GET /api/result/:tripId until a paid order exists
  *   5. Once confirmed: grant plan access → load AI results → navigate to dashboard
  */
 
 /* ── Step definitions ─────────────────────────────────────────────── */
 const STEPS = [
-  { label: "Processing payment...", icon: "payment",      minPct: 0,  maxPct: 15 },
-  { label: "Analyzing weather...",  icon: "thermostat",    minPct: 15, maxPct: 30 },
-  { label: "Matching city vibes...",icon: "palette",       minPct: 30, maxPct: 50 },
-  { label: "Consulting style AI...",icon: "auto_awesome",  minPct: 50, maxPct: 70 },
-  { label: "Generating outfits...", icon: "checkroom",     minPct: 70, maxPct: 90 },
-  { label: "Finalizing capsule...", icon: "celebration",   minPct: 90, maxPct: 100 },
+  { label: "Payment confirmed",      icon: "payment",      minPct: 0,  maxPct: 15 },
+  { label: "Analyzing weather...",    icon: "thermostat",   minPct: 15, maxPct: 30 },
+  { label: "Matching city vibes...",  icon: "palette",      minPct: 30, maxPct: 50 },
+  { label: "Consulting style AI...", icon: "auto_awesome",  minPct: 50, maxPct: 70 },
+  { label: "Generating outfits...",  icon: "checkroom",     minPct: 70, maxPct: 90 },
+  { label: "Finalizing capsule...",  icon: "celebration",   minPct: 90, maxPct: 100 },
 ] as const;
 
+type Status = "verifying_payment" | "confirmed" | "loading_result" | "ready";
+
 /* ── Map status → step range ──────────────────────────────────────── */
-function statusToStep(
-  status: "open_checkout" | "waiting_payment" | "confirmed" | "loading_result" | "ready",
-): { stepIndex: number; rangeMin: number; rangeMax: number } {
+function statusToStep(status: Status): { stepIndex: number; rangeMin: number; rangeMax: number } {
   switch (status) {
-    case "open_checkout":
-    case "waiting_payment":
+    case "verifying_payment":
       return { stepIndex: 0, rangeMin: 0, rangeMax: 15 };
     case "confirmed":
       return { stepIndex: 2, rangeMin: 15, rangeMax: 50 };
@@ -55,54 +54,18 @@ function CircularProgress({ progress }: { progress: number }) {
   return (
     <div className="relative mx-auto" style={{ width: size, height: size }}>
       <svg width={size} height={size} className="block" style={{ transform: "rotate(-90deg)" }}>
-        {/* Background track */}
+        <circle cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#E8DDD4" strokeWidth={strokeWidth} />
         <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#E8DDD4"
-          strokeWidth={strokeWidth}
-        />
-        {/* Progress arc */}
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          stroke="#C4613A"
-          strokeWidth={strokeWidth}
-          strokeLinecap="round"
-          strokeDasharray={circumference}
-          strokeDashoffset={offset}
+          cx={size / 2} cy={size / 2} r={radius} fill="none" stroke="#C4613A"
+          strokeWidth={strokeWidth} strokeLinecap="round"
+          strokeDasharray={circumference} strokeDashoffset={offset}
           style={{ transition: "stroke-dashoffset 0.6s ease" }}
         />
       </svg>
-      {/* Center percentage */}
-      <div
-        className="absolute inset-0 flex items-center justify-center"
-        style={{ transition: "all 0.5s ease" }}
-      >
-        <span
-          className="text-[#1A1410]"
-          style={{
-            fontSize: "36px",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            lineHeight: 1,
-          }}
-        >
+      <div className="absolute inset-0 flex items-center justify-center">
+        <span className="text-[#1A1410]" style={{ fontSize: "36px", fontFamily: "var(--font-display)", fontWeight: 700, lineHeight: 1 }}>
           {Math.round(progress)}
-          <span
-            style={{
-              fontSize: "16px",
-              fontFamily: "var(--font-body)",
-              fontWeight: 500,
-              color: "#78716c",
-            }}
-          >
-            %
-          </span>
+          <span style={{ fontSize: "16px", fontFamily: "var(--font-body)", fontWeight: 500, color: "#78716c" }}>%</span>
         </span>
       </div>
     </div>
@@ -116,65 +79,24 @@ function StepChecklist({ currentStep }: { currentStep: number }) {
       {STEPS.map((step, i) => {
         const isCompleted = i < currentStep;
         const isCurrent = i === currentStep;
-        // const isPending = i > currentStep;
-
         return (
-          <div
-            key={step.label}
-            className="flex items-center gap-3"
-            style={{ transition: "all 0.5s ease" }}
-          >
-            {/* Icon area */}
+          <div key={step.label} className="flex items-center gap-3" style={{ transition: "all 0.5s ease" }}>
             {isCompleted ? (
-              <span
-                className="material-symbols-outlined text-green-600 flex-shrink-0"
-                style={{ fontSize: 22, fontVariationSettings: "'FILL' 1" }}
-              >
-                check_circle
-              </span>
+              <span className="material-symbols-outlined text-green-600 flex-shrink-0" style={{ fontSize: 22, fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             ) : isCurrent ? (
-              <span
-                className="flex-shrink-0 w-[22px] h-[22px] border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full"
-                style={{ animation: "checkout-spin 0.8s linear infinite" }}
-              />
+              <span className="flex-shrink-0 w-[22px] h-[22px] border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full" style={{ animation: "checkout-spin 0.8s linear infinite" }} />
             ) : (
-              <span
-                className="flex-shrink-0 w-[22px] h-[22px] rounded-full border-2 border-[#D6D3D1]"
-              />
+              <span className="flex-shrink-0 w-[22px] h-[22px] rounded-full border-2 border-[#D6D3D1]" />
             )}
-
-            {/* Label */}
             <span
-              className={
-                isCompleted
-                  ? "text-[14px] text-[#a8a29e] line-through"
-                  : isCurrent
-                    ? "text-[14px] text-[#C4613A]"
-                    : "text-[14px] text-[#a8a29e]"
-              }
-              style={{
-                fontFamily: "var(--font-body)",
-                fontWeight: isCurrent ? 600 : 400,
-                transition: "all 0.5s ease",
-              }}
+              className={isCompleted ? "text-[14px] text-[#a8a29e] line-through" : isCurrent ? "text-[14px] text-[#C4613A]" : "text-[14px] text-[#a8a29e]"}
+              style={{ fontFamily: "var(--font-body)", fontWeight: isCurrent ? 600 : 400, transition: "all 0.5s ease" }}
             >
               {step.label}
             </span>
-
-            {/* Step icon (right side, subtle) */}
             <span
-              className={`material-symbols-outlined ml-auto flex-shrink-0 ${
-                isCompleted
-                  ? "text-[#a8a29e]"
-                  : isCurrent
-                    ? "text-[#C4613A]"
-                    : "text-[#D6D3D1]"
-              }`}
-              style={{
-                fontSize: 18,
-                fontVariationSettings: isCurrent ? "'FILL' 1" : "'FILL' 0",
-                transition: "all 0.5s ease",
-              }}
+              className={`material-symbols-outlined ml-auto flex-shrink-0 ${isCompleted ? "text-[#a8a29e]" : isCurrent ? "text-[#C4613A]" : "text-[#D6D3D1]"}`}
+              style={{ fontSize: 18, fontVariationSettings: isCurrent ? "'FILL' 1" : "'FILL' 0", transition: "all 0.5s ease" }}
             >
               {step.icon}
             </span>
@@ -192,24 +114,19 @@ export function CheckoutSuccess() {
   const { setPurchasedPlan } = useAuth();
   const { tripId: ctxTripId, loadResult } = useTrip();
 
-  // Read params from URL + sessionStorage fallbacks
+  // Read params from URL (set by Polar redirect) + sessionStorage fallbacks
   const pendingCheckout = (() => {
     try {
       const raw = sessionStorage.getItem("tc_pending_checkout");
-      return raw ? JSON.parse(raw) as { plan?: string; tripId?: string } : null;
+      return raw ? JSON.parse(raw) as { plan?: string; tripId?: string; checkoutId?: string } : null;
     } catch { return null; }
   })();
 
   const plan = (searchParams.get("plan") || sessionStorage.getItem("tc_pending_plan") || pendingCheckout?.plan || "standard") as PlanKey;
   const tripId = searchParams.get("tripId") || ctxTripId || pendingCheckout?.tripId || "";
-  const checkoutId = searchParams.get("checkout_id") || "";
-  const polarUrl = sessionStorage.getItem("tc_polar_url") || "";
+  const checkoutId = searchParams.get("checkout_id") || pendingCheckout?.checkoutId || "";
 
-  // Detect invalid state: no Polar URL and no checkout_id to poll
-  const hasNoPaymentContext = !polarUrl && !checkoutId;
-
-  const [status, setStatus] = useState<"open_checkout" | "waiting_payment" | "confirmed" | "loading_result" | "ready">("open_checkout");
-  const [popupBlocked, setPopupBlocked] = useState(false);
+  const [status, setStatus] = useState<Status>("verifying_payment");
   const pollStarted = useRef(false);
 
   /* ── Progress state ────────────────────────────────────────────── */
@@ -217,39 +134,30 @@ export function CheckoutSuccess() {
   const [currentStep, setCurrentStep] = useState(0);
   const progressInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // When status changes, jump to range minimum and start incrementing
   useEffect(() => {
     const { stepIndex, rangeMin, rangeMax } = statusToStep(status);
-
-    // Jump to the minimum of this range
     setCurrentStep(stepIndex);
     setProgress((prev) => Math.max(prev, rangeMin));
 
-    // Clear any previous interval
     if (progressInterval.current) {
       clearInterval(progressInterval.current);
       progressInterval.current = null;
     }
 
-    // Gradually increment within the range
     progressInterval.current = setInterval(() => {
       setProgress((prev) => {
         if (prev >= rangeMax) {
           if (progressInterval.current) clearInterval(progressInterval.current);
           return rangeMax;
         }
-        // Slow increments within the range
         const increment = status === "ready" ? 2 : 0.5;
         const next = Math.min(prev + increment, rangeMax);
-
-        // Update currentStep based on progress thresholds
         for (let s = STEPS.length - 1; s >= 0; s--) {
           if (next >= STEPS[s].minPct) {
             setCurrentStep(s);
             break;
           }
         }
-
         return next;
       });
     }, status === "ready" ? 100 : 500);
@@ -262,26 +170,8 @@ export function CheckoutSuccess() {
     };
   }, [status]);
 
-  // Step 1: Auto-open Polar in new tab on mount
-  useEffect(() => {
-    if (!polarUrl) {
-      // No Polar URL — maybe came from Polar redirect directly, skip to polling
-      setStatus("waiting_payment");
-      return;
-    }
-    const win = window.open(polarUrl, "_blank");
-    if (!win || win.closed) {
-      // Popup blocked — show manual button
-      setPopupBlocked(true);
-    }
-    setStatus("waiting_payment");
-    // Clean up the URL from storage so a refresh doesn't re-open
-    sessionStorage.removeItem("tc_polar_url");
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Step 2: Poll for payment confirmation
-  const pollForPayment = useCallback(async () => {
+  // Poll for payment confirmation and result
+  const pollForResult = useCallback(async () => {
     if (!tripId) {
       // No tripId — grant plan immediately (webhook will handle backend)
       setPurchasedPlan(plan);
@@ -290,7 +180,6 @@ export function CheckoutSuccess() {
       return;
     }
 
-    // Poll /api/result/:tripId — returns 402 until order is paid
     const MAX_POLLS = 150; // 5 minutes max at 2s intervals
     const POLL_INTERVAL = 2000;
 
@@ -298,7 +187,7 @@ export function CheckoutSuccess() {
       try {
         const res = await fetch(`${WORKER_URL}/api/result/${tripId}`);
         if (res.ok) {
-          // Payment confirmed — order exists and result is available
+          // Payment confirmed — order exists
           setPurchasedPlan(plan);
           setStatus("confirmed");
           await new Promise((r) => setTimeout(r, 1500));
@@ -322,30 +211,25 @@ export function CheckoutSuccess() {
       await new Promise((r) => setTimeout(r, POLL_INTERVAL));
     }
 
-    // Timeout — grant plan anyway (webhook may still arrive)
+    // Timeout — grant plan anyway (webhook may still arrive later)
     setPurchasedPlan(plan);
     setStatus("ready");
     setTimeout(() => navigate(getDashboardRoute(plan), { replace: true }), 2000);
   }, [tripId, plan, setPurchasedPlan, loadResult, navigate]);
 
-  // Start polling when status becomes waiting_payment
+  // Start polling on mount
   useEffect(() => {
-    if (status === "waiting_payment" && !pollStarted.current) {
+    if (!pollStarted.current) {
       pollStarted.current = true;
-      pollForPayment();
+      pollForResult();
     }
-  }, [status, pollForPayment]);
-
-  const handleOpenPolar = () => {
-    if (polarUrl) window.open(polarUrl, "_blank");
-  };
+  }, [pollForResult]);
 
   /* ── Heading text based on status ──────────────────────────────── */
   const heading = (() => {
     switch (status) {
-      case "open_checkout":
-      case "waiting_payment":
-        return "Complete Your Payment";
+      case "verifying_payment":
+        return "Verifying Payment...";
       case "confirmed":
         return "Payment Confirmed!";
       case "loading_result":
@@ -357,11 +241,8 @@ export function CheckoutSuccess() {
 
   const subtitle = (() => {
     switch (status) {
-      case "open_checkout":
-      case "waiting_payment":
-        return popupBlocked
-          ? "Click below to open the payment page, then return here."
-          : "A payment window has opened. Complete the checkout and we'll detect it automatically.";
+      case "verifying_payment":
+        return "We're confirming your payment with Polar. This usually takes a few seconds.";
       case "confirmed":
         return `Your ${plan === "annual" ? "Annual membership" : `${plan.charAt(0).toUpperCase() + plan.slice(1)} plan`} is now active.`;
       case "loading_result":
@@ -371,65 +252,25 @@ export function CheckoutSuccess() {
     }
   })();
 
-  // Show error state if we arrived here with no valid payment context
-  if (hasNoPaymentContext) {
-    return (
-      <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">
-        <div className="text-center max-w-[420px] w-full">
-          <div className="w-16 h-16 rounded-full bg-red-50 border border-red-200 flex items-center justify-center mx-auto mb-6">
-            <Icon name="error_outline" size={32} className="text-red-500" />
-          </div>
-          <h1
-            className="text-[#1A1410]"
-            style={{ fontSize: "clamp(22px, 4vw, 28px)", fontFamily: "var(--font-display)", fontWeight: 700 }}
-          >
-            Payment Not Started
-          </h1>
-          <p className="mt-3 text-[15px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-            No payment session was found. This may happen if checkout creation failed or the page was refreshed.
-          </p>
-          <button
-            onClick={() => navigate(-1)}
-            className="mt-8 h-[52px] px-8 bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
-            style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
-          >
-            Go Back
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">
       <div className="text-center max-w-[480px] w-full">
 
-        {/* ── Circular progress indicator ─────────────────────────── */}
         <CircularProgress progress={progress} />
 
-        {/* ── Heading ─────────────────────────────────────────────── */}
         <h1
           className="mt-6 text-[#1A1410]"
-          style={{
-            fontSize: "clamp(24px, 4vw, 32px)",
-            fontFamily: "var(--font-display)",
-            fontWeight: 700,
-            transition: "all 0.5s ease",
-          }}
+          style={{ fontSize: "clamp(24px, 4vw, 32px)", fontFamily: "var(--font-display)", fontWeight: 700, transition: "all 0.5s ease" }}
         >
           {heading}
         </h1>
 
-        {/* ── Subtitle ────────────────────────────────────────────── */}
-        <p
-          className="mt-3 text-[16px] text-[#57534e]"
-          style={{ fontFamily: "var(--font-body)", transition: "all 0.5s ease" }}
-        >
+        <p className="mt-3 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)", transition: "all 0.5s ease" }}>
           {subtitle}
         </p>
 
-        {/* ── Plan info card (payment states only) ────────────────── */}
-        {(status === "open_checkout" || status === "waiting_payment") && (
+        {/* Plan info card */}
+        {status === "verifying_payment" && (
           <div className="mt-6 p-4 bg-white rounded-xl border border-[#E8DDD4]">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-[#C4613A] flex items-center justify-center flex-shrink-0">
@@ -447,35 +288,13 @@ export function CheckoutSuccess() {
           </div>
         )}
 
-        {/* ── Open payment button (fallback if popup blocked) ─────── */}
-        {popupBlocked && polarUrl && (status === "open_checkout" || status === "waiting_payment") && (
-          <div className="mt-6">
-            <BtnPrimary className="w-full" onClick={handleOpenPolar}>
-              <span className="flex items-center justify-center gap-2">
-                <Icon name="open_in_new" size={16} className="text-white" />
-                Open Payment Page
-              </span>
-            </BtnPrimary>
-          </div>
-        )}
-
-        {/* ── Step checklist ──────────────────────────────────────── */}
         <StepChecklist currentStep={currentStep} />
 
-        {/* ── Bottom status line ──────────────────────────────────── */}
-        <p
-          className="mt-6 text-[12px] text-[#78716c]"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          {status === "ready"
-            ? "Redirecting..."
-            : status === "open_checkout" || status === "waiting_payment"
-              ? "Waiting for payment confirmation"
-              : "This usually takes a few seconds"}
+        <p className="mt-6 text-[12px] text-[#78716c]" style={{ fontFamily: "var(--font-body)" }}>
+          {status === "ready" ? "Redirecting..." : "This usually takes a few seconds"}
         </p>
       </div>
 
-      {/* ── Keyframe animations ───────────────────────────────────── */}
       <style>{`
         @keyframes checkout-spin {
           from { transform: rotate(0deg); }

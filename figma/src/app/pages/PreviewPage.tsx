@@ -81,12 +81,16 @@ export function PreviewPage() {
         throw new Error("No checkout URL received. Please try again.");
       }
 
+      // Save checkout context before redirecting to Polar
       sessionStorage.setItem("tc_pending_checkout", JSON.stringify({
         plan, tripId, checkoutId: session.id, ts: Date.now(),
       }));
       sessionStorage.setItem("tc_pending_plan", plan);
-      sessionStorage.setItem("tc_polar_url", session.url);
-      navigate(`/checkout/success?plan=${plan}&tripId=${tripId || ""}&checkout_id=${session.id}`);
+
+      // Redirect directly to Polar checkout (same tab).
+      // After payment, Polar redirects back to /checkout/success with params.
+      // sessionStorage persists across same-tab navigations.
+      window.location.href = session.url;
     } catch (err) {
       setCheckoutLoading(null);
       setCheckoutError(err instanceof Error ? err.message : "Checkout failed. Please try again.");

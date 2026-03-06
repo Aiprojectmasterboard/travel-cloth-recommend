@@ -107,10 +107,11 @@ export function StandardDashboard() {
         { day: 7, activity: "Departure" },
       ];
 
-  // Which outfit image to show — API teaser + AI images > mock
+  // Which outfit image to show — API images > teaser (all slots) > mock
+  // Standard plan: 1 AI teaser + 3 CSS variants = all 4 slots use teaser after payment
   const getOutfitImage = (idx: number): string => {
     if (apiImages.length > idx) return apiImages[idx].url;
-    if (teaserUrl && idx === 0) return teaserUrl;
+    if (teaserUrl) return teaserUrl;
     return mockOutfits[idx]?.image || FALLBACK_HERO;
   };
 
