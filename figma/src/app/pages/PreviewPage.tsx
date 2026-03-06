@@ -233,10 +233,9 @@ function ImageLightbox({
   );
 }
 
-/* Fallback: build a city-specific Unsplash image URL */
-function getCityFallbackImg(cityName: string): string {
-  const query = encodeURIComponent(`${cityName} city landmark travel`);
-  return `https://source.unsplash.com/1080x600/?${query}`;
+/* Fallback: generic travel image (source.unsplash.com is deprecated) */
+function getCityFallbackImg(_cityName: string): string {
+  return GENERIC_FALLBACK;
 }
 const GENERIC_FALLBACK = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
 
@@ -517,9 +516,9 @@ export function PreviewPage() {
               // Each locked slot gets a unique CSS treatment so they look like different images
               const lockedStyles: React.CSSProperties[] = [
                 {},
-                { filter: "blur(12px) brightness(0.65) hue-rotate(15deg)", transform: "scale(1.15) scaleX(-1)" },
-                { filter: "blur(14px) brightness(0.6) saturate(1.3)", transform: "scale(1.2) rotate(2deg)" },
-                { filter: "blur(10px) brightness(0.55) hue-rotate(-20deg) contrast(1.1)", transform: "scale(1.25) scaleX(-1) rotate(-1deg)" },
+                { filter: "blur(12px) brightness(0.65) hue-rotate(25deg) saturate(1.2)", transform: "scale(1.3) scaleX(-1)", objectPosition: "top" },
+                { filter: "blur(14px) brightness(0.55) sepia(0.3) saturate(1.5)", transform: "scale(1.35) rotate(3deg)", objectPosition: "bottom" },
+                { filter: "blur(11px) brightness(0.6) hue-rotate(-30deg) contrast(1.15)", transform: "scale(1.4) scaleX(-1) rotate(-2deg)", objectPosition: "left" },
               ];
               return (
                 <div

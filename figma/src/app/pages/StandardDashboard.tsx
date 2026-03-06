@@ -120,12 +120,21 @@ export function StandardDashboard() {
       ];
 
   // Which outfit image to show — API images > teaser (all slots) > mock
-  // Standard plan: 1 AI teaser + 3 CSS variants = all 4 slots use teaser after payment
+  // Standard plan: 1 AI teaser + 3 CSS variants = all 4 slots use teaser after signup
   const getOutfitImage = (idx: number): string => {
     if (apiImages.length > idx) return apiImages[idx].url;
     if (teaserUrl) return teaserUrl;
     return mockOutfits[idx]?.image || FALLBACK_HERO;
   };
+
+  // CSS variations so teaser-based outfit images look distinct per slot
+  const outfitImageStyles: React.CSSProperties[] = [
+    {},
+    { transform: "scaleX(-1)", filter: "hue-rotate(15deg) brightness(0.95)" },
+    { objectPosition: "top", filter: "saturate(1.2) brightness(0.92)" },
+    { transform: "scaleX(-1)", objectPosition: "bottom", filter: "hue-rotate(-15deg) brightness(0.95)" },
+  ];
+  const usesTeaserVariant = (idx: number) => apiImages.length <= idx && !!teaserUrl;
 
   // Capsule items to display
   const displayItems = hasRealData
@@ -225,7 +234,7 @@ export function StandardDashboard() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             {/* Outfit image */}
                             <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                              <ImageWithFallback src={getOutfitImage(idx)} alt={title} className="w-full h-full object-cover" />
+                              <ImageWithFallback src={getOutfitImage(idx)} alt={title} className="w-full h-full object-cover" style={usesTeaserVariant(idx) ? outfitImageStyles[idx] : undefined} />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                               <div className="absolute top-3 left-3">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
