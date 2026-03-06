@@ -19,9 +19,9 @@
  *     NOT organization-level OATs.
  *
  *  4. Product structure:
- *     - Standard ($5): one-time product → creates an Order
- *     - Pro ($12): one-time product → creates an Order
- *     - Annual ($29/yr): subscription product → creates a Subscription
+ *     - Standard (Free): one-time product → creates an Order
+ *     - Pro ($4.99): one-time product → creates an Order
+ *     - Annual ($9.99/yr): subscription product → creates a Subscription
  *
  *  ARCHITECTURE:
  *     Client → POST /api/checkout/create (your backend)
@@ -56,7 +56,7 @@ export const POLAR_PRODUCTS = {
     productId: "YOUR_STANDARD_PRODUCT_ID",
     name: "Standard Capsule",
     type: "one_time" as const,
-    price: 500,       // cents ($5.00)
+    price: 0,         // cents (Free)
     currency: "usd",
   },
   pro: {
@@ -64,7 +64,7 @@ export const POLAR_PRODUCTS = {
     productId: "YOUR_PRO_PRODUCT_ID",
     name: "Pro Capsule",
     type: "one_time" as const,
-    price: 1200,      // cents ($12.00)
+    price: 499,       // cents ($4.99)
     currency: "usd",
   },
   annual: {
@@ -72,7 +72,7 @@ export const POLAR_PRODUCTS = {
     productId: "YOUR_ANNUAL_PRODUCT_ID",
     name: "Annual Membership",
     type: "recurring" as const,
-    price: 2900,      // cents ($29.00/year)
+    price: 999,       // cents ($9.99/year)
     currency: "usd",
     interval: "year",
   },

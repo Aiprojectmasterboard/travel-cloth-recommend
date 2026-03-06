@@ -38,7 +38,7 @@ export function StandardDashboard() {
   const navigate = useNavigate();
   const [activeDay, setActiveDay] = useState(1);
   const [expandedOutfit, setExpandedOutfit] = useState(0);
-  const { isLoggedIn, setShowSignupPrompt, purchasedPlan } = useAuth();
+  const { isLoggedIn, setShowSignupPrompt, authLoading, setShowLoginModal, setLoginModalContext } = useAuth();
   const { data: onboarding } = useOnboarding();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
   const { t } = useLang();
@@ -56,10 +56,14 @@ export function StandardDashboard() {
     }
   }, [pdfExporting]);
 
-  // Payment gate
+  // Login gate — Standard is free but requires sign-up
   useEffect(() => {
-    if (!purchasedPlan) navigate("/preview", { replace: true });
-  }, [purchasedPlan, navigate]);
+    if (!authLoading && !isLoggedIn) {
+      setLoginModalContext("onboarding_gate");
+      setShowLoginModal(true);
+      navigate("/preview", { replace: true });
+    }
+  }, [authLoading, isLoggedIn, navigate, setShowLoginModal, setLoginModalContext]);
 
   // Load result if not yet loaded
   useEffect(() => {
@@ -68,12 +72,6 @@ export function StandardDashboard() {
     }
   }, [tripId, result, tripLoading, loadResult]);
 
-  useEffect(() => {
-    if (!isLoggedIn) {
-      const timer = setTimeout(() => setShowSignupPrompt(true), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoggedIn, setShowSignupPrompt]);
 
   // ─── Extract real API data ───────────────────────────────────────────────
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
@@ -148,7 +146,7 @@ export function StandardDashboard() {
             <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden sm:block"><PlanBadge label="Standard Plan" /></span>
+            <span className="hidden sm:block"><PlanBadge label="Standard · Free" /></span>
             <SocialShareButton />
             <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
               <Icon name="mail" size={16} className="text-[#57534e]" />
@@ -166,7 +164,7 @@ export function StandardDashboard() {
           {moodLabel}
         </h1>
         <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-          Weather-adapted, culture-aware, and tailored to your profile.
+          AI-powered travel styling — weather-adapted, culture-aware, personalized for you.
         </p>
         <div className="mt-3">
           <AiGeneratedBadge confidence={hasRealData ? 95 : 85} bodyFitLabel={bodyFitLabel} />

@@ -65,7 +65,7 @@ export function TermsPage() {
           <Section title="Plans & Pricing">
             <div className="space-y-4">
               <PlanBox
-                name="Standard — $5"
+                name="Standard — Free"
                 type="One-time purchase"
                 items={[
                   "1 AI outfit image (full resolution) + 3 unlocked previews",
@@ -75,7 +75,7 @@ export function TermsPage() {
                 ]}
               />
               <PlanBox
-                name="Pro — $12"
+                name="Pro — $4.99"
                 type="One-time purchase"
                 items={[
                   "4–6 AI outfit images per city (ultra hi-res)",
@@ -86,7 +86,7 @@ export function TermsPage() {
                 ]}
               />
               <PlanBox
-                name="Annual — $29/year"
+                name="Annual — $9.99/year"
                 type="Annual subscription — auto-renews yearly"
                 items={[
                   "All Pro benefits included",

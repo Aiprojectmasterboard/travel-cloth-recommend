@@ -252,7 +252,7 @@ export function PreviewPage() {
   const { data } = useOnboarding();
   const { preview, tripId, loading: tripLoading, error: tripError } = useTrip();
   const { t, displayFont, bodyFont, lang } = useLang();
-  const { isLoggedIn, user, setShowLoginModal } = useAuth();
+  const { isLoggedIn, user, setShowLoginModal, setLoginModalContext } = useAuth();
 
   const city = data.cities[0]?.city || "Paris";
   const country = data.cities[0]?.country || "";
@@ -329,8 +329,17 @@ export function PreviewPage() {
   };
 
   const handleCheckout = (plan: PlanKey) => {
-    if (plan === "standard" && cityCount > 1) {
-      setShowCityLimitModal(true);
+    if (plan === "standard") {
+      if (cityCount > 1) {
+        setShowCityLimitModal(true);
+        return;
+      }
+      if (isLoggedIn) {
+        navigate("/dashboard/standard");
+        return;
+      }
+      setLoginModalContext("onboarding_gate");
+      setShowLoginModal(true);
       return;
     }
     doCheckout(plan);
@@ -400,14 +409,14 @@ export function PreviewPage() {
                 className="h-[52px] w-full bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
-                Select Pro Plan ($12)
+                Select Pro Plan ($4.99)
               </button>
               <button
                 onClick={() => { setShowCityLimitModal(false); doCheckout("standard"); }}
                 className="h-[52px] w-full border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#FDF8F3] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
-                Continue with 1 city ($5)
+                Continue with 1 city (Free)
               </button>
             </div>
           </div>
@@ -665,15 +674,15 @@ export function PreviewPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
             {/* Standard */}
-            <div className="flex flex-col p-8 bg-white border border-[#C4613A]/10 rounded-2xl">
+            <div className="relative flex flex-col p-8 bg-white border border-[#C4613A]/10 rounded-2xl">
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-green-600 text-white text-[10px] uppercase tracking-[0.12em] rounded-full" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                {t("pricing.standard.badge")}
+              </span>
               <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>Standard</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-[#292524]" style={{ fontFamily: displayFont, fontWeight: 700 }}>$5</span>
-                <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t("pricing.oneTime")}</span>
+                <span className="text-[48px] text-[#292524]" style={{ fontFamily: displayFont, fontWeight: 700 }}>{t("pricing.free")}</span>
+                <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t("pricing.signupRequired")}</span>
               </div>
-              <span className="mt-1 text-[11px] text-[#57534e]/60" style={{ fontFamily: "var(--font-mono)" }}>
-                {t("pricing.noAccountNeeded")}
-              </span>
               <div className="mt-6 flex flex-col gap-3 flex-1">
                 {[1,2,3,4,5].map((n) => (
                   <CheckItem key={n} label={t(`pricing.standard.features.${n}`)} />
@@ -681,7 +690,7 @@ export function PreviewPage() {
               </div>
               <div className="mt-8">
                 <BtnSecondary onClick={() => handleCheckout("standard")} className="w-full">
-                  {checkoutLoading === "standard" ? t("preview.processing") : t("pricing.standard.cta")}
+                  {t("pricing.standard.cta")}
                 </BtnSecondary>
               </div>
             </div>
@@ -693,7 +702,7 @@ export function PreviewPage() {
               </span>
               <h3 className="text-white not-italic text-[28px]" style={{ fontFamily: displayFont }}>Pro</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$12</span>
+                <span className="text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$4.99</span>
                 <span className="text-[14px] text-white/70" style={{ fontFamily: bodyFont }}>{t("pricing.oneTime")}</span>
               </div>
               <span className="mt-1 text-[11px] text-white/40" style={{ fontFamily: "var(--font-mono)" }}>
@@ -719,7 +728,7 @@ export function PreviewPage() {
               </span>
               <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>Annual</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-[#292524]" style={{ fontFamily: displayFont, fontWeight: 700 }}>$29</span>
+                <span className="text-[48px] text-[#292524]" style={{ fontFamily: displayFont, fontWeight: 700 }}>$9.99</span>
                 <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t("pricing.perYear")}</span>
               </div>
               <div className="mt-6 flex flex-col gap-3 flex-1">

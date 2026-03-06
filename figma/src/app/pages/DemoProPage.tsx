@@ -95,7 +95,7 @@ export function DemoProPage() {
           className="text-[12px] uppercase tracking-[0.1em]"
           style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
         >
-          Demo Preview — Busan, South Korea &middot; Pro Plan ($12)
+          Demo Preview — Busan, South Korea &middot; Pro Plan ($4.99)
         </span>
         <button
           onClick={() => navigate("/onboarding/1")}
@@ -668,7 +668,7 @@ export function DemoProPage() {
               className="text-[12px] text-[#57534e]"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              Get your own AI-curated capsule wardrobe from $5
+              Get your own AI-curated capsule wardrobe for free
             </span>
           </div>
           <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>

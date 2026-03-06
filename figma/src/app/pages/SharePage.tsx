@@ -228,7 +228,7 @@ export function SharePage() {
             Your Perfect Travel Wardrobe, AI-Curated
           </h2>
           <p className="text-white/60 text-[15px] mb-8" style={{ fontFamily: "var(--font-body)" }}>
-            Get weather-adapted, culture-aware outfit recommendations for any city. Starting at $5.
+            Get weather-adapted, culture-aware outfit recommendations for any city. Start free.
           </p>
           <BtnPrimary onClick={() => navigate("/onboarding/1")} className="text-[13px] px-10 py-3">
             Get Started Free

@@ -28,9 +28,9 @@ const PAGES = [
   {
     section: "Dashboards",
     routes: [
-      { path: "/dashboard/standard", label: "Standard Dashboard ($5)", desc: "1 city, 4 outfits, packing list", icon: "dashboard" },
-      { path: "/dashboard/pro", label: "Pro Dashboard ($12)", desc: "Multi-city, weather, activities", icon: "star" },
-      { path: "/dashboard/annual", label: "Annual Dashboard ($29/yr)", desc: "Style DNA, VIP, trip history", icon: "workspace_premium" },
+      { path: "/dashboard/standard", label: "Standard Dashboard (Free)", desc: "1 city, 4 outfits, packing list", icon: "dashboard" },
+      { path: "/dashboard/pro", label: "Pro Dashboard ($4.99)", desc: "Multi-city, weather, activities", icon: "star" },
+      { path: "/dashboard/annual", label: "Annual Dashboard ($9.99/yr)", desc: "Style DNA, VIP, trip history", icon: "workspace_premium" },
     ],
   },
   {
