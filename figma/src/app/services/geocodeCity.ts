@@ -40,10 +40,10 @@ export async function geocodeCity(cityName: string): Promise<GeocodedCity | null
 }
 
 /**
- * Get an Unsplash image URL for a city (uses source.unsplash.com redirect).
- * Falls back to a search-based URL that always returns an image.
+ * Get a fallback image URL for a city.
+ * Returns a generic travel photo (source.unsplash.com is deprecated).
+ * For real city photos, use fetchCityPhoto() in OnboardingStep1.tsx.
  */
-export function getCityImageUrl(cityName: string, width = 800): string {
-  const query = encodeURIComponent(`${cityName} city landmark`);
-  return `https://source.unsplash.com/${width}x600/?${query}`;
+export function getCityImageUrl(_cityName: string, _width = 800): string {
+  return "https://images.unsplash.com/photo-1488646953014-85cb44e25828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400";
 }

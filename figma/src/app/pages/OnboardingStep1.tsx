@@ -28,9 +28,29 @@ const CITY_IMAGE_MAP: Record<string, string> = {
 function getCityImage(cityName: string): string {
   const key = cityName.toLowerCase().replace(/\s+/g, "");
   if (CITY_IMAGE_MAP[key]) return CITY_IMAGE_MAP[key];
-  // Dynamic Unsplash search URL for cities not in the static map
-  const query = encodeURIComponent(`${cityName} city landmark`);
-  return `https://source.unsplash.com/400x400/?${query}`;
+  return FALLBACK_IMAGE;
+}
+
+/**
+ * Fetch a city landmark photo from Wikipedia REST API (free, no key needed).
+ * Returns the thumbnail URL or FALLBACK_IMAGE if not found.
+ */
+async function fetchCityPhoto(cityName: string): Promise<string> {
+  try {
+    const res = await fetch(
+      `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(cityName)}`,
+      { headers: { "Api-User-Agent": "TravelCapsuleAI/1.0" } },
+    );
+    if (!res.ok) return FALLBACK_IMAGE;
+    const data = await res.json() as { thumbnail?: { source?: string } };
+    // Wikipedia thumbnails are typically 320px; request a wider version
+    const thumb = data.thumbnail?.source;
+    if (!thumb) return FALLBACK_IMAGE;
+    // Upscale thumbnail: replace /NNNpx- with /800px-
+    return thumb.replace(/\/\d+px-/, "/800px-");
+  } catch {
+    return FALLBACK_IMAGE;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -235,8 +255,9 @@ export function OnboardingStep1() {
 
   // ---- Add a city from the suggestions list ------------------------------
   const addCity = (option: CityOption) => {
+    const entryId = crypto.randomUUID();
     const entry: CityEntry = {
-      id: crypto.randomUUID(),
+      id: entryId,
       city: option.city,
       country: option.country,
       imageUrl: option.imageUrl,
@@ -248,6 +269,18 @@ export function OnboardingStep1() {
     setData((prev) => ({ ...prev, cities: [...prev.cities, entry] }));
     setSearch("");
     setShowSuggestions(false);
+
+    // Async-fetch a real city photo if the current image is the fallback
+    if (option.imageUrl === FALLBACK_IMAGE) {
+      fetchCityPhoto(option.city).then((url) => {
+        if (url !== FALLBACK_IMAGE) {
+          setData((prev) => ({
+            ...prev,
+            cities: prev.cities.map((c) => c.id === entryId ? { ...c, imageUrl: url } : c),
+          }));
+        }
+      });
+    }
   };
 
   // ---- Add a custom city typed by the user (validated via geocoding) ------
@@ -264,11 +297,12 @@ export function OnboardingStep1() {
       return;
     }
 
+    const customEntryId = crypto.randomUUID();
     const entry: CityEntry = {
-      id: crypto.randomUUID(),
+      id: customEntryId,
       city: result.city,
       country: result.country,
-      imageUrl: getCityImageUrl(result.city),
+      imageUrl: FALLBACK_IMAGE,
       fromDate: "",
       toDate: "",
       lat: result.lat,
@@ -277,6 +311,16 @@ export function OnboardingStep1() {
     setData((prev) => ({ ...prev, cities: [...prev.cities, entry] }));
     setSearch("");
     setShowSuggestions(false);
+
+    // Fetch a real city photo from Wikipedia
+    fetchCityPhoto(result.city).then((url) => {
+      if (url !== FALLBACK_IMAGE) {
+        setData((prev) => ({
+          ...prev,
+          cities: prev.cities.map((c) => c.id === customEntryId ? { ...c, imageUrl: url } : c),
+        }));
+      }
+    });
   }, [trimmedSearch, validating, setData]);
 
   // ---- Handle Enter key in the search input ------------------------------
