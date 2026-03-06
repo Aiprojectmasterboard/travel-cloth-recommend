@@ -35,6 +35,20 @@ import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { createCheckoutSession } from "../services/polarCheckout";
 import { GA } from "../lib/analytics";
 
+async function downloadImage(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    window.open(url, "_blank");
+  }
+}
+
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMEZyYW5jZSUyMEVpZmZlbCUyMHRvd2VyJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc3MjQyNjYwM3ww&ixlib=rb-4.1.0&q=80&w=1080";
 const FALLBACK_MOOD = "https://images.unsplash.com/photo-1577058006248-8289d93b53ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMHN0cmVldCUyMGNhZmUlMjBhdXR1bW4lMjB0cmF2ZWwlMjBhZXN0aGV0aWN8ZW58MXx8fHwxNzcyNDI2NjA4fDA&ixlib=rb-4.1.0&q=80&w=1080";
 
@@ -179,7 +193,7 @@ export function StandardDashboard() {
             <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="hidden sm:block"><PlanBadge label="Standard · Free" /></span>
+            <span className="hidden sm:block"><PlanBadge label={`Standard · ${t("pricing.promoFree")}`} /></span>
             <SocialShareButton />
             <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
               <Icon name="mail" size={16} className="text-[#57534e]" />
@@ -260,10 +274,17 @@ export function StandardDashboard() {
                             <div className="relative rounded-xl overflow-hidden w-full max-w-[400px]" style={{ aspectRatio: "3/4" }}>
                               <ImageWithFallback src={getOutfitImage(idx)} alt={title} className="w-full h-full object-cover" style={usesTeaserVariant(idx) ? outfitImageStyles[idx] : undefined} />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                              <div className="absolute top-3 left-3">
+                              <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
                                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
                                   <Icon name="auto_awesome" size={10} className="text-white" filled /> {apiImages.length > idx ? "AI Generated" : "Style Preview"}
                                 </span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); downloadImage(getOutfitImage(idx), `capsule-outfit-${idx + 1}.jpg`); }}
+                                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                                  title={t("dashboard.downloadImage")}
+                                >
+                                  <Icon name="download" size={16} className="text-white" />
+                                </button>
                               </div>
                             </div>
 

@@ -28,6 +28,20 @@ import {
 import { regenerateOutfit, type CapsuleItem, type WeatherData, type VibeData } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 
+async function downloadImage(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    window.open(url, "_blank");
+  }
+}
+
 /* ─── Static images ─── */
 const IMG = {
   tokyoMap: "https://images.unsplash.com/photo-1717084023989-20a9eef69fc3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
@@ -259,13 +273,20 @@ export function AnnualDashboard() {
                     <div className="relative h-[240px]">
                       <ImageWithFallback src={getOutfitImage(i)} alt={outfit.title} className="w-full h-full object-cover" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      {apiImages.length > i && (
-                        <div className="absolute top-2 left-2">
+                      <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
+                        {apiImages.length > i ? (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[8px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
                             <Icon name="auto_awesome" size={8} className="text-white" filled /> AI
                           </span>
-                        </div>
-                      )}
+                        ) : <span />}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); downloadImage(getOutfitImage(i), `capsule-${cityName.toLowerCase()}-outfit-${i + 1}.jpg`); }}
+                          className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                          title={t("dashboard.downloadImage")}
+                        >
+                          <Icon name="download" size={14} className="text-white" />
+                        </button>
+                      </div>
                       <div className="absolute bottom-3 left-3 right-3">
                         <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Day {outfit.day}</span>
                         <span className="text-white text-[18px] italic block" style={{ fontFamily: "var(--font-display)" }}>{outfit.title.split(" ")[0]}</span>

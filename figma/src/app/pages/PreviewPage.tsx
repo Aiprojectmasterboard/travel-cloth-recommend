@@ -676,14 +676,15 @@ export function PreviewPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
             {/* Standard */}
             <div className="relative flex flex-col p-8 bg-white border border-[#C4613A]/10 rounded-2xl">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-green-600 text-white text-[10px] uppercase tracking-[0.12em] rounded-full" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                {t("pricing.standard.badge")}
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-[#C4613A] to-[#e0734a] text-white text-[10px] uppercase tracking-[0.12em] rounded-full animate-pulse" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                {t("pricing.promoBadge")}
               </span>
               <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>Standard</h3>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-[#292524]" style={{ fontFamily: displayFont, fontWeight: 700 }}>{t("pricing.free")}</span>
-                <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t("pricing.signupRequired")}</span>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="text-[24px] text-[#57534e] line-through opacity-60" style={{ fontFamily: displayFont, fontWeight: 500 }}>{t("pricing.originalPrice")}</span>
+                <span className="text-[48px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>{t("pricing.promoFree")}</span>
               </div>
+              <span className="text-[12px] text-[#C4613A] mt-1 block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("pricing.promoNote")}</span>
               <div className="mt-6 flex flex-col gap-3 flex-1">
                 {[1,2,3,4,5].map((n) => (
                   <CheckItem key={n} label={t(`pricing.standard.features.${n}`)} />

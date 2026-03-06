@@ -28,6 +28,20 @@ import {
 import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 
+async function downloadImage(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    window.open(url, "_blank");
+  }
+}
+
 /* ─── City hero images (fallback) ─── */
 const CITY_HEROES: Record<string, string> = {
   paris: "https://images.unsplash.com/photo-1577056922428-a511301a562d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
@@ -371,13 +385,20 @@ export function ProDashboard() {
                         <img src={imgSrc} alt={outfit.title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = outfit.image; }} />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                      {aiImages.has(`${currentSet.city}::outfit-${i + 1}`) && (
-                        <div className="absolute top-2 left-2">
+                      <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
+                        {aiImages.has(`${currentSet.city}::outfit-${i + 1}`) ? (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
                             <Icon name="auto_awesome" size={10} className="text-white" filled /> AI
                           </span>
-                        </div>
-                      )}
+                        ) : <span />}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); downloadImage(imgSrc, `capsule-${currentSet.city.toLowerCase()}-outfit-${i + 1}.jpg`); }}
+                          className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                          title={t("dashboard.downloadImage")}
+                        >
+                          <Icon name="download" size={14} className="text-white" />
+                        </button>
+                      </div>
                       <div className="absolute bottom-3 left-3 right-3">
                         <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.day")} {outfit.day}</span>
                         <span className="text-white text-[16px] italic block leading-tight" style={{ fontFamily: "var(--font-display)" }}>{outfit.title.split(" ")[0]}</span>
@@ -398,6 +419,15 @@ export function ProDashboard() {
                         className="w-full h-full object-cover"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute top-3 right-3">
+                        <button
+                          onClick={() => downloadImage(getOutfitImage(currentSet.city, expandedOutfit, currentSet.outfits[expandedOutfit].image), `capsule-${currentSet.city.toLowerCase()}-outfit-${expandedOutfit + 1}.jpg`)}
+                          className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                          title={t("dashboard.downloadImage")}
+                        >
+                          <Icon name="download" size={18} className="text-white" />
+                        </button>
+                      </div>
                       <div className="absolute bottom-4 left-4 right-4">
                         <div className="flex gap-1.5">
                           {currentSet.colorPalette.map((color) => (
