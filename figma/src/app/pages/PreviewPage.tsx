@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router";
 import { Icon, BtnSecondary, BtnDark, CheckItem, LanguageSelector } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -7,6 +7,231 @@ import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
+
+// ─── Image Lightbox with Branding + Share ─────────────────────────────────────
+
+function ImageLightbox({
+  src,
+  moodLabel,
+  onClose,
+}: {
+  src: string;
+  moodLabel: string;
+  onClose: () => void;
+}) {
+  const { t, displayFont, bodyFont } = useLang();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}?utm_source=share&utm_medium=image` : "";
+  const shareText = t("lightbox.shareText") + ` ${shareUrl}`;
+
+  /** Draw branded image on canvas and return blob */
+  const renderBrandedImage = useCallback(async (): Promise<Blob | null> => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = src;
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Image load failed"));
+    });
+
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const w = img.naturalWidth || 1080;
+    const h = img.naturalHeight || 1440;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+
+    // Draw original image
+    ctx.drawImage(img, 0, 0, w, h);
+
+    // Bottom gradient overlay for branding
+    const grad = ctx.createLinearGradient(0, h * 0.82, 0, h);
+    grad.addColorStop(0, "rgba(0,0,0,0)");
+    grad.addColorStop(0.4, "rgba(0,0,0,0.4)");
+    grad.addColorStop(1, "rgba(0,0,0,0.7)");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, h * 0.82, w, h * 0.18);
+
+    // Brand text
+    const fontSize = Math.max(16, Math.round(w * 0.028));
+    ctx.font = `600 ${fontSize}px "DM Sans", "Plus Jakarta Sans", sans-serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.95)";
+    ctx.textBaseline = "bottom";
+
+    // Luggage icon substitute: ✈ + brand name
+    const brandText = "Travel Capsule AI";
+    ctx.fillText(`✈  ${brandText}`, w * 0.04, h * 0.96);
+
+    // Mood label (smaller)
+    const moodSize = Math.max(12, Math.round(w * 0.02));
+    ctx.font = `italic 300 ${moodSize}px "Playfair Display", serif`;
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.fillText(moodLabel, w * 0.04, h * 0.96 - fontSize * 1.4);
+
+    // travelscapsule.com URL (right side)
+    const urlSize = Math.max(11, Math.round(w * 0.018));
+    ctx.font = `500 ${urlSize}px "JetBrains Mono", monospace`;
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.textAlign = "right";
+    ctx.fillText("travelscapsule.com", w * 0.96, h * 0.96);
+    ctx.textAlign = "left";
+
+    return new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
+  }, [src, moodLabel]);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const blob = await renderBrandedImage();
+      if (!blob) throw new Error("Failed to render");
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `travel-capsule-${Date.now()}.png`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } catch (err) {
+      console.error("Save failed:", err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleNativeShare = async () => {
+    try {
+      const blob = await renderBrandedImage();
+      if (blob && navigator.share && navigator.canShare) {
+        const file = new File([blob], "travel-capsule-outfit.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], text: t("lightbox.shareText"), url: shareUrl });
+          return;
+        }
+      }
+      // Fallback: share without image
+      if (navigator.share) {
+        await navigator.share({ text: t("lightbox.shareText"), url: shareUrl });
+      }
+    } catch {
+      // User cancelled or not supported — ignore
+    }
+  };
+
+  const socialLinks = [
+    { name: "X", icon: "X", url: `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}` },
+    { name: "Facebook", icon: "FB", url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(t("lightbox.shareText"))}` },
+    { name: "Reddit", icon: "Re", url: `https://www.reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(t("lightbox.shareText"))}` },
+  ];
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch { /* ignore */ }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
+      onClick={onClose}
+    >
+      {/* Hidden canvas for rendering branded image */}
+      <canvas ref={canvasRef} className="hidden" />
+
+      <div
+        className="relative w-full max-w-[520px] mx-4 flex flex-col items-center"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer z-10"
+          aria-label={t("lightbox.close")}
+        >
+          <Icon name="close" size={22} className="text-white" />
+        </button>
+
+        {/* Image with branding overlay */}
+        <div className="relative w-full rounded-2xl overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+          <img src={src} alt="AI outfit" className="w-full h-auto block" />
+          {/* Brand watermark overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }}>
+            <p className="text-white/70 text-[12px] sm:text-[14px] italic mb-1" style={{ fontFamily: displayFont }}>{moodLabel}</p>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Icon name="luggage" size={16} className="text-white/90" />
+                <span className="text-white/90 text-[13px] sm:text-[15px]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>Travel Capsule AI</span>
+              </div>
+              <span className="text-white/40 text-[10px]" style={{ fontFamily: "var(--font-mono)" }}>travelscapsule.com</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Action buttons */}
+        <div className="mt-5 w-full flex flex-col gap-3">
+          {/* Save button */}
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="h-[48px] w-full bg-white text-[#1A1410] rounded-xl flex items-center justify-center gap-2 hover:bg-white/90 transition-colors cursor-pointer disabled:opacity-60"
+            style={{ fontFamily: bodyFont, fontWeight: 600 }}
+          >
+            <Icon name={saved ? "check_circle" : "download"} size={20} className={saved ? "text-green-600" : "text-[#1A1410]"} filled={saved} />
+            <span className="text-[14px]">{saving ? "..." : saved ? t("lightbox.saved") : t("lightbox.saveImage")}</span>
+          </button>
+
+          {/* Social share row */}
+          <div className="flex items-center gap-2">
+            {/* Native share (mobile) */}
+            {"share" in navigator && (
+              <button
+                onClick={handleNativeShare}
+                className="flex-1 h-[44px] bg-[#C4613A] text-white rounded-xl flex items-center justify-center gap-2 hover:bg-[#A84A25] transition-colors cursor-pointer"
+                style={{ fontFamily: bodyFont, fontWeight: 600 }}
+              >
+                <Icon name="share" size={18} className="text-white" />
+                <span className="text-[13px]">{t("lightbox.shareOn")}</span>
+              </button>
+            )}
+
+            {/* Social platform buttons */}
+            {socialLinks.map((s) => (
+              <a
+                key={s.name}
+                href={s.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-[44px] w-[44px] flex-shrink-0 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors"
+                title={`${t("lightbox.shareOn")} ${s.name}`}
+              >
+                <span className="text-white text-[13px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{s.icon}</span>
+              </a>
+            ))}
+
+            {/* Copy link */}
+            <button
+              onClick={handleCopyLink}
+              className="h-[44px] w-[44px] flex-shrink-0 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
+              title={t("lightbox.copyLink")}
+            >
+              <Icon name={linkCopied ? "check" : "link"} size={18} className={linkCopied ? "text-green-400" : "text-white"} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /* Fallback: build a city-specific Unsplash image URL */
 function getCityFallbackImg(cityName: string): string {
@@ -58,6 +283,7 @@ export function PreviewPage() {
   const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [showCityLimitModal, setShowCityLimitModal] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   const cityCount = data.cities.length;
 
@@ -136,6 +362,15 @@ export function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      {/* Image Lightbox */}
+      {lightboxOpen && preview?.teaser_url && (
+        <ImageLightbox
+          src={preview.teaser_url}
+          moodLabel={moodLabel}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
+
       {/* City limit modal — Standard plan only supports 1 city */}
       {showCityLimitModal && (
         <div
@@ -278,12 +513,17 @@ export function PreviewPage() {
                 { filter: "blur(10px) brightness(0.55) hue-rotate(-20deg) contrast(1.1)", transform: "scale(1.25) scaleX(-1) rotate(-1deg)" },
               ];
               return (
-                <div key={idx} className="group">
+                <div
+                  key={idx}
+                  className="group"
+                  onClick={isUnlocked ? () => setLightboxOpen(true) : undefined}
+                  style={isUnlocked ? { cursor: "pointer" } : undefined}
+                >
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
                     <ImageWithFallback
                       src={imgSrc}
                       alt={`Outfit ${idx + 1}`}
-                      className="w-full h-full object-cover transition-transform duration-500"
+                      className={`w-full h-full object-cover transition-transform duration-500 ${isUnlocked ? "group-hover:scale-105" : ""}`}
                       style={isUnlocked ? { transform: "scale(1)" } : lockedStyles[idx]}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -298,11 +538,19 @@ export function PreviewPage() {
                       </div>
                     )}
                     {isUnlocked && (
-                      <div className="absolute top-2 left-2">
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                          <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
-                        </span>
-                      </div>
+                      <>
+                        <div className="absolute top-2 left-2">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                            <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
+                          </span>
+                        </div>
+                        {/* Tap-to-expand hint */}
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                            <Icon name="open_in_full" size={16} className="text-white" />
+                          </div>
+                        </div>
+                      </>
                     )}
                     <div className="absolute bottom-3 left-3 right-3">
                       <span className="text-white/70 text-[10px] uppercase tracking-[0.1em] block" style={{ fontFamily: "var(--font-mono)" }}>

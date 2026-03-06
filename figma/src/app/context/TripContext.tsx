@@ -7,6 +7,7 @@ import {
   type PreviewRequest,
 } from "../lib/api";
 import { useOnboarding } from "./OnboardingContext";
+import { useLang } from "./LanguageContext";
 
 // ─── State ─────────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ const PREVIEW_KEY = "tc_preview_data";
 
 export function TripProvider({ children }: { children: ReactNode }) {
   const { data: onboarding } = useOnboarding();
+  const { lang } = useLang();
 
   const [state, setState] = useState<TripState>(() => {
     const savedId = sessionStorage.getItem(TRIP_KEY) || null;
@@ -97,8 +99,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
         height_cm: !isNaN(ht) && ht > 0 ? ht : undefined,
         weight_kg: !isNaN(wt) && wt > 0 ? wt : undefined,
         style_preferences: onboarding.aesthetics.length > 0 ? onboarding.aesthetics : undefined,
-        // Turnstile token — in production, this should come from the widget
-        // For now, skip if not available (Worker's SKIP_TURNSTILE handles dev)
+        lang: lang || "en",
       };
 
       const preview = await submitPreview(req);

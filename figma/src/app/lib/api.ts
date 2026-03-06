@@ -137,6 +137,7 @@ export interface PreviewRequest {
   height_cm?: number
   weight_kg?: number
   style_preferences?: string[]
+  lang?: string
 }
 
 // ─── Typed API functions ────────────────────────────────────────────────────

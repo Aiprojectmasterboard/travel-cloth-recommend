@@ -30,6 +30,8 @@ export interface TripInput {
   cities: unknown[]; // raw JSONB from DB — cast to CityInput[] below
   month: number;
   face_url?: string;
+  /** UI language code for localized responses (e.g. "ko", "ja", "en") */
+  lang?: string;
   /** Optional traveller profile from the trip form (step 2 / step 3) */
   user_profile?: {
     gender?: string;
@@ -198,6 +200,271 @@ async function incrementAnnualUsage(userEmail: string, env: Bindings): Promise<v
   });
 }
 
+// ─── Localized Vibe & Capsule Strings ─────────────────────────────────────────
+
+type VibeEntry = { mood: string; tags: string[]; colors: string[]; avoid: string };
+type VibeDb = Record<string, VibeEntry>;
+
+/** Returns a complete vibe database for the given language */
+function getVibeDb(lang: string, isWarm: boolean): VibeDb {
+  // English is the base — other languages override mood and avoid_note
+  const en: VibeDb = {
+    paris: { mood: isWarm ? 'Sunlit Parisian Ease' : 'Parisian Twilight Layers', tags: ['effortless', 'refined', 'romantic', 'layered'], colors: ['#C9B99A', '#4A4E5A', '#D6CFC4'], avoid: isWarm ? 'Avoid heavy coats — light layers work best.' : 'Avoid thin fabrics without layering options.' },
+    rome: { mood: isWarm ? 'Roman Golden Hour' : 'Roman Terracotta Warmth', tags: ['sun-kissed', 'Mediterranean', 'relaxed', 'warm-toned'], colors: ['#C2956B', '#E8C9A0', '#8B6E4E'], avoid: isWarm ? 'Avoid dark heavy fabrics in the heat.' : 'Pack a light jacket for cool evenings.' },
+    barcelona: { mood: isWarm ? 'Coastal Barcelona Glow' : 'Barcelona Urban Breeze', tags: ['coastal', 'vibrant', 'casual', 'colorful'], colors: ['#E2A76F', '#5BA3C2', '#F5DEB3'], avoid: isWarm ? 'Avoid overdressing — coastal casual is key.' : 'Layer for variable Mediterranean weather.' },
+    tokyo: { mood: isWarm ? 'Tokyo Neon Minimal' : 'Tokyo Urban Layer', tags: ['structured', 'minimal', 'urban', 'clean'], colors: ['#2C2C2C', '#E8E0D5', '#8B7355'], avoid: isWarm ? 'Avoid bulky items — clean lines work best.' : 'Pack warm layers for chilly evenings.' },
+    london: { mood: isWarm ? 'London Garden Party' : 'London Understated Layer', tags: ['classic', 'tailored', 'understated', 'polished'], colors: ['#4A5568', '#C4A882', '#2C3E50'], avoid: 'Always pack a waterproof layer.' },
+    'new york': { mood: isWarm ? 'NYC Street Edge' : 'NYC Dark Minimal', tags: ['edgy', 'street', 'bold', 'urban'], colors: ['#1A1A1A', '#C4613A', '#E8DDD4'], avoid: 'Comfortable shoes are essential for walking.' },
+    seoul: { mood: isWarm ? 'Seoul Fresh Contemporary' : 'Seoul Clean Layer', tags: ['contemporary', 'clean', 'trendy', 'minimal'], colors: ['#E8E0D5', '#4A4E5A', '#A0C4B8'], avoid: isWarm ? 'Lightweight breathable fabrics recommended.' : 'Smart layering for variable temperatures.' },
+    milan: { mood: isWarm ? 'Milan Luxe Ease' : 'Milan Tailored Elegance', tags: ['luxurious', 'tailored', 'refined', 'designer'], colors: ['#8B7355', '#2C2C2C', '#D4C5B2'], avoid: 'Avoid overly casual looks — Milan appreciates style.' },
+    bali: { mood: 'Bali Coastal Ease', tags: ['tropical', 'relaxed', 'earthy', 'flowy'], colors: ['#8B6E4E', '#4A7C59', '#F0E0C8'], avoid: 'Pack light breathable fabrics only.' },
+    bangkok: { mood: isWarm ? 'Bangkok Tropical Heat' : 'Bangkok Golden Temple', tags: ['tropical', 'vibrant', 'cultural', 'colorful'], colors: ['#D4AF37', '#E85D3A', '#4A7C59'], avoid: 'Lightweight loose clothing for extreme humidity.' },
+    'ho chi minh': { mood: 'Saigon Street Chic', tags: ['eclectic', 'vibrant', 'casual', 'warm'], colors: ['#C2956B', '#4A7C59', '#E8DDD4'], avoid: 'Breathable fabrics essential — avoid heavy layers.' },
+    singapore: { mood: 'Singapore Modern Tropic', tags: ['modern', 'sleek', 'tropical', 'polished'], colors: ['#2C2C2C', '#4A7C59', '#E8E0D5'], avoid: 'Air conditioning is cold — carry a light layer.' },
+    osaka: { mood: isWarm ? 'Osaka Street Food Style' : 'Osaka Cozy Layer', tags: ['playful', 'casual', 'food-culture', 'urban'], colors: ['#E85D3A', '#E8E0D5', '#4A4E5A'], avoid: isWarm ? 'Comfortable walking shoes for food markets.' : 'Layer for cool temple visits.' },
+    kyoto: { mood: isWarm ? 'Kyoto Garden Zen' : 'Kyoto Autumn Elegance', tags: ['serene', 'traditional', 'refined', 'nature'], colors: ['#8B7355', '#4A7C59', '#C9B99A'], avoid: 'Modest clothing for temple visits.' },
+    lisbon: { mood: isWarm ? 'Lisbon Coastal Sun' : 'Lisbon Tiled Charm', tags: ['coastal', 'relaxed', 'artistic', 'sun-soaked'], colors: ['#5BA3C2', '#E2A76F', '#F5DEB3'], avoid: 'Comfortable shoes for hilly cobblestone streets.' },
+    amsterdam: { mood: isWarm ? 'Amsterdam Canal Breeze' : 'Amsterdam Cozy Layer', tags: ['casual', 'creative', 'layered', 'cycling'], colors: ['#4A5568', '#E8C9A0', '#5BA3C2'], avoid: 'Rain jacket essential — weather changes fast.' },
+    vienna: { mood: isWarm ? 'Vienna Imperial Garden' : 'Vienna Classical Elegance', tags: ['classical', 'elegant', 'refined', 'cultural'], colors: ['#D4AF37', '#4A4E5A', '#C9B99A'], avoid: 'Smart casual for concert halls and cafés.' },
+    prague: { mood: isWarm ? 'Prague Golden Summer' : 'Prague Gothic Romance', tags: ['romantic', 'historic', 'bohemian', 'layered'], colors: ['#C2956B', '#4A4E5A', '#D4AF37'], avoid: 'Cobblestone streets — comfortable shoes needed.' },
+    'san francisco': { mood: isWarm ? 'SF Foggy Cool' : 'SF Urban Layer', tags: ['casual', 'layered', 'tech', 'relaxed'], colors: ['#4A5568', '#E8DDD4', '#C4613A'], avoid: 'Always bring layers — SF fog is unpredictable.' },
+    sydney: { mood: isWarm ? 'Sydney Beach Glow' : 'Sydney Harbour Breeze', tags: ['coastal', 'active', 'relaxed', 'sun-kissed'], colors: ['#5BA3C2', '#F0E0C8', '#E2A76F'], avoid: 'High SPF and breathable fabrics for beach days.' },
+    dubai: { mood: 'Dubai Luxe Heat', tags: ['luxurious', 'modern', 'glamorous', 'desert'], colors: ['#D4AF37', '#C2956B', '#2C2C2C'], avoid: 'Modest coverage in public — lightweight luxury fabrics.' },
+    istanbul: { mood: isWarm ? 'Istanbul Bazaar Glow' : 'Istanbul Layered Mystique', tags: ['cultural', 'vibrant', 'layered', 'warm-toned'], colors: ['#C2956B', '#E85D3A', '#4A4E5A'], avoid: 'Modest layers for mosque visits.' },
+    florence: { mood: isWarm ? 'Florentine Sun' : 'Florentine Renaissance', tags: ['artistic', 'warm-toned', 'elegant', 'Mediterranean'], colors: ['#C2956B', '#D4AF37', '#8B6E4E'], avoid: isWarm ? 'Light breathable fabrics for gallery days.' : 'Smart layers for cooler gallery interiors.' },
+  };
+
+  if (lang === 'en') return en;
+
+  // Localized avoid_note overrides (mood names stay in English as brand styling)
+  const avoidOverrides: Record<string, Record<string, { avoid: string }>> = {
+    ko: {
+      paris: { avoid: isWarm ? '두꺼운 코트는 피하세요 — 가벼운 레이어링이 최적입니다.' : '레이어링 없이 얇은 원단만 입는 것은 피하세요.' },
+      rome: { avoid: isWarm ? '더운 날씨에 어두운 두꺼운 원단은 피하세요.' : '서늘한 저녁을 위해 가벼운 재킷을 챙기세요.' },
+      barcelona: { avoid: isWarm ? '과하게 차려입지 마세요 — 해안가 캐주얼이 핵심입니다.' : '변덕스러운 지중해 날씨에 대비해 레이어링하세요.' },
+      tokyo: { avoid: isWarm ? '부피 큰 아이템은 피하세요 — 깔끔한 라인이 최적입니다.' : '쌀쌀한 저녁을 위해 따뜻한 레이어를 챙기세요.' },
+      london: { avoid: '방수 레이어를 항상 챙기세요.' },
+      'new york': { avoid: '걷기 편한 신발이 필수입니다.' },
+      seoul: { avoid: isWarm ? '가볍고 통기성 좋은 원단을 추천합니다.' : '변덕스러운 기온에 대비한 스마트 레이어링이 필요합니다.' },
+      milan: { avoid: '너무 캐주얼한 룩은 피하세요 — 밀라노는 스타일을 중시합니다.' },
+      bali: { avoid: '가볍고 통기성 좋은 원단만 챙기세요.' },
+      bangkok: { avoid: '극심한 습도에 대비해 가볍고 헐렁한 옷을 입으세요.' },
+      'ho chi minh': { avoid: '통기성 좋은 원단 필수 — 두꺼운 레이어는 피하세요.' },
+      singapore: { avoid: '에어컨이 춥습니다 — 가벼운 겉옷을 챙기세요.' },
+      osaka: { avoid: isWarm ? '먹거리 시장 탐방을 위해 편한 워킹화를 신으세요.' : '서늘한 사찰 방문을 위해 레이어링하세요.' },
+      kyoto: { avoid: '사찰 방문 시 단정한 옷차림이 필요합니다.' },
+      lisbon: { avoid: '언덕진 자갈길을 위해 편한 신발을 신으세요.' },
+      amsterdam: { avoid: '비옷 필수 — 날씨가 빠르게 변합니다.' },
+      vienna: { avoid: '콘서트홀과 카페를 위한 스마트 캐주얼을 추천합니다.' },
+      prague: { avoid: '자갈길이 많으니 편한 신발이 필요합니다.' },
+      'san francisco': { avoid: '항상 레이어를 챙기세요 — SF 안개는 예측 불가합니다.' },
+      sydney: { avoid: '비치 데이를 위해 높은 SPF와 통기성 좋은 원단을 준비하세요.' },
+      dubai: { avoid: '공공장소에서는 단정한 옷차림 — 가벼운 고급 원단을 추천합니다.' },
+      istanbul: { avoid: '모스크 방문 시 단정한 레이어가 필요합니다.' },
+      florence: { avoid: isWarm ? '갤러리 탐방을 위해 가볍고 통기성 좋은 원단을 입으세요.' : '서늘한 갤러리 내부를 위해 스마트 레이어링하세요.' },
+    },
+    ja: {
+      paris: { avoid: isWarm ? '厚手のコートは避けて — 軽いレイヤリングが最適です。' : '重ね着オプションのない薄い生地は避けてください。' },
+      rome: { avoid: isWarm ? '暑い日に暗い厚手の生地は避けましょう。' : '涼しい夜のために軽いジャケットを持参してください。' },
+      barcelona: { avoid: isWarm ? '着飾りすぎないで — 海岸沿いのカジュアルがポイントです。' : '変わりやすい地中海の天候に備えてレイヤリングを。' },
+      tokyo: { avoid: isWarm ? 'かさばるアイテムは避けて — クリーンなラインが最適です。' : '肌寒い夜のために暖かいレイヤーを持参してください。' },
+      london: { avoid: '防水レイヤーを必ず持参してください。' },
+      'new york': { avoid: '歩きやすい靴が必須です。' },
+      seoul: { avoid: isWarm ? '軽くて通気性の良い生地がおすすめです。' : '変わりやすい気温に対応するスマートなレイヤリングを。' },
+      milan: { avoid: 'カジュアルすぎる装いは避けて — ミラノはスタイルを重視します。' },
+      bali: { avoid: '軽くて通気性の良い生地だけを持参してください。' },
+      bangkok: { avoid: '極度の湿気に対応する軽くてゆったりした服装を。' },
+      'ho chi minh': { avoid: '通気性の良い生地が必須 — 厚いレイヤーは避けてください。' },
+      singapore: { avoid: 'エアコンが寒いです — 軽い上着を持参してください。' },
+      osaka: { avoid: isWarm ? 'フードマーケット散策に歩きやすい靴を。' : '涼しい寺院訪問のためにレイヤリングを。' },
+      kyoto: { avoid: '寺院訪問には控えめな服装が必要です。' },
+      lisbon: { avoid: '坂道の石畳のために歩きやすい靴を履いてください。' },
+      amsterdam: { avoid: 'レインジャケット必須 — 天気が急変します。' },
+      vienna: { avoid: 'コンサートホールやカフェにはスマートカジュアルを。' },
+      prague: { avoid: '石畳が多いので歩きやすい靴が必要です。' },
+      'san francisco': { avoid: '常にレイヤーを持参して — SF の霧は予測不能です。' },
+      sydney: { avoid: 'ビーチデイには高SPFと通気性の良い生地を準備してください。' },
+      dubai: { avoid: '公共の場では控えめな服装を — 軽い高級素材がおすすめです。' },
+      istanbul: { avoid: 'モスク訪問には控えめなレイヤーが必要です。' },
+      florence: { avoid: isWarm ? 'ギャラリー巡りには軽くて通気性の良い生地を。' : '涼しいギャラリー内部のためにスマートなレイヤリングを。' },
+    },
+    zh: {
+      paris: { avoid: isWarm ? '避免厚重外套——轻薄叠穿最合适。' : '避免只穿薄面料而不叠穿。' },
+      rome: { avoid: isWarm ? '炎热天气避免深色厚重面料。' : '准备一件轻薄夹克应对凉爽夜晚。' },
+      barcelona: { avoid: isWarm ? '不要过度打扮——海岸休闲风是关键。' : '应对多变的地中海天气需要叠穿。' },
+      tokyo: { avoid: isWarm ? '避免笨重单品——简洁线条最合适。' : '准备保暖层应对寒冷夜晚。' },
+      london: { avoid: '一定要带防水外层。' },
+      'new york': { avoid: '舒适的步行鞋是必需品。' },
+      seoul: { avoid: isWarm ? '推荐轻薄透气面料。' : '应对多变气温需要智能叠穿。' },
+      milan: { avoid: '避免过于随意的穿搭——米兰重视时尚。' },
+      bali: { avoid: '只带轻薄透气面料。' },
+      bangkok: { avoid: '极度潮湿天气穿轻薄宽松的衣服。' },
+      'ho chi minh': { avoid: '透气面料必备——避免厚重叠穿。' },
+      singapore: { avoid: '空调很冷——带一件轻薄外套。' },
+      osaka: { avoid: isWarm ? '逛美食市场请穿舒适的步行鞋。' : '参拜寺庙请注意叠穿保暖。' },
+      kyoto: { avoid: '参拜寺庙需要端庄的着装。' },
+      lisbon: { avoid: '爬坡的鹅卵石路需要舒适的鞋子。' },
+      amsterdam: { avoid: '雨衣必备——天气变化很快。' },
+      vienna: { avoid: '音乐厅和咖啡馆推荐智能休闲装。' },
+      prague: { avoid: '鹅卵石路多——需要舒适的鞋子。' },
+      'san francisco': { avoid: '一定要带叠穿衣物——旧金山的雾不可预测。' },
+      sydney: { avoid: '海滩日准备高SPF防晒和透气面料。' },
+      dubai: { avoid: '公共场所着装要端庄——轻薄高档面料。' },
+      istanbul: { avoid: '参观清真寺需要端庄的叠穿。' },
+      florence: { avoid: isWarm ? '参观画廊穿轻薄透气面料。' : '应对凉爽的画廊内部需要智能叠穿。' },
+    },
+    fr: {
+      paris: { avoid: isWarm ? 'Évitez les manteaux lourds — les couches légères sont idéales.' : 'Évitez les tissus fins sans options de superposition.' },
+      rome: { avoid: isWarm ? 'Évitez les tissus sombres et lourds par cette chaleur.' : 'Prévoyez une veste légère pour les soirées fraîches.' },
+      barcelona: { avoid: isWarm ? 'Ne vous habillez pas trop — le style côtier décontracté est la clé.' : 'Superposez les couches pour le temps méditerranéen variable.' },
+      tokyo: { avoid: isWarm ? 'Évitez les articles volumineux — les lignes épurées sont préférables.' : 'Prévoyez des couches chaudes pour les soirées fraîches.' },
+      london: { avoid: 'Emportez toujours une couche imperméable.' },
+      'new york': { avoid: 'Des chaussures confortables sont indispensables pour marcher.' },
+      seoul: { avoid: isWarm ? 'Tissus légers et respirants recommandés.' : 'Superposition intelligente pour les températures variables.' },
+      milan: { avoid: 'Évitez les looks trop décontractés — Milan apprécie le style.' },
+      bali: { avoid: 'N\'emportez que des tissus légers et respirants.' },
+      bangkok: { avoid: 'Vêtements légers et amples pour l\'humidité extrême.' },
+      'ho chi minh': { avoid: 'Tissus respirants essentiels — évitez les couches lourdes.' },
+      singapore: { avoid: 'La climatisation est froide — prévoyez une couche légère.' },
+      osaka: { avoid: isWarm ? 'Chaussures confortables pour les marchés alimentaires.' : 'Superposez pour les visites de temples en fraîcheur.' },
+      kyoto: { avoid: 'Tenue modeste requise pour les visites de temples.' },
+      lisbon: { avoid: 'Chaussures confortables pour les rues pavées en pente.' },
+      amsterdam: { avoid: 'Veste de pluie indispensable — le temps change vite.' },
+      vienna: { avoid: 'Smart casual pour les salles de concert et cafés.' },
+      prague: { avoid: 'Rues pavées — chaussures confortables nécessaires.' },
+      'san francisco': { avoid: 'Apportez toujours des couches — le brouillard de SF est imprévisible.' },
+      sydney: { avoid: 'SPF élevé et tissus respirants pour les journées plage.' },
+      dubai: { avoid: 'Tenue modeste en public — tissus de luxe légers.' },
+      istanbul: { avoid: 'Couches modestes requises pour les visites de mosquées.' },
+      florence: { avoid: isWarm ? 'Tissus légers et respirants pour les journées galerie.' : 'Couches élégantes pour les intérieurs frais des galeries.' },
+    },
+    es: {
+      paris: { avoid: isWarm ? 'Evita abrigos pesados — las capas ligeras son lo mejor.' : 'Evita telas finas sin opciones de capas.' },
+      rome: { avoid: isWarm ? 'Evita telas oscuras y pesadas con el calor.' : 'Lleva una chaqueta ligera para las noches frescas.' },
+      barcelona: { avoid: isWarm ? 'No te vistas de más — el estilo costero casual es clave.' : 'Usa capas para el clima mediterráneo variable.' },
+      tokyo: { avoid: isWarm ? 'Evita prendas voluminosas — las líneas limpias son lo mejor.' : 'Lleva capas abrigadas para las noches frescas.' },
+      london: { avoid: 'Siempre lleva una capa impermeable.' },
+      'new york': { avoid: 'Zapatos cómodos son esenciales para caminar.' },
+      seoul: { avoid: isWarm ? 'Se recomiendan telas ligeras y transpirables.' : 'Capas inteligentes para temperaturas variables.' },
+      milan: { avoid: 'Evita looks demasiado casuales — Milán aprecia el estilo.' },
+      bali: { avoid: 'Solo lleva telas ligeras y transpirables.' },
+      bangkok: { avoid: 'Ropa ligera y suelta para la humedad extrema.' },
+      'ho chi minh': { avoid: 'Telas transpirables esenciales — evita capas pesadas.' },
+      singapore: { avoid: 'El aire acondicionado es frío — lleva una capa ligera.' },
+      osaka: { avoid: isWarm ? 'Zapatos cómodos para los mercados de comida.' : 'Usa capas para las visitas frescas a templos.' },
+      kyoto: { avoid: 'Ropa modesta requerida para visitas a templos.' },
+      lisbon: { avoid: 'Zapatos cómodos para las calles empedradas con pendiente.' },
+      amsterdam: { avoid: 'Chaqueta impermeable esencial — el clima cambia rápido.' },
+      vienna: { avoid: 'Smart casual para salas de conciertos y cafés.' },
+      prague: { avoid: 'Calles empedradas — se necesitan zapatos cómodos.' },
+      'san francisco': { avoid: 'Siempre lleva capas — la niebla de SF es impredecible.' },
+      sydney: { avoid: 'SPF alto y telas transpirables para días de playa.' },
+      dubai: { avoid: 'Vestimenta modesta en público — telas de lujo ligeras.' },
+      istanbul: { avoid: 'Capas modestas requeridas para visitas a mezquitas.' },
+      florence: { avoid: isWarm ? 'Telas ligeras y transpirables para días de galería.' : 'Capas elegantes para interiores frescos de galerías.' },
+    },
+  };
+
+  const overrides = avoidOverrides[lang];
+  if (!overrides) return en;
+
+  // Merge: use English base, override avoid_note per city
+  const result: VibeDb = {};
+  for (const [key, entry] of Object.entries(en)) {
+    const ov = overrides[key];
+    result[key] = ov ? { ...entry, avoid: ov.avoid } : entry;
+  }
+  return result;
+}
+
+/** Default avoid note for unknown cities */
+function getDefaultAvoid(lang: string): string {
+  const defaults: Record<string, string> = {
+    ko: '다양하게 믹스 앤 매치할 수 있는 아이템을 챙기세요.',
+    ja: 'ミックス&マッチできる多用途なアイテムを持参してください。',
+    zh: '准备可以混搭的多用途单品。',
+    fr: 'Emportez des pièces polyvalentes qui se combinent facilement.',
+    es: 'Lleva prendas versátiles que combinen entre sí.',
+  };
+  return defaults[lang] || 'Pack versatile pieces that mix and match.';
+}
+
+/** Capsule principles localized by language */
+function getCapsulePrinciples(
+  lang: string,
+  cityName: string,
+  totalDays: number,
+  cityCount: number,
+  colorCount: number,
+  isWarm: boolean,
+): string[] {
+  if (lang === 'ko') {
+    return [
+      isWarm
+        ? `가벼운 통기성 레이어를 챙기세요 — 린넨 셔츠나 면 티셔츠는 ${cityName}의 따뜻한 낮부터 선선한 저녁까지 자연스럽게 전환됩니다.`
+        : `${cityName}의 변덕스러운 기온을 부피 없이 소화할 수 있는 다용도 아우터 하나를 중심으로 구성하세요.`,
+      `${totalDays}일 동안 아이템 조합을 극대화할 수 있도록 ${Math.min(3, cityCount)}가지 뉴트럴 베이스 컬러를 선택하세요.`,
+      cityCount > 1
+        ? `${cityCount}개 도시 모두에서 활용할 수 있는 아이템을 선택하세요 — 도시 산책과 식사 모두 가능한 다용도 신발 한 켤레와 가방 하나면 충분합니다.`
+        : `${totalDays}일 여행 중 예상치 못한 날씨 변화에 대비해 접이식 레이어를 챙기세요.`,
+    ];
+  }
+  if (lang === 'ja') {
+    return [
+      isWarm
+        ? `軽くて通気性の良いレイヤーを持参してください — リネンシャツやコットンTシャツは${cityName}の暖かい日中から涼しい夜まで自然に対応します。`
+        : `${cityName}の変わりやすい気温に対応できる多用途なアウター1着を軸にコーディネートを組みましょう。`,
+      `${totalDays}日間でコーディネートの組み合わせを最大化するために、${Math.min(3, cityCount)}色のニュートラルベースカラーを選びましょう。`,
+      cityCount > 1
+        ? `${cityCount}都市すべてで活躍するアイテムを選びましょう — 街歩きとディナーの両方に対応する靴1足とバッグ1つで十分です。`
+        : `${totalDays}日間の旅行中の予期せぬ天候変化に備えて、コンパクトに畳めるレイヤーを持参してください。`,
+    ];
+  }
+  if (lang === 'zh') {
+    return [
+      isWarm
+        ? `准备轻薄透气的叠穿单品——亚麻衬衫或棉质T恤可以从${cityName}温暖的白天自然过渡到凉爽的夜晚。`
+        : `以一件多功能外套为核心搭配，应对${cityName}多变的气温，同时避免行李过重。`,
+      `选择${Math.min(3, cityCount)}种中性基础色，在${totalDays}天内最大化搭配组合。`,
+      cityCount > 1
+        ? `选择适合所有${cityCount}个目的地的单品——一双百搭鞋和一个包就能应对城市漫步和用餐。`
+        : `准备一件可折叠的轻便外层，应对${totalDays}天旅途中的意外天气变化。`,
+    ];
+  }
+  if (lang === 'fr') {
+    return [
+      isWarm
+        ? `Emportez des couches légères et respirantes — une chemise en lin ou un t-shirt en coton s'adapte parfaitement des journées chaudes de ${cityName} aux soirées plus fraîches.`
+        : `Construisez votre garde-robe autour d'une pièce extérieure polyvalente pour gérer les températures variables de ${cityName} sans encombrement.`,
+      `Choisissez ${Math.min(3, cityCount)} couleurs neutres de base qui se combinent pendant les ${totalDays} jours, maximisant les tenues avec moins de pièces.`,
+      cityCount > 1
+        ? `Sélectionnez des pièces qui fonctionnent dans les ${cityCount} destinations — une paire de chaussures polyvalentes et un sac suffisent pour la marche en ville et les dîners.`
+        : `Emportez une couche pliable compacte pour les changements météo imprévus pendant votre voyage de ${totalDays} jours.`,
+    ];
+  }
+  if (lang === 'es') {
+    return [
+      isWarm
+        ? `Lleva capas ligeras y transpirables — una camisa de lino o camiseta de algodón se adapta perfectamente de los días cálidos de ${cityName} a las noches más frescas.`
+        : `Construye tu vestuario alrededor de una prenda exterior versátil que maneje las temperaturas variables de ${cityName} sin añadir volumen.`,
+      `Elige ${Math.min(3, cityCount)} colores neutros base que combinen durante los ${totalDays} días, maximizando los conjuntos con menos prendas.`,
+      cityCount > 1
+        ? `Selecciona prendas que funcionen en los ${cityCount} destinos — un par de zapatos versátiles y un bolso que sirvan tanto para caminar como para cenar.`
+        : `Lleva una capa compacta y plegable para cambios climáticos inesperados durante tu viaje de ${totalDays} días.`,
+    ];
+  }
+  // English (default)
+  return [
+    isWarm
+      ? `Pack lightweight breathable layers — a linen shirt or cotton tee transitions effortlessly from ${cityName}'s warm days to cooler evenings.`
+      : `Build around one versatile outerwear piece that handles ${cityName}'s variable temperatures without adding bulk.`,
+    `Choose ${Math.min(3, cityCount)} neutral base colors that mix and match across all ${totalDays} days, maximizing outfit combinations with fewer items.`,
+    cityCount > 1
+      ? `Select pieces that work across all ${cityCount} destinations — one pair of versatile shoes and one bag that handle both city walks and dining.`
+      : `Carry a compact packable layer for unexpected weather changes throughout your ${totalDays}-day trip.`,
+  ];
+}
+
 // ─── CityInput Parser ─────────────────────────────────────────────────────────
 
 function parseCities(raw: unknown[]): CityInput[] {
@@ -229,7 +496,7 @@ export async function runPreview(
   input: TripInput,
   env: Bindings
 ): Promise<PreviewResponse> {
-  const { trip_id, cities: rawCities, month, face_url, user_profile } = input;
+  const { trip_id, cities: rawCities, month, face_url, user_profile, lang = 'en' } = input;
 
   console.log(`[runPreview] Starting free preview for trip ${trip_id}`);
 
@@ -280,33 +547,9 @@ export async function runPreview(
 
     // ── 3. Vibe — STATIC (no Claude API call) ─────────────────────────────
     // Cost savings: ~$0.004 per city per preview → $0
+    const isWarmMonth = month >= 5 && month <= 9;
+    const vibeDb = getVibeDb(lang, isWarmMonth);
     const vibeResults: VibeResult[] = cities.map((city) => {
-      const isWarm = month >= 5 && month <= 9;
-      const vibeDb: Record<string, { mood: string; tags: string[]; colors: string[]; avoid: string }> = {
-        paris: { mood: isWarm ? 'Sunlit Parisian Ease' : 'Parisian Twilight Layers', tags: ['effortless', 'refined', 'romantic', 'layered'], colors: ['#C9B99A', '#4A4E5A', '#D6CFC4'], avoid: isWarm ? 'Avoid heavy coats — light layers work best.' : 'Avoid thin fabrics without layering options.' },
-        rome: { mood: isWarm ? 'Roman Golden Hour' : 'Roman Terracotta Warmth', tags: ['sun-kissed', 'Mediterranean', 'relaxed', 'warm-toned'], colors: ['#C2956B', '#E8C9A0', '#8B6E4E'], avoid: isWarm ? 'Avoid dark heavy fabrics in the heat.' : 'Pack a light jacket for cool evenings.' },
-        barcelona: { mood: isWarm ? 'Coastal Barcelona Glow' : 'Barcelona Urban Breeze', tags: ['coastal', 'vibrant', 'casual', 'colorful'], colors: ['#E2A76F', '#5BA3C2', '#F5DEB3'], avoid: isWarm ? 'Avoid overdressing — coastal casual is key.' : 'Layer for variable Mediterranean weather.' },
-        tokyo: { mood: isWarm ? 'Tokyo Neon Minimal' : 'Tokyo Urban Layer', tags: ['structured', 'minimal', 'urban', 'clean'], colors: ['#2C2C2C', '#E8E0D5', '#8B7355'], avoid: isWarm ? 'Avoid bulky items — clean lines work best.' : 'Pack warm layers for chilly evenings.' },
-        london: { mood: isWarm ? 'London Garden Party' : 'London Understated Layer', tags: ['classic', 'tailored', 'understated', 'polished'], colors: ['#4A5568', '#C4A882', '#2C3E50'], avoid: 'Always pack a waterproof layer.' },
-        'new york': { mood: isWarm ? 'NYC Street Edge' : 'NYC Dark Minimal', tags: ['edgy', 'street', 'bold', 'urban'], colors: ['#1A1A1A', '#C4613A', '#E8DDD4'], avoid: 'Comfortable shoes are essential for walking.' },
-        seoul: { mood: isWarm ? 'Seoul Fresh Contemporary' : 'Seoul Clean Layer', tags: ['contemporary', 'clean', 'trendy', 'minimal'], colors: ['#E8E0D5', '#4A4E5A', '#A0C4B8'], avoid: isWarm ? 'Lightweight breathable fabrics recommended.' : 'Smart layering for variable temperatures.' },
-        milan: { mood: isWarm ? 'Milan Luxe Ease' : 'Milan Tailored Elegance', tags: ['luxurious', 'tailored', 'refined', 'designer'], colors: ['#8B7355', '#2C2C2C', '#D4C5B2'], avoid: 'Avoid overly casual looks — Milan appreciates style.' },
-        bali: { mood: 'Bali Coastal Ease', tags: ['tropical', 'relaxed', 'earthy', 'flowy'], colors: ['#8B6E4E', '#4A7C59', '#F0E0C8'], avoid: 'Pack light breathable fabrics only.' },
-        bangkok: { mood: isWarm ? 'Bangkok Tropical Heat' : 'Bangkok Golden Temple', tags: ['tropical', 'vibrant', 'cultural', 'colorful'], colors: ['#D4AF37', '#E85D3A', '#4A7C59'], avoid: 'Lightweight loose clothing for extreme humidity.' },
-        'ho chi minh': { mood: 'Saigon Street Chic', tags: ['eclectic', 'vibrant', 'casual', 'warm'], colors: ['#C2956B', '#4A7C59', '#E8DDD4'], avoid: 'Breathable fabrics essential — avoid heavy layers.' },
-        singapore: { mood: 'Singapore Modern Tropic', tags: ['modern', 'sleek', 'tropical', 'polished'], colors: ['#2C2C2C', '#4A7C59', '#E8E0D5'], avoid: 'Air conditioning is cold — carry a light layer.' },
-        osaka: { mood: isWarm ? 'Osaka Street Food Style' : 'Osaka Cozy Layer', tags: ['playful', 'casual', 'food-culture', 'urban'], colors: ['#E85D3A', '#E8E0D5', '#4A4E5A'], avoid: isWarm ? 'Comfortable walking shoes for food markets.' : 'Layer for cool temple visits.' },
-        kyoto: { mood: isWarm ? 'Kyoto Garden Zen' : 'Kyoto Autumn Elegance', tags: ['serene', 'traditional', 'refined', 'nature'], colors: ['#8B7355', '#4A7C59', '#C9B99A'], avoid: 'Modest clothing for temple visits.' },
-        lisbon: { mood: isWarm ? 'Lisbon Coastal Sun' : 'Lisbon Tiled Charm', tags: ['coastal', 'relaxed', 'artistic', 'sun-soaked'], colors: ['#5BA3C2', '#E2A76F', '#F5DEB3'], avoid: 'Comfortable shoes for hilly cobblestone streets.' },
-        amsterdam: { mood: isWarm ? 'Amsterdam Canal Breeze' : 'Amsterdam Cozy Layer', tags: ['casual', 'creative', 'layered', 'cycling'], colors: ['#4A5568', '#E8C9A0', '#5BA3C2'], avoid: 'Rain jacket essential — weather changes fast.' },
-        vienna: { mood: isWarm ? 'Vienna Imperial Garden' : 'Vienna Classical Elegance', tags: ['classical', 'elegant', 'refined', 'cultural'], colors: ['#D4AF37', '#4A4E5A', '#C9B99A'], avoid: 'Smart casual for concert halls and cafés.' },
-        prague: { mood: isWarm ? 'Prague Golden Summer' : 'Prague Gothic Romance', tags: ['romantic', 'historic', 'bohemian', 'layered'], colors: ['#C2956B', '#4A4E5A', '#D4AF37'], avoid: 'Cobblestone streets — comfortable shoes needed.' },
-        'san francisco': { mood: isWarm ? 'SF Foggy Cool' : 'SF Urban Layer', tags: ['casual', 'layered', 'tech', 'relaxed'], colors: ['#4A5568', '#E8DDD4', '#C4613A'], avoid: 'Always bring layers — SF fog is unpredictable.' },
-        sydney: { mood: isWarm ? 'Sydney Beach Glow' : 'Sydney Harbour Breeze', tags: ['coastal', 'active', 'relaxed', 'sun-kissed'], colors: ['#5BA3C2', '#F0E0C8', '#E2A76F'], avoid: 'High SPF and breathable fabrics for beach days.' },
-        dubai: { mood: 'Dubai Luxe Heat', tags: ['luxurious', 'modern', 'glamorous', 'desert'], colors: ['#D4AF37', '#C2956B', '#2C2C2C'], avoid: 'Modest coverage in public — lightweight luxury fabrics.' },
-        istanbul: { mood: isWarm ? 'Istanbul Bazaar Glow' : 'Istanbul Layered Mystique', tags: ['cultural', 'vibrant', 'layered', 'warm-toned'], colors: ['#C2956B', '#E85D3A', '#4A4E5A'], avoid: 'Modest layers for mosque visits.' },
-        florence: { mood: isWarm ? 'Florentine Sun' : 'Florentine Renaissance', tags: ['artistic', 'warm-toned', 'elegant', 'Mediterranean'], colors: ['#C2956B', '#D4AF37', '#8B6E4E'], avoid: isWarm ? 'Light breathable fabrics for gallery days.' : 'Smart layers for cooler gallery interiors.' },
-      };
       // Flexible city name matching: lowercase + check aliases
       const aliases: Record<string, string> = {
         'denpasar': 'bali', 'ubud': 'bali', 'seminyak': 'bali', 'kuta': 'bali', 'canggu': 'bali',
@@ -318,7 +561,7 @@ export async function runPreview(
       };
       const key = city.name.toLowerCase().trim();
       const resolvedKey = aliases[key] || key;
-      const match = vibeDb[resolvedKey] || { mood: `${city.name} Style`, tags: ['versatile', 'travel-ready', 'stylish'], colors: ['#8B7355', '#C4A882', '#4A5568'], avoid: 'Pack versatile pieces that mix and match.' };
+      const match = vibeDb[resolvedKey] || { mood: `${city.name} Style`, tags: ['versatile', 'travel-ready', 'stylish'], colors: ['#8B7355', '#C4A882', '#4A5568'], avoid: getDefaultAvoid(lang) };
       return {
         city: city.name,
         mood_label: `${city.name} — ${match.mood}`,
@@ -393,19 +636,17 @@ export async function runPreview(
     // Cost savings: ~$0.006 per preview → $0
     const totalDays = cities.reduce((s, c) => s + c.days, 0);
     const capsuleCount = Math.min(15, Math.max(8, Math.round(totalDays * 1.5)));
-    const isWarmMonth = month >= 5 && month <= 9;
     const capsule: CapsuleResult = {
       plan: 'free',
       count: capsuleCount,
-      principles: [
-        isWarmMonth
-          ? `Pack lightweight breathable layers — a linen shirt or cotton tee transitions effortlessly from ${cities[0]?.name || 'the city'}'s warm days to cooler evenings.`
-          : `Build around one versatile outerwear piece that handles ${cities[0]?.name || 'the city'}'s variable temperatures without adding bulk.`,
-        `Choose ${Math.min(3, cities.length)} neutral base colors that mix and match across all ${totalDays} days, maximizing outfit combinations with fewer items.`,
-        cities.length > 1
-          ? `Select pieces that work across all ${cities.length} destinations — one pair of versatile shoes and one bag that handle both city walks and dining.`
-          : `Carry a compact packable layer for unexpected weather changes throughout your ${totalDays}-day trip.`,
-      ],
+      principles: getCapsulePrinciples(
+        lang,
+        cities[0]?.name || 'the city',
+        totalDays,
+        cities.length,
+        Math.min(3, cities.length),
+        isWarmMonth,
+      ),
     };
 
     // ── 6. Mark trip as completed (free stage) ───────────────────────────────

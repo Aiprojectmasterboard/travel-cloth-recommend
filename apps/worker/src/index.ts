@@ -252,6 +252,8 @@ app.post('/api/preview', async (c) => {
     weight_kg?: number;
     /** Array of aesthetic keywords e.g. ["minimalist", "classic"] */
     style_preferences?: string[];
+    /** UI language code e.g. "ko", "ja", "en" */
+    lang?: string;
   };
   try {
     body = await c.req.json();
@@ -269,6 +271,7 @@ app.post('/api/preview', async (c) => {
     height_cm,
     weight_kg,
     style_preferences,
+    lang,
   } = body;
 
   // Input validation
@@ -407,6 +410,7 @@ app.post('/api/preview', async (c) => {
         cities: cities as unknown[],
         month,
         face_url,
+        lang: typeof lang === 'string' ? lang : 'en',
         user_profile: {
           gender:      safeGender,
           height_cm:   safeHeightCm,
