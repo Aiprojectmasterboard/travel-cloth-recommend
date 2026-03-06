@@ -9,26 +9,60 @@ import { useLang } from "../context/LanguageContext";
 import { IMAGES } from "../constants/images";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 
-/** Animated progress steps with percentage bar */
-function AnalyzingProgress({ steps }: { steps: string[] }) {
+/**
+ * Animated progress steps with percentage bar.
+ * Slowly animates 0→85% using an ease-out curve (never stalls visibly),
+ * then jumps to 100% when `done` is true.
+ */
+function AnalyzingProgress({ steps, done }: { steps: string[]; done: boolean }) {
   const [activeStep, setActiveStep] = useState(0);
   const [percent, setPercent] = useState(0);
   const intervalRef = useRef<ReturnType<typeof setInterval>>();
 
+  // Slow simulated progress: 0→85% over ~40s with decelerating curve
   useEffect(() => {
-    const stepDuration = 3000; // ms per step
-    const tickMs = 50;
+    if (done) return;
+    const tickMs = 100;
+    const maxSimulated = 85;
+    const totalDuration = 40000; // 40 seconds to reach 85%
     let elapsed = 0;
+
     intervalRef.current = setInterval(() => {
       elapsed += tickMs;
-      const totalMs = steps.length * stepDuration;
-      const p = Math.min(Math.round((elapsed / totalMs) * 100), 95);
+      // Ease-out curve: fast start, gradually slower
+      const t = Math.min(elapsed / totalDuration, 1);
+      const eased = 1 - Math.pow(1 - t, 2.5);
+      const p = Math.round(eased * maxSimulated);
       setPercent(p);
+
+      // Step progression: spread across ~80% of total duration
+      const stepDuration = (totalDuration * 0.8) / steps.length;
       const step = Math.min(Math.floor(elapsed / stepDuration), steps.length - 1);
       setActiveStep(step);
     }, tickMs);
+
     return () => clearInterval(intervalRef.current);
-  }, [steps.length]);
+  }, [steps.length, done]);
+
+  // When done, animate quickly to 100%
+  useEffect(() => {
+    if (!done) return;
+    clearInterval(intervalRef.current);
+    setActiveStep(steps.length); // mark all steps as done
+
+    // Animate from current percent to 100 over 600ms
+    const start = percent;
+    const duration = 600;
+    const startTime = performance.now();
+    const animate = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      setPercent(Math.round(start + (100 - start) * eased));
+      if (t < 1) requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [done]);
 
   return (
     <div className="mt-6">
@@ -36,7 +70,7 @@ function AnalyzingProgress({ steps }: { steps: string[] }) {
       <div className="flex items-center gap-3 mb-4">
         <div className="flex-1 h-2 bg-[#EFE8DF] rounded-full overflow-hidden">
           <div
-            className="h-full bg-[#C4613A] rounded-full transition-all duration-200"
+            className="h-full bg-[#C4613A] rounded-full transition-[width] duration-300 ease-out"
             style={{ width: `${percent}%` }}
           />
         </div>
@@ -47,18 +81,18 @@ function AnalyzingProgress({ steps }: { steps: string[] }) {
       {/* Steps */}
       <div className="space-y-3">
         {steps.map((step, i) => {
-          const done = i < activeStep;
-          const current = i === activeStep;
+          const isDone = i < activeStep;
+          const current = i === activeStep && !done;
           return (
             <div key={i} className="flex items-center gap-3">
-              {done ? (
+              {isDone ? (
                 <span className="material-symbols-outlined text-green-500" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>check_circle</span>
               ) : current ? (
                 <span className="w-[18px] h-[18px] border-2 border-[#C4613A] border-t-transparent rounded-full animate-spin" />
               ) : (
                 <span className="w-[18px] h-[18px] rounded-full border-2 border-[#d6cfc7]" />
               )}
-              <span className={`text-[13px] ${done ? "text-[#57534e]/50" : current ? "text-[#C4613A] font-medium" : "text-[#57534e]/40"}`} style={{ fontFamily: "var(--font-body)" }}>
+              <span className={`text-[13px] ${isDone ? "text-[#57534e]/50" : current ? "text-[#C4613A] font-medium" : "text-[#57534e]/40"}`} style={{ fontFamily: "var(--font-body)" }}>
                 {step}
               </span>
             </div>
@@ -76,6 +110,7 @@ export function OnboardingStep4() {
   const { isLoggedIn, setShowLoginModal, setLoginModalContext } = useAuth();
   const { t, lang } = useLang();
   const [submitting, setSubmitting] = useState(false);
+  const [previewReady, setPreviewReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pendingSubmit, setPendingSubmit] = useState(false);
 
@@ -108,15 +143,21 @@ export function OnboardingStep4() {
   const doSubmit = async () => {
     if (submitting || tripLoading) return;
     setSubmitting(true);
+    setPreviewReady(false);
     setError(null);
 
     try {
       await startPreview();
+      // Signal completion → progress bar animates to 100%
+      setPreviewReady(true);
+      // Wait for the 100% animation before navigating
+      await new Promise((r) => setTimeout(r, 800));
       navigate("/preview");
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to analyze trip";
       setError(msg);
       setSubmitting(false);
+      setPreviewReady(false);
     }
   };
 
@@ -294,12 +335,15 @@ export function OnboardingStep4() {
 
       {/* Loading state detail with progress */}
       {submitting && (
-        <AnalyzingProgress steps={[
-          t("onboarding4.fetchingWeather"),
-          t("onboarding4.analyzingVibes"),
-          t("onboarding4.generatingStyle"),
-          t("onboarding4.buildingCapsule"),
-        ]} />
+        <AnalyzingProgress
+          done={previewReady}
+          steps={[
+            t("onboarding4.fetchingWeather"),
+            t("onboarding4.analyzingVibes"),
+            t("onboarding4.generatingStyle"),
+            t("onboarding4.buildingCapsule"),
+          ]}
+        />
       )}
 
       {/* The Next Step */}

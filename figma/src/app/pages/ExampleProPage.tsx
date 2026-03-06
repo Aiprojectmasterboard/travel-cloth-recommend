@@ -389,7 +389,7 @@ export function ExampleProPage() {
                             </div>
                           </div>
 
-                          <div>
+                          <div className="min-w-0 overflow-hidden">
                             <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                               {t("examples.pro.outfitBreakdown")}
                             </span>
@@ -398,11 +398,11 @@ export function ExampleProPage() {
                                 <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
                                   <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <span className="text-[14px] text-[#292524] break-words" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                                       <SizeChip size={item.size} />
                                     </div>
-                                    <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{item.desc}</span>
+                                    <span className="text-[12px] text-[#57534e] break-words" style={{ fontFamily: bodyFont }}>{item.desc}</span>
                                   </div>
                                 </div>
                               ))}
