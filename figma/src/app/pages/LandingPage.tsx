@@ -151,22 +151,65 @@ export function LandingPage() {
             </p>
           </div>
 
-          {/* 3 Steps */}
+          {/* 3 Steps — with visual previews */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-10 mb-12 lg:mb-16">
             {[
-              { num: "01", icon: "flight_takeoff", titleKey: "section.intelligence.step1.title", bodyKey: "section.intelligence.step1.body" },
-              { num: "02", icon: "auto_awesome", titleKey: "section.intelligence.step2.title", bodyKey: "section.intelligence.step2.body" },
-              { num: "03", icon: "checkroom", titleKey: "section.intelligence.step3.title", bodyKey: "section.intelligence.step3.body" },
+              { num: "01", icon: "flight_takeoff", titleKey: "section.intelligence.step1.title", bodyKey: "section.intelligence.step1.body", img: IMAGES.paris, imgAlt: "Paris destination", overlay: "Paris, 7 days" },
+              { num: "02", icon: "auto_awesome", titleKey: "section.intelligence.step2.title", bodyKey: "section.intelligence.step2.body", img: "/examples/mood-mediterranean.png", imgAlt: "AI vibe analysis", overlay: null },
+              { num: "03", icon: "checkroom", titleKey: "section.intelligence.step3.title", bodyKey: "section.intelligence.step3.body", img: "/examples/pro-outfit-1.png", imgAlt: "AI-generated outfit", overlay: null },
             ].map((step, i) => (
-              <div key={step.num} className="relative bg-white rounded-2xl p-6 sm:p-8 border border-[#E8DDD4] group hover:border-[#C4613A]/30 transition-all" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-                <div className="flex items-center gap-3 mb-4">
-                  <span className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-[#C4613A]/10 flex items-center justify-center">
-                    <Icon name={step.icon} size={20} className="text-[#C4613A]" filled={i === 1} />
-                  </span>
-                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]/20" style={{ fontFamily: displayFont, fontWeight: 700 }}>{step.num}</span>
+              <div key={step.num} className="relative bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] group hover:border-[#C4613A]/30 transition-all" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+                {/* Step image */}
+                <div className="relative aspect-[16/10] overflow-hidden">
+                  <ImageWithFallback src={step.img} alt={step.imgAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                  {/* Step number badge */}
+                  <div className="absolute top-3 left-3 flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center">
+                      <Icon name={step.icon} size={16} className="text-[#C4613A]" filled={i === 1} />
+                    </span>
+                    <span className="text-[20px] text-white/80" style={{ fontFamily: displayFont, fontWeight: 700 }}>{step.num}</span>
+                  </div>
+                  {/* Mini UI overlay for step 1 — destination chip */}
+                  {i === 0 && (
+                    <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
+                        <Icon name="location_on" size={14} className="text-[#C4613A]" />
+                        <span className="text-[11px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Paris, France</span>
+                      </div>
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
+                        <Icon name="wb_sunny" size={14} className="text-[#D4AF37]" />
+                        <span className="text-[11px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>22 C</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Mini UI overlay for step 2 — analysis badges */}
+                  {i === 1 && (
+                    <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
+                      {["Rainy Chic", "15-22 C", "Layered"].map((tag) => (
+                        <span key={tag} className="bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{tag}</span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Mini UI overlay for step 3 — result stats */}
+                  {i === 2 && (
+                    <div className="absolute bottom-3 left-3 right-3">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-3">
+                        <span className="text-[10px] text-[#C4613A]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>4 {t("section.intelligence.step3.looks")}</span>
+                        <span className="w-px h-3 bg-[#E8DDD4]" />
+                        <span className="text-[10px] text-[#57534e]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>12 {t("section.intelligence.step3.items")}</span>
+                        <span className="w-px h-3 bg-[#E8DDD4]" />
+                        <span className="text-[10px] text-[#57534e]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>1 {t("section.intelligence.step3.bag")}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <h3 className="text-[18px] sm:text-[22px] text-[#292524] mb-2" style={{ fontFamily: displayFont }}>{t(step.titleKey)}</h3>
-                <p className="text-[13px] sm:text-[15px] text-[#57534e] leading-relaxed" style={{ fontFamily: bodyFont }}>{t(step.bodyKey)}</p>
+                {/* Text content */}
+                <div className="p-5 sm:p-6">
+                  <h3 className="text-[18px] sm:text-[22px] text-[#292524] mb-2" style={{ fontFamily: displayFont }}>{t(step.titleKey)}</h3>
+                  <p className="text-[13px] sm:text-[15px] text-[#57534e] leading-relaxed" style={{ fontFamily: bodyFont }}>{t(step.bodyKey)}</p>
+                </div>
+                {/* Arrow between cards */}
                 {i < 2 && (
                   <div className="hidden md:block absolute -right-5 lg:-right-6 top-1/2 -translate-y-1/2 z-10">
                     <Icon name="arrow_forward" size={20} className="text-[#C4613A]/30" />

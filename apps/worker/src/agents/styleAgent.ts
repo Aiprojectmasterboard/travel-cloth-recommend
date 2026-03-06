@@ -128,12 +128,33 @@ function resolveAestheticGuidance(aesthetics: string[]): string {
 }
 
 /**
+ * Detects if the user profile represents a non-walking infant.
+ * Criteria: height < 85cm AND weight < 13kg.
+ */
+function isInfantProfile(profile?: UserProfile): boolean {
+  return !!(
+    profile?.height_cm && profile.height_cm < 85 &&
+    profile?.weight_kg && profile.weight_kg < 13
+  );
+}
+
+/**
  * Builds a concise profile block injected into the Claude user prompt.
  * Returns an empty string when no profile is provided so the prompt
  * degrades gracefully.
  */
 function buildProfileBlock(profile?: UserProfile): string {
   if (!profile) return '';
+
+  if (isInfantProfile(profile)) {
+    return [
+      `User Profile (apply to ALL prompts):`,
+      `  - Subject: a baby/infant (${profile.height_cm}cm, ${profile.weight_kg}kg)`,
+      `  - IMPORTANT: The baby must be lying in a stylish stroller/pram, NOT standing`,
+      `  - Outfit: cute, weather-appropriate baby clothing`,
+      `  - Scene: the stroller is positioned near the landmark, warm and adorable`,
+    ].join('\n');
+  }
 
   const modelDirective = resolveModelDirective(profile.gender);
   const heightDesc    = resolveHeightDescriptor(profile.height_cm);
@@ -157,9 +178,14 @@ function buildProfileBlock(profile?: UserProfile): string {
 /**
  * Builds the model/figure prefix injected at the start of each image prompt.
  * e.g. "Female model, petite figure, slim build, "
+ * For infants: "A cute baby lying in a stylish stroller, "
  */
 function buildImagePrefix(profile?: UserProfile): string {
   if (!profile) return '';
+
+  if (isInfantProfile(profile)) {
+    return 'A cute baby lying comfortably in a stylish stroller, wearing a weather-appropriate baby outfit, ';
+  }
 
   const directive  = resolveModelDirective(profile.gender);
   const heightDesc = resolveHeightDescriptor(profile.height_cm);
@@ -220,12 +246,17 @@ export async function styleAgent(
     ? `   - Incorporate the user's style preferences (${userProfile.aesthetics.join(', ')}) into clothing choices`
     : '';
 
+  const isInfant = isInfantProfile(userProfile);
   const systemPrompt =
     'You are a professional fashion stylist and AI image director. ' +
     'Your task is to write precise, vivid NanoBanana image generation prompts ' +
     'for fashion editorial photography. Each prompt must be photorealistic and ' +
     'capture the unique spirit of the destination and its current weather. ' +
-    (userProfile
+    (isInfant
+      ? 'IMPORTANT: The subject is a baby/infant who cannot walk. Every prompt MUST show the baby ' +
+        'lying comfortably in a stylish stroller/pram, wearing cute weather-appropriate baby clothing. ' +
+        'The stroller should be positioned near the landmark. The scene should look warm and adorable. '
+      : userProfile
       ? 'You must also honour the provided user profile — model directive, figure description, ' +
         'and aesthetic preferences must be reflected in every prompt. '
       : '') +
@@ -243,7 +274,7 @@ Rules for each prompt:
    - A SPECIFIC famous landmark or iconic location in that city as background (e.g. Eiffel Tower, Louvre Museum, Champs-Élysées)
    - The person must be standing naturally in front of or near the landmark
    - Lighting style (golden hour, soft overcast, neon-lit evening, bright midday, etc.)
-   - Camera angle: full body shot showing the complete outfit from head to toe
+   - Camera angle: ${isInfant ? 'eye-level shot of the baby in the stroller, showing the full outfit and stroller' : 'full body shot showing the complete outfit from head to toe'}
    - End with: "fashion editorial photography, photorealistic, 4K, sharp focus"
 4. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
 5. Prompts for the same city must have different travel occasions (e.g. one for museum/culture, one for city walk/cafe)

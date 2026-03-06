@@ -598,6 +598,7 @@ export async function runPreview(
               ? {
                   gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
                   height_cm: user_profile.height_cm,
+                  weight_kg: user_profile.weight_kg,
                   aesthetics: user_profile.aesthetics,
                 }
               : undefined,

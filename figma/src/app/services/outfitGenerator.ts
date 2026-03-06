@@ -170,6 +170,21 @@ const ITEM_IMAGES = {
   watch: "https://images.unsplash.com/photo-1758887953059-ca6f8e454207?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx3YXRjaCUyMG1pbmltYWwlMjBsZWF0aGVyJTIwc3RyYXAlMjB3cmlzdCUyMGZhc2hpb24lMjBhY2Nlc3Nvcnl8ZW58MXx8fHwxNzcyNDI5NTAzfDA&ixlib=rb-4.1.0&q=80&w=1080",
   hat: "https://images.unsplash.com/photo-1752014364743-e80acc2c9b6e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxwYW5hbWElMjBzdHJhdyUyMGhhdCUyMGZhc2hpb24lMjBzdW1tZXIlMjBlbGVnYW50fGVufDF8fHx8MTc3MjQyOTQ5N3ww&ixlib=rb-4.1.0&q=80&w=1080",
   belt: "https://images.unsplash.com/photo-1764737719221-1776b8077d79?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxibGFjayUyMGxlYXRoZXIlMjBiZWx0JTIwc2lsdmVyJTIwYnVja2xlJTIwZmFzaGlvbiUyMGFjY2Vzc29yeSUyMG1pbmltYWx8ZW58MXx8fHwxNzcyNDI5NTAyfDA&ixlib=rb-4.1.0&q=80&w=1080",
+  /* ── Specific item images for accurate capsule matching ── */
+  denimJacket: "https://images.unsplash.com/photo-1544441893-675973e31985?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBkZW5pbSUyMGphY2tldCUyMGJsdWUlMjBmYXNoaW9uJTIwcHJvZHVjdHxlbnwxfHx8fDE3NzI0Mjc1ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  bomber: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxuYXZ5JTIwYm9tYmVyJTIwamFja2V0JTIwbWVuJTIwZmFzaGlvbiUyMHByb2R1Y3R8ZW58MXx8fHwxNzcyNDI3NTg4fDA&ixlib=rb-4.1.0&q=80&w=1080",
+  hoodie: "https://images.pexels.com/photos/1601241/pexels-photo-1601241.jpeg?auto=compress&cs=tinysrgb&w=400",
+  polo: "https://images.pexels.com/photos/2096476/pexels-photo-2096476.jpeg?auto=compress&cs=tinysrgb&w=400",
+  windbreaker: "https://images.pexels.com/photos/1028184/pexels-photo-1028184.jpeg?auto=compress&cs=tinysrgb&w=400",
+  overcoat: "https://images.pexels.com/photos/730229/pexels-photo-730229.jpeg?auto=compress&cs=tinysrgb&w=400",
+  combatBoots: "https://images.pexels.com/photos/2929287/pexels-photo-2929287.jpeg?auto=compress&cs=tinysrgb&w=400",
+  cargoPants: "https://images.pexels.com/photos/19220710/pexels-photo-19220710.jpeg?auto=compress&cs=tinysrgb&w=400",
+  cardigan: "https://images.pexels.com/photos/6968357/pexels-photo-6968357.jpeg?auto=compress&cs=tinysrgb&w=400",
+  graphicTee: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjB3aGl0ZSUyMHQtc2hpcnQlMjBjbGVhbiUyMG1pbmltYWwlMjBwcm9kdWN0fGVufDF8fHx8MTc3MjQyOTQ4N3ww&ixlib=rb-4.1.0&q=80&w=1080",
+  joggers: "https://images.pexels.com/photos/3693131/pexels-photo-3693131.jpeg?auto=compress&cs=tinysrgb&w=400",
+  linenShirt: "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxtZW4lMjBsaW5lbiUyMHNoaXJ0JTIwc3VtbWVyJTIwbGlnaHQlMjBibHVlJTIwZmFzaGlvbnxlbnwxfHx8fDE3NzI0Mjk0ODh8MA&ixlib=rb-4.1.0&q=80&w=1080",
+  maxiSkirt: "https://images.pexels.com/photos/3012325/pexels-photo-3012325.jpeg?auto=compress&cs=tinysrgb&w=400",
+  slides: "https://images.pexels.com/photos/4996738/pexels-photo-4996738.jpeg?auto=compress&cs=tinysrgb&w=400",
 };
 
 /* ═══════════════════════════════════════════════════════════ */
@@ -224,8 +239,8 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
       { key: "bag", name: "Crossbody Bag", desc: "Saddle leather", category: "accessory" },
     ]},
     { title: "Vatican & Culture", subtitle: "Smart Layering", note: "Modest yet fashionable coverage for religious sites. Structured pieces command respect.", items: [
-      { key: "trench", name: "Light Overcoat", desc: "Draped, khaki", category: "outerwear" },
-      { key: "silkBlouse", name: "Cotton Blouse", desc: "Cream, long sleeve", category: "top" },
+      { key: "overcoat", name: "Light Overcoat", desc: "Draped, khaki", category: "outerwear" },
+      { key: "linenShirt", name: "Cotton Blouse", desc: "Cream, long sleeve", category: "top" },
       { key: "trousers", name: "Tailored Trousers", desc: "Navy", category: "bottom" },
       { key: "loafers", name: "Loafers", desc: "Dark brown", category: "shoes" },
     ]},
@@ -238,7 +253,7 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
   ],
   barcelona: [
     { title: "Gothic Quarter Wander", subtitle: "Urban Coastal", note: "Effortless coastal cool with structure. Breathable fabrics in sandy neutrals and warm terracotta.", items: [
-      { key: "blazer", name: "Denim Jacket", desc: "Light wash", category: "outerwear" },
+      { key: "denimJacket", name: "Denim Jacket", desc: "Light wash", category: "outerwear" },
       { key: "breton", name: "Striped Tee", desc: "Red/white", category: "top" },
       { key: "denim", name: "Chino Shorts", desc: "Beige", category: "bottom" },
       { key: "sneakers", name: "White Sneakers", desc: "Clean, minimal", category: "shoes" },
@@ -250,9 +265,9 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
       { key: "hat", name: "Panama Hat", desc: "Straw, wide brim", category: "accessory" },
     ]},
     { title: "Barceloneta Beach", subtitle: "Sandy Minimalism", note: "Beach to brunch transition. The tote carries everything from towels to tapas-worthy accessories.", items: [
-      { key: "silkBlouse", name: "Linen Shirt", desc: "White, oversized", category: "top" },
+      { key: "linenShirt", name: "Linen Shirt", desc: "White, oversized", category: "top" },
       { key: "denim", name: "Swim Shorts", desc: "Navy", category: "bottom" },
-      { key: "sneakers", name: "Slides", desc: "Leather, tan", category: "shoes" },
+      { key: "slides", name: "Slides", desc: "Leather, tan", category: "shoes" },
       { key: "tote", name: "Canvas Tote", desc: "Natural", category: "accessory" },
     ]},
     { title: "El Born Tapas Crawl", subtitle: "Evening Glow", note: "Tapas bars demand effortless style. A watch and sunglasses are the only accessories needed.", items: [
@@ -264,14 +279,14 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
   ],
   tokyo: [
     { title: "Shinjuku Arrival", subtitle: "Jet-Set Minimal", note: "Clean lines and neutral tones navigate Tokyo's neon-lit streets. Layer-ready for shifting temperatures.", items: [
-      { key: "trench", name: "Light Overcoat", desc: "Black, structured", category: "outerwear" },
+      { key: "overcoat", name: "Light Overcoat", desc: "Black, structured", category: "outerwear" },
       { key: "cashmere", name: "Merino Crew", desc: "Charcoal", category: "top" },
       { key: "trousers", name: "Slim Trousers", desc: "Black, tapered", category: "bottom" },
       { key: "sneakers", name: "White Sneakers", desc: "Clean, minimal", category: "shoes" },
     ]},
     { title: "Shibuya Exploration", subtitle: "Urban Edge", note: "Shibuya's energy calls for bold confidence. The bomber bridges streetwear and sophistication.", items: [
-      { key: "blazer", name: "Bomber Jacket", desc: "Navy, lightweight", category: "outerwear" },
-      { key: "breton", name: "Graphic Tee", desc: "Vintage, cream", category: "top" },
+      { key: "bomber", name: "Bomber Jacket", desc: "Navy, lightweight", category: "outerwear" },
+      { key: "graphicTee", name: "Graphic Tee", desc: "Vintage, cream", category: "top" },
       { key: "denim", name: "Straight Denim", desc: "Dark wash", category: "bottom" },
       { key: "boots", name: "Chelsea Boots", desc: "Black leather", category: "shoes" },
     ]},
@@ -299,19 +314,19 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
       { key: "tote", name: "Canvas Tote", desc: "Natural, oversized", category: "accessory" },
     ]},
     { title: "Weekend Brunch", subtitle: "Casual Layering", note: "A light jacket over easy basics transitions from morning coffee to afternoon exploring without a wardrobe change.", items: [
-      { key: "blazer", name: "Denim Jacket", desc: "Mid wash, relaxed", category: "outerwear" },
+      { key: "denimJacket", name: "Denim Jacket", desc: "Mid wash, relaxed", category: "outerwear" },
       { key: "cashmere", name: "Cotton Henley", desc: "Oatmeal, soft knit", category: "top" },
       { key: "denim", name: "Chinos", desc: "Khaki, straight leg", category: "bottom" },
       { key: "loafers", name: "Suede Loafers", desc: "Sand, unlined", category: "shoes" },
     ]},
     { title: "Market & Cafe Day", subtitle: "Casual Easy", note: "Comfortable and breathable for wandering local markets and lingering over espresso. Practical yet stylish.", items: [
-      { key: "cashmere", name: "Crew Sweatshirt", desc: "Grey marl, relaxed", category: "top" },
+      { key: "hoodie", name: "Crew Sweatshirt", desc: "Grey marl, relaxed", category: "top" },
       { key: "trousers", name: "Drawstring Pants", desc: "Olive, linen blend", category: "bottom" },
       { key: "sneakers", name: "Slip-on Sneakers", desc: "White, clean", category: "shoes" },
       { key: "sunglasses", name: "Sunglasses", desc: "Classic wayfarer", category: "accessory" },
     ]},
     { title: "Evening Out", subtitle: "Casual Elevated", note: "Dress up denim with a crisp shirt and leather accessories for a casual dinner that still feels intentional.", items: [
-      { key: "silkBlouse", name: "Oxford Shirt", desc: "White, rolled sleeves", category: "top" },
+      { key: "linenShirt", name: "Oxford Shirt", desc: "White, rolled sleeves", category: "top" },
       { key: "denim", name: "Dark Jeans", desc: "Slim, indigo wash", category: "bottom" },
       { key: "boots", name: "Desert Boots", desc: "Tan suede", category: "shoes" },
       { key: "watch", name: "Casual Watch", desc: "NATO strap, silver", category: "accessory" },
@@ -320,7 +335,7 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
 
   _default_minimalist: [
     { title: "Morning Commute", subtitle: "Minimalist Foundation", note: "A capsule-perfect base of monochrome essentials. Every piece interchangeable, nothing superfluous.", items: [
-      { key: "trench", name: "Structured Overcoat", desc: "Black, clean lines", category: "outerwear" },
+      { key: "overcoat", name: "Structured Overcoat", desc: "Black, clean lines", category: "outerwear" },
       { key: "cashmere", name: "Merino Crew", desc: "White, fine gauge", category: "top" },
       { key: "trousers", name: "Slim Trousers", desc: "Black, tapered", category: "bottom" },
       { key: "sneakers", name: "White Sneakers", desc: "Leather, minimal", category: "shoes" },
@@ -347,35 +362,35 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
 
   _default_streetwear: [
     { title: "City Arrival", subtitle: "Streetwear Edge", note: "Urban armor for the concrete jungle. Oversized proportions and bold textures set the tone from the first step.", items: [
-      { key: "blazer", name: "Bomber Jacket", desc: "Black, satin finish", category: "outerwear" },
-      { key: "breton", name: "Graphic Tee", desc: "Oversized, vintage print", category: "top" },
-      { key: "denim", name: "Cargo Pants", desc: "Olive, relaxed fit", category: "bottom" },
+      { key: "bomber", name: "Bomber Jacket", desc: "Black, satin finish", category: "outerwear" },
+      { key: "graphicTee", name: "Graphic Tee", desc: "Oversized, vintage print", category: "top" },
+      { key: "cargoPants", name: "Cargo Pants", desc: "Olive, relaxed fit", category: "bottom" },
       { key: "sneakers", name: "Chunky Sneakers", desc: "White/black, platform", category: "shoes" },
     ]},
     { title: "Neighborhood Exploration", subtitle: "Streetwear Layers", note: "Layered street style with utilitarian touches. Multiple pockets, crossbody bags, and bold kicks.", items: [
-      { key: "cashmere", name: "Oversized Hoodie", desc: "Washed black", category: "top" },
-      { key: "trousers", name: "Track Pants", desc: "Black, side stripe", category: "bottom" },
+      { key: "hoodie", name: "Oversized Hoodie", desc: "Washed black", category: "top" },
+      { key: "joggers", name: "Track Pants", desc: "Black, side stripe", category: "bottom" },
       { key: "sneakers", name: "High-top Sneakers", desc: "White, leather", category: "shoes" },
       { key: "bag", name: "Crossbody Bag", desc: "Black nylon, utility", category: "accessory" },
     ]},
     { title: "Market & Street Food", subtitle: "Streetwear Utility", note: "Functional street style that handles crowds and weather. The cap and crossbody keep hands free for food stalls.", items: [
-      { key: "trench", name: "Windbreaker", desc: "Color-block, packable", category: "outerwear" },
-      { key: "breton", name: "Logo Tee", desc: "White, boxy fit", category: "top" },
+      { key: "windbreaker", name: "Windbreaker", desc: "Color-block, packable", category: "outerwear" },
+      { key: "graphicTee", name: "Logo Tee", desc: "White, boxy fit", category: "top" },
       { key: "denim", name: "Wide-leg Jeans", desc: "Faded wash", category: "bottom" },
       { key: "hat", name: "Snapback Cap", desc: "Black, minimal logo", category: "accessory" },
     ]},
     { title: "Night Out", subtitle: "Streetwear After Dark", note: "Elevated streetwear for the evening scene. Dark tones and statement sneakers transition from dinner to nightlife.", items: [
-      { key: "blazer", name: "Bomber Jacket", desc: "Navy, quilted", category: "outerwear" },
+      { key: "bomber", name: "Bomber Jacket", desc: "Navy, quilted", category: "outerwear" },
       { key: "silkBlouse", name: "Mock Neck Top", desc: "Black, fitted", category: "top" },
-      { key: "trousers", name: "Slim Joggers", desc: "Black, tapered", category: "bottom" },
-      { key: "boots", name: "Combat Boots", desc: "Black, chunky sole", category: "shoes" },
+      { key: "joggers", name: "Slim Joggers", desc: "Black, tapered", category: "bottom" },
+      { key: "combatBoots", name: "Combat Boots", desc: "Black, chunky sole", category: "shoes" },
     ]},
   ],
 
   _default_classic: [
     { title: "Morning Sightseeing", subtitle: "Classic Elegance", note: "Timeless pieces that transcend trends. A well-cut blazer and tailored trousers command respect in any city.", items: [
       { key: "blazer", name: "Tailored Blazer", desc: "Navy, gold buttons", category: "outerwear" },
-      { key: "silkBlouse", name: "Cotton Shirt", desc: "White, crisp collar", category: "top" },
+      { key: "linenShirt", name: "Cotton Shirt", desc: "White, crisp collar", category: "top" },
       { key: "trousers", name: "Tailored Trousers", desc: "Grey, wool blend", category: "bottom" },
       { key: "loafers", name: "Penny Loafers", desc: "Burgundy, polished", category: "shoes" },
     ]},
@@ -401,34 +416,34 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
 
   _default_sporty: [
     { title: "Active Morning", subtitle: "Sporty Start", note: "Performance fabrics that handle a morning jog and transition seamlessly to a cafe breakfast. Breathable and sharp.", items: [
-      { key: "trench", name: "Lightweight Shell", desc: "Black, waterproof", category: "outerwear" },
+      { key: "windbreaker", name: "Lightweight Shell", desc: "Black, waterproof", category: "outerwear" },
       { key: "cashmere", name: "Performance Tee", desc: "White, moisture-wicking", category: "top" },
-      { key: "trousers", name: "Jogger Pants", desc: "Charcoal, tapered", category: "bottom" },
+      { key: "joggers", name: "Jogger Pants", desc: "Charcoal, tapered", category: "bottom" },
       { key: "sneakers", name: "Running Sneakers", desc: "Grey/white, cushioned", category: "shoes" },
     ]},
     { title: "City Exploration", subtitle: "Sporty Comfort", note: "Athletic-inspired pieces styled for sightseeing. Stretch fabrics and supportive shoes for miles of walking.", items: [
-      { key: "blazer", name: "Zip-up Jacket", desc: "Navy, technical fabric", category: "outerwear" },
-      { key: "breton", name: "Polo Shirt", desc: "White, dry-fit", category: "top" },
+      { key: "windbreaker", name: "Zip-up Jacket", desc: "Navy, technical fabric", category: "outerwear" },
+      { key: "polo", name: "Polo Shirt", desc: "White, dry-fit", category: "top" },
       { key: "denim", name: "Stretch Chinos", desc: "Olive, slim fit", category: "bottom" },
       { key: "sneakers", name: "Mesh Sneakers", desc: "Black/white, lightweight", category: "shoes" },
     ]},
     { title: "Afternoon Activities", subtitle: "Sporty Versatile", note: "Ready for anything from a bike tour to a park picnic. Technical fabrics meet casual style for active afternoons.", items: [
       { key: "cashmere", name: "Quarter-Zip Pullover", desc: "Grey, fleece-lined", category: "top" },
-      { key: "trousers", name: "Stretch Pants", desc: "Black, 4-way stretch", category: "bottom" },
+      { key: "joggers", name: "Stretch Pants", desc: "Black, 4-way stretch", category: "bottom" },
       { key: "sneakers", name: "Trail Sneakers", desc: "Grey, grippy sole", category: "shoes" },
       { key: "bag", name: "Sport Crossbody", desc: "Black nylon, compact", category: "accessory" },
     ]},
     { title: "Evening Casual", subtitle: "Sporty Elevated", note: "Clean athleisure for dinner. A bomber jacket dresses up technical pieces for an effortlessly modern evening look.", items: [
-      { key: "blazer", name: "Bomber Jacket", desc: "Black, lightweight", category: "outerwear" },
+      { key: "bomber", name: "Bomber Jacket", desc: "Black, lightweight", category: "outerwear" },
       { key: "silkBlouse", name: "Clean Tee", desc: "White, premium cotton", category: "top" },
-      { key: "denim", name: "Dark Joggers", desc: "Black, slim tapered", category: "bottom" },
+      { key: "joggers", name: "Dark Joggers", desc: "Black, slim tapered", category: "bottom" },
       { key: "sneakers", name: "Leather Sneakers", desc: "White, clean design", category: "shoes" },
     ]},
   ],
 
   _default_bohemian: [
     { title: "Morning Wandering", subtitle: "Bohemian Flow", note: "Free-spirited layers in earthy tones. Flowy silhouettes and natural textures for unhurried morning strolls.", items: [
-      { key: "cashmere", name: "Crochet Cardigan", desc: "Cream, open-front", category: "outerwear" },
+      { key: "cardigan", name: "Crochet Cardigan", desc: "Cream, open-front", category: "outerwear" },
       { key: "silkBlouse", name: "Peasant Blouse", desc: "White, embroidered", category: "top" },
       { key: "denim", name: "Flared Jeans", desc: "Medium wash, vintage", category: "bottom" },
       { key: "espadrilles", name: "Leather Sandals", desc: "Tan, woven straps", category: "shoes" },
@@ -440,8 +455,8 @@ const TEMPLATES: Record<string, OutfitTemplate[]> = {
       { key: "tote", name: "Woven Tote", desc: "Straw, leather trim", category: "accessory" },
     ]},
     { title: "Sunset Lookout", subtitle: "Bohemian Spirit", note: "Layered accessories and flowing fabrics catch the golden hour light. A hat and sunglasses complete the free-spirited look.", items: [
-      { key: "cashmere", name: "Wrap Sweater", desc: "Sage, draped", category: "top" },
-      { key: "denim", name: "Maxi Skirt", desc: "Rust, tiered", category: "bottom" },
+      { key: "cardigan", name: "Wrap Sweater", desc: "Sage, draped", category: "top" },
+      { key: "maxiSkirt", name: "Maxi Skirt", desc: "Rust, tiered", category: "bottom" },
       { key: "boots", name: "Western Boots", desc: "Tan suede, low heel", category: "shoes" },
       { key: "hat", name: "Floppy Sun Hat", desc: "Straw, wide brim", category: "accessory" },
     ]},
@@ -488,11 +503,20 @@ function recommendSize(
   return "XL";
 }
 
+/** Detect non-walking infant: height < 85cm AND weight < 13kg */
+function isInfantProfile(profile: UserProfile): boolean {
+  const h = parseInt(profile.height) || 0;
+  const w = parseInt(profile.weight) || 0;
+  return h > 0 && h < 85 && w > 0 && w < 13;
+}
+
 function buildBodyFitLabel(profile: UserProfile): string {
   const h = parseInt(profile.height) || 0;
   const w = parseInt(profile.weight) || 0;
   const gender = profile.gender || "female";
   const gLabel = gender === "male" ? "Male" : gender === "non-binary" ? "Non-binary" : "Female";
+
+  if (isInfantProfile(profile)) return `Baby · ${h}cm · ${w}kg · Stroller outfit`;
 
   if (!h && !w) return `Styled for ${gLabel} · ${profile.aesthetics[0] || "Classic"} preference`;
 
@@ -506,7 +530,7 @@ function buildBodyFitLabel(profile: UserProfile): string {
     else if (bmi > 25) build = "curvy";
   }
 
-  return `Tailored for ${gLabel} · ${h}cm · ${build} build`;
+  return `Tailored for ${gLabel} · ${h}cm · ${w}kg · ${build} build`;
 }
 
 /* ═══════════════════════════════════════════════════════════ */

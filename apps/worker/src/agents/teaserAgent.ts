@@ -218,6 +218,7 @@ async function generateWithRetry(
 export interface TeaserUserProfile {
   gender?: 'male' | 'female' | 'non-binary';
   height_cm?: number;
+  weight_kg?: number;
   aesthetics?: string[];
 }
 
@@ -232,31 +233,68 @@ export async function teaserAgent(
     throw new Error('[teaserAgent] NANOBANANA_API_KEY is not configured — run: wrangler secret put NANOBANANA_API_KEY');
   }
 
+  // Detect infant: height < 85cm AND weight < 13kg (non-walking infant/toddler)
+  const isInfant = !!(
+    userProfile?.height_cm && userProfile.height_cm < 85 &&
+    userProfile?.weight_kg && userProfile.weight_kg < 13
+  );
+
   // Build model descriptor from user profile
-  const genderDesc = userProfile?.gender === 'male'
-    ? 'a young Asian man'
-    : userProfile?.gender === 'non-binary'
-    ? 'an androgynous person'
-    : 'a young woman';
-  const heightDesc = userProfile?.height_cm
-    ? `, ${userProfile.height_cm}cm tall`
-    : '';
-  const styleDesc = userProfile?.aesthetics?.length
-    ? ` wearing ${userProfile.aesthetics.slice(0, 2).join(' and ')} style outfit`
-    : '';
+  let genderDesc: string;
+  let heightDesc = '';
+  let bodyDesc = '';
+  let styleDesc = '';
+
+  if (isInfant) {
+    genderDesc = 'a cute baby';
+  } else {
+    genderDesc = userProfile?.gender === 'male'
+      ? 'a young Asian man'
+      : userProfile?.gender === 'non-binary'
+      ? 'an androgynous person'
+      : 'a young woman';
+    if (userProfile?.height_cm) {
+      heightDesc = `, ${userProfile.height_cm}cm tall`;
+    }
+    // BMI-based body description
+    if (userProfile?.height_cm && userProfile?.weight_kg) {
+      const heightM = userProfile.height_cm / 100;
+      const bmi = userProfile.weight_kg / (heightM * heightM);
+      if (bmi < 18.5) bodyDesc = ', slender build';
+      else if (bmi < 25) bodyDesc = ', slim build';
+      else if (bmi < 30) bodyDesc = ', regular build';
+      else bodyDesc = ', full-figured build';
+    }
+    styleDesc = userProfile?.aesthetics?.length
+      ? ` wearing ${userProfile.aesthetics.slice(0, 2).join(' and ')} style outfit`
+      : '';
+  }
 
   // Extract city name for landmark background
   const cityName = vibeResult.city || vibeResult.mood_label?.split(' — ')[0] || 'a famous city';
 
   // Build image prompt: travel outfit with city landmark background
   const tagString = vibeResult.vibe_tags.join(', ');
-  const prompt =
-    `Generate a photorealistic full-body fashion photograph of ${genderDesc}${heightDesc}${styleDesc}. ` +
-    `The person is standing in front of a famous landmark in ${cityName} as the background. ` +
-    `Style mood: ${vibeResult.mood_label}, ${tagString}. ` +
-    `The outfit should be stylish, travel-appropriate, and coordinated. ` +
-    `${vibeResult.avoid_note ? `Avoid: ${vibeResult.avoid_note}. ` : ''}` +
-    'Professional fashion editorial photography, natural lighting, sharp focus, 4K quality.';
+  let prompt: string;
+
+  if (isInfant) {
+    prompt =
+      `Generate a photorealistic photograph of ${genderDesc} lying comfortably in a stylish baby stroller (pram). ` +
+      `The baby is wearing a cute, weather-appropriate outfit. ` +
+      `The stroller is positioned in front of a famous landmark in ${cityName} as the background. ` +
+      `Style mood: ${vibeResult.mood_label}, ${tagString}. ` +
+      `The scene should look warm, adorable, and travel-ready. ` +
+      `${vibeResult.avoid_note ? `Avoid: ${vibeResult.avoid_note}. ` : ''}` +
+      'Professional photography, natural lighting, sharp focus, 4K quality.';
+  } else {
+    prompt =
+      `Generate a photorealistic full-body fashion photograph of ${genderDesc}${heightDesc}${bodyDesc}${styleDesc}. ` +
+      `The person is standing in front of a famous landmark in ${cityName} as the background. ` +
+      `Style mood: ${vibeResult.mood_label}, ${tagString}. ` +
+      `The outfit should be stylish, travel-appropriate, and coordinated. ` +
+      `${vibeResult.avoid_note ? `Avoid: ${vibeResult.avoid_note}. ` : ''}` +
+      'Professional fashion editorial photography, natural lighting, sharp focus, 4K quality.';
+  }
 
   console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);
 
