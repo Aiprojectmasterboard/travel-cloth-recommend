@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
@@ -26,6 +26,7 @@ import {
   type PackingItem,
 } from "../services/outfitGenerator";
 import { WORKER_URL, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
+import { exportDashboardPdf } from "../services/exportDashboardPdf";
 
 /* ─── City hero images (fallback) ─── */
 const CITY_HEROES: Record<string, string> = {
@@ -45,6 +46,19 @@ export function ProDashboard() {
   const { data: onboarding } = useOnboarding();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
   const { t } = useLang();
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!mainRef.current || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const citySlug = cities?.[0]?.city?.toLowerCase().replace(/\s+/g, "-") || "trip";
+      await exportDashboardPdf(mainRef.current, `travel-capsule-pro-${citySlug}.pdf`);
+    } finally {
+      setPdfExporting(false);
+    }
+  }, [pdfExporting]);
 
   useEffect(() => {
     if (!purchasedPlan) navigate("/preview", { replace: true });
@@ -234,7 +248,7 @@ export function ProDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FDF8F3]">
+    <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
       <SignupPrompt />
 
       {/* Header */}
@@ -250,8 +264,8 @@ export function ProDashboard() {
             <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
               <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
-            <button onClick={() => window.print()} className="no-print h-[36px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              <Icon name="download" size={14} className="text-[#C4613A]" /> <span className="hidden sm:inline">Hi-Res Export</span>
+            <button onClick={handleExportPdf} disabled={pdfExporting} className="no-print h-[36px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+              {pdfExporting ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="download" size={14} className="text-[#C4613A]" />} <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
             </button>
           </div>
         </div>

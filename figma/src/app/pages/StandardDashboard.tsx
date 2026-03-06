@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
@@ -29,6 +29,7 @@ import {
   type PackingItem,
 } from "../services/outfitGenerator";
 import type { CapsuleItem, DayPlan, WeatherData, VibeData } from "../lib/api";
+import { exportDashboardPdf } from "../services/exportDashboardPdf";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMEZyYW5jZSUyMEVpZmZlbCUyMHRvd2VyJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc3MjQyNjYwM3ww&ixlib=rb-4.1.0&q=80&w=1080";
 const FALLBACK_MOOD = "https://images.unsplash.com/photo-1577058006248-8289d93b53ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMHN0cmVldCUyMGNhZmUlMjBhdXR1bW4lMjB0cmF2ZWwlMjBhZXN0aGV0aWN8ZW58MXx8fHwxNzcyNDI2NjA4fDA&ixlib=rb-4.1.0&q=80&w=1080";
@@ -41,6 +42,19 @@ export function StandardDashboard() {
   const { data: onboarding } = useOnboarding();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
   const { t } = useLang();
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!mainRef.current || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const citySlug = cityName?.toLowerCase().replace(/\s+/g, "-") || "trip";
+      await exportDashboardPdf(mainRef.current, `travel-capsule-standard-${citySlug}.pdf`);
+    } finally {
+      setPdfExporting(false);
+    }
+  }, [pdfExporting]);
 
   // Payment gate
   useEffect(() => {
@@ -123,7 +137,7 @@ export function StandardDashboard() {
   const bodyFitLabel = mockOutfits[0]?.bodyFitLabel || "";
 
   return (
-    <div className="min-h-screen bg-[#FDF8F3]">
+    <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
       <SignupPrompt />
 
       {/* Header */}
@@ -139,8 +153,8 @@ export function StandardDashboard() {
             <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
               <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
-            <button onClick={() => window.print()} className="no-print h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" /> <span className="hidden sm:inline">Save PDF</span>
+            <button onClick={handleExportPdf} disabled={pdfExporting} className="no-print h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+              {pdfExporting ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" />} <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
             </button>
           </div>
         </div>

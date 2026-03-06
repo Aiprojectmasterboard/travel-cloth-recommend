@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
@@ -26,6 +26,7 @@ import {
   type PackingItem,
 } from "../services/outfitGenerator";
 import type { CapsuleItem, WeatherData, VibeData } from "../lib/api";
+import { exportDashboardPdf } from "../services/exportDashboardPdf";
 
 /* ─── Static images ─── */
 const IMG = {
@@ -75,6 +76,18 @@ export function AnnualDashboard() {
   const { t } = useLang();
   const { purchasedPlan } = useAuth();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
+  const [pdfExporting, setPdfExporting] = useState(false);
+  const mainRef = useRef<HTMLDivElement>(null);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!mainRef.current || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      await exportDashboardPdf(mainRef.current, `travel-capsule-annual-${new Date().toISOString().slice(0, 10)}.pdf`);
+    } finally {
+      setPdfExporting(false);
+    }
+  }, [pdfExporting]);
 
   useEffect(() => {
     if (!purchasedPlan) navigate("/preview", { replace: true });
@@ -136,7 +149,7 @@ export function AnnualDashboard() {
     : packing.map((p) => ({ name: p.name, category: p.category, why: "", versatility_score: p.usageCount }));
 
   return (
-    <div className="min-h-screen bg-[#FDF8F3]">
+    <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
@@ -147,8 +160,8 @@ export function AnnualDashboard() {
           <div className="flex items-center gap-3">
             <span className="hidden sm:block"><AnnualBadge /></span>
             <SocialShareButton />
-            <button onClick={() => window.print()} className="no-print hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e] hover:border-[#C4613A]/30 transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <Icon name="picture_as_pdf" size={14} className="text-[#C4613A]" /> Save PDF
+            <button onClick={handleExportPdf} disabled={pdfExporting} className="no-print hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e] hover:border-[#C4613A]/30 transition-colors cursor-pointer disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              {pdfExporting ? <span className="w-3.5 h-3.5 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="picture_as_pdf" size={14} className="text-[#C4613A]" />} {pdfExporting ? "Exporting..." : "Save PDF"}
             </button>
             <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#D4AF37]/30 transition-colors cursor-pointer">
               <Icon name="mail" size={16} className="text-[#57534e]" />
