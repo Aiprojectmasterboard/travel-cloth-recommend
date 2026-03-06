@@ -10,6 +10,8 @@ import {
   StyleCodeCard,
   MoodCard,
   UpgradeBanner,
+  ProUpsellCard,
+  FloatingUpgradeBar,
   SocialShareButton,
   SignupPrompt,
   ProfileBadge,
@@ -30,6 +32,8 @@ import {
 } from "../services/outfitGenerator";
 import type { CapsuleItem, DayPlan, WeatherData, VibeData } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
+import { createCheckoutSession } from "../services/polarCheckout";
+import { GA } from "../lib/analytics";
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMEZyYW5jZSUyMEVpZmZlbCUyMHRvd2VyJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc3MjQyNjYwM3ww&ixlib=rb-4.1.0&q=80&w=1080";
 const FALLBACK_MOOD = "https://images.unsplash.com/photo-1577058006248-8289d93b53ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMHN0cmVldCUyMGNhZmUlMjBhdXR1bW4lMjB0cmF2ZWwlMjBhZXN0aGV0aWN8ZW58MXx8fHwxNzcyNDI2NjA4fDA&ixlib=rb-4.1.0&q=80&w=1080";
@@ -55,6 +59,26 @@ export function StandardDashboard() {
       setPdfExporting(false);
     }
   }, [pdfExporting]);
+
+  const handleUpgradeToPro = useCallback(async () => {
+    GA.planSelected("pro");
+    GA.checkoutStart("pro");
+    try {
+      const successUrl = `${window.location.origin}/checkout/success?plan=pro`;
+      const session = await createCheckoutSession({
+        plan: "pro",
+        successUrl,
+        tripId: tripId || undefined,
+      });
+      if (session.url) {
+        window.location.href = session.url;
+      } else {
+        navigate("/preview");
+      }
+    } catch {
+      navigate("/preview");
+    }
+  }, [tripId, navigate]);
 
   // Login gate — Standard is free but requires sign-up
   useEffect(() => {
@@ -376,10 +400,11 @@ export function StandardDashboard() {
               </div>
             </div>
 
-            {/* Upgrade Banner */}
-            <div className="rounded-2xl overflow-hidden">
-              <UpgradeBanner initialMinutes={3} initialSeconds={0} onUpgrade={() => navigate("/preview")} />
-            </div>
+            {/* Pro Upgrade Card */}
+            <ProUpsellCard onUpgrade={handleUpgradeToPro} />
+
+            {/* Timer banner */}
+            <UpgradeBanner initialMinutes={14} initialSeconds={59} onUpgrade={handleUpgradeToPro} />
           </div>
 
           {/* Right column */}
@@ -434,6 +459,9 @@ export function StandardDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Floating bottom upgrade bar */}
+      <FloatingUpgradeBar onUpgrade={handleUpgradeToPro} />
     </div>
   );
 }
