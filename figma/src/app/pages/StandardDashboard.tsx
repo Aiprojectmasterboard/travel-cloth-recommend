@@ -197,7 +197,7 @@ export function StandardDashboard() {
           {moodLabel}
         </h1>
         <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-          AI-powered travel styling — weather-adapted, culture-aware, personalized for you.
+          {t("dashboard.standardSubtitle")}
         </p>
         <div className="mt-3">
           <AiGeneratedBadge confidence={hasRealData ? 95 : 85} bodyFitLabel={bodyFitLabel} />

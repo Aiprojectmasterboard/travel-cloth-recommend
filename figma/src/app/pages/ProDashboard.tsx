@@ -306,18 +306,18 @@ export function ProDashboard() {
           {t("dashboard.multiCityStyleGuide")}
         </h1>
         <p className="mt-2 text-[15px] text-[#57534e] max-w-[600px]" style={{ fontFamily: "var(--font-body)" }}>
-          {cities.length} cities, one seamlessly curated capsule wardrobe.
+          {t("dashboard.capsuleSubtitle").replace("{n}", String(cities.length))}
         </p>
         <div className="mt-3 flex items-center gap-3 flex-wrap">
           <AiGeneratedBadge confidence={hasRealData ? 95 : 90} bodyFitLabel={bodyFitLabel} />
           {genStatus === "generating" && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> Generating AI outfits…
+              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> {t("dashboard.generatingOutfits")}
             </span>
           )}
           {genStatus === "done" && aiImages.size > 0 && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <Icon name="check_circle" size={14} className="text-green-600" /> {aiImages.size} AI images ready
+              <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(aiImages.size))}
             </span>
           )}
         </div>
