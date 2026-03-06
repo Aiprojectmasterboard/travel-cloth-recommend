@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { OnboardingLayout } from "../components/travel-capsule/OnboardingLayout";
 import { ProgressBar, BtnPrimary, BtnSecondary, Icon } from "../components/travel-capsule";
@@ -7,6 +7,7 @@ import { useOnboarding, CityEntry } from "../context/OnboardingContext";
 import { IMAGES } from "../constants/images";
 import bagImg from "../../assets/36d7b5af63872a88256d99de04037e3a04cbed5f.png";
 import citiesData from "../../../../packages/city-vibes-db/cities.json";
+import { geocodeCity, getCityImageUrl } from "../services/geocodeCity";
 
 // ---------------------------------------------------------------------------
 // Fallback image for cities without a dedicated IMAGES entry
@@ -26,7 +27,10 @@ const CITY_IMAGE_MAP: Record<string, string> = {
 
 function getCityImage(cityName: string): string {
   const key = cityName.toLowerCase().replace(/\s+/g, "");
-  return CITY_IMAGE_MAP[key] ?? FALLBACK_IMAGE;
+  if (CITY_IMAGE_MAP[key]) return CITY_IMAGE_MAP[key];
+  // Dynamic Unsplash search URL for cities not in the static map
+  const query = encodeURIComponent(`${cityName} city landmark`);
+  return `https://source.unsplash.com/400x400/?${query}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -185,6 +189,7 @@ export function OnboardingStep1() {
   const [search, setSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState("");
+  const [validating, setValidating] = useState(false);
 
   // ---- Filtering logic: city name, country name, Korean aliases ----------
   const filtered = useMemo(() => {
@@ -245,32 +250,43 @@ export function OnboardingStep1() {
     setShowSuggestions(false);
   };
 
-  // ---- Add a custom city typed by the user -------------------------------
-  const addCustomCity = () => {
-    if (trimmedSearch.length < 2) return;
+  // ---- Add a custom city typed by the user (validated via geocoding) ------
+  const addCustomCity = useCallback(async () => {
+    if (trimmedSearch.length < 2 || validating) return;
+    setValidating(true);
+    setError("");
+
+    const result = await geocodeCity(trimmedSearch);
+    setValidating(false);
+
+    if (!result) {
+      setError(`"${trimmedSearch}" is not a valid city. Please check the spelling and try again.`);
+      return;
+    }
+
     const entry: CityEntry = {
       id: crypto.randomUUID(),
-      city: trimmedSearch,
-      country: "",
-      imageUrl: FALLBACK_IMAGE,
+      city: result.city,
+      country: result.country,
+      imageUrl: getCityImageUrl(result.city),
       fromDate: "",
       toDate: "",
+      lat: result.lat,
+      lon: result.lon,
     };
     setData((prev) => ({ ...prev, cities: [...prev.cities, entry] }));
     setSearch("");
     setShowSuggestions(false);
-  };
+  }, [trimmedSearch, validating, setData]);
 
   // ---- Handle Enter key in the search input ------------------------------
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
       e.preventDefault();
       if (filtered.length === 1 && !showCustomOption) {
-        // Only one matching city — add it directly
         addCity(filtered[0]);
       } else if (showCustomOption && filtered.length === 0) {
-        // No matches at all — add as custom
-        addCustomCity();
+        void addCustomCity();
       }
     }
   };
@@ -358,13 +374,18 @@ export function OnboardingStep1() {
             {showCustomOption && (
               <button
                 onClick={addCustomCity}
-                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#FDF8F3] transition-colors text-left cursor-pointer border-t border-[#E8DDD4]"
+                disabled={validating}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-[#FDF8F3] transition-colors text-left cursor-pointer border-t border-[#E8DDD4] disabled:opacity-60"
               >
                 <div className="w-8 h-8 rounded-md bg-[#F5EFE6] flex items-center justify-center">
-                  <Icon name="add" size={18} className="text-[#C4613A]" />
+                  {validating ? (
+                    <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" />
+                  ) : (
+                    <Icon name="add" size={18} className="text-[#C4613A]" />
+                  )}
                 </div>
                 <span className="text-[14px] text-[#C4613A]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                  Add '{trimmedSearch}' as custom destination
+                  {validating ? `Validating "${trimmedSearch}"...` : `Add "${trimmedSearch}" as destination`}
                 </span>
               </button>
             )}

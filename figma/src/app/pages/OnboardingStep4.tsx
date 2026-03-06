@@ -82,7 +82,7 @@ export function OnboardingStep4() {
   // Derive display data
   const primaryCity = data.cities[0];
   const cityName = primaryCity?.city || "Paris";
-  const countryName = primaryCity?.country || "France";
+  const countryName = primaryCity?.country || "";
   const cityImg = primaryCity?.imageUrl || IMAGES.paris;
   const fromDate = primaryCity?.fromDate || "2026-04-12";
   const toDate = primaryCity?.toDate || "2026-04-18";
@@ -172,7 +172,7 @@ export function OnboardingStep4() {
               <span className="px-3 py-1 bg-[#C4613A] text-white rounded-sm text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("onboarding4.tripSummary")}</span>
             </div>
             <div className="absolute bottom-4 left-5">
-              <h3 className="text-white text-[28px] italic" style={{ fontFamily: "var(--font-display)" }}>{cityName}, {countryName}</h3>
+              <h3 className="text-white text-[28px] italic" style={{ fontFamily: "var(--font-display)" }}>{cityName}{countryName ? `, ${countryName}` : ""}</h3>
             </div>
           </div>
         ) : (

@@ -8,8 +8,12 @@ import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
 
-/* Fallback images when AI teaser is not available */
-const FALLBACK_IMG = "https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMEZyYW5jZSUyMEVpZmZlbCUyMHRvd2VyJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc3MjQyNjYwM3ww&ixlib=rb-4.1.0&q=80&w=1080";
+/* Fallback: build a city-specific Unsplash image URL */
+function getCityFallbackImg(cityName: string): string {
+  const query = encodeURIComponent(`${cityName} city landmark travel`);
+  return `https://source.unsplash.com/1080x600/?${query}`;
+}
+const GENERIC_FALLBACK = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
 
 /** Format a date string as "Mon DD" using locale-aware short month */
 function fmtShort(dateStr: string, locale: string): string {
@@ -26,11 +30,12 @@ export function PreviewPage() {
   const { isLoggedIn, user, setShowLoginModal } = useAuth();
 
   const city = data.cities[0]?.city || "Paris";
-  const country = data.cities[0]?.country || "France";
+  const country = data.cities[0]?.country || "";
   const aestheticLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : "Classic, Minimalist";
 
-  // Real data from AI preview
-  const teaserUrl = preview?.teaser_url || FALLBACK_IMG;
+  // Real data from AI preview — fall back to city-specific or onboarding image
+  const cityFallback = data.cities[0]?.imageUrl || getCityFallbackImg(city);
+  const teaserUrl = preview?.teaser_url || cityFallback;
   const moodLabel = preview?.mood_label || `${city} \u2014 Style Analysis`;
 
   // All 4 slots use the same teaser image — slot 0 clear, slots 1-3 CSS-blurred
@@ -336,7 +341,7 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { labelKey: "preview.destination", value: `${city}, ${country}` },
+              { labelKey: "preview.destination", value: country ? `${city}, ${country}` : city },
               { labelKey: "preview.duration", value: durationValue },
               { labelKey: "preview.aesthetic", value: aestheticLabel },
               { labelKey: "preview.weather", value: weatherDisplay },
