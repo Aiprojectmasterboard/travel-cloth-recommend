@@ -129,7 +129,7 @@ export function PrivacyPage() {
 
           <Section title="Cookies & Tracking">
             <p>
-              We do not use advertising trackers or third-party analytics cookies. We use a single session cookie to associate your browser with your trip results. This cookie contains no personal information and expires when you close your browser.
+              We use Google Analytics to understand how visitors interact with our service and improve your experience. Google Analytics uses cookies to collect anonymous usage data such as pages visited and time on site. No personally identifiable information is shared with Google. You can opt out by using a browser extension or adjusting your cookie settings. We also use a session cookie to associate your browser with your trip results. This cookie contains no personal information and expires when you close your browser.
             </p>
           </Section>
 

@@ -5,6 +5,7 @@ import { getDashboardRoute, type PlanKey } from "../services/polarCheckout";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { WORKER_URL } from "../lib/api";
+import { GA } from "../lib/analytics";
 
 /**
  * CheckoutSuccess — the user lands here AFTER completing Polar payment.
@@ -188,6 +189,7 @@ export function CheckoutSuccess() {
         const res = await fetch(`${WORKER_URL}/api/result/${tripId}`);
         if (res.ok) {
           // Payment confirmed — order exists
+          GA.checkoutSuccess(plan, plan === "pro" ? 12 : plan === "annual" ? 29 : 5);
           setPurchasedPlan(plan);
           setStatus("confirmed");
           await new Promise((r) => setTimeout(r, 1500));

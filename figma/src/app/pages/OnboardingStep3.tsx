@@ -6,6 +6,7 @@ import { AestheticCard } from "../components/travel-capsule/AestheticCard";
 import { Icon } from "../components/travel-capsule/Icon";
 import { useOnboarding } from "../context/OnboardingContext";
 import { useLang } from "../context/LanguageContext";
+import { GA } from "../lib/analytics";
 import { IMAGES } from "../constants/images";
 
 const WORKER_URL =
@@ -452,7 +453,7 @@ export function OnboardingStep3() {
         </div>
         <BtnPrimary
           size="sm"
-          onClick={() => navigate("/onboarding/4")}
+          onClick={() => { GA.onboardingStep(3); navigate("/onboarding/4"); }}
           disabled={uploadStatus === "uploading" || uploadStatus === "compressing"}
         >
           <span className="flex items-center justify-center gap-2">

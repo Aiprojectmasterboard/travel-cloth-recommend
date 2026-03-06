@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 import { IMAGES } from "../constants/images";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+import { GA } from "../lib/analytics";
 
 /**
  * Animated progress steps with percentage bar.
@@ -148,6 +149,8 @@ export function OnboardingStep4() {
 
     try {
       await startPreview();
+      GA.onboardingComplete();
+      GA.previewGenerated(data.cities[0]?.city || "unknown");
       // Signal completion → progress bar animates to 100%
       setPreviewReady(true);
       // Wait for the 100% animation before navigating

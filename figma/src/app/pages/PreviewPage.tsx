@@ -7,6 +7,7 @@ import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
+import { GA } from "../lib/analytics";
 
 // ─── Image Lightbox with Branding + Share ─────────────────────────────────────
 
@@ -297,6 +298,7 @@ export function PreviewPage() {
     : `${nightCount} ${t("general.nights")}`;
 
   const doCheckout = async (plan: PlanKey) => {
+    GA.checkoutStart(plan);
     setCheckoutLoading(plan);
     setCheckoutError(null);
     try {

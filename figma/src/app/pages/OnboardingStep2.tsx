@@ -4,6 +4,7 @@ import { useNavigate } from "react-router";
 import { OnboardingLayout } from "../components/travel-capsule/OnboardingLayout";
 import { ProgressBar, BtnPrimary, BtnSecondary, Icon, TCInput } from "../components/travel-capsule";
 import { useOnboarding } from "../context/OnboardingContext";
+import { GA } from "../lib/analytics";
 
 const GENDERS = [
   { value: "male", label: "Male", icon: "male" },
@@ -232,7 +233,7 @@ export function OnboardingStep2() {
       {/* Navigation */}
       <div className="mt-12 flex items-center justify-between gap-3">
         <BtnSecondary size="sm" onClick={() => navigate("/onboarding/1")}>Back</BtnSecondary>
-        <BtnPrimary size="sm" onClick={() => navigate("/onboarding/3")}>
+        <BtnPrimary size="sm" onClick={() => { GA.onboardingStep(2); navigate("/onboarding/3"); }}>
           <span className="flex items-center gap-2">
             <span className="hidden sm:inline">Continue to Style Profile</span>
             <span className="sm:hidden">Continue</span>

@@ -8,6 +8,7 @@ import { IMAGES } from "../constants/images";
 import bagImg from "../../assets/36d7b5af63872a88256d99de04037e3a04cbed5f.png";
 import citiesData from "../../../../packages/city-vibes-db/cities.json";
 import { geocodeCity, getCityImageUrl } from "../services/geocodeCity";
+import { GA } from "../lib/analytics";
 
 // ---------------------------------------------------------------------------
 // Fallback image for cities without a dedicated IMAGES entry
@@ -491,6 +492,7 @@ export function OnboardingStep1() {
             return;
           }
           setError("");
+          GA.onboardingStep(1);
           navigate("/onboarding/2");
         }}>
           <span className="flex items-center gap-2">

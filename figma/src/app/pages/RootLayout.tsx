@@ -6,7 +6,7 @@ import { AuthProvider } from "../context/AuthContext";
 import { TripProvider } from "../context/TripContext";
 import { LoginModal, PasswordResetModal } from "../components/travel-capsule";
 
-/** Scroll to top on every route change, unless landing page has a scroll target */
+/** Scroll to top + Google Analytics page view on every route change */
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => {
@@ -16,6 +16,14 @@ function ScrollToTop() {
     sessionStorage.removeItem("tc_scroll_target");
     window.scrollTo(0, 0);
   }, [pathname]);
+
+  // Send SPA page view to Google Analytics
+  useEffect(() => {
+    if (typeof window.gtag === "function") {
+      window.gtag("config", "G-K0HR5HHCP6", { page_path: pathname });
+    }
+  }, [pathname]);
+
   return null;
 }
 
