@@ -156,11 +156,11 @@ export function LandingPage() {
             {[
               { num: "01", icon: "flight_takeoff", titleKey: "section.intelligence.step1.title", bodyKey: "section.intelligence.step1.body", img: IMAGES.paris, imgAlt: "Paris destination", overlay: "Paris, 7 days" },
               { num: "02", icon: "auto_awesome", titleKey: "section.intelligence.step2.title", bodyKey: "section.intelligence.step2.body", img: "/examples/mood-mediterranean.png", imgAlt: "AI vibe analysis", overlay: null },
-              { num: "03", icon: "checkroom", titleKey: "section.intelligence.step3.title", bodyKey: "section.intelligence.step3.body", img: "/examples/pro-outfit-1.png", imgAlt: "AI-generated outfit", overlay: null },
+              { num: "03", icon: "checkroom", titleKey: "section.intelligence.step3.title", bodyKey: "section.intelligence.step3.body", img: "/examples/pro-outfit-2.png", imgAlt: "AI-generated outfit", overlay: null },
             ].map((step, i) => (
               <div key={step.num} className="relative bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] group hover:border-[#C4613A]/30 transition-all" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
                 {/* Step image */}
-                <div className="relative aspect-[16/10] overflow-hidden">
+                <div className="relative aspect-[4/3] overflow-hidden">
                   <ImageWithFallback src={step.img} alt={step.imgAlt} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                   {/* Step number badge */}
@@ -172,21 +172,29 @@ export function LandingPage() {
                   </div>
                   {/* Mini UI overlay for step 1 — destination chip */}
                   {i === 0 && (
-                    <div className="absolute bottom-3 left-3 right-3 flex items-center gap-2">
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
-                        <Icon name="location_on" size={14} className="text-[#C4613A]" />
-                        <span className="text-[11px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Paris, France</span>
+                    <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+                        <Icon name="location_on" size={12} className="text-[#C4613A]" />
+                        <span className="text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Paris</span>
                       </div>
-                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-3 py-1.5 flex items-center gap-2">
-                        <Icon name="wb_sunny" size={14} className="text-[#D4AF37]" />
-                        <span className="text-[11px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>22 C</span>
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+                        <Icon name="calendar_month" size={12} className="text-[#C4613A]" />
+                        <span className="text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>May 12-18</span>
+                      </div>
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+                        <Icon name="height" size={12} className="text-[#C4613A]" />
+                        <span className="text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>170cm · 58kg</span>
+                      </div>
+                      <div className="bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 flex items-center gap-1.5">
+                        <Icon name="face" size={12} className="text-[#C4613A]" />
+                        <span className="text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Photo</span>
                       </div>
                     </div>
                   )}
                   {/* Mini UI overlay for step 2 — analysis badges */}
                   {i === 1 && (
                     <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
-                      {["Rainy Chic", "15-22 C", "Layered"].map((tag) => (
+                      {["15°C Avg", "40% Rain", "Mild · Layered"].map((tag) => (
                         <span key={tag} className="bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{tag}</span>
                       ))}
                     </div>
@@ -219,45 +227,29 @@ export function LandingPage() {
             ))}
           </div>
 
-          {/* Stats + Before/After Showcase */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-            <div className="relative">
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                  <ImageWithFallback src="/examples/pro-outfit-1.png" alt="AI-styled outfit — Paris" className="w-full aspect-[3/4] object-cover" />
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                    <span className="text-white text-[11px] sm:text-[13px]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Paris · Rainy Chic</span>
-                  </div>
+          {/* Value Proposition Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            {[
+              { icon: "cloud", title: t("section.intelligence.valueProp1"), sub: t("section.intelligence.valueProp1Sub") },
+              { icon: "straighten", title: t("section.intelligence.valueProp2"), sub: t("section.intelligence.valueProp2Sub") },
+              { icon: "luggage", title: t("section.intelligence.valueProp3"), sub: t("section.intelligence.valueProp3Sub") },
+              { icon: "public", title: t("section.intelligence.valueProp4"), sub: t("section.intelligence.valueProp4Sub") },
+            ].map((card) => (
+              <div key={card.title} className="bg-white rounded-2xl border border-[#E8DDD4] p-5 sm:p-6 hover:border-[#C4613A]/30 transition-colors" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+                <div className="w-10 h-10 rounded-full bg-[#C4613A]/10 flex items-center justify-center mb-4">
+                  <Icon name={card.icon} size={20} className="text-[#C4613A]" />
                 </div>
-                <div className="relative rounded-2xl overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                  <ImageWithFallback src="/examples/annual-outfit-3.png" alt="AI-styled outfit — Rome" className="w-full aspect-[3/4] object-cover" />
-                  <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3">
-                    <span className="text-white text-[11px] sm:text-[13px]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Rome · Golden Hour</span>
-                  </div>
-                </div>
+                <h4 className="text-[16px] sm:text-[18px] text-[#292524] mb-2" style={{ fontFamily: displayFont }}>{card.title}</h4>
+                <p className="text-[12px] sm:text-[13px] text-[#57534e] leading-relaxed" style={{ fontFamily: bodyFont }}>{card.sub}</p>
               </div>
-              <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 bg-white rounded-xl px-4 py-2.5 sm:px-5 sm:py-3 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Icon name="auto_awesome" size={18} className="text-[#C4613A]" filled />
-                  <span className="text-[12px] sm:text-[14px] text-[#292524] whitespace-nowrap" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("section.intelligence.badge")}</span>
-                </div>
-              </div>
-            </div>
-            <div>
-              <p className="text-[15px] sm:text-[18px] text-[#57534e] mb-8" style={{ fontFamily: bodyFont, fontWeight: 300, lineHeight: 1.7 }}>
-                {t("section.intelligence.body2")}
-              </p>
-              <div className="flex gap-8 sm:gap-12">
-                <div>
-                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>30{t("section.intelligence.stat1Unit")}</span>
-                  <p className="text-[12px] sm:text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat1")}</p>
-                </div>
-                <div>
-                  <span className="text-[28px] sm:text-[36px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>4–6</span>
-                  <p className="text-[12px] sm:text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t("section.intelligence.stat2")}</p>
-                </div>
-              </div>
-            </div>
+            ))}
+          </div>
+
+          {/* Scenario text */}
+          <div className="mt-10 lg:mt-12 text-center max-w-[700px] mx-auto">
+            <p className="text-[15px] sm:text-[18px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: displayFont }}>
+              {t("section.intelligence.body2")}
+            </p>
           </div>
         </div>
       </section>
