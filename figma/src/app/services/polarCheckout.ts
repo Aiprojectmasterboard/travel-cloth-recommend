@@ -20,7 +20,7 @@
  *
  *  4. Product structure:
  *     - Standard (Free): one-time product → creates an Order
- *     - Pro ($4.99): one-time product → creates an Order
+ *     - Pro ($3.99): one-time product → creates an Order
  *     - Annual ($9.99/yr): subscription product → creates a Subscription
  *
  *  ARCHITECTURE:
@@ -64,7 +64,7 @@ export const POLAR_PRODUCTS = {
     productId: "YOUR_PRO_PRODUCT_ID",
     name: "Pro Capsule",
     type: "one_time" as const,
-    price: 499,       // cents ($4.99)
+    price: 399,       // cents ($3.99)
     currency: "usd",
   },
   annual: {

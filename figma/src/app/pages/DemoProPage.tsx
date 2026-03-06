@@ -95,7 +95,7 @@ export function DemoProPage() {
           className="text-[12px] uppercase tracking-[0.1em]"
           style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
         >
-          Demo Preview — Busan, South Korea &middot; Pro Plan ($4.99)
+          Demo Preview — Busan, South Korea &middot; Pro Plan ($3.99)
         </span>
         <button
           onClick={() => navigate("/onboarding/1")}

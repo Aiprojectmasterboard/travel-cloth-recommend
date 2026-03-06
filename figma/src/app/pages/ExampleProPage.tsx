@@ -13,7 +13,7 @@ import { useLang } from "../context/LanguageContext";
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE PRO PAGE                                          */
 /*  Showcases what a 170cm / 45kg female traveler would         */
-/*  receive after purchasing the Pro plan ($12 one-time).      */
+/*  receive after purchasing the Pro plan ($3.99 one-time).    */
 /*  This is a STANDALONE page — not the actual dashboard.     */
 /* ═══════════════════════════════════════════════════════════ */
 

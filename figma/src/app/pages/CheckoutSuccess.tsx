@@ -189,7 +189,7 @@ export function CheckoutSuccess() {
         const res = await fetch(`${WORKER_URL}/api/result/${tripId}`);
         if (res.ok) {
           // Payment confirmed — order exists
-          GA.checkoutSuccess(plan, plan === "pro" ? 12 : plan === "annual" ? 29 : 5);
+          GA.checkoutSuccess(plan, plan === "pro" ? 3.99 : plan === "annual" ? 9.99 : 0);
           setPurchasedPlan(plan);
           setStatus("confirmed");
           await new Promise((r) => setTimeout(r, 1500));
@@ -280,7 +280,7 @@ export function CheckoutSuccess() {
               </div>
               <div className="text-left">
                 <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  {plan === "standard" ? "Standard Plan \u2014 Free" : plan === "pro" ? "Pro Plan \u2014 $4.99" : "Annual Plan \u2014 $9.99/yr"}
+                  {plan === "standard" ? "Standard Plan \u2014 Free" : plan === "pro" ? "Pro Plan \u2014 $3.99" : "Annual Plan \u2014 $9.99/yr"}
                 </span>
                 <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
                   {plan === "standard" ? "AI outfit + capsule list + daily plan" : plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regen" : "12 trips/yr, priority AI, VIP concierge"}

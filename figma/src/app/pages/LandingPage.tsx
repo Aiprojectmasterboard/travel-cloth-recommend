@@ -584,7 +584,7 @@ export function LandingPage() {
               </span>
               <h3 className="text-white not-italic text-[28px]" style={{ fontFamily: displayFont }}>Pro</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$4.99</span>
+                <span className="text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$3.99</span>
                 <span className="text-[14px] text-white/70" style={{ fontFamily: bodyFont }}>{t("pricing.oneTime")}</span>
               </div>
               <span className="mt-1 text-[11px] text-white/40" style={{ fontFamily: "var(--font-mono)" }}>

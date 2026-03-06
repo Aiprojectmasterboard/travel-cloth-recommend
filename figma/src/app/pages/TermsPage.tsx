@@ -75,7 +75,7 @@ export function TermsPage() {
                 ]}
               />
               <PlanBox
-                name="Pro — $4.99"
+                name="Pro — $3.99"
                 type="One-time purchase"
                 items={[
                   "4–6 AI outfit images per city (ultra hi-res)",

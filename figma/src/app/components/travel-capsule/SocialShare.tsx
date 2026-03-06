@@ -18,12 +18,8 @@ export function SocialShareButton({ shareUrl: shareUrlProp, shareTitle: shareTit
   const buildShareUrl = (): string => {
     if (shareUrlProp) return shareUrlProp;
     if (typeof window === "undefined") return "";
-    const tripId = sessionStorage.getItem("tc_trip_id");
-    if (tripId) {
-      const base = window.location.origin;
-      return `${base}/share/${tripId}?utm_source=share&utm_medium=direct`;
-    }
-    return window.location.href;
+    const base = window.location.origin;
+    return `${base}/?utm_source=share&utm_medium=direct&utm_campaign=capsule`;
   };
 
   const resolvedShareUrl = buildShareUrl();

@@ -410,7 +410,7 @@ export function PreviewPage() {
                 className="h-[52px] w-full bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
-                Select Pro Plan ($4.99)
+                Select Pro Plan ($3.99)
               </button>
               <button
                 onClick={() => { setShowCityLimitModal(false); doCheckout("standard"); }}
@@ -703,7 +703,7 @@ export function PreviewPage() {
               </span>
               <h3 className="text-white not-italic text-[28px]" style={{ fontFamily: displayFont }}>Pro</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$4.99</span>
+                <span className="text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$3.99</span>
                 <span className="text-[14px] text-white/70" style={{ fontFamily: bodyFont }}>{t("pricing.oneTime")}</span>
               </div>
               <span className="mt-1 text-[11px] text-white/40" style={{ fontFamily: "var(--font-mono)" }}>

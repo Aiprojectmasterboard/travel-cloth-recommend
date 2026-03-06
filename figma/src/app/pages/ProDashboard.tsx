@@ -310,31 +310,18 @@ export function ProDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left */}
           <div className="lg:col-span-8 space-y-10">
-            {/* City hero */}
-            <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <ImageWithFallback src={currentSet.heroImg} alt={currentSet.city} className="w-full h-full object-cover" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-              <div className="absolute top-5 left-5 flex gap-2">
-                <TagChip label={`${currentSet.city}, ${currentSet.country}`} className="bg-white/20 text-white backdrop-blur-sm" />
-              </div>
-              <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
-                <div>
-                  <span className="text-[10px] uppercase tracking-[0.15em] text-white/70 block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{currentSet.dates}</span>
-                  <span className="text-[28px] text-white italic" style={{ fontFamily: "var(--font-display)" }}>{currentSet.outfits.length} AI Outfits</span>
-                </div>
+            {/* 2x2 outfit grid hero */}
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
+                  <em>{t("dashboard.yourCapsule").replace("{city}", currentSet.city)}</em>
+                </h2>
                 {!regenUsed && (
-                  <button onClick={() => setRegenUsed(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/30 text-white text-[12px] uppercase tracking-[0.08em] hover:bg-white/10 transition-colors cursor-pointer backdrop-blur-sm" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                    <Icon name="refresh" size={16} /> Regenerate (1 left)
+                  <button onClick={() => setRegenUsed(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#C4613A]/30 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/5 transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                    <Icon name="refresh" size={16} /> {t("dashboard.regenerate")} (1 {t("dashboard.left")})
                   </button>
                 )}
               </div>
-            </div>
-
-            {/* 2x2 outfit grid */}
-            <div>
-              <h2 className="text-[28px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>
-                Your <em>{currentSet.city} Capsule</em>
-              </h2>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
                 {currentSet.outfits.slice(0, 4).map((outfit, i) => {
                   const imgSrc = getOutfitImage(currentSet.city, i, outfit.image);
@@ -346,7 +333,7 @@ export function ProDashboard() {
                       {isLoading ? (
                         <div className="absolute inset-0 bg-gradient-to-b from-[#EFE8DF] to-[#d6cfc7] flex flex-col items-center justify-center gap-3">
                           <span className="w-10 h-10 border-3 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" />
-                          <span className="text-[11px] text-[#57534e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>Generating...</span>
+                          <span className="text-[11px] text-[#57534e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.generating")}</span>
                         </div>
                       ) : (
                         <img src={imgSrc} alt={outfit.title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = outfit.image; }} />
@@ -360,7 +347,7 @@ export function ProDashboard() {
                         </div>
                       )}
                       <div className="absolute bottom-3 left-3 right-3">
-                        <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
+                        <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.day")} {outfit.day}</span>
                         <span className="text-white text-[16px] italic block leading-tight" style={{ fontFamily: "var(--font-display)" }}>{outfit.title.split(" ")[0]}</span>
                       </div>
                     </button>
@@ -446,7 +433,7 @@ export function ProDashboard() {
                 <div className="flex items-center justify-between mb-2">
                   <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.multiCityPacking")}</h3>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-[0.1em] ${hasRealData ? "bg-[#C4613A]/10 text-[#C4613A]" : "bg-[#EFE8DF] text-[#57534e]"}`} style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                    {hasRealData ? "AI curated" : "Auto-derived"}
+                    {hasRealData ? t("dashboard.aiCurated") : t("dashboard.autoDerived")}
                   </span>
                 </div>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
@@ -463,7 +450,7 @@ export function ProDashboard() {
                           <div className="flex-1 min-w-0">
                             <span className="text-[13px] text-[#292524] truncate block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{ai.name}</span>
                             <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                              {ai.cities.length > 1 ? `${ai.cities.length} cities` : ai.cities[0]}
+                              {ai.cities.length > 1 ? t("dashboard.nCities").replace("{n}", String(ai.cities.length)) : ai.cities[0]}
                             </span>
                           </div>
                         </div>
@@ -475,7 +462,7 @@ export function ProDashboard() {
                         <ImageWithFallback src={mock.img} alt={mock.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
                         <div className="flex-1 min-w-0">
                           <span className="text-[13px] text-[#292524] truncate block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{mock.name}</span>
-                          <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Used in {mock.usageCount} looks</span>
+                          <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.usedInLooks").replace("{n}", String(mock.usageCount))}</span>
                         </div>
                       </div>
                     );
@@ -505,10 +492,10 @@ export function ProDashboard() {
                 <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.capsuleStats")}</h3>
                 <div className="space-y-3">
                   {[
-                    { icon: "public", label: "Cities", value: `${citySets.length}` },
-                    { icon: "style", label: "AI Outfits", value: `${allOutfits.length} looks` },
-                    { icon: "checkroom", label: "Packing Items", value: `${aiPackingList.length || packing.length} pieces` },
-                    { icon: "refresh", label: "Regenerations", value: regenUsed ? "0 left" : "1 left" },
+                    { icon: "public", label: t("dashboard.cities"), value: `${citySets.length}` },
+                    { icon: "style", label: t("dashboard.aiOutfits"), value: `${allOutfits.length} ${t("dashboard.looks")}` },
+                    { icon: "checkroom", label: t("dashboard.packingItems"), value: `${aiPackingList.length || packing.length} ${t("dashboard.pieces")}` },
+                    { icon: "refresh", label: t("dashboard.regenerations"), value: regenUsed ? `0 ${t("dashboard.left")}` : `1 ${t("dashboard.left")}` },
                   ].map((stat) => (
                     <div key={stat.label} className="flex items-center justify-between py-2 border-b border-[#EFE8DF] last:border-0">
                       <div className="flex items-center gap-2">

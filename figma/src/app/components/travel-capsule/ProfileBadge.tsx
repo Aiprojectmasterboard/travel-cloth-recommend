@@ -1,5 +1,6 @@
 import React from "react";
 import { Icon } from "./Icon";
+import { useLang } from "../../context/LanguageContext";
 
 interface ProfileBadgeProps {
   gender: string;
@@ -17,9 +18,10 @@ interface ProfileBadgeProps {
  * Shows gender, body info, aesthetics, and photo status.
  */
 export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUrl, bodyFitLabel }: ProfileBadgeProps) {
+  const { t } = useLang();
   const hasPhoto = !!(photo || faceUrl);
   const genderIcon = gender === "male" ? "male" : gender === "non-binary" ? "transgender" : "female";
-  const genderLabel = gender === "male" ? "Male" : gender === "non-binary" ? "Non-binary" : "Female";
+  const genderLabel = gender === "male" ? t("dashboard.male") : gender === "non-binary" ? t("dashboard.nonBinary") : t("dashboard.female");
 
   return (
     <div className="bg-white rounded-xl border border-[#E8DDD4] p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
@@ -30,10 +32,10 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
         </div>
         <div>
           <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>
-            AI Generation Profile
+            {t("dashboard.aiGenProfile")}
           </span>
           <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-            Outfits tailored to your data
+            {t("dashboard.outfitsTailored")}
           </span>
         </div>
       </div>
@@ -51,7 +53,7 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
         {/* Gender */}
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-            <Icon name={genderIcon} size={14} className="text-[#57534e]" /> Gender
+            <Icon name={genderIcon} size={14} className="text-[#57534e]" /> {t("dashboard.gender")}
           </span>
           <span className="text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
             {genderLabel}
@@ -62,7 +64,7 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
         {height && (
           <div className="flex items-center justify-between">
             <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-              <Icon name="straighten" size={14} className="text-[#57534e]" /> Height
+              <Icon name="straighten" size={14} className="text-[#57534e]" /> {t("dashboard.height")}
             </span>
             <span className="text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
               {height} cm
@@ -74,7 +76,7 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
         {weight && (
           <div className="flex items-center justify-between">
             <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-              <Icon name="fitness_center" size={14} className="text-[#57534e]" /> Weight
+              <Icon name="fitness_center" size={14} className="text-[#57534e]" /> {t("dashboard.weight")}
             </span>
             <span className="text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
               {weight} kg
@@ -85,7 +87,7 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
         {/* Photo status */}
         <div className="flex items-center justify-between">
           <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-            <Icon name="photo_camera" size={14} className="text-[#57534e]" /> Reference Photo
+            <Icon name="photo_camera" size={14} className="text-[#57534e]" /> {t("dashboard.refPhoto")}
           </span>
           {hasPhoto ? (
             <div className="flex items-center gap-2">
@@ -93,12 +95,12 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
                 <img src={faceUrl} alt="Reference" className="w-6 h-6 rounded-full object-cover border border-green-300" />
               )}
               <span className="text-[11px] text-green-600 flex items-center gap-1" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                <Icon name="check_circle" size={12} className="text-green-600" filled /> Uploaded
+                <Icon name="check_circle" size={12} className="text-green-600" filled /> {t("dashboard.uploaded")}
               </span>
             </div>
           ) : (
             <span className="text-[11px] text-[#57534e]/50" style={{ fontFamily: "var(--font-mono)" }}>
-              Not provided
+              {t("dashboard.notProvided")}
             </span>
           )}
         </div>
@@ -107,7 +109,7 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
         {aesthetics.length > 0 && (
           <div className="pt-2 border-t border-[#EFE8DF]">
             <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e] block mb-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              Style Preferences
+              {t("dashboard.stylePrefs")}
             </span>
             <div className="flex flex-wrap gap-1.5">
               {aesthetics.map((a) => (
@@ -127,6 +129,7 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
  * Inline badge shown on each outfit card to indicate AI personalization.
  */
 export function AiGeneratedBadge({ confidence, bodyFitLabel }: { confidence: number; bodyFitLabel: string }) {
+  const { t } = useLang();
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <span
@@ -134,7 +137,7 @@ export function AiGeneratedBadge({ confidence, bodyFitLabel }: { confidence: num
         style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}
       >
         <Icon name="auto_awesome" size={10} className="text-[#C4613A]" filled />
-        AI Generated · {confidence}% match
+        {t("dashboard.aiGenerated")} · {confidence}% {t("dashboard.match")}
       </span>
       <span
         className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#EFE8DF] text-[#57534e] text-[9px] tracking-[0.05em]"
