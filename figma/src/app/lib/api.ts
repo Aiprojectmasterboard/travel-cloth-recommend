@@ -153,3 +153,13 @@ export function fetchResult(tripId: string): Promise<ResultData> {
 export function captureEmail(tripId: string, email: string): Promise<{ ok: boolean }> {
   return apiPost<{ ok: boolean }>('/api/preview/email', { trip_id: tripId, email })
 }
+
+export interface RegenResponse {
+  ok: boolean
+  image_url: string
+  city: string
+}
+
+export function regenerateOutfit(tripId: string, city: string): Promise<RegenResponse> {
+  return apiPost<RegenResponse>('/api/regenerate', { trip_id: tripId, city })
+}

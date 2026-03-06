@@ -25,7 +25,7 @@ import {
   type CityOutfitSet,
   type PackingItem,
 } from "../services/outfitGenerator";
-import { WORKER_URL, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
+import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 
 /* ─── City hero images (fallback) ─── */
@@ -42,6 +42,8 @@ export function ProDashboard() {
   const [activeCity, setActiveCity] = useState(0);
   const [expandedOutfit, setExpandedOutfit] = useState(0);
   const [regenUsed, setRegenUsed] = useState(false);
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
   const { isLoggedIn, setShowSignupPrompt, purchasedPlan } = useAuth();
   const { data: onboarding } = useOnboarding();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
@@ -59,6 +61,33 @@ export function ProDashboard() {
       setPdfExporting(false);
     }
   }, [pdfExporting]);
+
+  const handleRegenerate = useCallback(async () => {
+    const activeSet = citySets[activeCity] || citySets[0];
+    if (regenUsed || regenLoading || !activeSet) return;
+    setRegenLoading(true);
+    setRegenError(null);
+    try {
+      const res = await regenerateOutfit(tripId || "", activeSet.city);
+      if (res.ok && res.image_url) {
+        setAiImages((prev) => {
+          const next = new Map(prev);
+          next.set(`${res.city}::outfit-${expandedOutfit + 1}`, res.image_url);
+          return next;
+        });
+        setRegenUsed(true);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("429") || msg.includes("regen_limit")) {
+        setRegenUsed(true);
+      }
+      setRegenError(msg.includes("regen_limit") ? t("dashboard.regenLimitReached") : msg.includes("no_order") ? t("dashboard.regenNoOrder") : t("dashboard.regenFailed"));
+      setTimeout(() => setRegenError(null), 5000);
+    } finally {
+      setRegenLoading(false);
+    }
+  }, [regenUsed, regenLoading, tripId, citySets, activeCity, expandedOutfit, t]);
 
   useEffect(() => {
     if (!purchasedPlan) navigate("/preview", { replace: true });
@@ -317,9 +346,12 @@ export function ProDashboard() {
                   <em>{t("dashboard.yourCapsule").replace("{city}", currentSet.city)}</em>
                 </h2>
                 {!regenUsed && (
-                  <button onClick={() => setRegenUsed(true)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#C4613A]/30 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/5 transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                    <Icon name="refresh" size={16} /> {t("dashboard.regenerate")} (1 {t("dashboard.left")})
+                  <button onClick={handleRegenerate} disabled={regenLoading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#C4613A]/30 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/5 transition-colors cursor-pointer disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                    {regenLoading ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="refresh" size={16} />} {regenLoading ? t("dashboard.generating") : `${t("dashboard.regenerate")} (1 ${t("dashboard.left")})`}
                   </button>
+                )}
+                {regenError && (
+                  <span className="text-[11px] text-red-500 ml-2" style={{ fontFamily: "var(--font-body)" }}>{regenError}</span>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">

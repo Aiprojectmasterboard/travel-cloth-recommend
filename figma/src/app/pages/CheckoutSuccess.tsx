@@ -283,7 +283,7 @@ export function CheckoutSuccess() {
                   {plan === "standard" ? "Standard Plan \u2014 Free" : plan === "pro" ? "Pro Plan \u2014 $3.99" : "Annual Plan \u2014 $9.99/yr"}
                 </span>
                 <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-                  {plan === "standard" ? "AI outfit + capsule list + daily plan" : plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regen" : "12 trips/yr, priority AI, VIP concierge"}
+                  {plan === "standard" ? "AI outfit + capsule list + daily plan" : plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regen" : "12 trips/yr, priority AI, 1 regen, VIP concierge"}
                 </span>
               </div>
             </div>

@@ -25,7 +25,7 @@ import {
   type GeneratedOutfit,
   type PackingItem,
 } from "../services/outfitGenerator";
-import type { CapsuleItem, WeatherData, VibeData } from "../lib/api";
+import { regenerateOutfit, type CapsuleItem, type WeatherData, type VibeData } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 
 /* ─── Static images ─── */
@@ -77,6 +77,9 @@ export function AnnualDashboard() {
   const { purchasedPlan } = useAuth();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [regenUsed, setRegenUsed] = useState(false);
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
   const handleExportPdf = useCallback(async () => {
@@ -88,6 +91,29 @@ export function AnnualDashboard() {
       setPdfExporting(false);
     }
   }, [pdfExporting]);
+
+  const handleRegenerate = useCallback(async () => {
+    if (regenUsed || regenLoading) return;
+    setRegenLoading(true);
+    setRegenError(null);
+    try {
+      const res = await regenerateOutfit(tripId || "", cityName);
+      if (res.ok && res.image_url) {
+        setRegenUsed(true);
+        // Reload result to get updated images
+        if (tripId) loadResult(tripId);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("429") || msg.includes("regen_limit")) {
+        setRegenUsed(true);
+      }
+      setRegenError(msg.includes("regen_limit") ? t("dashboard.regenLimitReached") : msg.includes("no_order") ? t("dashboard.regenNoOrder") : t("dashboard.regenFailed"));
+      setTimeout(() => setRegenError(null), 5000);
+    } finally {
+      setRegenLoading(false);
+    }
+  }, [regenUsed, regenLoading, tripId, cityName, t, loadResult]);
 
   useEffect(() => {
     if (!purchasedPlan) navigate("/preview", { replace: true });
@@ -208,9 +234,15 @@ export function AnnualDashboard() {
                       : "Oct 10 \u2013 31, 2026"}
                   </span>
                 </div>
-                <button className="hidden sm:block h-[36px] px-4 bg-white/20 backdrop-blur-sm text-white rounded-none text-[12px] uppercase tracking-[0.08em] hover:bg-white/30 transition-colors cursor-pointer border border-white/30" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  Regenerate Itinerary
-                </button>
+                {!regenUsed && (
+                  <button onClick={handleRegenerate} disabled={regenLoading} className="hidden sm:flex items-center gap-1.5 h-[36px] px-4 bg-white/20 backdrop-blur-sm text-white rounded-none text-[12px] uppercase tracking-[0.08em] hover:bg-white/30 transition-colors cursor-pointer border border-white/30 disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                    {regenLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Icon name="refresh" size={14} />}
+                    {regenLoading ? t("dashboard.generating") : `${t("dashboard.regenerate")} (1 ${t("dashboard.left")})`}
+                  </button>
+                )}
+                {regenError && (
+                  <span className="text-[11px] text-red-300 ml-2" style={{ fontFamily: "var(--font-body)" }}>{regenError}</span>
+                )}
               </div>
             </div>
 
