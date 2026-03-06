@@ -283,9 +283,9 @@ export function DemoProPage() {
                   className="bg-white rounded-2xl border border-[#ebdacc] p-5"
                   style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}
                 >
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex flex-col md:flex-row gap-6">
                     <div
-                      className="relative rounded-xl overflow-hidden"
+                      className="relative rounded-xl overflow-hidden flex-shrink-0 w-full md:w-[280px] lg:w-[320px]"
                       style={{ aspectRatio: "3/4" }}
                     >
                       <ImageWithFallback
@@ -315,7 +315,7 @@ export function DemoProPage() {
                         </div>
                       </div>
                     </div>
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h3
                         className="text-[20px] text-[#292524] mb-1"
                         style={{ fontFamily: "var(--font-display)" }}

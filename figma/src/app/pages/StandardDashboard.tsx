@@ -231,9 +231,9 @@ export function StandardDashboard() {
 
                       {expandedOutfit === idx && (
                         <div className="px-5 pb-6">
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div className="flex flex-col md:flex-row gap-6">
                             {/* Outfit image */}
-                            <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                            <div className="relative rounded-xl overflow-hidden flex-shrink-0 w-full md:w-[280px] lg:w-[320px]" style={{ aspectRatio: "3/4" }}>
                               <ImageWithFallback src={getOutfitImage(idx)} alt={title} className="w-full h-full object-cover" style={usesTeaserVariant(idx) ? outfitImageStyles[idx] : undefined} />
                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                               <div className="absolute top-3 left-3">
@@ -244,7 +244,7 @@ export function StandardDashboard() {
                             </div>
 
                             {/* Items breakdown */}
-                            <div>
+                            <div className="flex-1 min-w-0">
                               <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                                 {hasRealData ? "AI-Recommended Items" : "Outfit Breakdown"}
                               </span>
@@ -264,8 +264,8 @@ export function StandardDashboard() {
                                           <Icon name={iconName} size={20} className="text-[#57534e]" />
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2">
-                                            <span className="text-[14px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                                               {typeof capsuleItem === "string" ? capsuleItem : capsuleItem.name}
                                             </span>
                                             <SizeChip size={bodyFitLabel || "M"} />
