@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="6" fill="#C4613A"/>
+  <g transform="translate(4,3)" fill="none" stroke="#FDF8F3" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Suitcase body -->
+    <rect x="3" y="8" width="18" height="14" rx="2.5"/>
+    <!-- Handle -->
+    <path d="M9 8V5.5a3 3 0 0 1 3-3h0a3 3 0 0 1 3 3V8"/>
+    <!-- Belt -->
+    <line x1="3" y1="15" x2="21" y2="15"/>
+    <!-- Buckle -->
+    <rect x="10" y="13" width="4" height="4" rx="0.8" fill="#C4613A" stroke="#FDF8F3"/>
+  </g>
+</svg>

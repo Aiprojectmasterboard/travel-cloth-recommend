@@ -265,6 +265,13 @@ export function PreviewPage() {
             {[0, 1, 2, 3].map((idx) => {
               const isUnlocked = idx === 0 && !!preview?.teaser_url;
               const imgSrc = teaserUrl; // All 4 slots use the same teaser image
+              // Each locked slot gets a unique CSS treatment so they look like different images
+              const lockedStyles: React.CSSProperties[] = [
+                {},
+                { filter: "blur(12px) brightness(0.65) hue-rotate(15deg)", transform: "scale(1.15) scaleX(-1)" },
+                { filter: "blur(14px) brightness(0.6) saturate(1.3)", transform: "scale(1.2) rotate(2deg)" },
+                { filter: "blur(10px) brightness(0.55) hue-rotate(-20deg) contrast(1.1)", transform: "scale(1.25) scaleX(-1) rotate(-1deg)" },
+              ];
               return (
                 <div key={idx} className="group">
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
@@ -272,7 +279,7 @@ export function PreviewPage() {
                       src={imgSrc}
                       alt={`Outfit ${idx + 1}`}
                       className="w-full h-full object-cover transition-transform duration-500"
-                      style={isUnlocked ? { transform: "scale(1)" } : { filter: "blur(12px) brightness(0.7)", transform: "scale(1.1)" }}
+                      style={isUnlocked ? { transform: "scale(1)" } : lockedStyles[idx]}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     {!isUnlocked && (

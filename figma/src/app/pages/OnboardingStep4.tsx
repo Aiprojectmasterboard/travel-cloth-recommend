@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { OnboardingLayout } from "../components/travel-capsule/OnboardingLayout";
 import { ProgressBar, BtnPrimary, BtnSecondary, Icon } from "../components/travel-capsule";
@@ -8,6 +8,66 @@ import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 import { IMAGES } from "../constants/images";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
+
+/** Animated progress steps with percentage bar */
+function AnalyzingProgress({ steps }: { steps: string[] }) {
+  const [activeStep, setActiveStep] = useState(0);
+  const [percent, setPercent] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval>>();
+
+  useEffect(() => {
+    const stepDuration = 3000; // ms per step
+    const tickMs = 50;
+    let elapsed = 0;
+    intervalRef.current = setInterval(() => {
+      elapsed += tickMs;
+      const totalMs = steps.length * stepDuration;
+      const p = Math.min(Math.round((elapsed / totalMs) * 100), 95);
+      setPercent(p);
+      const step = Math.min(Math.floor(elapsed / stepDuration), steps.length - 1);
+      setActiveStep(step);
+    }, tickMs);
+    return () => clearInterval(intervalRef.current);
+  }, [steps.length]);
+
+  return (
+    <div className="mt-6">
+      {/* Progress bar */}
+      <div className="flex items-center gap-3 mb-4">
+        <div className="flex-1 h-2 bg-[#EFE8DF] rounded-full overflow-hidden">
+          <div
+            className="h-full bg-[#C4613A] rounded-full transition-all duration-200"
+            style={{ width: `${percent}%` }}
+          />
+        </div>
+        <span className="text-[13px] text-[#C4613A] tabular-nums min-w-[36px] text-right" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+          {percent}%
+        </span>
+      </div>
+      {/* Steps */}
+      <div className="space-y-3">
+        {steps.map((step, i) => {
+          const done = i < activeStep;
+          const current = i === activeStep;
+          return (
+            <div key={i} className="flex items-center gap-3">
+              {done ? (
+                <span className="material-symbols-outlined text-green-500" style={{ fontSize: 18, fontVariationSettings: "'FILL' 1" }}>check_circle</span>
+              ) : current ? (
+                <span className="w-[18px] h-[18px] border-2 border-[#C4613A] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <span className="w-[18px] h-[18px] rounded-full border-2 border-[#d6cfc7]" />
+              )}
+              <span className={`text-[13px] ${done ? "text-[#57534e]/50" : current ? "text-[#C4613A] font-medium" : "text-[#57534e]/40"}`} style={{ fontFamily: "var(--font-body)" }}>
+                {step}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
 
 export function OnboardingStep4() {
   const navigate = useNavigate();
@@ -232,21 +292,14 @@ export function OnboardingStep4() {
         </BtnPrimary>
       </div>
 
-      {/* Loading state detail */}
+      {/* Loading state detail with progress */}
       {submitting && (
-        <div className="mt-6 space-y-3">
-          {[
-            t("onboarding4.fetchingWeather"),
-            t("onboarding4.analyzingVibes"),
-            t("onboarding4.generatingStyle"),
-            t("onboarding4.buildingCapsule"),
-          ].map((step, i) => (
-            <div key={i} className="flex items-center gap-3 animate-pulse" style={{ animationDelay: `${i * 0.3}s` }}>
-              <span className="w-2 h-2 rounded-full bg-[#C4613A]" />
-              <span className="text-[13px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{step}</span>
-            </div>
-          ))}
-        </div>
+        <AnalyzingProgress steps={[
+          t("onboarding4.fetchingWeather"),
+          t("onboarding4.analyzingVibes"),
+          t("onboarding4.generatingStyle"),
+          t("onboarding4.buildingCapsule"),
+        ]} />
       )}
 
       {/* The Next Step */}

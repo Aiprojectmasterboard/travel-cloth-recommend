@@ -234,7 +234,7 @@ export function StandardDashboard() {
                                     const capsuleItem = typeof name === "string"
                                       ? apiCapsuleItems.find((c) => c.name === name) || { name, category: "", why: "", versatility_score: 0 }
                                       : name;
-                                    const catIcon: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                                    const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                                     const itemCat = typeof capsuleItem !== "string" ? capsuleItem.category?.toLowerCase() : "";
                                     const iconName = catIcon[itemCat] ?? "checkroom";
                                     return (
@@ -335,7 +335,7 @@ export function StandardDashboard() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {displayItems.map((item, i) => {
-                  const CAT_ICON: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                  const CAT_ICON: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                   const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
                   return (
                   <div key={i} className="group bg-white rounded-xl border border-[#E8DDD4] overflow-hidden hover:border-[#C4613A]/30 transition-colors">

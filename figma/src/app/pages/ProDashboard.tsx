@@ -269,7 +269,7 @@ export function ProDashboard() {
           <AiGeneratedBadge confidence={hasRealData ? 95 : 90} bodyFitLabel={bodyFitLabel} />
           {genStatus === "generating" && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> Generating AI outfits\u2026
+              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> Generating AI outfits…
             </span>
           )}
           {genStatus === "done" && aiImages.size > 0 && (
@@ -330,7 +330,10 @@ export function ProDashboard() {
                       className={`relative rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${expandedOutfit === i ? "border-[#C4613A] ring-2 ring-[#C4613A]/30" : "border-transparent hover:border-[#E8DDD4]"}`}
                       style={{ aspectRatio: "4/5" }}>
                       {isLoading ? (
-                        <div className="absolute inset-0 bg-[#EFE8DF] animate-pulse" />
+                        <div className="absolute inset-0 bg-gradient-to-b from-[#EFE8DF] to-[#d6cfc7] flex flex-col items-center justify-center gap-3">
+                          <span className="w-10 h-10 border-3 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" />
+                          <span className="text-[11px] text-[#57534e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>Generating...</span>
+                        </div>
                       ) : (
                         <img src={imgSrc} alt={outfit.title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = outfit.image; }} />
                       )}
@@ -377,7 +380,7 @@ export function ProDashboard() {
                       <div className="space-y-2">
                         {hasRealData ? (
                           apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5).map((item, i) => {
-                            const catIcon: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                            const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                             const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
                             return (
                             <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
@@ -435,7 +438,7 @@ export function ProDashboard() {
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {(aiPackingList.length > 0 ? aiPackingList : packing).slice(0, 15).map((item, i) => {
                     const isAi = aiPackingList.length > 0;
-                    const CAT_ICON: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", accessory: "watch" };
+                    const CAT_ICON: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", accessory: "watch" };
                     if (isAi) {
                       const ai = item as typeof aiPackingList[number];
                       return (

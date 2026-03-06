@@ -243,7 +243,7 @@ export function AnnualDashboard() {
                 <div className="space-y-2 mt-4">
                   {hasRealData ? (
                     apiCapsuleItems.slice(activeDayIdx * 3, activeDayIdx * 3 + 5).map((item, i) => {
-                      const catIcon: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                      const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                       const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
                       return (
                       <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
@@ -304,7 +304,7 @@ export function AnnualDashboard() {
               </div>
               <div className="space-y-2">
                 {displayPackingItems.slice(0, 10).map((item, i) => {
-                  const CAT_ICON: Record<string, string> = { top: "shirt", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                  const CAT_ICON: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                   const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
                   return (
                   <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
