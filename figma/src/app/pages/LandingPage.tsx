@@ -254,38 +254,66 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ==================== CAPSULES IN MOTION ==================== */}
+      {/* ==================== AI STYLED DESTINATIONS ==================== */}
       <section className="bg-[#FDF8F3] py-16 lg:py-32 px-6">
         <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
-          <div className="text-center mb-16">
-            <h2 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: displayFont }}>
-              {t("section.capsules.title").split(" ").slice(0, -1).join(" ")} <em>{t("section.capsules.title").split(" ").pop()}</em>
+          <div className="text-center mb-6">
+            <span className="text-[10px] uppercase tracking-[0.15em] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+              {t("section.capsules.label")}
+            </span>
+            <h2 className="mt-3 text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: displayFont }}>
+              {t("section.capsules.title")}
             </h2>
+            <p className="mt-3 text-[17px] text-[#57534e] max-w-[560px] mx-auto" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
+              {t("section.capsules.subtitle")}
+            </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-12">
             {[
-              { img: IMAGES.earthTone, tag: "Warm & Earthy", titleKey: "capsule.mediterranean", subKey: "capsule.mediterraneanSub" },
-              { img: IMAGES.streetwear, tag: "Urban Edge", titleKey: "capsule.tokyo", subKey: "capsule.tokyoSub" },
-              { img: IMAGES.resort, tag: "Relaxed Luxe", titleKey: "capsule.island", subKey: "capsule.islandSub" },
+              { img: IMAGES.earthTone, city: "Santorini", temp: "26°C", climate: "sunny", tag: "Warm & Earthy", titleKey: "capsule.mediterranean", subKey: "capsule.mediterraneanSub" },
+              { img: IMAGES.streetwear, city: "Tokyo", temp: "14°C", climate: "cloudy", tag: "Urban Edge", titleKey: "capsule.tokyo", subKey: "capsule.tokyoSub" },
+              { img: IMAGES.resort, city: "Maldives", temp: "30°C", climate: "tropical", tag: "Relaxed Luxe", titleKey: "capsule.island", subKey: "capsule.islandSub" },
             ].map((card) => (
-              <div key={card.titleKey} className="group cursor-pointer">
+              <div key={card.titleKey} className="group cursor-pointer" onClick={() => navigate("/onboarding/1")}>
                 <div className="relative overflow-hidden rounded-xl aspect-[3/4]">
                   <ImageWithFallback src={card.img} alt={t(card.titleKey)} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                  <div className="absolute top-4 left-4">
-                    <span className="px-3 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] uppercase tracking-[0.1em] text-white border border-white/20" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
-                      {card.tag}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                  {/* AI badge */}
+                  <div className="absolute top-4 left-4 flex items-center gap-2">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#C4613A]/90 backdrop-blur-sm rounded-full text-[9px] uppercase tracking-[0.1em] text-white" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                      <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Styled
                     </span>
                   </div>
-                </div>
-                <div className="mt-4">
-                  <h3 className="text-[24px] text-[#292524] not-italic" style={{ fontFamily: displayFont, fontWeight: 600 }}>
-                    {t(card.titleKey)}
-                  </h3>
-                  <p className="text-[14px] text-[#57534e] mt-1" style={{ fontFamily: bodyFont }}>{t(card.subKey)}</p>
+                  {/* Weather chip */}
+                  <div className="absolute top-4 right-4">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-white/15 backdrop-blur-sm rounded-full text-[10px] text-white border border-white/20" style={{ fontFamily: "var(--font-mono)", fontWeight: 500 }}>
+                      <Icon name="thermostat" size={12} className="text-white" /> {card.temp}
+                    </span>
+                  </div>
+                  {/* Bottom info overlay */}
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <span className="px-2.5 py-0.5 bg-white/15 backdrop-blur-sm rounded-full text-[9px] uppercase tracking-[0.1em] text-white/80 border border-white/15" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+                      {card.tag}
+                    </span>
+                    <h3 className="mt-2.5 text-[22px] text-white not-italic" style={{ fontFamily: displayFont, fontWeight: 600 }}>
+                      {t(card.titleKey)}
+                    </h3>
+                    <p className="text-[13px] text-white/70 mt-0.5" style={{ fontFamily: bodyFont }}>{t(card.subKey)}</p>
+                    {/* Inline CTA */}
+                    <div className="mt-3 flex items-center gap-1.5 text-white/90 group-hover:text-white transition-colors">
+                      <span className="text-[11px] uppercase tracking-[0.08em]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("section.capsules.tryCity")}</span>
+                      <Icon name="arrow_forward" size={14} className="transition-transform group-hover:translate-x-1" />
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
+          </div>
+          {/* Section CTA */}
+          <div className="mt-12 text-center">
+            <BtnPrimary onClick={() => navigate("/onboarding/1")} className="px-10">
+              {t("section.capsules.cta")}
+            </BtnPrimary>
           </div>
         </div>
       </section>
