@@ -265,7 +265,7 @@ export function StandardDashboard() {
                                         </div>
                                         <div className="flex-1 min-w-0">
                                           <div className="flex items-center gap-2">
-                                            <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                                            <span className="text-[14px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                                               {typeof capsuleItem === "string" ? capsuleItem : capsuleItem.name}
                                             </span>
                                             <SizeChip size={bodyFitLabel || "M"} />
@@ -363,7 +363,7 @@ export function StandardDashboard() {
                     <div className="p-4">
                       <div className="flex items-center gap-2 mb-2">
                         <Icon name={iconName} size={16} className="text-[#C4613A]" />
-                        <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                        <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
                       </div>
                       <span className="text-[10px] text-[#57534e] capitalize block" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
                       {hasRealData && item.why && (

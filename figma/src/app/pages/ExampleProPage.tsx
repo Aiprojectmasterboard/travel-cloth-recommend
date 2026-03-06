@@ -469,7 +469,7 @@ export function ExampleProPage() {
                           <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                           <SizeChip size={item.size} />
                         </div>
-                        <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
+                        <span className="text-[10px] text-[#57534e] truncate block" style={{ fontFamily: "var(--font-mono)" }}>
                           {t("examples.pro.usedIn")} {item.usageCount} {t("examples.pro.look")}{item.usageCount > 1 ? "s" : ""} · {item.cities.join(", ")}
                         </span>
                       </div>

@@ -224,7 +224,7 @@ export function OnboardingStep4() {
                   <ImageWithFallback src={c.imageUrl || IMAGES.paris} alt={c.city} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   <div className="absolute bottom-2 left-2 right-2">
-                    <span className="text-white text-[16px] italic block" style={{ fontFamily: "var(--font-display)" }}>{c.city}</span>
+                    <span className="text-white text-[16px] italic block truncate" style={{ fontFamily: "var(--font-display)" }}>{c.city}</span>
                     <span className="text-white/70 text-[10px]" style={{ fontFamily: "var(--font-mono)" }}>
                       {c.fromDate ? new Date(c.fromDate).toLocaleDateString(lang, { month: "short", day: "numeric" }) : ""} {c.fromDate && c.toDate ? "\u2013" : ""} {c.toDate ? new Date(c.toDate).toLocaleDateString(lang, { month: "short", day: "numeric" }) : ""}
                     </span>
@@ -273,7 +273,7 @@ export function OnboardingStep4() {
                   </span>
                   <div className="flex flex-wrap gap-2">
                     {data.cities.map((c) => (
-                      <span key={c.id} className="px-2 py-0.5 bg-[#EFE8DF] rounded-full text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-body)" }}>
+                      <span key={c.id} className="px-2 py-0.5 bg-[#EFE8DF] rounded-full text-[12px] text-[#292524] truncate max-w-[200px]" style={{ fontFamily: "var(--font-body)" }}>
                         {c.city}, {c.country}
                       </span>
                     ))}

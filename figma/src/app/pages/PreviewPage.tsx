@@ -451,7 +451,7 @@ export function PreviewPage() {
           {t("preview.step")}
         </span>
 
-        <h1 className="mt-4 text-[#292524] italic whitespace-pre-line" style={{ fontSize: "clamp(40px, 5vw, 72px)", fontFamily: displayFont, lineHeight: 1.05 }}>
+        <h1 className="mt-4 text-[#292524] italic whitespace-pre-line break-words" style={{ fontSize: "clamp(40px, 5vw, 72px)", fontFamily: displayFont, lineHeight: 1.05 }}>
           {moodLabel}
         </h1>
         <p className="mt-4 text-[18px] text-[#57534e] max-w-[600px]" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
@@ -606,7 +606,7 @@ export function PreviewPage() {
                 <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A] block mb-1" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                   {t(item.labelKey)}
                 </span>
-                <span className="text-[20px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.value}</span>
+                <span className="text-[20px] text-[#292524] truncate block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.value}</span>
               </div>
             ))}
           </div>
