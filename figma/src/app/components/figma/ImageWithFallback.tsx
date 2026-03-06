@@ -21,8 +21,7 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
   if (didError) {
     return (
       <div
-        className={`inline-block bg-gray-100 text-center align-middle ${className ?? ''}`}
-        style={style}
+        className={`bg-gray-100 text-center overflow-hidden ${className ?? ''}`}
       >
         <div className="flex items-center justify-center w-full h-full">
           <img src={ERROR_IMG_SRC} alt="Error loading image" {...rest} data-original-url={src} />
@@ -32,14 +31,14 @@ export function ImageWithFallback(props: React.ImgHTMLAttributes<HTMLImageElemen
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className={`relative overflow-hidden ${className ?? ''}`}>
       {isLoading && (
-        <div className={`absolute inset-0 bg-gradient-to-b from-[#EFE8DF] to-[#d6cfc7] flex flex-col items-center justify-center gap-2 z-10 ${className ?? ''}`} style={style}>
+        <div className="absolute inset-0 bg-gradient-to-b from-[#EFE8DF] to-[#d6cfc7] flex flex-col items-center justify-center gap-2 z-10">
           <span className="w-8 h-8 border-[3px] border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" />
           <span className="text-[10px] text-[#57534e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>Loading...</span>
         </div>
       )}
-      <img src={src} alt={alt} className={className} style={style} {...rest} onError={handleError} onLoad={handleLoad} />
+      <img src={src} alt={alt} className="w-full h-full object-cover" style={style} {...rest} onError={handleError} onLoad={handleLoad} />
     </div>
   )
 }

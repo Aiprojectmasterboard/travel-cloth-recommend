@@ -658,6 +658,11 @@ export function LandingPage() {
             ))}
           </div>
         </div>
+        <div className="mx-auto mt-8 pt-6 border-t border-[#EFE8DF] text-center" style={{ maxWidth: "var(--max-w)" }}>
+          <span className="text-[11px] text-[#57534e]/60 tracking-[0.05em]" style={{ fontFamily: bodyFont }}>
+            &copy; {new Date().getFullYear()} Travel Capsule AI &mdash; All Rights Reserved.
+          </span>
+        </div>
       </footer>
     </div>
   );
