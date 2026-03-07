@@ -246,6 +246,85 @@ app.get('/api/health', (c) =>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 1b. GET /api/test-gemini — Diagnostic: test Gemini image generation directly
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.get('/api/test-gemini', async (c) => {
+  if (!c.env.NANOBANANA_API_KEY) {
+    return c.json({ ok: false, error: 'NANOBANANA_API_KEY not configured' }, 500);
+  }
+
+  const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
+  const MODEL = 'gemini-3.1-flash-image-preview';
+
+  try {
+    const body = {
+      contents: [{
+        parts: [{ text: 'Generate a photorealistic full-body fashion photograph of a young man wearing a casual summer outfit, standing in front of a tropical beach. Professional photography, natural lighting, 4K quality.' }],
+      }],
+      generationConfig: {
+        responseModalities: ['IMAGE', 'TEXT'],
+        imageConfig: { aspectRatio: '3:4', imageSize: '2K' },
+      },
+    };
+
+    const res = await fetch(`${GEMINI_BASE}/models/${MODEL}:generateContent`, {
+      method: 'POST',
+      headers: {
+        'x-goog-api-key': c.env.NANOBANANA_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(45_000),
+    });
+
+    const status = res.status;
+    const rawText = await res.text();
+
+    if (!res.ok) {
+      return c.json({ ok: false, error: `Gemini HTTP ${status}`, detail: rawText.slice(0, 500) }, 200);
+    }
+
+    let data: Record<string, unknown>;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      return c.json({ ok: false, error: 'Gemini returned non-JSON', detail: rawText.slice(0, 300) }, 200);
+    }
+
+    const candidates = data.candidates as Array<{ content?: { parts?: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> }; finishReason?: string }> | undefined;
+    const parts = candidates?.[0]?.content?.parts;
+    const hasImage = parts?.some((p) => p.inlineData?.data);
+    const textParts = parts?.filter((p) => p.text).map((p) => p.text).join(' ');
+    const finishReason = candidates?.[0]?.finishReason;
+
+    // If image generated, try storing to R2
+    let r2Url: string | null = null;
+    if (hasImage) {
+      const imgPart = parts!.find((p) => p.inlineData?.data)!;
+      const binaryString = atob(imgPart.inlineData!.data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+      const key = `temp/test-gemini-${Date.now()}.png`;
+      await c.env.R2.put(key, bytes.buffer, { httpMetadata: { contentType: 'image/png' } });
+      r2Url = `${c.env.R2_PUBLIC_URL}/${key}`;
+    }
+
+    return c.json({
+      ok: hasImage,
+      gemini_status: status,
+      has_image: hasImage,
+      finish_reason: finishReason,
+      text_response: textParts?.slice(0, 200) || null,
+      r2_url: r2Url,
+      api_error: (data as { error?: { message?: string } }).error?.message || null,
+    });
+  } catch (err) {
+    return c.json({ ok: false, error: (err as Error).message }, 200);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2. POST /api/preview
 // ─────────────────────────────────────────────────────────────────────────────
 // Creates a trip, runs the free-tier preview pipeline (weather+vibe+teaser+

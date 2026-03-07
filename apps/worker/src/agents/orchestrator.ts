@@ -57,6 +57,8 @@ export interface PreviewResponse {
   capsule: CapsuleResult;
   vibes: VibeResult[];
   weather: WeatherResult[];
+  /** Non-null if teaser AI generation failed (diagnostic info) */
+  teaser_error?: string | null;
 }
 
 // ─── Face Cleanup Helper ──────────────────────────────────────────────────────
@@ -585,6 +587,7 @@ export async function runPreview(
       ? `${staticBase}/annual-outfit-1.png`
       : `${staticBase}/pro-outfit-1.png`;
 
+    let teaserError: string | null = null;
     if (firstVibe) {
       try {
         const teaser = await teaserAgent(
@@ -607,7 +610,8 @@ export async function runPreview(
         );
         teaserUrl = teaser.image_url;
       } catch (err) {
-        console.warn(`[runPreview] Teaser AI generation failed, using fallback:`, (err as Error).message);
+        teaserError = (err as Error).message;
+        console.error(`[runPreview] Teaser AI generation FAILED for trip ${trip_id}:`, teaserError);
         teaserUrl = fallbackTeaser;
       }
     } else {
@@ -669,6 +673,7 @@ export async function runPreview(
       capsule,
       vibes: vibeResults,
       weather: weatherResults,
+      teaser_error: teaserError,
     };
   } catch (err) {
     await sbPatch(env, `/trips?id=eq.${trip_id}`, { status: 'failed' });
