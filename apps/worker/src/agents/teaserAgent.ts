@@ -114,7 +114,7 @@ async function generateNanoBanana(
     const faceData = await fetchImageAsBase64(faceUrl);
     if (faceData) {
       parts.push({ inlineData: { mimeType: faceData.mimeType, data: faceData.data } });
-      parts.push({ text: 'This is a reference photo. Generate a new fashion image inspired by this person\'s general appearance (similar build, hair color, and style). Dress them in a completely new travel-appropriate outfit for the destination. This is for a travel fashion styling service.' });
+      parts.push({ text: 'This is a reference photo of the person. Generate a new fashion editorial image featuring a person with the same general appearance — similar face shape, skin tone, hair color, body build. Dress them in a completely new travel-appropriate outfit for the destination as described below. This is for a travel fashion styling service.' });
     }
   }
 
