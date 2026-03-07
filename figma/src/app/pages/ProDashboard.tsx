@@ -96,6 +96,12 @@ export function ProDashboard() {
     if (tripId && !result && !tripLoading) loadResult(tripId);
   }, [tripId, result, tripLoading, loadResult]);
 
+  // ─── IMPORTANT: Declare apiResultImages BEFORE any useEffect that references it.
+  // Moving this after hooks that reference it causes TDZ (Temporal Dead Zone) crash
+  // in production minified builds ("Cannot access 'X' before initialization").
+  const apiResultImages: ResultImage[] = result?.images || [];
+  const hasApiImages = apiResultImages.length > 0;
+
   // Re-poll for images if result loaded but has no full images yet
   // (webhook pipeline may still be generating)
   useEffect(() => {
@@ -118,10 +124,6 @@ export function ProDashboard() {
 
   interface AiItem { name: string; category: string; desc: string; essential: boolean; }
   const [aiOutfitItems, setAiOutfitItems] = useState<Record<string, AiItem[]>>({});
-
-  // Skip client-side generation if API result already has images (webhook pipeline)
-  const apiResultImages: ResultImage[] = result?.images || [];
-  const hasApiImages = apiResultImages.length > 0;
 
   useEffect(() => {
     // If the webhook pipeline already produced images, skip /api/generate

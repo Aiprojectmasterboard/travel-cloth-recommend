@@ -30,7 +30,7 @@ import {
   type GeneratedOutfit,
   type PackingItem,
 } from "../services/outfitGenerator";
-import type { CapsuleItem, DayPlan, WeatherData, VibeData } from "../lib/api";
+import { pollTeaser, type CapsuleItem, type DayPlan, type WeatherData, type VibeData } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { createCheckoutSession } from "../services/polarCheckout";
 import { GA } from "../lib/analytics";
@@ -128,7 +128,33 @@ export function StandardDashboard() {
   const apiCapsuleItems: CapsuleItem[] = result?.capsule?.items || [];
   const apiDailyPlan: DayPlan[] = result?.capsule?.daily_plan || [];
   const apiImages = result?.images || [];
-  const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
+
+  // ─── Teaser URL: API result > sessionStorage preview > poll fallback ────
+  const [polledTeaser, setPolledTeaser] = useState("");
+  const teaserUrl = result?.teaser_url || preview?.teaser_url || polledTeaser || "";
+
+  // Poll for AI teaser image if not yet available (handles post-checkout redirect)
+  useEffect(() => {
+    if (teaserUrl || !tripId) return;
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 20; // ~60s total
+    const poll = async () => {
+      while (!cancelled && attempts < maxAttempts) {
+        attempts++;
+        try {
+          const res = await pollTeaser(tripId);
+          if (res.status === "ready" && res.teaser_url) {
+            setPolledTeaser(res.teaser_url);
+            return;
+          }
+        } catch { /* ignore */ }
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [tripId, teaserUrl]);
 
   const hasRealData = apiCapsuleItems.length > 0;
 

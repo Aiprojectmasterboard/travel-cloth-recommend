@@ -316,6 +316,15 @@ export function PreviewPage() {
           if (result.status === 'ready' && result.teaser_url) {
             setPolledTeaserUrl(result.teaser_url);
             setTeaserReady(true);
+            // Persist teaser_url to sessionStorage so it survives checkout redirect
+            try {
+              const raw = sessionStorage.getItem("tc_preview_data");
+              if (raw) {
+                const saved = JSON.parse(raw);
+                saved.teaser_url = result.teaser_url;
+                sessionStorage.setItem("tc_preview_data", JSON.stringify(saved));
+              }
+            } catch { /* ignore */ }
             return;
           }
           if (result.status === 'fallback' && result.teaser_url) {
