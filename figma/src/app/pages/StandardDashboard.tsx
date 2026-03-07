@@ -158,10 +158,11 @@ export function StandardDashboard() {
         { day: 7, activity: "Departure" },
       ];
 
-  // Which outfit image to show — API images > teaser (all slots) > mock
+  // Which outfit image to show — API images > teaser (personalized) > mock
   // Standard plan: 1 AI teaser + 3 CSS variants = all 4 slots use teaser after signup
   const getOutfitImage = (idx: number): string => {
     if (apiImages.length > idx) return apiImages[idx].url;
+    // Use teaser image (personalized from preview) as better fallback than mock
     if (teaserUrl) return teaserUrl;
     return mockOutfits[idx]?.image || FALLBACK_HERO;
   };

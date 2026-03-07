@@ -138,6 +138,13 @@ export function AnnualDashboard() {
     if (tripId && !result && !tripLoading) loadResult(tripId);
   }, [tripId, result, tripLoading, loadResult]);
 
+  // Re-poll for images if result loaded but has no full images yet
+  useEffect(() => {
+    if (!tripId || !result || (result?.images?.length ?? 0) > 0 || tripLoading) return;
+    const timer = setTimeout(() => loadResult(tripId), 15000);
+    return () => clearTimeout(timer);
+  }, [tripId, result, tripLoading, loadResult]);
+
   // ─── Extract real API data ───
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
   const apiVibes: VibeData[] = result?.vibes || preview?.vibes || [];
@@ -179,8 +186,13 @@ export function AnnualDashboard() {
   const primaryStyle = styleDNA[0]?.label || "Minimalist";
   const primaryPercent = styleDNA[0]?.percent || 88;
 
+  // Teaser URL from API result (personalized AI image from preview)
+  const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
+
   const getOutfitImage = (idx: number): string => {
     if (apiImages.length > idx) return apiImages[idx].url;
+    // Use teaser image (personalized from preview) as better fallback than mock
+    if (teaserUrl) return teaserUrl;
     return outfits[idx]?.image || IMG.tokyoMap;
   };
 
@@ -239,7 +251,7 @@ export function AnnualDashboard() {
           <div className="lg:col-span-8 space-y-8">
             {/* Hero */}
             <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "16/9" }}>
-              <ImageWithFallback src={IMG.tokyoMap} alt={`${cityName} map`} className="w-full h-full object-cover" />
+              <ImageWithFallback src={teaserUrl || apiImages[0]?.url || IMG.tokyoMap} alt={`${cityName} map`} className="w-full h-full object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
               <div className="absolute bottom-5 left-5 right-5 flex items-end justify-between">
                 <div>

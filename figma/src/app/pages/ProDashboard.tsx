@@ -112,6 +112,14 @@ export function ProDashboard() {
     if (tripId && !result && !tripLoading) loadResult(tripId);
   }, [tripId, result, tripLoading, loadResult]);
 
+  // Re-poll for images if result loaded but has no full images yet
+  // (webhook pipeline may still be generating)
+  useEffect(() => {
+    if (!tripId || !result || apiResultImages.length > 0 || tripLoading) return;
+    const timer = setTimeout(() => loadResult(tripId), 15000);
+    return () => clearTimeout(timer);
+  }, [tripId, result, apiResultImages.length, tripLoading, loadResult]);
+
   useEffect(() => {
     if (!isLoggedIn) {
       const timer = setTimeout(() => setShowSignupPrompt(true), 5000);
@@ -228,7 +236,7 @@ export function ProDashboard() {
         city: c.city,
         country: c.country,
         dates: `${new Date(c.fromDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} \u2013 ${new Date(c.toDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
-        heroImg: CITY_HEROES[key] || CITY_HEROES.paris,
+        heroImg: CITY_HEROES[key] || (teaserUrl ? teaserUrl : CITY_HEROES.paris),
         weather: {
           temp: weatherInfo ? Math.round(weatherInfo.temperature_day_avg) : 15,
           rain: weatherInfo ? Math.round(weatherInfo.precipitation_prob * 100) : 20,
@@ -281,13 +289,23 @@ export function ProDashboard() {
   const currentSet = citySets[activeCity] || citySets[0];
   if (!currentSet) return null;
 
-  // Get image for outfit: check API images first, then AI generated, then mock
+  // Teaser URL from API result (personalized AI image from preview)
+  const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
+
+  // Get image for outfit: API images > AI generated > teaser (personalized) > mock
   const getOutfitImage = (cityName: string, idx: number, fallback: string): string => {
+    // 1. Check webhook-pipeline images (result.images[])
     const apiImg = apiResultImages.find((img) => img.city.toLowerCase() === cityName.toLowerCase() && img.index === idx);
     if (apiImg) return apiImg.url;
+    // Also check by sequential index if city has no match (single-city trips)
+    const apiByIdx = apiResultImages[idx];
+    if (apiByIdx) return apiByIdx.url;
+    // 2. Check client-side generated images
     const aiKey = `${cityName}::outfit-${idx + 1}`;
     const aiUrl = aiImages.get(aiKey);
     if (aiUrl) return aiUrl;
+    // 3. Use teaser image (personalized from preview) as better fallback than mock
+    if (teaserUrl) return teaserUrl;
     return fallback;
   };
 
@@ -331,11 +349,11 @@ export function ProDashboard() {
               <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> {t("dashboard.generatingOutfits")}
             </span>
           )}
-          {genStatus === "done" && aiImages.size > 0 && (
+          {(genStatus === "done" && aiImages.size > 0) || apiResultImages.length > 0 ? (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(aiImages.size))}
+              <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(apiResultImages.length || aiImages.size))}
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* City tabs */}

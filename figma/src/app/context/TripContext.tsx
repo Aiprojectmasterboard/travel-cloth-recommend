@@ -140,16 +140,30 @@ export function TripProvider({ children }: { children: ReactNode }) {
     const MAX_POLLS = 30;
     const POLL_INTERVAL = 3000;
 
+    let bestResult: ResultData | null = null;
+
     for (let i = 0; i < MAX_POLLS; i++) {
       try {
         const result = await fetchResult(tripId);
 
-        // Check if result is ready (has capsule items or images)
-        if (
-          result.capsule?.items?.length > 0 ||
-          result.images?.length > 0 ||
-          result.teaser_url
-        ) {
+        // Track best result seen so far (most complete data)
+        if (result.teaser_url || result.images?.length > 0 || result.capsule?.items?.length > 0) {
+          bestResult = result;
+        }
+
+        // For pro/annual plans, wait for AI-generated images (not just teaser)
+        const isPaidImagePlan = result.plan === "pro" || result.plan === "annual";
+        const hasFullImages = result.images?.length > 0;
+        const hasCapsule = result.capsule?.items?.length > 0;
+
+        // Ready conditions:
+        // - Pro/Annual: need images[] OR capsule items (images may still be generating)
+        // - Standard: teaser_url is sufficient
+        const isReady = isPaidImagePlan
+          ? hasFullImages || (hasCapsule && i >= 10) // After 10 polls, accept capsule-only
+          : (hasCapsule || hasFullImages || !!result.teaser_url);
+
+        if (isReady) {
           setState((s) => ({
             ...s,
             tripId,
@@ -177,6 +191,19 @@ export function TripProvider({ children }: { children: ReactNode }) {
       }
 
       await new Promise((r) => setTimeout(r, POLL_INTERVAL));
+    }
+
+    // If we have partial data, return it rather than showing an error
+    if (bestResult) {
+      setState((s) => ({
+        ...s,
+        tripId,
+        result: bestResult,
+        loading: false,
+        error: null,
+        phase: "ready",
+      }));
+      return bestResult;
     }
 
     setState((s) => ({
