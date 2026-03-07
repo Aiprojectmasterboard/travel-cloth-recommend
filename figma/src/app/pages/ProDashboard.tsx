@@ -431,8 +431,9 @@ export function ProDashboard() {
               {/* Expanded outfit detail */}
               {expandedOutfit >= 0 && expandedOutfit < currentSet.outfits.length && (
                 <div className="bg-white rounded-2xl border border-[#ebdacc] p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-                  <div className="space-y-6">
-                    <div className="relative rounded-xl overflow-hidden w-full max-w-[400px]" style={{ aspectRatio: "3/4" }}>
+                  <div className="flex flex-col md:flex-row gap-6">
+                    {/* Outfit image — fixed width on desktop */}
+                    <div className="relative rounded-xl overflow-hidden w-full md:w-[320px] lg:w-[360px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
                       <ImageWithFallback
                         src={getOutfitImage(currentSet.city, expandedOutfit, currentSet.outfits[expandedOutfit].image)}
                         alt={currentSet.outfits[expandedOutfit].title}
@@ -456,10 +457,14 @@ export function ProDashboard() {
                         </div>
                       </div>
                     </div>
-                    <div>
-                      <h3 className="text-[20px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>
+                    {/* Outfit breakdown — right side on desktop */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-[20px] text-[#292524] mb-1" style={{ fontFamily: "var(--font-display)" }}>
                         {currentSet.outfits[expandedOutfit].title}
                       </h3>
+                      <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: "var(--font-mono)" }}>
+                        Outfit Breakdown · Your Sizes
+                      </span>
                       <div className="space-y-2">
                         {hasRealData ? (
                           apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5).map((item, i) => {
