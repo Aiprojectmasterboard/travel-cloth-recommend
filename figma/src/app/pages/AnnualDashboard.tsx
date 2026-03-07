@@ -25,7 +25,7 @@ import {
   type GeneratedOutfit,
   type PackingItem,
 } from "../services/outfitGenerator";
-import { regenerateOutfit, type CapsuleItem, type WeatherData, type VibeData } from "../lib/api";
+import { WORKER_URL, regenerateOutfit, type CapsuleItem, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { SEO } from "../components/SEO";
 
@@ -145,11 +145,72 @@ export function AnnualDashboard() {
     return () => clearTimeout(timer);
   }, [tripId, result, tripLoading, loadResult]);
 
+  // ─── AI Image Generation (client-side fallback) ───
+  const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
+  const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
+  const generationStarted = useRef(false);
+
+  const apiResultImages: ResultImage[] = result?.images || [];
+  const hasApiImages = apiResultImages.length > 0;
+
+  useEffect(() => {
+    if (hasApiImages) { setGenStatus("done"); return; }
+    if (generationStarted.current) return;
+    generationStarted.current = true;
+
+    let cancelled = false;
+    async function generateImages() {
+      try {
+        setGenStatus("generating");
+        const face_url = onboarding.faceUrl || undefined;
+        const resolvedCities =
+          onboarding.cities.length > 0
+            ? onboarding.cities.map((c) => ({ city: c.city, country: c.country }))
+            : result?.cities?.length
+            ? result.cities.map((c: { name: string; country: string }) => ({ city: c.name, country: c.country }))
+            : [{ city: "Tokyo", country: "Japan" }];
+
+        const ht = parseFloat(onboarding.height) || result?.height_cm || 0;
+        const wt = parseFloat(onboarding.weight) || result?.weight_kg || 0;
+
+        const res = await fetch(`${WORKER_URL}/api/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            cities: resolvedCities,
+            gender: onboarding.gender || result?.gender || "female",
+            height_cm: ht > 0 ? ht : undefined,
+            weight_kg: wt > 0 ? wt : undefined,
+            aesthetics: onboarding.aesthetics?.length ? onboarding.aesthetics : result?.aesthetics ?? [],
+            face_url,
+            count_per_city: 4,
+          }),
+        });
+        if (cancelled) return;
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = (await res.json()) as {
+          images: Array<{ city: string; mood: string; image_url?: string; success: boolean }>;
+        };
+        const newMap = new Map<string, string>();
+        for (const img of data.images) {
+          if (img.success && img.image_url) newMap.set(`${img.city}::${img.mood}`, img.image_url);
+        }
+        if (!cancelled) { setAiImages(newMap); setGenStatus("done"); }
+      } catch (err) {
+        if (!cancelled) { console.error("[AnnualDashboard] Generation error:", err); setGenStatus("error"); }
+      }
+    }
+    generateImages();
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasApiImages]);
+
   // ─── Extract real API data ───
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
   const apiVibes: VibeData[] = result?.vibes || preview?.vibes || [];
   const apiCapsuleItems: CapsuleItem[] = result?.capsule?.items || [];
-  const apiImages = result?.images || [];
+  const apiImages = apiResultImages;
   const hasRealData = apiCapsuleItems.length > 0;
 
   // Use onboarding data first; fall back to API result profile (survives page refresh)
@@ -211,8 +272,13 @@ export function AnnualDashboard() {
   const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
 
   const getOutfitImage = (idx: number): string => {
+    // 1. Webhook pipeline images
     if (apiImages.length > idx) return apiImages[idx].url;
-    // Use teaser image (personalized from preview) as better fallback than mock
+    // 2. Client-side generated images
+    const aiKey = `${cityName}::outfit-${idx + 1}`;
+    const aiUrl = aiImages.get(aiKey);
+    if (aiUrl) return aiUrl;
+    // 3. Teaser image (personalized from preview) as fallback
     if (teaserUrl) return teaserUrl;
     return outfits[idx]?.image || IMG.tokyoMap;
   };
@@ -257,8 +323,18 @@ export function AnnualDashboard() {
         <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
           Your annual membership is active. {hasRealData ? "AI-curated results ready." : "Results generating..."}
         </p>
-        <div className="mt-3">
+        <div className="mt-3 flex items-center gap-3 flex-wrap">
           <AiGeneratedBadge confidence={hasRealData ? 95 : 92} bodyFitLabel={bodyFitLabel} />
+          {genStatus === "generating" && (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> Generating AI outfits...
+            </span>
+          )}
+          {(genStatus === "done" && aiImages.size > 0) || apiResultImages.length > 0 ? (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+              <Icon name="check_circle" size={14} className="text-green-600" /> {apiResultImages.length || aiImages.size} AI images ready
+            </span>
+          ) : null}
         </div>
         <div className="mt-5 max-w-[400px]">
           <TripUsageBar used={4} total={12} renewMonth="Jan 2027" />
@@ -306,10 +382,17 @@ export function AnnualDashboard() {
                   <button key={outfit.id} onClick={() => setActiveDayIdx(i)}
                     className={`flex-shrink-0 w-[200px] rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${activeDayIdx === i ? "border-[#C4613A] ring-1 ring-[#C4613A]/30" : "border-transparent hover:border-[#E8DDD4]"}`}>
                     <div className="relative h-[240px]">
-                      <ImageWithFallback src={getOutfitImage(i)} alt={outfit.title} className="w-full h-full object-cover" />
+                      {genStatus === "generating" && !aiImages.has(`${cityName}::outfit-${i + 1}`) && apiImages.length <= i ? (
+                        <div className="absolute inset-0 bg-gradient-to-b from-[#EFE8DF] to-[#d6cfc7] flex flex-col items-center justify-center gap-3">
+                          <span className="w-10 h-10 border-3 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" />
+                          <span className="text-[11px] text-[#57534e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>Generating...</span>
+                        </div>
+                      ) : (
+                        <ImageWithFallback src={getOutfitImage(i)} alt={outfit.title} className="w-full h-full object-cover" />
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                       <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
-                        {apiImages.length > i ? (
+                        {apiImages.length > i || aiImages.has(`${cityName}::outfit-${i + 1}`) ? (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[8px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
                             <Icon name="auto_awesome" size={8} className="text-white" filled /> AI
                           </span>

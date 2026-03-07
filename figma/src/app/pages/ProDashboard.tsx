@@ -252,6 +252,10 @@ export function ProDashboard() {
     return [{ city: "Paris", country: "France", fromDate: "2026-03-15", toDate: "2026-03-21" }];
   }, [result, onboarding.cities]);
 
+  // Teaser URL from API result (personalized AI image from preview)
+  // IMPORTANT: must be declared BEFORE citySets useMemo which references it
+  const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
+
   const citySets = useMemo<CityOutfitSet[]>(() => {
     return cities.slice(0, 5).map((c, ci) => {
       const key = c.city.toLowerCase();
@@ -275,7 +279,7 @@ export function ProDashboard() {
         activities: vibeData?.vibe_tags || ["City Walk", "Cultural Visit", "Dining"],
       };
     });
-  }, [cities, profile, apiVibes, apiWeather]);
+  }, [cities, profile, apiVibes, apiWeather, teaserUrl]);
 
   const allOutfits = useMemo(() => citySets.flatMap((cs) => cs.outfits), [citySets]);
   const packing: PackingItem[] = useMemo(() => derivePacking(allOutfits), [allOutfits]);
@@ -326,9 +330,6 @@ export function ProDashboard() {
 
   const currentSet = citySets[activeCity] || citySets[0];
   if (!currentSet) return null;
-
-  // Teaser URL from API result (personalized AI image from preview)
-  const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
 
   // Get image for outfit: API images > AI generated > teaser (personalized) > mock
   const getOutfitImage = (cityName: string, idx: number, fallback: string): string => {
