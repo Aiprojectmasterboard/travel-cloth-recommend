@@ -249,6 +249,20 @@ function fmtShort(dateStr: string, locale: string): string {
   return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
+async function downloadImage(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { mode: "cors" });
+    const blob = await res.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  } catch {
+    window.open(url, "_blank");
+  }
+}
+
 export function PreviewPage() {
   const navigate = useNavigate();
   const { data } = useOnboarding();
@@ -614,11 +628,22 @@ export function PreviewPage() {
                             <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
                           </span>
                         </div>
-                        {/* Tap-to-expand hint */}
-                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <div className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center">
+                        <div className="absolute top-2 right-2 flex gap-1.5">
+                          {/* Download button */}
+                          <button
+                            onClick={(e) => { e.stopPropagation(); downloadImage(imgSrc, `travel-capsule-look-${idx + 1}.png`); }}
+                            className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer"
+                            title={t("dashboard.downloadImage")}
+                          >
+                            <Icon name="download" size={16} className="text-white" />
+                          </button>
+                          {/* Expand button */}
+                          <button
+                            onClick={() => setLightboxOpen(true)}
+                            className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
                             <Icon name="open_in_full" size={16} className="text-white" />
-                          </div>
+                          </button>
                         </div>
                       </>
                     )}
