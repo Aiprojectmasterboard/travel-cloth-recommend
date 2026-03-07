@@ -324,7 +324,7 @@ app.get('/api/test-gemini', async (c) => {
       contents: [{ parts }],
       generationConfig: {
         responseModalities: ['IMAGE', 'TEXT'],
-        imageConfig: { aspectRatio: '3:4', imageSize: '2K' },
+        imageConfig: { aspectRatio: '3:4', imageSize: '1K' },
       },
     };
 
@@ -691,9 +691,7 @@ app.post('/api/teaser/generate', async (c) => {
         face_url: faceUrl,
         gender,
         user_profile: userProfile,
-        fallbackTeaser: gender === 'male'
-          ? 'https://travel-cloth-recommend.pages.dev/examples/annual-outfit-1.png'
-          : 'https://travel-cloth-recommend.pages.dev/examples/pro-outfit-1.png',
+        fallbackTeaser: getCityFallbackImage(String(firstVibe.city || ''), gender),
       },
       c.env
     );

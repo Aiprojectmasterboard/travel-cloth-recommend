@@ -904,9 +904,10 @@ export async function runTeaserBackground(
 ): Promise<void> {
   const { trip_id, vibeResult, face_url, gender, user_profile, fallbackTeaser } = input;
 
-  const effectiveFaceUrl = face_url || (gender === 'male'
-    ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
-    : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png');
+  // Only use face_url if user actually uploaded a photo.
+  // Do NOT use default placeholder faces — they waste Gemini API time (~40s)
+  // and risk safety filter blocks with no benefit to the result.
+  const effectiveFaceUrl = face_url || undefined;
 
   console.log(`[runTeaserBackground] Starting for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}`);
 

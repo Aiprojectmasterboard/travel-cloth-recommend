@@ -282,6 +282,7 @@ export function PreviewPage() {
   // Poll for AI-generated teaser image + trigger generation via dedicated endpoint
   const [polledTeaserUrl, setPolledTeaserUrl] = useState<string | null>(null);
   const [teaserReady, setTeaserReady] = useState(false);
+  const [teaserProgress, setTeaserProgress] = useState(0); // 0-100 for progress UX
   const triggerSentRef = useRef(false);
 
   useEffect(() => {
@@ -310,10 +311,13 @@ export function PreviewPage() {
 
       while (!cancelled && attempts < MAX_POLLS) {
         attempts++;
+        // Progressive UX: smoothly increase progress bar during generation
+        if (!cancelled) setTeaserProgress(Math.min(90, Math.round((attempts / MAX_POLLS) * 100)));
         try {
           const result = await pollTeaser(tripId);
           if (cancelled) return;
           if (result.status === 'ready' && result.teaser_url) {
+            setTeaserProgress(100);
             setPolledTeaserUrl(result.teaser_url);
             setTeaserReady(true);
             // Persist teaser_url to sessionStorage so it survives checkout redirect
@@ -329,6 +333,7 @@ export function PreviewPage() {
           }
           if (result.status === 'fallback') {
             // Fallback means Gemini failed — use server-provided city-specific fallback
+            setTeaserProgress(100);
             if (result.teaser_url) {
               setPolledTeaserUrl(result.teaser_url);
             }
@@ -575,10 +580,13 @@ export function PreviewPage() {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
                 <div className="w-12 h-12 rounded-full border-3 border-white/20 border-t-[#C4613A] animate-spin" style={{ borderWidth: 3 }} />
                 <span className="text-[12px] text-white/80 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                  AI generating your look...
+                  {teaserProgress < 20 ? "Analyzing your style profile..." :
+                   teaserProgress < 50 ? "AI generating your look..." :
+                   teaserProgress < 80 ? "Styling your outfit..." :
+                   "Almost ready..."}
                 </span>
                 <span className="text-[10px] text-white/50" style={{ fontFamily: "var(--font-mono)" }}>
-                  ~30 seconds
+                  {teaserProgress}%
                 </span>
               </div>
             </>

@@ -140,7 +140,7 @@ async function callGemini(
       responseModalities: ['IMAGE', 'TEXT'],
       imageConfig: {
         aspectRatio: '3:4',
-        imageSize: '2K',
+        imageSize: '1K',
       },
     },
   };
