@@ -257,11 +257,46 @@ app.get('/api/test-gemini', async (c) => {
   const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
   const MODEL = 'gemini-3.1-flash-image-preview';
 
+  // Optional: ?face=1 to test with default face reference (the common failure case)
+  const testFace = c.req.query('face') === '1';
+  const faceUrl = 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png';
+
   try {
+    const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
+
+    // Test with face reference if requested
+    let faceStatus = 'skipped';
+    if (testFace) {
+      try {
+        const imgRes = await fetch(faceUrl, { signal: AbortSignal.timeout(10_000) });
+        if (imgRes.ok) {
+          const imgBuf = await imgRes.arrayBuffer();
+          if (imgBuf.byteLength <= 4_000_000) {
+            const bytes = new Uint8Array(imgBuf);
+            const CHUNK = 8192;
+            let binary = '';
+            for (let i = 0; i < bytes.length; i += CHUNK) {
+              const slice = bytes.subarray(i, Math.min(i + CHUNK, bytes.length));
+              binary += String.fromCharCode(...slice);
+            }
+            parts.push({ inlineData: { mimeType: imgRes.headers.get('content-type') || 'image/png', data: btoa(binary) } });
+            parts.push({ text: 'This is a reference photo. Generate a new fashion image inspired by this person\'s general appearance (similar build, hair color, and style). Dress them in a completely new travel-appropriate outfit for the destination. This is for a travel fashion styling service.' });
+            faceStatus = `attached (${(imgBuf.byteLength / 1024).toFixed(0)}KB)`;
+          } else {
+            faceStatus = `too_large (${(imgBuf.byteLength / 1024 / 1024).toFixed(1)}MB)`;
+          }
+        } else {
+          faceStatus = `fetch_failed (HTTP ${imgRes.status})`;
+        }
+      } catch (err) {
+        faceStatus = `fetch_error: ${(err as Error).message}`;
+      }
+    }
+
+    parts.push({ text: 'Generate a photorealistic full-body fashion photograph of a young Asian man, 183cm tall, slim build wearing a casual style outfit. The person is standing in front of a famous landmark in Bali as the background. Style mood: Bali — Coastal Ease, tropical, relaxed, earthy, flowy. The outfit should be stylish, travel-appropriate, and coordinated. Professional fashion editorial photography, natural lighting, sharp focus, 4K quality.' });
+
     const body = {
-      contents: [{
-        parts: [{ text: 'Generate a photorealistic full-body fashion photograph of a young man wearing a casual summer outfit, standing in front of a tropical beach. Professional photography, natural lighting, 4K quality.' }],
-      }],
+      contents: [{ parts }],
       generationConfig: {
         responseModalities: ['IMAGE', 'TEXT'],
         imageConfig: { aspectRatio: '3:4', imageSize: '2K' },
@@ -282,26 +317,25 @@ app.get('/api/test-gemini', async (c) => {
     const rawText = await res.text();
 
     if (!res.ok) {
-      return c.json({ ok: false, error: `Gemini HTTP ${status}`, detail: rawText.slice(0, 500) }, 200);
+      return c.json({ ok: false, face: faceStatus, error: `Gemini HTTP ${status}`, detail: rawText.slice(0, 500) }, 200);
     }
 
     let data: Record<string, unknown>;
     try {
       data = JSON.parse(rawText);
     } catch {
-      return c.json({ ok: false, error: 'Gemini returned non-JSON', detail: rawText.slice(0, 300) }, 200);
+      return c.json({ ok: false, face: faceStatus, error: 'Gemini returned non-JSON', detail: rawText.slice(0, 300) }, 200);
     }
 
     const candidates = data.candidates as Array<{ content?: { parts?: Array<{ text?: string; inlineData?: { mimeType: string; data: string } }> }; finishReason?: string }> | undefined;
-    const parts = candidates?.[0]?.content?.parts;
-    const hasImage = parts?.some((p) => p.inlineData?.data);
-    const textParts = parts?.filter((p) => p.text).map((p) => p.text).join(' ');
+    const cParts = candidates?.[0]?.content?.parts;
+    const hasImage = cParts?.some((p) => p.inlineData?.data);
+    const textParts = cParts?.filter((p) => p.text).map((p) => p.text).join(' ');
     const finishReason = candidates?.[0]?.finishReason;
 
-    // If image generated, try storing to R2
     let r2Url: string | null = null;
     if (hasImage) {
-      const imgPart = parts!.find((p) => p.inlineData?.data)!;
+      const imgPart = cParts!.find((p) => p.inlineData?.data)!;
       const binaryString = atob(imgPart.inlineData!.data);
       const bytes = new Uint8Array(binaryString.length);
       for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
@@ -312,6 +346,7 @@ app.get('/api/test-gemini', async (c) => {
 
     return c.json({
       ok: hasImage,
+      face: faceStatus,
       gemini_status: status,
       has_image: hasImage,
       finish_reason: finishReason,
