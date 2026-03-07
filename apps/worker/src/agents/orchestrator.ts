@@ -511,48 +511,10 @@ export async function runPreview(
   }
 
   try {
-    // ── 1. Annual limit check ────────────────────────────────────────────────
-    // (annual check is primarily enforced in runResult; this is a guard for
-    // edge cases where email is known at preview time)
-
-    // ── 2. Weather — parallel per city ───────────────────────────────────────
-    const weatherResults = await Promise.all(
-      cities.map(async (city): Promise<WeatherResult> => {
-        if (!city.lat || !city.lon) {
-          // Return a neutral fallback if coordinates are missing
-          return {
-            city: city.name,
-            month,
-            temperature_day_avg: 20,
-            temperature_night_avg: 13,
-            precipitation_prob: 0.3,
-            climate_band: 'warm',
-            style_hint: 'Pack versatile layers for mixed conditions.',
-          };
-        }
-        try {
-          return await weatherAgent({ city: city.name, lat: city.lat, lon: city.lon, month }, env);
-        } catch (err) {
-          console.warn(`[runPreview] Weather failed for ${city.name}:`, (err as Error).message);
-          return {
-            city: city.name,
-            month,
-            temperature_day_avg: 20,
-            temperature_night_avg: 13,
-            precipitation_prob: 0.3,
-            climate_band: 'warm',
-            style_hint: 'Pack versatile layers for mixed conditions.',
-          };
-        }
-      })
-    );
-
-    // ── 3. Vibe — STATIC (no Claude API call) ─────────────────────────────
-    // Cost savings: ~$0.004 per city per preview → $0
+    // ── 1. Vibe — STATIC (no API call, instant) ─────────────────────────────
     const isWarmMonth = month >= 5 && month <= 9;
     const vibeDb = getVibeDb(lang, isWarmMonth);
     const vibeResults: VibeResult[] = cities.map((city) => {
-      // Flexible city name matching: lowercase + check aliases
       const aliases: Record<string, string> = {
         'denpasar': 'bali', 'ubud': 'bali', 'seminyak': 'bali', 'kuta': 'bali', 'canggu': 'bali',
         'nyc': 'new york', 'manhattan': 'new york', 'brooklyn': 'new york',
@@ -574,25 +536,49 @@ export async function runPreview(
       };
     });
 
-    // ── 4. Teaser image — AI generated (Day 1 only, ~$0.01) ──────────────
-    // Day 1 uses real AI generation based on user info (city, gender, style).
-    // Days 2-4 use static blurred images on the frontend (no API cost).
-    let teaserUrl: string | null = null;
     const firstVibe = vibeResults[0];
-
-    // Fallback static images in case AI generation fails
     const gender = user_profile?.gender || 'female';
     const staticBase = 'https://travel-cloth-recommend.pages.dev/examples';
     const fallbackTeaser = gender === 'male'
       ? `${staticBase}/annual-outfit-1.png`
       : `${staticBase}/pro-outfit-1.png`;
 
+    // ── 2. Weather + Teaser — RUN IN PARALLEL ────────────────────────────────
+    // Weather takes ~2s, Teaser takes ~20-40s via Gemini.
+    // Running them in parallel saves critical wall-clock time for Workers.
+
+    const weatherPromise = Promise.all(
+      cities.map(async (city): Promise<WeatherResult> => {
+        if (!city.lat || !city.lon) {
+          return {
+            city: city.name, month,
+            temperature_day_avg: 20, temperature_night_avg: 13,
+            precipitation_prob: 0.3, climate_band: 'warm',
+            style_hint: 'Pack versatile layers for mixed conditions.',
+          };
+        }
+        try {
+          return await weatherAgent({ city: city.name, lat: city.lat, lon: city.lon, month }, env);
+        } catch (err) {
+          console.warn(`[runPreview] Weather failed for ${city.name}:`, (err as Error).message);
+          return {
+            city: city.name, month,
+            temperature_day_avg: 20, temperature_night_avg: 13,
+            precipitation_prob: 0.3, climate_band: 'warm',
+            style_hint: 'Pack versatile layers for mixed conditions.',
+          };
+        }
+      })
+    );
+
+    // Teaser: runs in parallel with weather
     let teaserError: string | null = null;
-    if (firstVibe) {
+    const teaserPromise = (async (): Promise<string | null> => {
+      if (!firstVibe) return fallbackTeaser;
       const effectiveFaceUrl = face_url || (gender === 'male'
         ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
         : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png');
-      console.log(`[runPreview] Calling teaserAgent: trip=${trip_id}, city=${cities[0]?.name}, gender=${gender}, face=${effectiveFaceUrl ? 'yes' : 'no'}, faceUrl=${effectiveFaceUrl?.slice(0, 80)}`);
+      console.log(`[runPreview] Calling teaserAgent: trip=${trip_id}, city=${cities[0]?.name}, gender=${gender}, faceUrl=${effectiveFaceUrl?.slice(0, 80)}`);
       try {
         const teaser = await teaserAgent(
           {
@@ -610,16 +596,17 @@ export async function runPreview(
           },
           env
         );
-        teaserUrl = teaser.image_url;
-        console.log(`[runPreview] Teaser generated successfully: ${teaserUrl}`);
+        console.log(`[runPreview] Teaser generated successfully: ${teaser.image_url}`);
+        return teaser.image_url;
       } catch (err) {
         teaserError = (err as Error).message;
         console.error(`[runPreview] Teaser AI generation FAILED for trip ${trip_id}:`, teaserError);
-        teaserUrl = fallbackTeaser;
+        return fallbackTeaser;
       }
-    } else {
-      teaserUrl = fallbackTeaser;
-    }
+    })();
+
+    // Await both in parallel
+    const [weatherResults, teaserUrl] = await Promise.all([weatherPromise, teaserPromise]);
 
     // Insert generation_jobs row for tracking (includes error info if teaser failed)
     try {
