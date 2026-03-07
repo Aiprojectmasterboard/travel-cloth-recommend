@@ -279,9 +279,12 @@ app.get('/api/test-gemini', async (c) => {
   const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
   const MODEL = 'gemini-3.1-flash-image-preview';
 
-  // Optional: ?face=1 to test with default face reference (the common failure case)
-  const testFace = c.req.query('face') === '1';
-  const faceUrl = 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png';
+  // ?face=1 to test with default face, ?face=<url> to test with custom face
+  const faceParam = c.req.query('face') || '';
+  const testFace = faceParam === '1' || faceParam.startsWith('http');
+  const faceUrl = faceParam.startsWith('http')
+    ? faceParam
+    : 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png';
 
   try {
     const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
