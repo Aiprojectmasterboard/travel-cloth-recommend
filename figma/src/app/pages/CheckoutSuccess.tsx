@@ -6,6 +6,7 @@ import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { WORKER_URL } from "../lib/api";
 import { GA } from "../lib/analytics";
+import { SEO } from "../components/SEO";
 
 /**
  * CheckoutSuccess — the user lands here AFTER completing Polar payment.
@@ -256,6 +257,7 @@ export function CheckoutSuccess() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center px-6">
+      <SEO title="Payment Successful" description="Your payment was successful. Your AI-generated travel capsule wardrobe is being prepared." noindex={true} />
       <div className="text-center max-w-[480px] w-full">
 
         <CircularProgress progress={progress} />

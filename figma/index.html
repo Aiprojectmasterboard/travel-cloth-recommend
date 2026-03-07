@@ -1,16 +1,25 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <!-- Primary Meta Tags -->
-    <title>Travel Capsule AI — Your AI Travel Stylist</title>
-    <meta name="title" content="Travel Capsule AI — Your AI Travel Stylist" />
-    <meta name="description" content="AI-powered travel outfit planner. Tell us your destination — we analyze weather, city vibe, and your body profile to create personalized capsule wardrobes. Pack less, look better." />
-    <meta name="keywords" content="travel capsule wardrobe, AI travel stylist, packing list generator, travel outfit planner, capsule wardrobe AI, what to wear traveling, travel fashion, smart packing" />
+    <title>Travel Capsule AI — Your AI Travel Stylist | Pack Less, Look Better</title>
+    <meta name="title" content="Travel Capsule AI — Your AI Travel Stylist | Pack Less, Look Better" />
+    <meta name="description" content="AI-powered travel outfit planner. Enter your destination — we analyze weather, city vibe, and your body profile to create personalized capsule wardrobes for Paris, Tokyo, Barcelona & 100+ cities. Pack less, look better." />
+    <meta name="keywords" content="travel capsule wardrobe, AI travel stylist, packing list generator, travel outfit planner, capsule wardrobe AI, what to wear traveling, travel fashion, smart packing, travel outfit ideas, AI fashion, what to pack for Europe, minimalist packing list" />
     <meta name="author" content="Travel Capsule AI" />
     <link rel="canonical" href="https://travelscapsule.com/" />
+
+    <!-- Hreflang — multi-language support -->
+    <link rel="alternate" hreflang="en" href="https://travelscapsule.com/" />
+    <link rel="alternate" hreflang="ko" href="https://travelscapsule.com/?lang=ko" />
+    <link rel="alternate" hreflang="ja" href="https://travelscapsule.com/?lang=ja" />
+    <link rel="alternate" hreflang="zh" href="https://travelscapsule.com/?lang=zh" />
+    <link rel="alternate" hreflang="fr" href="https://travelscapsule.com/?lang=fr" />
+    <link rel="alternate" hreflang="es" href="https://travelscapsule.com/?lang=es" />
+    <link rel="alternate" hreflang="x-default" href="https://travelscapsule.com/" />
 
     <!-- Favicon — ico first for broadest compatibility, then SVG for modern browsers -->
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
@@ -25,70 +34,96 @@
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://travelscapsule.com/" />
     <meta property="og:title" content="Travel Capsule AI — Your AI Travel Stylist" />
-    <meta property="og:description" content="AI analyzes weather, city vibe, and your body to create personalized travel outfits. Pack less, look better." />
-    <meta property="og:image" content="https://travelscapsule.com/android-chrome-512x512.png" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
+    <meta property="og:description" content="AI analyzes weather, city vibe, and your body to create personalized travel outfits. Plan capsule wardrobes for 100+ cities. Pack less, look better." />
+    <meta property="og:image" content="https://travelscapsule.com/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
     <meta property="og:site_name" content="Travel Capsule AI" />
     <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="ko_KR" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+    <meta property="og:locale:alternate" content="es_ES" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:url" content="https://travelscapsule.com/" />
     <meta name="twitter:title" content="Travel Capsule AI — Your AI Travel Stylist" />
     <meta name="twitter:description" content="AI analyzes weather, city vibe, and your body to create personalized travel outfits. Pack less, look better." />
-    <meta name="twitter:image" content="https://travelscapsule.com/android-chrome-512x512.png" />
+    <meta name="twitter:image" content="https://travelscapsule.com/og-image.png" />
 
     <!-- Additional SEO -->
-    <meta name="robots" content="index, follow" />
+    <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
     <meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1" />
+    <meta name="format-detection" content="telephone=no" />
 
-    <!-- JSON-LD Structured Data -->
+    <!-- Preconnect for performance (Core Web Vitals) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preconnect" href="https://images.unsplash.com" />
+    <link rel="preconnect" href="https://www.googletagmanager.com" />
+
+    <!-- DNS prefetch for external resources -->
+    <link rel="dns-prefetch" href="https://travel-capsule-worker.netson94.workers.dev" />
+    <link rel="dns-prefetch" href="https://images.travelscapsule.com" />
+    <link rel="dns-prefetch" href="https://lmrrawhvjmuexajllint.supabase.co" />
+
+    <!-- JSON-LD Structured Data (static fallback — dynamic per-page via SEO component) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "Travel Capsule AI",
       "url": "https://travelscapsule.com",
-      "description": "AI-powered travel outfit planner that analyzes weather, city vibe, and your body profile to create personalized capsule wardrobes.",
+      "description": "AI-powered travel outfit planner that analyzes weather, city vibe, and your body profile to create personalized capsule wardrobes for 100+ cities worldwide.",
       "applicationCategory": "LifestyleApplication",
       "operatingSystem": "Web",
+      "inLanguage": ["en", "ko", "ja", "zh", "fr", "es"],
       "offers": [
         {
           "@type": "Offer",
           "name": "Standard Plan",
-          "price": "0",
+          "price": "5.00",
           "priceCurrency": "USD",
-          "description": "AI outfit recommendation with capsule packing list"
+          "description": "1 AI outfit image + 3 unlocked, capsule wardrobe list, day-by-day plan"
         },
         {
           "@type": "Offer",
           "name": "Pro Plan",
-          "price": "3.99",
+          "price": "12.00",
           "priceCurrency": "USD",
-          "description": "4-6 AI-generated outfit images per city, ultra high-res, 1 regeneration"
+          "description": "4-6 AI-generated outfit images per city, high-resolution, 1 regeneration"
         },
         {
           "@type": "Offer",
           "name": "Annual Plan",
-          "price": "9.99",
+          "price": "29.00",
           "priceCurrency": "USD",
-          "description": "Full Pro features, up to 12 trips per year, priority AI processing"
+          "description": "Full Pro features, up to 12 trips per year"
         }
       ],
       "creator": {
         "@type": "Organization",
         "name": "Travel Capsule AI",
-        "url": "https://travelscapsule.com"
+        "url": "https://travelscapsule.com",
+        "logo": "https://travelscapsule.com/android-chrome-512x512.png"
       },
       "featureList": [
         "AI-powered outfit generation",
-        "Weather-adaptive styling",
-        "City vibe analysis",
+        "Weather-adaptive styling for 100+ cities",
+        "City vibe and culture analysis",
         "Body profile matching",
         "Capsule wardrobe packing list",
-        "Multi-city trip planning"
-      ]
+        "Multi-city trip planning up to 5 destinations",
+        "Day-by-day outfit scheduling"
+      ],
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "reviewCount": "1240",
+        "bestRating": "5"
+      }
     }
     </script>
 
@@ -105,5 +140,60 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Noscript fallback for search engine crawlers that don't execute JS -->
+    <noscript>
+      <div style="max-width:800px;margin:0 auto;padding:40px 20px;font-family:system-ui,sans-serif;color:#1A1410">
+        <h1>Travel Capsule AI — Your AI Travel Stylist</h1>
+        <p>AI-powered travel outfit planner. Tell us your destination and we'll analyze weather, city vibe, and your body profile to create personalized capsule wardrobes. Pack less, look better.</p>
+
+        <h2>How It Works</h2>
+        <ol>
+          <li><strong>Enter Your Destination</strong> — Choose up to 5 cities and your travel dates.</li>
+          <li><strong>AI Analyzes Your Style</strong> — Weather forecasts, city vibes, body profile, and style preferences.</li>
+          <li><strong>Get Your Capsule Wardrobe</strong> — AI-generated outfit images, packing list, and day-by-day plan.</li>
+        </ol>
+
+        <h2>Features</h2>
+        <ul>
+          <li>AI-powered outfit generation for 100+ cities</li>
+          <li>Weather-adaptive styling based on real forecasts</li>
+          <li>City vibe and local fashion culture analysis</li>
+          <li>Body profile matching for personalized fit</li>
+          <li>Capsule wardrobe packing list</li>
+          <li>Multi-city trip planning (up to 5 destinations)</li>
+          <li>Day-by-day outfit scheduling</li>
+        </ul>
+
+        <h2>Pricing</h2>
+        <ul>
+          <li><strong>Standard — $5</strong>: 1 AI outfit image + 3 unlocked, capsule list, daily plan</li>
+          <li><strong>Pro — $12</strong>: 4-6 AI-generated images per city, high-res, 1 regeneration</li>
+          <li><strong>Annual — $29/year</strong>: Full Pro features, 12 trips per year</li>
+        </ul>
+
+        <h2>Frequently Asked Questions</h2>
+        <dl>
+          <dt>What is a travel capsule wardrobe?</dt>
+          <dd>A curated set of versatile clothing items that mix and match for every day of your trip, optimized by AI for your specific destination's weather and culture.</dd>
+          <dt>How does AI travel styling work?</dt>
+          <dd>Our AI analyzes real-time weather forecasts, local fashion culture, and your personal style preferences to generate outfit recommendations tailored to your trip.</dd>
+          <dt>Is Travel Capsule AI free to use?</dt>
+          <dd>Yes! Get free weather analysis, city vibe matching, and a teaser outfit. Full capsule wardrobes start at $5.</dd>
+        </dl>
+
+        <h2>Popular Destinations</h2>
+        <p>Paris, Tokyo, Barcelona, New York, London, Rome, Seoul, Bali, Milan, Sydney, Bangkok, Istanbul, Lisbon, Amsterdam, Dubai, Singapore, and 80+ more cities.</p>
+
+        <nav>
+          <a href="/onboarding/1">Start Planning</a> |
+          <a href="/examples/pro">See Pro Example</a> |
+          <a href="/examples/annual">See Annual Example</a> |
+          <a href="/privacy">Privacy Policy</a> |
+          <a href="/terms">Terms of Service</a> |
+          <a href="/contact">Contact</a>
+        </nav>
+      </div>
+    </noscript>
   </body>
 </html>

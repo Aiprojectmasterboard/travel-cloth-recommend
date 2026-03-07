@@ -4,6 +4,7 @@ import { Icon, BtnPrimary, TagChip } from "../components/travel-capsule";
 import { SocialShareButton } from "../components/travel-capsule/SocialShare";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { WORKER_URL } from "../lib/api";
+import { SEO } from "../components/SEO";
 
 interface ShareData {
   trip_id: string;
@@ -84,6 +85,7 @@ export function SharePage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Shared Travel Capsule" description="Check out this AI-styled travel outfit! Create your own personalized capsule wardrobe with Travel Capsule AI." />
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>

@@ -9,6 +9,7 @@ import { useLang } from "../context/LanguageContext";
 import { IMAGES } from "../constants/images";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { GA } from "../lib/analytics";
+import { SEO } from "../components/SEO";
 
 /**
  * Animated progress steps with percentage bar.
@@ -189,6 +190,8 @@ export function OnboardingStep4() {
       : t("onboarding4.notProvided");
 
   return (
+    <>
+    <SEO title="Review Your Trip" description="Review your trip details before AI generates your personalized travel capsule wardrobe." noindex={true} />
     <OnboardingLayout
       imageUrl={IMAGES.airport}
       quote="The journey of a thousand miles begins with a single step."
@@ -376,5 +379,6 @@ export function OnboardingStep4() {
         <BtnSecondary size="sm" onClick={() => navigate("/onboarding/3")}>{t("onboarding4.back")}</BtnSecondary>
       </div>
     </OnboardingLayout>
+    </>
   );
 }

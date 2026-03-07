@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { useLang } from "../context/LanguageContext";
 import { supabase } from "../lib/supabase";
 import { WORKER_URL } from "../lib/api";
+import { SEO } from "../components/SEO";
 
 /* ─── API Response Types ──────────────────────────────────────────────── */
 
@@ -343,6 +344,7 @@ export function MyPage() {
   /* ─── Main Page ──────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="My Page" description="Your Travel Capsule AI dashboard — trip history, account settings, and style preferences." noindex={true} />
       {/* Toast */}
       {toast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 bg-[#1A1410] text-white rounded-xl text-[13px] shadow-lg" style={{ fontFamily: bodyFont }}>

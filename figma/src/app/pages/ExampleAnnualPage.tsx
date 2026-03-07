@@ -12,6 +12,7 @@ import {
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useLang } from "../context/LanguageContext";
+import { SEO, buildBreadcrumbSchema } from "../components/SEO";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE ANNUAL PAGE                                        */
@@ -270,6 +271,15 @@ export function ExampleAnnualPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO
+        title="Annual Plan Example — AI Travel Styling Dashboard"
+        description="Explore the Travel Capsule AI Annual plan: 12 trips per year, full Pro features, Style DNA analysis, and trip history tracking."
+        jsonLd={[buildBreadcrumbSchema([
+          { name: "Home", url: "https://travelscapsule.com/" },
+          { name: "Examples", url: "https://travelscapsule.com/examples/annual" },
+          { name: "Annual Plan", url: "https://travelscapsule.com/examples/annual" },
+        ])]}
+      />
       {/* Banner */}
       <div className="gold-gradient text-white text-center py-2 px-4">
         <span className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>

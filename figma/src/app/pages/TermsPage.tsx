@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router";
 import { Icon } from "../components/travel-capsule";
+import { SEO } from "../components/SEO";
 
 const EFFECTIVE_DATE = "March 1, 2026";
 const CONTACT_EMAIL = "netson94@gmail.com";
@@ -10,6 +11,7 @@ export function TermsPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Terms of Service" description="Travel Capsule AI terms of service. Read our terms for using AI-powered travel outfit planning and capsule wardrobe services." />
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50 bg-[#FDF8F3]/90 backdrop-blur-sm">
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "1200px" }}>

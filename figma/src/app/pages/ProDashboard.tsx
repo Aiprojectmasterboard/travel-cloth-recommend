@@ -27,6 +27,7 @@ import {
 } from "../services/outfitGenerator";
 import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
+import { SEO } from "../components/SEO";
 
 async function downloadImage(url: string, filename: string) {
   try {
@@ -292,6 +293,7 @@ export function ProDashboard() {
 
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Your Travel Capsule — Pro" description="Your premium AI-generated travel outfits with full gallery and capsule wardrobe." noindex={true} />
       <SignupPrompt />
 
       {/* Header */}

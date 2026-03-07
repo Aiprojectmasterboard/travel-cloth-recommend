@@ -8,6 +8,7 @@ import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
 import { GA } from "../lib/analytics";
+import { SEO } from "../components/SEO";
 
 // ─── Image Lightbox with Branding + Share ─────────────────────────────────────
 
@@ -372,6 +373,7 @@ export function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Your AI Style Preview" description="Preview your AI-generated travel outfit and city vibe analysis. Unlock the full capsule wardrobe to pack less and look better." noindex={true} />
       {/* Image Lightbox */}
       {lightboxOpen && preview?.teaser_url && (
         <ImageLightbox

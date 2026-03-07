@@ -18,6 +18,7 @@ import {
   type GeneratedOutfit,
   type PackingItem,
 } from "../services/outfitGenerator";
+import { SEO } from "../components/SEO";
 
 /* ================================================================ */
 /*  DEMO PRO PAGE — Busan, South Korea                              */
@@ -89,6 +90,7 @@ export function DemoProPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Pro Plan Demo — AI Outfit Preview" description="Interactive demo of Travel Capsule AI Pro plan features." noindex={true} />
       {/* Demo Banner */}
       <div className="bg-[#C4613A] text-white text-center py-2">
         <span

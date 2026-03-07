@@ -34,6 +34,7 @@ import type { CapsuleItem, DayPlan, WeatherData, VibeData } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { createCheckoutSession } from "../services/polarCheckout";
 import { GA } from "../lib/analytics";
+import { SEO } from "../components/SEO";
 
 async function downloadImage(url: string, filename: string) {
   try {
@@ -183,6 +184,7 @@ export function StandardDashboard() {
 
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Your Travel Capsule — Standard" description="Your AI-generated travel outfit and capsule wardrobe packing list." noindex={true} />
       <SignupPrompt />
 
       {/* Header */}

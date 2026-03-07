@@ -8,6 +8,7 @@ import { useOnboarding } from "../context/OnboardingContext";
 import { useLang } from "../context/LanguageContext";
 import { GA } from "../lib/analytics";
 import { IMAGES } from "../constants/images";
+import { SEO } from "../components/SEO";
 
 const WORKER_URL =
   (import.meta.env as Record<string, string>).VITE_WORKER_URL ||
@@ -212,6 +213,8 @@ export function OnboardingStep3() {
   };
 
   return (
+    <>
+    <SEO title="Upload Your Photo" description="Upload a reference photo for personalized body-matched outfit recommendations." noindex={true} />
     <OnboardingLayout
       imageUrl={IMAGES.leatherSuitcase}
       quote="The joy of dressing is an art."
@@ -463,5 +466,6 @@ export function OnboardingStep3() {
         </BtnPrimary>
       </div>
     </OnboardingLayout>
+    </>
   );
 }

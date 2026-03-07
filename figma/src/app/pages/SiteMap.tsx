@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router";
 import { Icon } from "../components/travel-capsule";
+import { SEO } from "../components/SEO";
 
 const PAGES = [
   {
@@ -47,6 +48,7 @@ export function SiteMap() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3] py-12 px-6">
+      <SEO title="Sitemap" description="Travel Capsule AI sitemap — browse all pages including outfit examples, pricing plans, and travel styling guides." />
       <div className="max-w-[800px] mx-auto">
         {/* Header */}
         <div className="flex items-center gap-3 mb-2">

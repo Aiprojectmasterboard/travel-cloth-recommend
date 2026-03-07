@@ -1,4 +1,40 @@
+# Travel Capsule AI — https://travelscapsule.com
+# Last updated: 2026-03-07
+
 User-agent: *
 Allow: /
+Allow: /onboarding/1
+Allow: /examples/
+Allow: /privacy
+Allow: /terms
+Allow: /contact
+Allow: /sitemap
 
+# Block private/authenticated pages from crawling
+Disallow: /onboarding/2
+Disallow: /onboarding/3
+Disallow: /onboarding/4
+Disallow: /preview
+Disallow: /checkout/
+Disallow: /dashboard/
+Disallow: /mypage
+Disallow: /demo/
+
+# Allow crawling of all static assets
+Allow: /assets/
+Allow: /*.js$
+Allow: /*.css$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.svg$
+
+# Sitemaps
 Sitemap: https://travelscapsule.com/sitemap.xml
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Google-specific
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 0

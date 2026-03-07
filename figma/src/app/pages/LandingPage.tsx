@@ -5,6 +5,14 @@ import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { IMAGES } from "../constants/images";
 import { useLang, getHeroSize } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
+import {
+  SEO,
+  buildWebsiteSchema,
+  buildOrganizationSchema,
+  buildWebAppSchema,
+  buildFAQSchema,
+  buildHowToSchema,
+} from "../components/SEO";
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -24,8 +32,47 @@ export function LandingPage() {
     }
   }, []);
 
+  const faqItems = [
+    {
+      question: "What is a travel capsule wardrobe?",
+      answer:
+        "A travel capsule wardrobe is a curated set of versatile clothing items that mix and match for every day of your trip. Travel Capsule AI uses weather data, city culture, and your body profile to build the perfect capsule for your destination.",
+    },
+    {
+      question: "How does AI travel styling work?",
+      answer:
+        "Our AI analyzes real-time weather forecasts, local fashion culture, and your personal style preferences to generate outfit recommendations and a packing list tailored to your specific trip.",
+    },
+    {
+      question: "How many cities can I plan outfits for?",
+      answer:
+        "You can plan outfits for up to 5 cities in a single trip. The AI adapts recommendations for each destination's weather and vibe.",
+    },
+    {
+      question: "Is Travel Capsule AI free to use?",
+      answer:
+        "Yes! You get free weather analysis, city vibe matching, and a teaser outfit image. Full capsule wardrobe lists and additional AI-generated outfits are available with paid plans starting at $5.",
+    },
+    {
+      question: "What do I get with the Standard plan?",
+      answer:
+        "The $5 Standard plan includes 1 clear AI-generated outfit image, 3 additional unlocked images, a complete capsule wardrobe packing list, and a day-by-day outfit plan.",
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO
+        title="AI Travel Stylist — Pack Less, Look Better"
+        description="AI-powered travel outfit planner. Enter your destination — we analyze weather, city vibe, and your body profile to create personalized capsule wardrobes. Plan outfits for Paris, Tokyo, Barcelona & 100+ cities."
+        jsonLd={[
+          buildWebsiteSchema(),
+          buildOrganizationSchema(),
+          buildWebAppSchema(),
+          buildHowToSchema(),
+          buildFAQSchema(faqItems),
+        ]}
+      />
       {/* ==================== HERO ==================== */}
       <section className="relative h-screen flex flex-col overflow-hidden">
         <div className="absolute inset-0">
@@ -631,6 +678,34 @@ export function LandingPage() {
                 {t("pricing.annual.cta")}
               </button>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==================== FAQ ==================== */}
+      <section id="faq" className="bg-[#FDF8F3] py-16 lg:py-24 px-6">
+        <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-3 mb-6">
+              <span className="w-2 h-2 rounded-full bg-[#C4613A]" />
+              <span className="text-[11px] uppercase tracking-[0.15em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>FAQ</span>
+            </div>
+            <h2 className="text-[#292524]" style={{ fontSize: "clamp(28px, 4vw, 48px)", fontFamily: displayFont }}>
+              Frequently Asked Questions
+            </h2>
+          </div>
+          <div className="max-w-[720px] mx-auto space-y-4">
+            {faqItems.map((item, i) => (
+              <details key={i} className="group bg-white border border-[#E8DDD4] rounded-xl overflow-hidden">
+                <summary className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+                  <h3 className="text-[15px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{item.question}</h3>
+                  <Icon name="expand_more" size={20} className="text-[#57534e] group-open:rotate-180 transition-transform flex-shrink-0" />
+                </summary>
+                <div className="px-6 pb-5">
+                  <p className="text-[14px] text-[#57534e] leading-relaxed" style={{ fontFamily: bodyFont }}>{item.answer}</p>
+                </div>
+              </details>
+            ))}
           </div>
         </div>
       </section>

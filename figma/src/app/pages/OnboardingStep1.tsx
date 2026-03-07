@@ -9,6 +9,7 @@ import bagImg from "../../assets/36d7b5af63872a88256d99de04037e3a04cbed5f.png";
 import citiesData from "../../../../packages/city-vibes-db/cities.json";
 import { geocodeCity, getCityImageUrl } from "../services/geocodeCity";
 import { GA } from "../lib/analytics";
+import { SEO } from "../components/SEO";
 
 // ---------------------------------------------------------------------------
 // Fallback image for cities without a dedicated IMAGES entry
@@ -360,6 +361,8 @@ export function OnboardingStep1() {
   };
 
   return (
+    <>
+    <SEO title="Choose Your Travel Destination" description="Select up to 5 cities for your AI-powered travel wardrobe. Get personalized outfit recommendations based on weather and local fashion culture." noindex={true} />
     <OnboardingLayout
       imageUrl={bagImg}
       quote="The world is a book, and those who do not travel read only one page."
@@ -503,5 +506,6 @@ export function OnboardingStep1() {
         </BtnPrimary>
       </div>
     </OnboardingLayout>
+    </>
   );
 }

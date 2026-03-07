@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router";
 import { Icon, BtnPrimary } from "../components/travel-capsule";
+import { SEO } from "../components/SEO";
 
 const SUPPORT_EMAIL = "netson94@gmail.com";
 
@@ -17,6 +18,7 @@ export function ContactPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Contact Us" description="Contact Travel Capsule AI for support, feedback, or business inquiries. We're here to help with your AI travel styling experience." />
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50 bg-[#FDF8F3]/90 backdrop-blur-sm">
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "1200px" }}>

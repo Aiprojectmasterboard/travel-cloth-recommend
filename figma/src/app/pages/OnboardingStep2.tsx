@@ -5,6 +5,7 @@ import { OnboardingLayout } from "../components/travel-capsule/OnboardingLayout"
 import { ProgressBar, BtnPrimary, BtnSecondary, Icon, TCInput } from "../components/travel-capsule";
 import { useOnboarding } from "../context/OnboardingContext";
 import { GA } from "../lib/analytics";
+import { SEO } from "../components/SEO";
 
 const GENDERS = [
   { value: "male", label: "Male", icon: "male" },
@@ -91,6 +92,8 @@ export function OnboardingStep2() {
   }
 
   return (
+    <>
+    <SEO title="Choose Your Style Aesthetic" description="Select your fashion style preferences. Our AI will match outfits to your personal aesthetic for the perfect travel wardrobe." noindex={true} />
     <OnboardingLayout
       imageUrl={wardrobeImg}
       quote="Style is a way to say who you are without having to speak."
@@ -242,5 +245,6 @@ export function OnboardingStep2() {
         </BtnPrimary>
       </div>
     </OnboardingLayout>
+    </>
   );
 }

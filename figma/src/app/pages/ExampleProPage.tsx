@@ -9,6 +9,7 @@ import {
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useLang } from "../context/LanguageContext";
+import { SEO, buildBreadcrumbSchema } from "../components/SEO";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE PRO PAGE                                          */
@@ -242,6 +243,15 @@ export function ExampleProPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
+      <SEO
+        title="Pro Plan Example — AI Travel Outfit Gallery"
+        description="See what Travel Capsule AI Pro plan generates: 4-6 AI outfit images per city, high-resolution styling, capsule wardrobe list, and day-by-day outfit plan."
+        jsonLd={[buildBreadcrumbSchema([
+          { name: "Home", url: "https://travelscapsule.com/" },
+          { name: "Examples", url: "https://travelscapsule.com/examples/pro" },
+          { name: "Pro Plan", url: "https://travelscapsule.com/examples/pro" },
+        ])]}
+      />
       {/* Banner */}
       <div className="bg-[#C4613A] text-white text-center py-2 px-4">
         <span className="text-[10px] sm:text-[12px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>

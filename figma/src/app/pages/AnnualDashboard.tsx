@@ -27,6 +27,7 @@ import {
 } from "../services/outfitGenerator";
 import { regenerateOutfit, type CapsuleItem, type WeatherData, type VibeData } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
+import { SEO } from "../components/SEO";
 
 async function downloadImage(url: string, filename: string) {
   try {
@@ -190,6 +191,7 @@ export function AnnualDashboard() {
 
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
+      <SEO title="Your Travel Capsule — Annual" description="Your annual travel styling dashboard with unlimited outfit generation." noindex={true} />
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
