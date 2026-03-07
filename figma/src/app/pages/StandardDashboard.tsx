@@ -203,6 +203,17 @@ export function StandardDashboard() {
     : mockPacking.map((p) => ({ name: p.name, category: p.category, why: "", versatility_score: p.usageCount }));
 
   const bodyFitLabel = mockOutfits[0]?.bodyFitLabel || "";
+  // Derive simple size letter for SizeChip (bodyFitLabel is a full sentence)
+  const sizeLabel = (() => {
+    const h = parseFloat(profile.height) || 0;
+    const w = parseFloat(profile.weight) || 0;
+    if (!h || !w) return "M";
+    const bmi = w / ((h / 100) ** 2);
+    if (bmi < 19) return "S";
+    if (bmi < 23) return "M";
+    if (bmi < 27) return "L";
+    return "XL";
+  })();
 
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
@@ -337,7 +348,7 @@ export function StandardDashboard() {
                                             <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
                                               {typeof capsuleItem === "string" ? capsuleItem : capsuleItem.name}
                                             </span>
-                                            <SizeChip size={bodyFitLabel || "M"} />
+                                            <SizeChip size={sizeLabel} />
                                           </div>
                                           {typeof capsuleItem !== "string" && capsuleItem.why && (
                                             <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{capsuleItem.why}</span>

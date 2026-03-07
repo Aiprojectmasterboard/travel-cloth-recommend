@@ -177,6 +177,16 @@ export function AnnualDashboard() {
   const outfits: GeneratedOutfit[] = useMemo(() => generateCityOutfits(profile, cityInput, 4), [profile, cityInput]);
   const packing: PackingItem[] = useMemo(() => derivePacking(outfits), [outfits]);
   const bodyFitLabel = outfits[0]?.bodyFitLabel || "";
+  const sizeLabel = (() => {
+    const h = parseFloat(profile.height) || 0;
+    const w = parseFloat(profile.weight) || 0;
+    if (!h || !w) return "M";
+    const bmi = w / ((h / 100) ** 2);
+    if (bmi < 19) return "S";
+    if (bmi < 23) return "M";
+    if (bmi < 27) return "L";
+    return "XL";
+  })();
 
   const primaryWeather = apiWeather[0];
   const primaryVibe = apiVibes[0];
@@ -344,7 +354,7 @@ export function AnnualDashboard() {
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                            <SizeChip size={bodyFitLabel || "M"} />
+                            <SizeChip size={sizeLabel} />
                           </div>
                           <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
                         </div>
