@@ -266,17 +266,46 @@ app.get('/api/test-teaser', async (c) => {
   const r2Url = c.env.R2_PUBLIC_URL;
   steps.push({ step: 'r2_public_url', ok: !!r2Url, ms: Date.now() - t0, detail: r2Url || 'MISSING' });
 
-  // Step 4: Call Gemini with a simple fashion prompt
+  // Step 4: Call Gemini with a fashion prompt + face reference (like real pipeline)
+  const testFaceUrl = 'https://images.travelscapsule.com/faces/temp-36345c0e-c230-495e-a3c6-3c6d2cbe207a.jpg';
+  const t3b = Date.now();
+  let faceBase64: string | null = null;
+  try {
+    const faceRes = await fetch(testFaceUrl, { signal: AbortSignal.timeout(10_000) });
+    if (faceRes.ok) {
+      const buf = await faceRes.arrayBuffer();
+      const bytes = new Uint8Array(buf);
+      const CHUNK = 8192;
+      let binary = '';
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        const slice = bytes.subarray(i, Math.min(i + CHUNK, bytes.length));
+        binary += String.fromCharCode(...slice);
+      }
+      faceBase64 = btoa(binary);
+      steps.push({ step: 'face_fetch', ok: true, ms: Date.now() - t3b, detail: `${(buf.byteLength / 1024).toFixed(0)}KB` });
+    } else {
+      steps.push({ step: 'face_fetch', ok: false, ms: Date.now() - t3b, detail: `HTTP ${faceRes.status}` });
+    }
+  } catch (err) {
+    steps.push({ step: 'face_fetch', ok: false, ms: Date.now() - t3b, detail: (err as Error).message });
+  }
+
   const t4 = Date.now();
   try {
-    const prompt = 'Generate a photorealistic full-body fashion photograph of a young woman standing in front of the Eiffel Tower. She is wearing a stylish autumn outfit. Professional photography, natural lighting.';
+    const prompt = 'Generate a photorealistic full-body fashion photograph of a young man standing in front of the Eiffel Tower. He is wearing a stylish autumn outfit. Professional fashion editorial photography, natural lighting, sharp focus, 4K quality.';
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent`,
       {
         method: 'POST',
         headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          contents: [{ parts: [
+            ...(faceBase64 ? [
+              { inlineData: { mimeType: 'image/jpeg', data: faceBase64 } },
+              { text: 'Use this person as the model in the generated image. Preserve their facial features, face shape, skin tone, and hair style. Generate a COMPLETELY DIFFERENT outfit from what they are currently wearing.' },
+            ] : []),
+            { text: prompt },
+          ] }],
           generationConfig: {
             responseModalities: ['IMAGE', 'TEXT'],
             imageConfig: { aspectRatio: '3:4', imageSize: '2K' },
