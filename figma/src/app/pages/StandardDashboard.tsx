@@ -50,8 +50,9 @@ async function downloadImage(url: string, filename: string) {
   }
 }
 
-const FALLBACK_HERO = "https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMEZyYW5jZSUyMEVpZmZlbCUyMHRvd2VyJTIwY2l0eXNjYXBlfGVufDF8fHx8MTc3MjQyNjYwM3ww&ixlib=rb-4.1.0&q=80&w=1080";
-const FALLBACK_MOOD = "https://images.unsplash.com/photo-1577058006248-8289d93b53ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQYXJpcyUyMHN0cmVldCUyMGNhZmUlMjBhdXR1bW4lMjB0cmF2ZWwlMjBhZXN0aGV0aWN8ZW58MXx8fHwxNzcyNDI2NjA4fDA&ixlib=rb-4.1.0&q=80&w=1080";
+// Generic travel-themed fallbacks (not city-specific)
+const FALLBACK_HERO = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
+const FALLBACK_MOOD = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
 
 export function StandardDashboard() {
   const navigate = useNavigate();
@@ -111,6 +112,15 @@ export function StandardDashboard() {
     }
   }, [tripId, result, tripLoading, loadResult]);
 
+  // Re-poll for capsule data if result loaded but has no AI capsule items yet
+  // (webhook pipeline may still be generating capsule wardrobe)
+  useEffect(() => {
+    if (!tripId || !result || tripLoading) return;
+    const hasCapsule = (result.capsule?.items?.length ?? 0) > 0;
+    if (hasCapsule) return;
+    const timer = setTimeout(() => loadResult(tripId), 10000);
+    return () => clearTimeout(timer);
+  }, [tripId, result, tripLoading, loadResult]);
 
   // ─── Extract real API data ───────────────────────────────────────────────
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
@@ -379,9 +389,9 @@ export function StandardDashboard() {
                     ))
                   ) : (
                     [
-                      { icon: "thermostat", val: "9°C", label: "Avg Temp" },
-                      { icon: "water_drop", val: "30%", label: "Rain" },
-                      { icon: "explore", val: "mild", label: "Climate" },
+                      { icon: "thermostat", val: "—", label: "Avg Temp" },
+                      { icon: "water_drop", val: "—", label: "Rain" },
+                      { icon: "explore", val: "Loading…", label: "Climate" },
                     ].map((s) => (
                       <div key={s.label} className="py-3 bg-[#FDF8F3] rounded-lg">
                         <Icon name={s.icon} size={18} className="text-[#C4613A] mx-auto mb-1" />
@@ -446,10 +456,10 @@ export function StandardDashboard() {
             <StyleCodeCard
               description={primaryVibe
                 ? `${moodName} \u2014 ${primaryVibe.vibe_tags?.join(", ") || "Curated style adapted to local weather and culture."}`
-                : `Layered sophistication meets urban practicality for ${cityName}.`}
+                : `AI-curated travel style for ${cityName}.`}
               city={`${cityName}, ${countryName.slice(0, 2).toUpperCase()}`}
-              temp={primaryWeather ? Math.round(primaryWeather.temperature_day_avg) : 9}
-              rain={primaryWeather ? Math.round(primaryWeather.precipitation_prob * 100) : 30}
+              temp={primaryWeather ? Math.round(primaryWeather.temperature_day_avg) : 0}
+              rain={primaryWeather ? Math.round(primaryWeather.precipitation_prob * 100) : 0}
               uv={3}
             />
 

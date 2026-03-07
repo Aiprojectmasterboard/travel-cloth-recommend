@@ -151,17 +151,17 @@ export function TripProvider({ children }: { children: ReactNode }) {
           bestResult = result;
         }
 
-        // For pro/annual plans, wait for AI-generated images (not just teaser)
+        // Wait for meaningful data, not just teaser_url
         const isPaidImagePlan = result.plan === "pro" || result.plan === "annual";
         const hasFullImages = result.images?.length > 0;
         const hasCapsule = result.capsule?.items?.length > 0;
 
         // Ready conditions:
         // - Pro/Annual: need images[] OR capsule items (images may still be generating)
-        // - Standard: teaser_url is sufficient
+        // - Standard: prefer capsule items (real AI data), accept teaser-only after 8 polls
         const isReady = isPaidImagePlan
           ? hasFullImages || (hasCapsule && i >= 10) // After 10 polls, accept capsule-only
-          : (hasCapsule || hasFullImages || !!result.teaser_url);
+          : hasCapsule || hasFullImages || (!!result.teaser_url && i >= 8);
 
         if (isReady) {
           setState((s) => ({
