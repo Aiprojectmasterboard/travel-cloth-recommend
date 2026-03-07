@@ -62,6 +62,7 @@ export function SEO({
     setMeta("property", "og:site_name", SITE_NAME);
 
     // Twitter
+    setMeta("name", "twitter:card", "summary_large_image");
     setMeta("name", "twitter:title", fullTitle);
     setMeta("name", "twitter:description", desc);
     setMeta("name", "twitter:image", image);
