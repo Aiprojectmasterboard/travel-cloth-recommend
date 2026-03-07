@@ -115,6 +115,11 @@ export function TripProvider({ children }: { children: ReactNode }) {
 
       const preview = await submitPreview(req);
 
+      // Log teaser generation errors for debugging
+      if (preview.teaser_error) {
+        console.error('[TripContext] Teaser AI generation failed:', preview.teaser_error);
+      }
+
       sessionStorage.setItem(PREVIEW_KEY, JSON.stringify(preview));
       setState((s) => ({
         ...s,

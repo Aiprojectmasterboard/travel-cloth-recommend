@@ -104,6 +104,8 @@ export interface PreviewResponse {
   capsule: { count: number; principles: string[] }
   vibes: VibeData[]
   weather: WeatherData[]
+  /** Non-null if teaser AI generation failed (diagnostic info) */
+  teaser_error?: string | null
 }
 
 // Response from GET /api/result/:tripId

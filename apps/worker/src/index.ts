@@ -246,6 +246,28 @@ app.get('/api/health', (c) =>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 1a. GET /api/debug/recent-trips — Show recent trips and their teaser status
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.get('/api/debug/recent-trips', async (c) => {
+  const res = await supabase(
+    c.env,
+    '/trips?order=created_at.desc&limit=5&select=id,status,cities,gender,height_cm,weight_kg,aesthetics,face_url,created_at'
+  );
+  if (!res.ok) return c.json({ error: 'Failed to query trips' }, 500);
+  const trips = await res.json();
+
+  // Also get recent generation_jobs
+  const jobsRes = await supabase(
+    c.env,
+    '/generation_jobs?order=created_at.desc&limit=10&select=id,trip_id,city,job_type,status,image_url,attempts,created_at'
+  );
+  const jobs = jobsRes.ok ? await jobsRes.json() : [];
+
+  return c.json({ trips, generation_jobs: jobs });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 1b. GET /api/test-gemini — Diagnostic: test Gemini image generation directly
 // ─────────────────────────────────────────────────────────────────────────────
 
