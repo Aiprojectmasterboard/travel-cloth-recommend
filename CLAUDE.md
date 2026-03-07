@@ -285,7 +285,14 @@ data:    JetBrains Mono
 - **유효한 값**: `'compact'` | `'normal'` | `'flexible'` (이 3개만 허용)
 - **현재 설정**: `size: 'compact'` + 컨테이너 `display: none`
 
-### BUG-004: PreviewPage 폴백 URL 미반영 [2026-03-07]
+### BUG-004: 불필요한 기본 얼굴 이미지 강제 전달 [2026-03-07]
+- **파일**: `orchestrator.ts` → `runTeaserBackground()`
+- **증상**: 사용자가 사진을 안 올렸는데도 Gemini에 default face 이미지를 전달 → 안전 필터 차단 → 40초 낭비 후 재시도
+- **원인**: `effectiveFaceUrl = face_url || default-male/female.png` — 항상 face 포함
+- **수정**: `effectiveFaceUrl = face_url || undefined` — 사용자가 올린 사진만 사용
+- **규칙**: AI 이미지 생성 시 사용자가 명시적으로 제공한 데이터만 전달. 플레이스홀더 데이터 전달 금지.
+
+### BUG-005: PreviewPage 폴백 URL 미반영 [2026-03-07]
 - **증상**: Gemini 실패 시 서버가 보낸 폴백 URL이 무시됨
 - **원인**: `status === 'fallback'`일 때 `setPolledTeaserUrl(result.teaser_url)` 누락
 - **수정**: fallback 상태에서 서버 URL을 `setPolledTeaserUrl()`로 반영
