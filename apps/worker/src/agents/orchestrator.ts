@@ -47,6 +47,8 @@ interface CityInput {
   days: number;
   lat?: number;
   lon?: number;
+  fromDate?: string;  // YYYY-MM-DD
+  toDate?: string;    // YYYY-MM-DD
 }
 
 export interface PreviewResponse {
@@ -481,6 +483,8 @@ function parseCities(raw: unknown[]): CityInput[] {
       days: typeof obj.days === 'number' ? obj.days : 1,
       lat: typeof obj.lat === 'number' ? obj.lat : undefined,
       lon: typeof obj.lon === 'number' ? obj.lon : undefined,
+      fromDate: typeof obj.fromDate === 'string' ? obj.fromDate : undefined,
+      toDate: typeof obj.toDate === 'string' ? obj.toDate : undefined,
     });
   }
   return results;
@@ -543,7 +547,7 @@ export async function runPreview(
       ? `${staticBase}/annual-outfit-1.png`
       : `${staticBase}/pro-outfit-1.png`;
 
-    // ── 2. Weather — fast API call (~2s) ────────────────────────────────────
+    // ── 2. Weather — fast API call (~2s), uses exact travel dates when available ──
     const weatherResults = await Promise.all(
       cities.map(async (city): Promise<WeatherResult> => {
         if (!city.lat || !city.lon) {
@@ -555,7 +559,14 @@ export async function runPreview(
           };
         }
         try {
-          return await weatherAgent({ city: city.name, lat: city.lat, lon: city.lon, month }, env);
+          return await weatherAgent({
+            city: city.name,
+            lat: city.lat,
+            lon: city.lon,
+            month,
+            fromDate: city.fromDate,
+            toDate: city.toDate,
+          }, env);
         } catch (err) {
           console.warn(`[runPreview] Weather failed for ${city.name}:`, (err as Error).message);
           return {
@@ -696,7 +707,7 @@ export async function runResult(
     : await Promise.all(
         cities.map((city) =>
           city.lat && city.lon
-            ? weatherAgent({ city: city.name, lat: city.lat, lon: city.lon, month }, env)
+            ? weatherAgent({ city: city.name, lat: city.lat, lon: city.lon, month, fromDate: city.fromDate, toDate: city.toDate }, env)
             : Promise.resolve<WeatherResult>({
                 city: city.name,
                 month,

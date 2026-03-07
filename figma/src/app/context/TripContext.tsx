@@ -72,7 +72,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
     setState((s) => ({ ...s, loading: true, error: null, phase: "previewing" }));
 
     try {
-      // Build request from onboarding data
+      // Build request from onboarding data — include exact dates for weather accuracy
       const cities = onboarding.cities.map((c) => {
         const from = c.fromDate ? new Date(c.fromDate) : new Date();
         const to = c.toDate ? new Date(c.toDate) : new Date(from.getTime() + 7 * 86400000);
@@ -83,6 +83,8 @@ export function TripProvider({ children }: { children: ReactNode }) {
           days,
           ...(c.lat != null ? { lat: c.lat } : {}),
           ...(c.lon != null ? { lon: c.lon } : {}),
+          ...(c.fromDate ? { fromDate: c.fromDate } : {}),
+          ...(c.toDate ? { toDate: c.toDate } : {}),
         };
       });
 

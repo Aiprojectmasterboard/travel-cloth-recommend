@@ -1,8 +1,12 @@
 /**
  * weatherAgent.ts
  *
- * Fetches monthly climate statistics for a city from the Open-Meteo archive API
- * and caches results in the Supabase `weather_cache` table for 24 hours.
+ * Fetches climate statistics for a city from the Open-Meteo archive API.
+ * Supports two modes:
+ *   1. Exact date range (fromDate/toDate) — queries last year's same dates
+ *   2. Month fallback — queries entire month from last year
+ *
+ * Results are cached in the Supabase `weather_cache` table for 24 hours.
  *
  * Climate band logic:
  *   cold   → avg_max < 10°C
@@ -27,6 +31,8 @@ export interface WeatherResult {
   precipitation_prob: number;    // 0.0–1.0 fraction of rainy days (>3 mm)
   climate_band: ClimateBand;
   style_hint: string;
+  /** Exact date range queried (if provided) */
+  date_range?: string;
 }
 
 // Internal Open-Meteo archive API response shape
@@ -45,6 +51,7 @@ interface OpenMeteoArchiveResponse {
 interface WeatherCacheRow {
   city: string;
   month: number;
+  date_range?: string;
   data: WeatherResult;
   cached_at: string;
 }
@@ -93,24 +100,61 @@ function buildStyleHint(band: ClimateBand, dayAvg: number): string {
   }
 }
 
+// ─── Date Helpers ─────────────────────────────────────────────────────────────
+
+/**
+ * Shifts a date string (YYYY-MM-DD) to the same MM-DD in the previous year.
+ * Handles leap year edge case (Feb 29 → Feb 28).
+ */
+function toLastYear(dateStr: string): string {
+  const d = new Date(dateStr + 'T00:00:00Z');
+  const lastYear = d.getUTCFullYear() - 1;
+  const month = d.getUTCMonth(); // 0-based
+  const day = d.getUTCDate();
+
+  // Handle Feb 29 in non-leap years
+  const maxDay = new Date(lastYear, month + 1, 0).getDate();
+  const safeDay = Math.min(day, maxDay);
+
+  const mm = String(month + 1).padStart(2, '0');
+  const dd = String(safeDay).padStart(2, '0');
+  return `${lastYear}-${mm}-${dd}`;
+}
+
 // ─── Open-Meteo Fetch ─────────────────────────────────────────────────────────
 
+/**
+ * Fetches weather data from Open-Meteo Archive API.
+ * Accepts either exact dates (startDate/endDate) or falls back to month-based.
+ */
 async function fetchOpenMeteo(
   lat: number,
   lon: number,
-  month: number
+  month: number,
+  startDate?: string,
+  endDate?: string,
 ): Promise<WeatherResult | null> {
-  // Use the previous calendar year's data for the same month (archive endpoint
-  // requires a completed date range).
-  const year = new Date().getUTCFullYear() - 1;
-  const mm = String(month).padStart(2, '0');
-  const lastDay = new Date(year, month, 0).getDate(); // day 0 of next month = last day of this month
+  let queryStart: string;
+  let queryEnd: string;
+
+  if (startDate && endDate) {
+    // Exact date range: use last year's same dates
+    queryStart = toLastYear(startDate);
+    queryEnd = toLastYear(endDate);
+  } else {
+    // Fallback: entire month from last year
+    const year = new Date().getUTCFullYear() - 1;
+    const mm = String(month).padStart(2, '0');
+    const lastDay = new Date(year, month, 0).getDate();
+    queryStart = `${year}-${mm}-01`;
+    queryEnd = `${year}-${mm}-${lastDay}`;
+  }
 
   const params = new URLSearchParams({
     latitude: lat.toString(),
     longitude: lon.toString(),
-    start_date: `${year}-${mm}-01`,
-    end_date: `${year}-${mm}-${lastDay}`,
+    start_date: queryStart,
+    end_date: queryEnd,
     daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum',
     timezone: 'auto',
   });
@@ -169,33 +213,48 @@ async function fetchOpenMeteo(
     precipitation_prob: Math.round(precipFraction * 100) / 100,
     climate_band: band,
     style_hint: buildStyleHint(band, dayAvg),
+    date_range: startDate && endDate ? `${queryStart}~${queryEnd}` : undefined,
   };
 }
 
 // ─── Main Exported Function ───────────────────────────────────────────────────
 
 /**
- * Returns weather statistics for `city` in `month`.
+ * Returns weather statistics for `city` during the travel period.
  *
- * Cache strategy: reads `weather_cache` first. If the cached row is <24 hours
- * old, returns it immediately. Otherwise fetches fresh data from Open-Meteo
- * and upserts into the cache before returning.
+ * When `fromDate` and `toDate` are provided, queries the exact date range
+ * from the previous year (e.g. 2026-08-15~20 → queries 2025-08-15~20).
+ * Otherwise falls back to the entire month.
  *
- * @param input - city name, lat/lon coordinates, and travel month (1–12)
+ * Cache strategy: reads `weather_cache` first (keyed by city + date_range or month).
+ * If the cached row is <24 hours old, returns it immediately.
+ *
+ * @param input - city name, lat/lon, month, optional fromDate/toDate (YYYY-MM-DD)
  * @param env   - Cloudflare Worker bindings
  */
 export async function weatherAgent(
-  input: { city: string; lat: number; lon: number; month: number },
+  input: {
+    city: string;
+    lat: number;
+    lon: number;
+    month: number;
+    fromDate?: string;
+    toDate?: string;
+  },
   env: Bindings
 ): Promise<WeatherResult> {
-  const { city, lat, lon, month } = input;
+  const { city, lat, lon, month, fromDate, toDate } = input;
+
+  // Cache key: use exact date range if available, otherwise month
+  const hasExactDates = fromDate && toDate;
+  const cacheKey = hasExactDates ? `${fromDate}~${toDate}` : String(month);
+  const cacheFilter = hasExactDates
+    ? `city=eq.${encodeURIComponent(city)}&date_range=eq.${encodeURIComponent(cacheKey)}`
+    : `city=eq.${encodeURIComponent(city)}&month=eq.${month}`;
 
   // ── 1. Cache lookup ──────────────────────────────────────────────────────
 
-  const cacheRes = await sbFetch(
-    env,
-    `/weather_cache?city=eq.${encodeURIComponent(city)}&month=eq.${month}&limit=1`
-  );
+  const cacheRes = await sbFetch(env, `/weather_cache?${cacheFilter}&limit=1`);
 
   if (cacheRes.ok) {
     const rows = (await cacheRes.json()) as WeatherCacheRow[];
@@ -206,7 +265,7 @@ export async function weatherAgent(
       const maxAgeMs = 24 * 60 * 60 * 1000; // 24 hours
 
       if (ageMs < maxAgeMs) {
-        console.log(`[weatherAgent] Cache HIT for ${city} month=${month}`);
+        console.log(`[weatherAgent] Cache HIT for ${city} ${hasExactDates ? cacheKey : `month=${month}`}`);
         return { ...row.data, city };
       }
     }
@@ -214,8 +273,8 @@ export async function weatherAgent(
 
   // ── 2. Fetch from Open-Meteo ────────────────────────────────────────────
 
-  console.log(`[weatherAgent] Cache MISS for ${city} month=${month} — fetching Open-Meteo`);
-  const fresh = await fetchOpenMeteo(lat, lon, month);
+  console.log(`[weatherAgent] Cache MISS for ${city} ${hasExactDates ? cacheKey : `month=${month}`} — fetching Open-Meteo`);
+  const fresh = await fetchOpenMeteo(lat, lon, month, fromDate, toDate);
 
   if (!fresh) {
     // Fallback: return neutral data rather than throwing so the pipeline continues
@@ -243,11 +302,12 @@ export async function weatherAgent(
       body: JSON.stringify({
         city,
         month,
+        ...(hasExactDates ? { date_range: cacheKey } : {}),
         data: result,
         cached_at: new Date().toISOString(),
       }),
     });
-    console.log(`[weatherAgent] Cache upserted for ${city} month=${month}`);
+    console.log(`[weatherAgent] Cache upserted for ${city} ${hasExactDates ? cacheKey : `month=${month}`}`);
   } catch (err) {
     // Non-fatal: cache write failure should not block the pipeline
     console.error('[weatherAgent] Cache upsert failed:', (err as Error).message);
