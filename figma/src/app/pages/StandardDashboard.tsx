@@ -65,37 +65,6 @@ export function StandardDashboard() {
   const [pdfExporting, setPdfExporting] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
-  const handleExportPdf = useCallback(async () => {
-    if (!mainRef.current || pdfExporting) return;
-    setPdfExporting(true);
-    try {
-      const citySlug = cityName?.toLowerCase().replace(/\s+/g, "-") || "trip";
-      await exportDashboardPdf(mainRef.current, `travel-capsule-standard-${citySlug}.pdf`);
-    } finally {
-      setPdfExporting(false);
-    }
-  }, [pdfExporting]);
-
-  const handleUpgradeToPro = useCallback(async () => {
-    GA.planSelected("pro");
-    GA.checkoutStart("pro");
-    try {
-      const successUrl = `${window.location.origin}/checkout/success?plan=pro`;
-      const session = await createCheckoutSession({
-        plan: "pro",
-        successUrl,
-        tripId: tripId || undefined,
-      });
-      if (session.url) {
-        window.location.href = session.url;
-      } else {
-        navigate("/preview");
-      }
-    } catch {
-      navigate("/preview");
-    }
-  }, [tripId, navigate]);
-
   // Login gate — Standard is free but requires sign-up
   useEffect(() => {
     if (!authLoading && !isLoggedIn) {
@@ -174,6 +143,40 @@ export function StandardDashboard() {
   const primaryCity = onboarding.cities[0];
   const cityName = result?.cities?.[0]?.name || primaryCity?.city || "Paris";
   const countryName = result?.cities?.[0]?.country || primaryCity?.country || "France";
+
+  // ─── IMPORTANT: These callbacks use cityName/tripId declared above.
+  // They MUST be placed AFTER those declarations to avoid TDZ crash in
+  // production minified builds ("Cannot access 'X' before initialization").
+  const handleExportPdf = useCallback(async () => {
+    if (!mainRef.current || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const citySlug = cityName?.toLowerCase().replace(/\s+/g, "-") || "trip";
+      await exportDashboardPdf(mainRef.current, `travel-capsule-standard-${citySlug}.pdf`);
+    } finally {
+      setPdfExporting(false);
+    }
+  }, [pdfExporting, cityName]);
+
+  const handleUpgradeToPro = useCallback(async () => {
+    GA.planSelected("pro");
+    GA.checkoutStart("pro");
+    try {
+      const successUrl = `${window.location.origin}/checkout/success?plan=pro`;
+      const session = await createCheckoutSession({
+        plan: "pro",
+        successUrl,
+        tripId: tripId || undefined,
+      });
+      if (session.url) {
+        window.location.href = session.url;
+      } else {
+        navigate("/preview");
+      }
+    } catch {
+      navigate("/preview");
+    }
+  }, [tripId, navigate]);
 
   const cityInput = useMemo(() => ({
     city: cityName,
