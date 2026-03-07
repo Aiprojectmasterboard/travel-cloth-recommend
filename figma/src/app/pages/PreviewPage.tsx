@@ -327,8 +327,11 @@ export function PreviewPage() {
             } catch { /* ignore */ }
             return;
           }
-          if (result.status === 'fallback' && result.teaser_url) {
-            // Fallback means generation failed — use what we have
+          if (result.status === 'fallback') {
+            // Fallback means Gemini failed — use server-provided city-specific fallback
+            if (result.teaser_url) {
+              setPolledTeaserUrl(result.teaser_url);
+            }
             setTeaserReady(true);
             return;
           }
