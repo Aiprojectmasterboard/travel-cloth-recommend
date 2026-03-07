@@ -615,11 +615,111 @@ app.post('/api/preview', async (c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 2b. GET /api/teaser/:tripId — Poll for background-generated teaser image
+// 2b. POST /api/teaser/generate — Trigger teaser image generation
 // ─────────────────────────────────────────────────────────────────────────────
-// Frontend polls this after /api/preview returns. The teaser is generated in
-// the background via waitUntil() (Gemini takes ~30-40s). This endpoint returns
-// the teaser_url once it's ready, or { status: "pending" } if still generating.
+// Called by frontend after /api/preview returns. This is a LONG request (~30-50s)
+// that generates the AI teaser image synchronously. Frontend calls this as
+// fire-and-forget (no await) while simultaneously polling GET /api/teaser/:tripId.
+// This approach is more reliable than waitUntil() which may have short time limits.
+
+app.post('/api/teaser/generate', async (c) => {
+  let body: { trip_id?: string };
+  try {
+    body = await c.req.json();
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
+
+  const tripId = body.trip_id;
+  if (!tripId || !isValidUUID(tripId)) {
+    return c.json({ error: 'Valid trip_id required' }, 400);
+  }
+
+  if (!c.env.NANOBANANA_API_KEY) {
+    return c.json({ error: 'Image generation not configured' }, 503);
+  }
+
+  // Check if teaser already exists (prevent duplicate generation)
+  const existingRes = await supabase(
+    c.env,
+    `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser&select=status,image_url&limit=1`
+  );
+  if (existingRes.ok) {
+    const existing = (await existingRes.json()) as Array<{ status: string; image_url: string | null }>;
+    if (existing.length > 0 && existing[0].image_url?.includes('/temp/')) {
+      return c.json({ status: 'already_exists', teaser_url: existing[0].image_url });
+    }
+  }
+
+  // Fetch trip data for teaser generation
+  const tripRes = await supabase(c.env, `/trips?id=eq.${tripId}&limit=1`);
+  if (!tripRes.ok) return c.json({ error: 'Trip not found' }, 404);
+
+  const trips = (await tripRes.json()) as Array<Record<string, unknown>>;
+  if (trips.length === 0) return c.json({ error: 'Trip not found' }, 404);
+
+  const trip = trips[0];
+  const vibeData = Array.isArray(trip.vibe_data) ? trip.vibe_data as Array<Record<string, unknown>> : [];
+  const firstVibe = vibeData[0];
+
+  if (!firstVibe) {
+    return c.json({ error: 'No vibe data found for trip' }, 400);
+  }
+
+  const gender = (typeof trip.gender === 'string' ? trip.gender : 'female');
+  const faceUrl = typeof trip.face_url === 'string' ? trip.face_url : undefined;
+
+  const userProfile = {
+    gender,
+    height_cm: Number(trip.height_cm) > 0 ? Number(trip.height_cm) : undefined,
+    weight_kg: Number(trip.weight_kg) > 0 ? Number(trip.weight_kg) : undefined,
+    aesthetics: Array.isArray(trip.aesthetics) ? trip.aesthetics as string[] : [],
+  };
+
+  try {
+    await runTeaserBackground(
+      {
+        trip_id: tripId,
+        vibeResult: {
+          city: String(firstVibe.city || ''),
+          mood_label: String(firstVibe.mood_label || ''),
+          mood_name: String(firstVibe.mood_name || ''),
+          vibe_tags: Array.isArray(firstVibe.vibe_tags) ? firstVibe.vibe_tags as string[] : [],
+          color_palette: Array.isArray(firstVibe.color_palette) ? firstVibe.color_palette as string[] : [],
+          avoid_note: String(firstVibe.avoid_note || ''),
+        },
+        face_url: faceUrl,
+        gender,
+        user_profile: userProfile,
+        fallbackTeaser: gender === 'male'
+          ? 'https://travel-cloth-recommend.pages.dev/examples/annual-outfit-1.png'
+          : 'https://travel-cloth-recommend.pages.dev/examples/pro-outfit-1.png',
+      },
+      c.env
+    );
+
+    // Read back the result
+    const jobRes = await supabase(
+      c.env,
+      `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser&order=created_at.desc&limit=1&select=status,image_url`
+    );
+    if (jobRes.ok) {
+      const jobs = (await jobRes.json()) as Array<{ status: string; image_url: string | null }>;
+      if (jobs.length > 0) {
+        return c.json({ status: jobs[0].status, teaser_url: jobs[0].image_url });
+      }
+    }
+    return c.json({ status: 'completed', teaser_url: null });
+  } catch (err) {
+    console.error(`[POST /api/teaser/generate] Failed for trip ${tripId}:`, (err as Error).message);
+    return c.json({ error: (err as Error).message.slice(0, 200) }, 500);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2c. GET /api/teaser/:tripId — Poll for teaser image status
+// ─────────────────────────────────────────────────────────────────────────────
+// Returns the teaser_url once ready, or { status: "pending" } if still generating.
 
 app.get('/api/teaser/:tripId', async (c) => {
   const tripId = c.req.param('tripId');

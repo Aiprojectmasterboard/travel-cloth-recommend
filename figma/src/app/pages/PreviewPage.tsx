@@ -7,7 +7,7 @@ import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
-import { pollTeaser } from "../lib/api";
+import { pollTeaser, triggerTeaserGeneration } from "../lib/api";
 import { GA } from "../lib/analytics";
 import { SEO } from "../components/SEO";
 
@@ -279,9 +279,10 @@ export function PreviewPage() {
   const initialTeaserUrl = preview?.teaser_url || cityFallback;
   const moodLabel = preview?.mood_label || `${city} \u2014 Style Analysis`;
 
-  // Poll for AI-generated teaser image (generated in background via waitUntil)
+  // Poll for AI-generated teaser image + trigger generation via dedicated endpoint
   const [polledTeaserUrl, setPolledTeaserUrl] = useState<string | null>(null);
   const [teaserReady, setTeaserReady] = useState(false);
+  const triggerSentRef = useRef(false);
 
   useEffect(() => {
     if (!tripId || teaserReady) return;
@@ -292,11 +293,21 @@ export function PreviewPage() {
       return;
     }
 
+    // Fire-and-forget: trigger teaser generation via dedicated endpoint
+    // This is more reliable than waitUntil() which may have platform time limits
+    if (!triggerSentRef.current) {
+      triggerSentRef.current = true;
+      triggerTeaserGeneration(tripId);
+    }
+
     let cancelled = false;
     let attempts = 0;
-    const MAX_POLLS = 20; // ~60s total (3s intervals)
+    const MAX_POLLS = 25; // ~75s total (3s intervals) — enough for Gemini ~40s + overhead
 
     const poll = async () => {
+      // Wait 5s before first poll to give Gemini time to start
+      await new Promise((r) => setTimeout(r, 5000));
+
       while (!cancelled && attempts < MAX_POLLS) {
         attempts++;
         try {

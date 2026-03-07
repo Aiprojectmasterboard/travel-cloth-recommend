@@ -174,3 +174,10 @@ export interface TeaserStatus {
 export function pollTeaser(tripId: string): Promise<TeaserStatus> {
   return apiGet<TeaserStatus>(`/api/teaser/${tripId}`)
 }
+
+/** Fire-and-forget: trigger teaser generation (long request ~30-50s) */
+export function triggerTeaserGeneration(tripId: string): void {
+  apiPost('/api/teaser/generate', { trip_id: tripId }).catch(() => {
+    // Intentionally fire-and-forget — polling will detect the result
+  })
+}
