@@ -389,7 +389,7 @@ export function ProDashboard() {
             <button key={cs.city} onClick={() => { setActiveCity(i); setExpandedOutfit(0); }}
               className={`px-4 py-1.5 rounded-full text-[12px] uppercase tracking-[0.08em] transition-colors cursor-pointer border ${activeCity === i ? "bg-[#C4613A] text-white border-[#C4613A]" : "bg-white text-[#57534e] border-[#E8DDD4] hover:border-[#C4613A]/40"}`}
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              {cs.city} · {cs.dates}
+              <span className="truncate max-w-[200px]">{cs.city} · {cs.dates}</span>
             </button>
           ))}
         </div>

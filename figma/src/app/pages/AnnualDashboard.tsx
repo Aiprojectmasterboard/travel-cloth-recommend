@@ -274,7 +274,7 @@ export function AnnualDashboard() {
                   </span>
                 </div>
                 {!regenUsed && (
-                  <button onClick={handleRegenerate} disabled={regenLoading} className="hidden sm:flex items-center gap-1.5 h-[36px] px-4 bg-white/20 backdrop-blur-sm text-white rounded-none text-[12px] uppercase tracking-[0.08em] hover:bg-white/30 transition-colors cursor-pointer border border-white/30 disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                  <button onClick={handleRegenerate} disabled={regenLoading} className="hidden sm:flex items-center gap-1.5 h-[36px] px-4 bg-white/20 backdrop-blur-sm text-white rounded-none text-[11px] sm:text-[12px] uppercase tracking-[0.08em] hover:bg-white/30 transition-colors cursor-pointer border border-white/30 disabled:opacity-50 whitespace-nowrap" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
                     {regenLoading ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Icon name="refresh" size={14} />}
                     {regenLoading ? t("dashboard.generating") : `${t("dashboard.regenerate")} (1 ${t("dashboard.left")})`}
                   </button>

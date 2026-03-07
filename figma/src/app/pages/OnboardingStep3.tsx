@@ -256,7 +256,7 @@ export function OnboardingStep3() {
           Choose the looks that best represent your travel personality.
         </p>
 
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {AESTHETICS.map((a) => (
             <AestheticCard
               key={a.label}

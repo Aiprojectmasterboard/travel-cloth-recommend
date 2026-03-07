@@ -517,8 +517,8 @@ export function LandingPage() {
                   </span>
                 </div>
               </div>
-              <div className="p-5 flex items-center justify-between">
-                <div className="flex gap-2">
+              <div className="p-5 flex items-center justify-between gap-3">
+                <div className="flex gap-2 flex-wrap">
                   {[t("section.examples.pro.tag1"), t("section.examples.pro.tag2"), t("section.examples.pro.tag3")].map((s) => (
                     <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                       {s}
@@ -558,8 +558,8 @@ export function LandingPage() {
                   </span>
                 </div>
               </div>
-              <div className="p-5 flex items-center justify-between">
-                <div className="flex gap-2">
+              <div className="p-5 flex items-center justify-between gap-3">
+                <div className="flex gap-2 flex-wrap">
                   {[t("section.examples.annual.tag1"), t("section.examples.annual.tag2"), t("section.examples.annual.tag3")].map((s) => (
                     <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
                       {s}

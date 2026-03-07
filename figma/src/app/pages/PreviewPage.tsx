@@ -463,7 +463,7 @@ export function PreviewPage() {
         </p>
 
         {/* Preview Card — Real AI Teaser */}
-        <div className="mt-10 relative rounded-2xl overflow-hidden" style={{ aspectRatio: "21/9" }}>
+        <div className="mt-10 relative rounded-2xl overflow-hidden aspect-[16/9] sm:aspect-[21/9]">
           <ImageWithFallback src={teaserUrl} alt="Trip preview" className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
           <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-[360px] p-4 sm:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(20px)" }}>
@@ -610,7 +610,7 @@ export function PreviewPage() {
                 <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A] block mb-1" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                   {t(item.labelKey)}
                 </span>
-                <span className="text-[20px] text-[#292524] truncate block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.value}</span>
+                <span className="text-[15px] sm:text-[20px] text-[#292524] truncate block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.value}</span>
               </div>
             ))}
           </div>
@@ -684,7 +684,7 @@ export function PreviewPage() {
               <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>Standard</h3>
               <div className="mt-4 flex items-baseline gap-2">
                 <span className="text-[24px] text-[#57534e] line-through opacity-60" style={{ fontFamily: displayFont, fontWeight: 500 }}>{t("pricing.originalPrice")}</span>
-                <span className="text-[48px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>{t("pricing.promoFree")}</span>
+                <span className="text-[36px] sm:text-[48px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>{t("pricing.promoFree")}</span>
               </div>
               <span className="text-[12px] text-[#C4613A] mt-1 block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("pricing.promoNote")}</span>
               <div className="mt-6 flex flex-col gap-3 flex-1">
@@ -706,7 +706,7 @@ export function PreviewPage() {
               </span>
               <h3 className="text-white not-italic text-[28px]" style={{ fontFamily: displayFont }}>Pro</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$3.99</span>
+                <span className="text-[36px] sm:text-[48px] text-white" style={{ fontFamily: displayFont, fontWeight: 700 }}>$3.99</span>
                 <span className="text-[14px] text-white/70" style={{ fontFamily: bodyFont }}>{t("pricing.oneTime")}</span>
               </div>
               <span className="mt-1 text-[11px] text-white/40" style={{ fontFamily: "var(--font-mono)" }}>
@@ -732,7 +732,7 @@ export function PreviewPage() {
               </span>
               <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>Annual</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-[48px] text-[#292524]" style={{ fontFamily: displayFont, fontWeight: 700 }}>$9.99</span>
+                <span className="text-[36px] sm:text-[48px] text-[#292524]" style={{ fontFamily: displayFont, fontWeight: 700 }}>$9.99</span>
                 <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t("pricing.perYear")}</span>
               </div>
               <div className="mt-6 flex flex-col gap-3 flex-1">
@@ -760,10 +760,14 @@ export function PreviewPage() {
         </div>
 
         <div className="mt-12 pt-8 border-t border-[#EFE8DF] flex items-center justify-center gap-6 flex-wrap">
-          {["footer.privacy", "footer.terms", "footer.contact"].map((key) => (
-            <a key={key} href="#" className="text-[11px] uppercase tracking-[0.1em] text-[#57534e] hover:text-[#C4613A] transition-colors" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
-              {t(key)}
-            </a>
+          {[
+            { key: "footer.privacy", path: "/privacy" },
+            { key: "footer.terms", path: "/terms" },
+            { key: "footer.contact", path: "/contact" },
+          ].map((item) => (
+            <button key={item.key} onClick={() => navigate(item.path)} className="text-[11px] uppercase tracking-[0.1em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+              {t(item.key)}
+            </button>
           ))}
         </div>
       </main>
