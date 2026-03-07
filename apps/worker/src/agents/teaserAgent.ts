@@ -155,14 +155,17 @@ async function generateNanoBanana(
   }
 
   // Extract base64 image from response
-  const responseParts = data.candidates?.[0]?.content?.parts;
+  const candidate = data.candidates?.[0];
+  const responseParts = candidate?.content?.parts;
   if (!responseParts) {
-    throw new Error('[teaserAgent] Gemini returned no content parts');
+    const finishReason = (candidate as { finishReason?: string } | undefined)?.finishReason;
+    throw new Error(`[teaserAgent] Gemini returned no content parts (finishReason=${finishReason || 'unknown'})`);
   }
 
   const imagePart = responseParts.find((p) => p.inlineData?.data);
   if (!imagePart?.inlineData) {
-    throw new Error('[teaserAgent] Gemini returned no image data');
+    const textParts = responseParts.filter((p) => p.text).map((p) => p.text).join(' ');
+    throw new Error(`[teaserAgent] Gemini returned no image data. Text: ${textParts.slice(0, 200)}`);
   }
 
   // Decode base64 to ArrayBuffer
@@ -175,7 +178,9 @@ async function generateNanoBanana(
 }
 
 /**
- * Calls generateNanoBanana with exponential-backoff retry (3 attempts: 1s, 2s, 4s).
+ * Calls generateNanoBanana with exponential-backoff retry (3 attempts).
+ * If face-based generation fails (often Gemini safety filters), automatically
+ * retries WITHOUT the face reference to ensure an image is always generated.
  */
 async function generateWithRetry(
   prompt: string,
@@ -184,21 +189,41 @@ async function generateWithRetry(
 ): Promise<ArrayBuffer> {
   let lastError: Error | null = null;
 
+  // Phase 1: Try with face reference (if provided)
+  if (faceUrl) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt > 0) {
+        await sleep(BACKOFF_MS[attempt - 1] ?? 2_000);
+      }
+      try {
+        return await generateNanoBanana(prompt, apiKey, faceUrl);
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+        console.warn(
+          `[teaserAgent] Face attempt ${attempt + 1}/2 failed: ${lastError.message}`
+        );
+      }
+    }
+    // Face-based generation failed — fall through to no-face retry
+    console.warn(`[teaserAgent] Face-based generation failed, retrying WITHOUT face reference`);
+  }
+
+  // Phase 2: Try without face reference (always works unless Gemini is fully down)
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
     if (attempt > 0) {
       await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
     }
     try {
-      return await generateNanoBanana(prompt, apiKey, faceUrl);
+      return await generateNanoBanana(prompt, apiKey, undefined);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       console.warn(
-        `[teaserAgent] Attempt ${attempt + 1}/${MAX_ATTEMPTS} failed: ${lastError.message}`
+        `[teaserAgent] No-face attempt ${attempt + 1}/${MAX_ATTEMPTS} failed: ${lastError.message}`
       );
     }
   }
 
-  throw lastError ?? new Error(`Teaser generation failed after ${MAX_ATTEMPTS} attempts`);
+  throw lastError ?? new Error(`Teaser generation failed after all attempts`);
 }
 
 // ─── Main Exported Function ───────────────────────────────────────────────────
