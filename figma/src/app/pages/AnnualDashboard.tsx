@@ -97,6 +97,11 @@ export function AnnualDashboard() {
   const [regenError, setRegenError] = useState<string | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
+  // Derive city names early — needed by handleRegenerate deps (avoid TDZ)
+  const primaryCity = onboarding.cities[0];
+  const cityName = result?.cities?.[0]?.name || primaryCity?.city || "Tokyo";
+  const countryName = result?.cities?.[0]?.country || primaryCity?.country || "Japan";
+
   const handleExportPdf = useCallback(async () => {
     if (!mainRef.current || pdfExporting) return;
     setPdfExporting(true);
@@ -225,9 +230,6 @@ export function AnnualDashboard() {
       photo: onboarding.photo,
     });
   }, [onboarding, result]);
-  const primaryCity = onboarding.cities[0];
-  const cityName = result?.cities?.[0]?.name || primaryCity?.city || "Tokyo";
-  const countryName = result?.cities?.[0]?.country || primaryCity?.country || "Japan";
 
   const cityInput = useMemo(() => ({
     city: cityName, country: countryName,

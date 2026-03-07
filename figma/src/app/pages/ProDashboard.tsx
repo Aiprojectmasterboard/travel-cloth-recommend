@@ -88,33 +88,6 @@ export function ProDashboard() {
     }
   }, [pdfExporting]);
 
-  const handleRegenerate = useCallback(async () => {
-    const activeSet = citySets[activeCity] || citySets[0];
-    if (regenUsed || regenLoading || !activeSet) return;
-    setRegenLoading(true);
-    setRegenError(null);
-    try {
-      const res = await regenerateOutfit(tripId || "", activeSet.city);
-      if (res.ok && res.image_url) {
-        setAiImages((prev) => {
-          const next = new Map(prev);
-          next.set(`${res.city}::outfit-${expandedOutfit + 1}`, res.image_url);
-          return next;
-        });
-        setRegenUsed(true);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.includes("429") || msg.includes("regen_limit")) {
-        setRegenUsed(true);
-      }
-      setRegenError(msg.includes("regen_limit") ? t("dashboard.regenLimitReached") : msg.includes("no_order") ? t("dashboard.regenNoOrder") : t("dashboard.regenFailed"));
-      setTimeout(() => setRegenError(null), 5000);
-    } finally {
-      setRegenLoading(false);
-    }
-  }, [regenUsed, regenLoading, tripId, citySets, activeCity, expandedOutfit, t]);
-
   useEffect(() => {
     if (!purchasedPlan) navigate("/preview", { replace: true });
   }, [purchasedPlan, navigate]);
@@ -295,6 +268,34 @@ export function ProDashboard() {
     if (bmi < 27) return "L";
     return "XL";
   })();
+
+  // Regenerate handler — must be declared AFTER citySets to avoid TDZ
+  const handleRegenerate = useCallback(async () => {
+    const activeSet = citySets[activeCity] || citySets[0];
+    if (regenUsed || regenLoading || !activeSet) return;
+    setRegenLoading(true);
+    setRegenError(null);
+    try {
+      const res = await regenerateOutfit(tripId || "", activeSet.city);
+      if (res.ok && res.image_url) {
+        setAiImages((prev) => {
+          const next = new Map(prev);
+          next.set(`${res.city}::outfit-${expandedOutfit + 1}`, res.image_url);
+          return next;
+        });
+        setRegenUsed(true);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg.includes("429") || msg.includes("regen_limit")) {
+        setRegenUsed(true);
+      }
+      setRegenError(msg.includes("regen_limit") ? t("dashboard.regenLimitReached") : msg.includes("no_order") ? t("dashboard.regenNoOrder") : t("dashboard.regenFailed"));
+      setTimeout(() => setRegenError(null), 5000);
+    } finally {
+      setRegenLoading(false);
+    }
+  }, [regenUsed, regenLoading, tripId, citySets, activeCity, expandedOutfit, t]);
 
   // AI packing list
   const aiPackingList = useMemo<Array<{ name: string; category: string; desc: string; essential: boolean; cities: string[] }>>(() => {
