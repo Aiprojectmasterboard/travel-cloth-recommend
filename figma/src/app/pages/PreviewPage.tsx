@@ -520,9 +520,9 @@ export function PreviewPage() {
               // Each locked slot gets a unique CSS treatment so they look like different images
               const lockedStyles: React.CSSProperties[] = [
                 {},
-                { filter: "blur(12px) brightness(0.65) hue-rotate(25deg) saturate(1.2)", transform: "scale(1.3) scaleX(-1)", objectPosition: "top" },
-                { filter: "blur(14px) brightness(0.55) sepia(0.3) saturate(1.5)", transform: "scale(1.35) rotate(3deg)", objectPosition: "bottom" },
-                { filter: "blur(11px) brightness(0.6) hue-rotate(-30deg) contrast(1.15)", transform: "scale(1.4) scaleX(-1) rotate(-2deg)", objectPosition: "left" },
+                { filter: "blur(14px) brightness(0.55) hue-rotate(40deg) saturate(1.4) contrast(1.1)", transform: "scale(1.4) scaleX(-1) translateY(-8%)", objectPosition: "20% 0%" },
+                { filter: "blur(16px) brightness(0.5) sepia(0.4) saturate(1.6) hue-rotate(-15deg)", transform: "scale(1.5) rotate(5deg) translateX(10%)", objectPosition: "80% 100%" },
+                { filter: "blur(13px) brightness(0.45) hue-rotate(-50deg) contrast(1.2) saturate(1.3)", transform: "scale(1.45) scaleX(-1) rotate(-4deg) translateY(10%)", objectPosition: "50% 30%" },
               ];
               return (
                 <div

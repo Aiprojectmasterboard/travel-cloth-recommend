@@ -51,7 +51,7 @@ export async function getTurnstileToken(): Promise<string> {
 
     widgetId = turnstile.render(container, {
       sitekey: SITE_KEY,
-      size: 'invisible',
+      size: 'compact',
       callback: (token: string) => {
         cleanup();
         resolve(token);

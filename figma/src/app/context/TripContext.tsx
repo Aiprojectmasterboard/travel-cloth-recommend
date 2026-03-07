@@ -91,12 +91,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
       const ht = parseFloat(onboarding.height);
       const wt = parseFloat(onboarding.weight);
 
-      // Get Turnstile token (invisible challenge)
+      // Get Turnstile token (compact challenge)
       let turnstileToken: string | undefined;
       try {
         turnstileToken = await getTurnstileToken();
-      } catch {
-        // Continue without token — worker will reject if required
+      } catch (e) {
+        console.warn('[TripContext] Turnstile token failed, proceeding without:', (e as Error).message);
+        // Continue without token — worker may still accept if SKIP_TURNSTILE=true
       }
 
       const req: PreviewRequest = {
