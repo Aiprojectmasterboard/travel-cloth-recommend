@@ -23,11 +23,38 @@ const AESTHETICS = [
   { label: "Bohemian", img: IMAGES.bohemian },
 ];
 
-type UploadStatus = "idle" | "compressing" | "uploading" | "done" | "error";
+type UploadStatus = "idle" | "compressing" | "uploading" | "detecting" | "done" | "error";
+type FaceWarning = null | "no_face" | "multiple_faces";
 
 type UploadResult =
   | { success: true; face_url: string }
   | { success: false; errorMessage: string };
+
+/**
+ * Detect faces in an image using the browser's FaceDetector API.
+ * Returns the number of faces found, or -1 if the API is not supported.
+ * Only works in Chromium browsers (Chrome, Edge, Opera).
+ */
+async function detectFaces(imageSrc: string): Promise<number> {
+  if (typeof (window as unknown as Record<string, unknown>).FaceDetector !== "function") {
+    return -1; // API not supported — skip detection
+  }
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Image load failed"));
+      img.src = imageSrc;
+    });
+    const FD = (window as unknown as Record<string, new () => { detect(img: HTMLImageElement): Promise<unknown[]> }>).FaceDetector;
+    const detector = new FD();
+    const faces = await detector.detect(img);
+    return faces.length;
+  } catch {
+    return -1; // Detection failed — skip
+  }
+}
 
 const UPLOAD_ERROR_MESSAGES: Record<string, string> = {
   TOO_LARGE: "Your photo is too large. Please use an image under 5MB.",
@@ -72,6 +99,7 @@ export function OnboardingStep3() {
   const [uploadStatus, setUploadStatus] = useState<UploadStatus>("idle");
   const [uploadError, setUploadError] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [faceWarning, setFaceWarning] = useState<FaceWarning>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleAesthetic = (label: string) => {
@@ -185,6 +213,18 @@ export function OnboardingStep3() {
     const result = await uploadToR2(resized);
     if (result.success) {
       setData((prev) => ({ ...prev, faceUrl: result.face_url }));
+      setUploadStatus("detecting");
+      // Run face detection on the local preview
+      const previewSrc = URL.createObjectURL(resized);
+      const faceCount = await detectFaces(previewSrc);
+      URL.revokeObjectURL(previewSrc);
+      if (faceCount === 0) {
+        setFaceWarning("no_face");
+      } else if (faceCount > 1) {
+        setFaceWarning("multiple_faces");
+      } else {
+        setFaceWarning(null);
+      }
       setUploadStatus("done");
     } else {
       setUploadStatus("error");
@@ -209,7 +249,21 @@ export function OnboardingStep3() {
     setData((prev) => ({ ...prev, photo: "", photoName: "", faceUrl: "" }));
     setUploadStatus("idle");
     setUploadError("");
+    setFaceWarning(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handleReupload = () => {
+    setFaceWarning(null);
+    removePhoto();
+    // Trigger file picker after state reset
+    setTimeout(() => fileInputRef.current?.click(), 100);
+  };
+
+  const handleUseDefault = () => {
+    // Keep photo preview but clear faceUrl so Gemini generates without face reference
+    setData((prev) => ({ ...prev, faceUrl: "" }));
+    setFaceWarning(null);
   };
 
   return (
@@ -353,6 +407,17 @@ export function OnboardingStep3() {
                   </span>
                 </>
               )}
+              {uploadStatus === "detecting" && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping flex-shrink-0" />
+                  <span
+                    className="text-[13px] text-[#57534e]"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    Checking photo quality…
+                  </span>
+                </>
+              )}
               {uploadStatus === "error" && (
                 <>
                   <Icon name="error_outline" size={16} className="text-red-500" />
@@ -365,6 +430,39 @@ export function OnboardingStep3() {
                 </>
               )}
             </div>
+
+            {/* Face detection warning */}
+            {faceWarning && (
+              <div className="px-4 py-3 border-t border-[#E8DDD4] bg-amber-50">
+                <div className="flex items-start gap-2 mb-3">
+                  <Icon name="warning" size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <p
+                    className="text-[13px] text-amber-800"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    {faceWarning === "no_face"
+                      ? "We couldn't detect a face in this photo. For best results, use a clear photo of one person facing the camera."
+                      : "Multiple faces detected. Please upload a photo with only one person for accurate outfit matching."}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleReupload}
+                    className="px-3 py-1.5 rounded-lg text-[13px] font-medium bg-[#C4613A] text-white hover:bg-[#a8502f] transition-colors cursor-pointer"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    Re-upload Photo
+                  </button>
+                  <button
+                    onClick={handleUseDefault}
+                    className="px-3 py-1.5 rounded-lg text-[13px] font-medium border border-[#E8DDD4] text-[#57534e] hover:bg-[#F5EFE6] transition-colors cursor-pointer"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    Continue with default look
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* Dropzone state */
@@ -457,7 +555,7 @@ export function OnboardingStep3() {
         <BtnPrimary
           size="sm"
           onClick={() => { GA.onboardingStep(3); navigate("/onboarding/4"); }}
-          disabled={uploadStatus === "uploading" || uploadStatus === "compressing"}
+          disabled={uploadStatus === "uploading" || uploadStatus === "compressing" || uploadStatus === "detecting"}
         >
           <span className="flex items-center justify-center gap-2">
             Continue
