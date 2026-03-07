@@ -621,7 +621,7 @@ export async function runPreview(
       teaserUrl = fallbackTeaser;
     }
 
-    // Insert generation_jobs row for tracking
+    // Insert generation_jobs row for tracking (includes error info if teaser failed)
     try {
       await sbFetch(env, '/generation_jobs', {
         method: 'POST',
@@ -629,8 +629,10 @@ export async function runPreview(
           trip_id,
           city: cities[0]?.name ?? '',
           mood: firstVibe?.mood_name ?? '',
-          prompt: firstVibe?.mood_label ?? 'teaser',
-          status: 'completed',
+          prompt: teaserError
+            ? `FAILED: ${teaserError.slice(0, 200)} | Original prompt: ${firstVibe?.mood_label ?? 'teaser'}`
+            : (firstVibe?.mood_label ?? 'teaser'),
+          status: teaserError ? 'failed_fallback' : 'completed',
           image_url: teaserUrl,
           job_type: 'teaser',
           attempts: 1,
