@@ -266,7 +266,7 @@ async function downloadImage(url: string, filename: string) {
 export function PreviewPage() {
   const navigate = useNavigate();
   const { data } = useOnboarding();
-  const { preview, tripId, loading: tripLoading, error: tripError } = useTrip();
+  const { preview, tripId, loading: tripLoading, error: tripError, updatePreviewTeaser } = useTrip();
   const { t, displayFont, bodyFont, lang } = useLang();
   const { isLoggedIn, user, setShowLoginModal, setLoginModalContext } = useAuth();
 
@@ -320,15 +320,8 @@ export function PreviewPage() {
             setTeaserProgress(100);
             setPolledTeaserUrl(result.teaser_url);
             setTeaserReady(true);
-            // Persist teaser_url to sessionStorage so it survives checkout redirect
-            try {
-              const raw = sessionStorage.getItem("tc_preview_data");
-              if (raw) {
-                const saved = JSON.parse(raw);
-                saved.teaser_url = result.teaser_url;
-                sessionStorage.setItem("tc_preview_data", JSON.stringify(saved));
-              }
-            } catch { /* ignore */ }
+            // Persist to TripContext + sessionStorage so StandardDashboard gets it
+            updatePreviewTeaser(result.teaser_url);
             return;
           }
           if (result.status === 'fallback') {
@@ -336,6 +329,7 @@ export function PreviewPage() {
             setTeaserProgress(100);
             if (result.teaser_url) {
               setPolledTeaserUrl(result.teaser_url);
+              updatePreviewTeaser(result.teaser_url);
             }
             setTeaserReady(true);
             return;

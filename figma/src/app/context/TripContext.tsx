@@ -26,6 +26,8 @@ interface TripContextType extends TripState {
   startPreview: () => Promise<string>;
   /** Fetch paid result (call after payment) — polls until ready */
   loadResult: (tripId: string) => Promise<ResultData | null>;
+  /** Update the preview teaser URL (called when polling gets the real AI image) */
+  updatePreviewTeaser: (url: string) => void;
   /** Reset state for a new trip */
   reset: () => void;
 }
@@ -221,6 +223,17 @@ export function TripProvider({ children }: { children: ReactNode }) {
     return null;
   }, []);
 
+  // ─── updatePreviewTeaser ─────────────────────────────────────────────
+
+  const updatePreviewTeaser = useCallback((url: string) => {
+    setState((s) => {
+      if (!s.preview) return s;
+      const updated = { ...s.preview, teaser_url: url };
+      sessionStorage.setItem(PREVIEW_KEY, JSON.stringify(updated));
+      return { ...s, preview: updated };
+    });
+  }, []);
+
   // ─── reset ─────────────────────────────────────────────────────────────
 
   const reset = useCallback(() => {
@@ -237,7 +250,7 @@ export function TripProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <TripContext.Provider value={{ ...state, startPreview, loadResult, reset }}>
+    <TripContext.Provider value={{ ...state, startPreview, loadResult, updatePreviewTeaser, reset }}>
       {children}
     </TripContext.Provider>
   );

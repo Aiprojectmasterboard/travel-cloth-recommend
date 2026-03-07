@@ -74,21 +74,12 @@ export function StandardDashboard() {
     }
   }, [authLoading, isLoggedIn, navigate, setShowLoginModal, setLoginModalContext]);
 
-  // Load result if not yet loaded
+  // Standard plan is free — no paid order exists, so /api/result returns 402.
+  // Only load result if there's already a paid order (e.g. user upgraded from standard).
   useEffect(() => {
-    if (tripId && !result && !tripLoading) {
+    if (tripId && !result && !tripLoading && result?.plan) {
       loadResult(tripId);
     }
-  }, [tripId, result, tripLoading, loadResult]);
-
-  // Re-poll for capsule data if result loaded but has no AI capsule items yet
-  // (webhook pipeline may still be generating capsule wardrobe)
-  useEffect(() => {
-    if (!tripId || !result || tripLoading) return;
-    const hasCapsule = (result.capsule?.items?.length ?? 0) > 0;
-    if (hasCapsule) return;
-    const timer = setTimeout(() => loadResult(tripId), 10000);
-    return () => clearTimeout(timer);
   }, [tripId, result, tripLoading, loadResult]);
 
   // ─── Extract real API data ───────────────────────────────────────────────
@@ -98,13 +89,16 @@ export function StandardDashboard() {
   const apiDailyPlan: DayPlan[] = result?.capsule?.daily_plan || [];
   const apiImages = result?.images || [];
 
-  // ─── Teaser URL: API result > sessionStorage preview > poll fallback ────
+  // ─── Teaser URL: polled AI image > API result > sessionStorage preview ────
   const [polledTeaser, setPolledTeaser] = useState("");
-  const teaserUrl = result?.teaser_url || preview?.teaser_url || polledTeaser || "";
+  const teaserUrl = polledTeaser || result?.teaser_url || preview?.teaser_url || "";
 
-  // Poll for AI teaser image if not yet available (handles post-checkout redirect)
+  // Check if we already have a real AI-generated teaser (R2 URL contains /temp/)
+  const hasRealTeaser = teaserUrl.includes('/temp/') || teaserUrl.includes('/outputs/');
+
+  // Poll for AI teaser image if current URL is a static fallback
   useEffect(() => {
-    if (teaserUrl || !tripId) return;
+    if (hasRealTeaser || !tripId) return;
     let cancelled = false;
     let attempts = 0;
     const maxAttempts = 20; // ~60s total
@@ -117,13 +111,17 @@ export function StandardDashboard() {
             setPolledTeaser(res.teaser_url);
             return;
           }
+          if (res.status === "fallback" && res.teaser_url) {
+            setPolledTeaser(res.teaser_url);
+            return;
+          }
         } catch { /* ignore */ }
         await new Promise((r) => setTimeout(r, 3000));
       }
     };
     poll();
     return () => { cancelled = true; };
-  }, [tripId, teaserUrl]);
+  }, [tripId, hasRealTeaser]);
 
   const hasRealData = apiCapsuleItems.length > 0;
 
