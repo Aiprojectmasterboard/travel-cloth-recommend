@@ -715,16 +715,62 @@ export async function runResult(
     await incrementAnnualUsage(userEmail, env);
   }
 
-  // ── 3. Plan-specific image pipeline ──────────────────────────────────────
+  // ── 3. Full capsule wardrobe (run BEFORE images so prompts reference actual items) ──
+  const totalDays = cities.reduce((s, c) => s + c.days, 0);
+
+  // Non-fatal: capsule errors use a fallback so fulfillmentAgent always runs
+  let capsule: Awaited<ReturnType<typeof capsuleAgent>>;
+  try {
+    capsule = await capsuleAgent(
+      {
+        vibeResults: finalVibes,
+        weather: finalWeather,
+        plan,
+        cities: cities.map((c) => ({ name: c.name, days: c.days })),
+        month,
+        tripDays: totalDays,
+        userProfile: {
+          gender: userProfile.gender,
+          height_cm: userProfile.height_cm,
+          weight_kg: userProfile.weight_kg,
+          aesthetics: userProfile.aesthetics,
+        },
+      },
+      env
+    );
+  } catch (err) {
+    console.error('[runResult] Capsule agent failed — using fallback:', (err as Error).message);
+    capsule = {
+      plan,
+      items: [],
+      daily_plan: [],
+    } as Awaited<ReturnType<typeof capsuleAgent>>;
+  }
+
+  // ── 4. Plan-specific image pipeline ──────────────────────────────────────
 
   if (plan === 'pro' || plan === 'annual') {
-    // a. Generate style prompts via Claude
+    // Extract per-outfit item lists from capsule daily_plan (for image prompt accuracy)
+    const paidCapsule = capsule as import('./capsuleAgent').PaidCapsuleResult;
+    const dailyOutfits = paidCapsule.daily_plan ?? [];
+    const capsuleItems = paidCapsule.items ?? [];
+
+    // Build outfit descriptions keyed by day index (for styleAgent)
+    const outfitDescriptions: Array<{ day: number; city: string; items: string[] }> = dailyOutfits.map((d) => ({
+      day: d.day,
+      city: d.city,
+      items: d.outfit,
+    }));
+
+    // a. Generate style prompts via Claude — now includes capsule item references
     const stylePrompts = await styleAgent(
       {
         vibeResults: finalVibes,
         cities: cities.map((c) => c.name),
         weather: finalWeather,
         userProfile,
+        outfitDescriptions,
+        capsuleItems: capsuleItems.map((i) => ({ name: i.name, category: i.category })),
       },
       env
     );
@@ -774,46 +820,12 @@ export async function runResult(
     );
 
     // e. Privacy cleanup: delete user-uploaded face only (not default images)
-    //    (both success and failure paths — imageGenAgent uses Promise.allSettled so always returns)
     if (faceUrl) {
       await cleanupFace(tripId, faceUrl, env);
     }
   } else {
     // Standard plan: teaser is already completed — no further image generation.
     // Face cleanup is handled by fulfillmentAgent below.
-  }
-
-  // ── 4. Full capsule wardrobe ──────────────────────────────────────────────
-  const totalDays = cities.reduce((s, c) => s + c.days, 0);
-
-  // Non-fatal: capsule errors use a fallback so fulfillmentAgent always runs
-  let capsule: Awaited<ReturnType<typeof capsuleAgent>>;
-  try {
-    capsule = await capsuleAgent(
-      {
-        vibeResults: finalVibes,
-        weather: finalWeather,
-        plan,
-        cities: cities.map((c) => ({ name: c.name, days: c.days })),
-        month,
-        tripDays: totalDays,
-        userProfile: {
-          gender: userProfile.gender,
-          height_cm: userProfile.height_cm,
-          weight_kg: userProfile.weight_kg,
-          aesthetics: userProfile.aesthetics,
-        },
-      },
-      env
-    );
-  } catch (err) {
-    console.error('[runResult] Capsule agent failed — using fallback:', (err as Error).message);
-    // Fallback keeps the pipeline alive so fulfillmentAgent (email + cleanup) always runs
-    capsule = {
-      plan,
-      items: [],
-      daily_plan: [],
-    } as Awaited<ReturnType<typeof capsuleAgent>>;
   }
 
   // Save capsule_results

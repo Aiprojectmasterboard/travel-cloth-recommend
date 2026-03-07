@@ -509,24 +509,40 @@ export function ProDashboard() {
                       </span>
                       <div className="space-y-2">
                         {hasRealData ? (
-                          apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5).map((item, i) => {
-                            const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch", bag: "shopping_bag", dress: "checkroom", skirt: "checkroom", hat: "face_retouching_natural", jewelry: "diamond" };
-                            const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
-                            return (
-                            <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                              <div className="w-12 h-12 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                                <Icon name={iconName} size={20} className="text-[#57534e]" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                  <SizeChip size={sizeLabel} />
+                          // Use daily_plan outfit items for accurate matching with AI-generated image
+                          (() => {
+                            const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch", bag: "shopping_bag", dress: "checkroom", "dress/jumpsuit": "checkroom", skirt: "checkroom", hat: "face_retouching_natural", jewelry: "diamond" };
+                            // Find the matching daily_plan entry for this outfit
+                            // For multi-city: offset by city's starting day index
+                            const cityDays = apiDailyPlan.filter((d) => d.city?.toLowerCase() === currentSet.city.toLowerCase());
+                            const dayPlan = cityDays[expandedOutfit] ?? apiDailyPlan[expandedOutfit];
+                            const outfitItemNames: string[] = dayPlan?.outfit ?? [];
+                            // Resolve each outfit item name to its full capsule item data
+                            const outfitItems = outfitItemNames
+                              .map((name) => apiCapsuleItems.find((c) => c.name === name))
+                              .filter((c): c is CapsuleItem => !!c);
+                            // Fallback: if daily_plan didn't produce matches, use first N items
+                            const displayItems = outfitItems.length > 0
+                              ? outfitItems
+                              : apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5);
+                            return displayItems.map((item, i) => {
+                              const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
+                              return (
+                              <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                <div className="w-12 h-12 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
+                                  <Icon name={iconName} size={20} className="text-[#57534e]" />
                                 </div>
-                                <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                    <SizeChip size={sizeLabel} />
+                                  </div>
+                                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
+                                </div>
                               </div>
-                            </div>
-                            );
-                          })
+                              );
+                            });
+                          })()
                         ) : (
                           currentSet.outfits[expandedOutfit].items.map((item) => (
                             <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">

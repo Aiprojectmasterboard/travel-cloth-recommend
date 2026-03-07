@@ -200,11 +200,13 @@ function buildImagePrefix(profile?: UserProfile): string {
 /**
  * Generates 2 NanoBanana image prompts per city (up to 6 total).
  *
- * @param input.vibeResults  - Array of VibeResult from vibeAgent (one per city)
- * @param input.cities       - City names in the same order as vibeResults
- * @param input.weather      - Optional WeatherResult array for additional context
- * @param input.userProfile  - Optional traveller profile to personalise model/silhouette/aesthetics
- * @param env                - Cloudflare Worker bindings
+ * @param input.vibeResults         - Array of VibeResult from vibeAgent (one per city)
+ * @param input.cities              - City names in the same order as vibeResults
+ * @param input.weather             - Optional WeatherResult array for additional context
+ * @param input.userProfile         - Optional traveller profile to personalise model/silhouette/aesthetics
+ * @param input.outfitDescriptions  - Per-day outfit items from capsuleAgent (for image accuracy)
+ * @param input.capsuleItems        - Full capsule item list from capsuleAgent
+ * @param env                       - Cloudflare Worker bindings
  */
 export async function styleAgent(
   input: {
@@ -212,10 +214,12 @@ export async function styleAgent(
     cities: string[];
     weather?: WeatherResult[];
     userProfile?: UserProfile;
+    outfitDescriptions?: Array<{ day: number; city: string; items: string[] }>;
+    capsuleItems?: Array<{ name: string; category: string }>;
   },
   env: Bindings
 ): Promise<StylePrompts[]> {
-  const { vibeResults, cities, weather = [], userProfile } = input;
+  const { vibeResults, cities, weather = [], userProfile, outfitDescriptions = [], capsuleItems = [] } = input;
 
   // Cap to MAX_CITIES to keep token usage predictable
   const activeCities = cities.slice(0, MAX_CITIES);
@@ -246,6 +250,28 @@ export async function styleAgent(
     ? `   - Incorporate the user's style preferences (${userProfile.aesthetics.join(', ')}) into clothing choices`
     : '';
 
+  // Build capsule outfit reference block (from capsuleAgent daily_plan)
+  // Group outfits by city and pick 2 per city for the 2 prompts
+  const outfitsByCity: Record<string, Array<{ day: number; items: string[] }>> = {};
+  for (const od of outfitDescriptions) {
+    const key = od.city.toLowerCase();
+    if (!outfitsByCity[key]) outfitsByCity[key] = [];
+    outfitsByCity[key].push({ day: od.day, items: od.items });
+  }
+
+  const capsuleOutfitBlock = activeCities.map((city, i) => {
+    const cityOutfits = outfitsByCity[city.toLowerCase()] ?? [];
+    if (cityOutfits.length === 0) return '';
+    // Pick first 2 outfits for 2 prompts
+    return cityOutfits.slice(0, PROMPTS_PER_CITY).map((o, j) =>
+      `  Outfit ${j + 1} for ${city} (Day ${o.day}): ${o.items.join(', ')}`
+    ).join('\n');
+  }).filter(Boolean).join('\n');
+
+  const capsuleItemList = capsuleItems.length > 0
+    ? `\nCapsule wardrobe items (use ONLY these items in prompts):\n${capsuleItems.map((i) => `  - ${i.name} (${i.category})`).join('\n')}\n`
+    : '';
+
   const isInfant = isInfantProfile(userProfile);
   const systemPrompt =
     'You are a professional fashion stylist and AI image director. ' +
@@ -262,15 +288,17 @@ export async function styleAgent(
       : '') +
     'Always respond with valid JSON only — no markdown fences, no extra text.';
 
+  const hasOutfitRef = capsuleOutfitBlock.length > 0;
+
   const userPrompt = `Generate exactly ${PROMPTS_PER_CITY} fashion editorial image prompts for EACH of the following cities (${activeCities.length * PROMPTS_PER_CITY} prompts total):
 
 ${cityBlocks}
-${profileBlock ? `\n${profileBlock}\n` : ''}
+${profileBlock ? `\n${profileBlock}\n` : ''}${capsuleItemList}${hasOutfitRef ? `\nPre-assigned outfits (MUST match these exactly — describe the exact items including their color and style):\n${capsuleOutfitBlock}\n` : ''}
 Rules for each prompt:
 1. mood: 2-3 word English label for the travel occasion (e.g. "city-exploration", "museum-visit", "cafe-afternoon", "evening-stroll")
 2. Each prompt MUST begin with: "${imagePrefix || 'A fashion model, '}" followed by the outfit description
 3. Each prompt must specify:
-   - Specific clothing items appropriate for the climate, city vibe, AND the travel occasion${aestheticRule ? `\n${aestheticRule}` : ''}
+   - ${hasOutfitRef ? 'The EXACT clothing items from the pre-assigned outfit above — describe each item with its specific color, material, and style' : 'Specific clothing items appropriate for the climate, city vibe, AND the travel occasion'}${aestheticRule ? `\n${aestheticRule}` : ''}
    - A SPECIFIC famous landmark or iconic location in that city as background (e.g. Eiffel Tower, Louvre Museum, Champs-Élysées)
    - The person must be standing naturally in front of or near the landmark
    - Lighting style (golden hour, soft overcast, neon-lit evening, bright midday, etc.)
@@ -278,6 +306,7 @@ Rules for each prompt:
    - End with: "fashion editorial photography, photorealistic, 4K, sharp focus"
 4. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
 5. Prompts for the same city must have different travel occasions (e.g. one for museum/culture, one for city walk/cafe)
+${hasOutfitRef ? '6. CRITICAL: Each prompt MUST depict EXACTLY the items listed in the pre-assigned outfit. Do NOT substitute, swap, or add items. The image must match the item breakdown shown to the user.' : ''}
 
 Climate clothing guide:
 - cold (<10°C): heavy coats, thermal layers, knits, waterproof boots
