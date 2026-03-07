@@ -280,6 +280,17 @@ export function ProDashboard() {
   const allOutfits = useMemo(() => citySets.flatMap((cs) => cs.outfits), [citySets]);
   const packing: PackingItem[] = useMemo(() => derivePacking(allOutfits), [allOutfits]);
   const bodyFitLabel = allOutfits[0]?.bodyFitLabel || "";
+  // Derive simple size letter for SizeChip (bodyFitLabel is a full sentence)
+  const sizeLabel = (() => {
+    const h = parseFloat(profile.height) || 0;
+    const w = parseFloat(profile.weight) || 0;
+    if (!h || !w) return "M";
+    const bmi = w / ((h / 100) ** 2);
+    if (bmi < 19) return "S";
+    if (bmi < 23) return "M";
+    if (bmi < 27) return "L";
+    return "XL";
+  })();
 
   // AI packing list
   const aiPackingList = useMemo<Array<{ name: string; category: string; desc: string; essential: boolean; cities: string[] }>>(() => {
@@ -457,10 +468,10 @@ export function ProDashboard() {
 
               {/* Expanded outfit detail */}
               {expandedOutfit >= 0 && expandedOutfit < currentSet.outfits.length && (
-                <div className="bg-white rounded-2xl border border-[#ebdacc] p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+                <div className="bg-white rounded-2xl border border-[#E8DDD4] p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                   <div className="flex flex-col md:flex-row gap-6">
-                    {/* Outfit image — fixed width on desktop */}
-                    <div className="relative rounded-xl overflow-hidden w-full md:w-[320px] lg:w-[360px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
+                    {/* Outfit image — fixed width on desktop, max height on mobile */}
+                    <div className="relative rounded-xl overflow-hidden w-full max-h-[420px] md:max-h-none md:w-[320px] lg:w-[360px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
                       <ImageWithFallback
                         src={getOutfitImage(currentSet.city, expandedOutfit, currentSet.outfits[expandedOutfit].image)}
                         alt={currentSet.outfits[expandedOutfit].title}
@@ -477,25 +488,25 @@ export function ProDashboard() {
                         </button>
                       </div>
                       <div className="absolute bottom-4 left-4 right-4">
-                        <div className="flex gap-1.5">
+                        <div className="flex gap-2">
                           {currentSet.colorPalette.map((color) => (
-                            <div key={color} className="w-6 h-6 rounded-full border-2 border-white/50" style={{ backgroundColor: color }} />
+                            <div key={color} className="w-7 h-7 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />
                           ))}
                         </div>
                       </div>
                     </div>
                     {/* Outfit breakdown — right side on desktop */}
                     <div className="flex-1 min-w-0">
-                      <h3 className="text-[20px] text-[#292524] mb-1" style={{ fontFamily: "var(--font-display)" }}>
+                      <h3 className="text-[22px] text-[#292524] mb-2" style={{ fontFamily: "var(--font-display)" }}>
                         {currentSet.outfits[expandedOutfit].title}
                       </h3>
                       <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: "var(--font-mono)" }}>
-                        Outfit Breakdown · Your Sizes
+                        {t("examples.pro.outfitBreakdown")}
                       </span>
                       <div className="space-y-2">
                         {hasRealData ? (
                           apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5).map((item, i) => {
-                            const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
+                            const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch", bag: "shopping_bag", dress: "checkroom", skirt: "checkroom", hat: "face_retouching_natural", jewelry: "diamond" };
                             const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
                             return (
                             <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
@@ -505,7 +516,7 @@ export function ProDashboard() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                  <SizeChip size={bodyFitLabel || "M"} />
+                                  <SizeChip size={sizeLabel} />
                                 </div>
                                 <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
                               </div>
@@ -527,8 +538,8 @@ export function ProDashboard() {
                           ))
                         )}
                       </div>
-                      <p className="mt-5 text-[14px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: "var(--font-display)" }}>
-                        "{currentSet.outfits[expandedOutfit].note}"
+                      <p className="mt-5 text-[15px] text-[#57534e] italic leading-relaxed pl-4 border-l-2 border-[#C4613A]/30" style={{ fontFamily: "var(--font-display)" }}>
+                        {currentSet.outfits[expandedOutfit].note}
                       </p>
                     </div>
                   </div>
