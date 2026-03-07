@@ -205,6 +205,9 @@ export function StandardDashboard() {
         { day: 7, activity: "Departure" },
       ];
 
+  // Image loading state: are we still waiting for AI teaser?
+  const teaserLoading = !teaserUrl && !!tripId;
+
   // Which outfit image to show — API images > teaser (personalized) > mock
   // Standard plan: 1 AI teaser + 3 CSS variants = all 4 slots use teaser after signup
   const getOutfitImage = (idx: number): string => {
@@ -331,22 +334,39 @@ export function StandardDashboard() {
                       {expandedOutfit === idx && (
                         <div className="px-5 pb-6">
                           <div className="space-y-6">
-                            {/* Outfit image */}
+                            {/* Outfit image — shimmer when AI teaser still generating */}
                             <div className="relative rounded-xl overflow-hidden w-full max-w-[400px]" style={{ aspectRatio: "3/4" }}>
-                              <ImageWithFallback src={getOutfitImage(idx)} alt={title} className="w-full h-full object-cover" style={usesTeaserVariant(idx) ? outfitImageStyles[idx] : undefined} />
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                              <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                                  <Icon name="auto_awesome" size={10} className="text-white" filled /> {apiImages.length > idx ? "AI Generated" : "Style Preview"}
-                                </span>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); downloadImage(getOutfitImage(idx), `capsule-outfit-${idx + 1}.jpg`); }}
-                                  className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
-                                  title={t("dashboard.downloadImage")}
-                                >
-                                  <Icon name="download" size={16} className="text-white" />
-                                </button>
-                              </div>
+                              {teaserLoading && !apiImages.length ? (
+                                <>
+                                  <div className="w-full h-full bg-gradient-to-br from-[#EFE8DF] via-[#F5EFE6] to-[#EFE8DF]" style={{ animation: "shimmer 2s ease-in-out infinite" }} />
+                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                                    <div className="w-10 h-10 border-3 border-[#E8DDD4] border-t-[#C4613A] rounded-full" style={{ animation: "spin 0.8s linear infinite" }} />
+                                    <span className="text-[13px] text-[#57534e] px-4 text-center" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                                      AI is generating your personalized outfit...
+                                    </span>
+                                    <span className="text-[11px] text-[#a8a29e]" style={{ fontFamily: "var(--font-mono)" }}>
+                                      ~30 seconds
+                                    </span>
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <ImageWithFallback src={getOutfitImage(idx)} alt={title} className="w-full h-full object-cover" style={usesTeaserVariant(idx) ? outfitImageStyles[idx] : undefined} />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                                  <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                                      <Icon name="auto_awesome" size={10} className="text-white" filled /> {teaserUrl ? "AI Generated" : "Style Preview"}
+                                    </span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); downloadImage(getOutfitImage(idx), `capsule-outfit-${idx + 1}.jpg`); }}
+                                      className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                                      title={t("dashboard.downloadImage")}
+                                    >
+                                      <Icon name="download" size={16} className="text-white" />
+                                    </button>
+                                  </div>
+                                </>
+                              )}
                             </div>
 
                             {/* Items breakdown */}
@@ -544,6 +564,17 @@ export function StandardDashboard() {
 
       {/* Floating bottom upgrade bar */}
       <FloatingUpgradeBar onUpgrade={handleUpgradeToPro} />
+
+      {/* Shimmer + spin animations for loading states */}
+      <style>{`
+        @keyframes shimmer {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
