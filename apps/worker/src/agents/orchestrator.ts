@@ -916,23 +916,35 @@ export async function runTeaserBackground(
   }
 
   // Insert generation_jobs tracking row (frontend polls this via GET /api/teaser/:tripId)
-  try {
-    await sbFetch(env, '/generation_jobs', {
-      method: 'POST',
-      body: JSON.stringify({
-        trip_id,
-        city: vibeResult.city ?? '',
-        mood: vibeResult.mood_name ?? '',
-        prompt: teaserError
-          ? `FAILED: ${teaserError.slice(0, 200)} | mood: ${vibeResult.mood_label ?? 'teaser'}`
-          : (vibeResult.mood_label ?? 'teaser'),
-        status: teaserError ? 'failed_fallback' : 'completed',
-        image_url: teaserUrl,
-        job_type: 'teaser',
-        attempts: 1,
-      }),
-    });
-  } catch (err) {
-    console.warn(`[runTeaserBackground] generation_jobs INSERT failed:`, (err as Error).message);
+  // This INSERT is critical — if it fails, frontend polls forever. Retry once.
+  const jobPayload = {
+    trip_id,
+    city: vibeResult.city ?? '',
+    mood: vibeResult.mood_name ?? '',
+    prompt: teaserError
+      ? `FAILED: ${teaserError.slice(0, 200)} | mood: ${vibeResult.mood_label ?? 'teaser'}`
+      : (vibeResult.mood_label ?? 'teaser'),
+    status: teaserError ? 'failed_fallback' : 'completed',
+    image_url: teaserUrl,
+    job_type: 'teaser',
+    attempts: 1,
+  };
+
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await sbFetch(env, '/generation_jobs', {
+        method: 'POST',
+        body: JSON.stringify(jobPayload),
+      });
+      if (res.ok) {
+        console.log(`[runTeaserBackground] generation_jobs saved for trip ${trip_id} (status=${jobPayload.status})`);
+        break;
+      }
+      const detail = await res.text();
+      console.warn(`[runTeaserBackground] generation_jobs INSERT HTTP ${res.status}: ${detail.slice(0, 200)}`);
+    } catch (err) {
+      console.warn(`[runTeaserBackground] generation_jobs INSERT attempt ${attempt + 1} failed:`, (err as Error).message);
+      if (attempt === 0) await new Promise(r => setTimeout(r, 1000)); // retry after 1s
+    }
   }
 }

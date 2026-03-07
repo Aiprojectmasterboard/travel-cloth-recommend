@@ -577,7 +577,7 @@ app.post('/api/preview', async (c) => {
     // This runs AFTER the HTTP response is sent — no wall-clock timeout issue.
     // Gemini takes ~30-40s which exceeds Workers' response deadline but
     // waitUntil() allows up to 30s (paid) / 15min (Durable Objects) after response.
-    if (preview.vibes?.[0]) {
+    if (preview.vibes?.[0] && c.env.NANOBANANA_API_KEY) {
       c.executionCtx.waitUntil(
         runTeaserBackground(
           {
@@ -594,8 +594,13 @@ app.post('/api/preview', async (c) => {
             fallbackTeaser: preview.teaser_url || '',
           },
           c.env
-        )
+        ).catch((err) => {
+          // Must catch — uncaught errors in waitUntil() crash silently
+          console.error(`[waitUntil] runTeaserBackground failed for trip ${tripId}:`, (err as Error).message);
+        })
       );
+    } else if (!c.env.NANOBANANA_API_KEY) {
+      console.error('[POST /api/preview] NANOBANANA_API_KEY not configured — skipping teaser generation');
     }
 
     return c.json(preview);
