@@ -246,6 +246,59 @@ app.get('/api/health', (c) =>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
+// 1b. GET /api/test-gemini — diagnostic endpoint (temporary)
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.get('/api/test-gemini', async (c) => {
+  const apiKey = c.env.NANOBANANA_API_KEY;
+  if (!apiKey) return c.json({ error: 'NANOBANANA_API_KEY not set' }, 500);
+
+  const MODEL = 'gemini-2.0-flash-exp';
+  const MODELS_TO_TRY = [
+    'gemini-3.1-flash-image-preview',
+    'gemini-2.5-flash-preview-image',
+    'gemini-2.0-flash-exp',
+  ];
+
+  const results: Array<{ model: string; status: number; ok: boolean; error?: string }> = [];
+
+  for (const model of MODELS_TO_TRY) {
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'x-goog-api-key': apiKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Generate a simple test image of a red circle on white background.' }] }],
+            generationConfig: {
+              responseModalities: ['IMAGE', 'TEXT'],
+              imageConfig: { aspectRatio: '1:1' },
+            },
+          }),
+          signal: AbortSignal.timeout(30_000),
+        }
+      );
+      const text = await res.text();
+      const hasImage = text.includes('"inlineData"');
+      results.push({
+        model,
+        status: res.status,
+        ok: res.ok && hasImage,
+        error: res.ok ? (hasImage ? undefined : 'No image in response') : text.slice(0, 300),
+      });
+    } catch (err) {
+      results.push({ model, status: 0, ok: false, error: (err as Error).message });
+    }
+  }
+
+  return c.json({ results, keyPrefix: apiKey.slice(0, 8) + '...' });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 2. POST /api/preview
 // ─────────────────────────────────────────────────────────────────────────────
 // Creates a trip, runs the free-tier preview pipeline (weather+vibe+teaser+
