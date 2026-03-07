@@ -15,7 +15,7 @@
 - Worker returns HTTP 400 (not 404) for syntactically invalid UUIDs on all routes
 - Must use well-formed UUID format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 - isValidUUID() uses UUID_RE regex at line 146 of index.ts
-- For QA testing use a valid-format UUID: all-numeric formats still 404 properly
+- For QA testing use a valid-format UUID: a1b2c3d4-e5f6-4a7b-8c9d-000000000001
 
 ## /api/payment/checkout — GET returns 404
 - GET is not registered (only POST), so GET returns 404 — this is CORRECT
@@ -23,112 +23,99 @@
 
 ## Pages Deployment Status
 
-### Seventh QA Run 2026-03-04 (commit 5488f40 — payment flow, auth, i18n, city limits)
-- Deployment was in-flight at QA time (commit pushed at 15:23 UTC, QA at ~15:25 UTC)
-- Root (/) returns 200 with age:77545 (cached from previous deployment ~21.5h old)
-- Sub-routes return 404 because deployed version predates latest commit
-- _redirects file is present and correct in figma/dist/ — will work once new build deploys
-- CRITICAL FIND: polarCheckout.ts still shows "YOUR_STANDARD_PRODUCT_ID" as placeholder comments
-  BUT createCheckoutSession() uses WORKER_URL POST which correctly delegates to server
-  The placeholder productId strings in POLAR_PRODUCTS are NOT used at runtime (server uses wrangler.toml IDs)
-  This is a false positive — actual product IDs come from Worker via c.env.*
-- Polar checkout confirmed WORKING: returns real polar.sh checkout URL (confirmed live test)
-- SUPABASE_SERVICE_ROLE_KEY grep hit in figma/ is node_modules only — safe false positive
-- stripe grep hit is in api-endpoints.md doc file and CSS "stripe" text — safe false positive
-- Discount code "0623": NOT implemented in frontend or Worker — manual Polar coupon code needed
-- t() is a function in figma LanguageContext (key: string) => string — NOT an object
-  (The user-facing MEMORY.md note that "t is not a function" is for the OLD apps/web/ — outdated)
+### Tenth QA Run 2026-03-07 (commit f0fed51 — full QA with detailed checks)
+- Both domains FULLY DEPLOYED — all pages return valid HTML (SPA shell)
+- Worker /api/health: 200 OK with JSON {ok:true, timestamp:...}
+- /api/result/:tripId: 402 for unpaid trips (correct)
+- /api/share/:tripId: 404 for non-existent trips (correct)
+- /api/upload-photo: GET returns 404 (POST only — correct behavior)
+- SKIP_TURNSTILE: CONFIRMED REMOVED from wrangler.toml (fix from commit 15f730d)
+  NOTE: Still declared in Bindings type (index.ts line 33) — acceptable, just dead in prod
+- og-image.png: 200 OK at https://travelscapsule.com/og-image.png (PNG, ~66.6KB)
+- Static OG tags ARE in figma/index.html (og:title, og:image, twitter:card = summary_large_image)
+- Copyright footer: confirmed in LandingPage.tsx line 738 — "&copy; {year} Travel Capsule AI"
+- ImageWithFallback component: confirmed fixed (f0fed51), wraps in relative div, handles load/error states
 
-### Sixth QA Run 2026-03-02 (post Figma v15 migration — commit bf09c4b)
-- BOTH domains returning HTTP 404 — deployment likely still in-flight after recent push
-- Commit bf09c4b was pushed at 08:22:39 UTC — "Figma v15 migration"
-- Code audit: all i18n keys, t() function, LanguageSelector, page.tsx, layout.tsx confirmed correct
-- See "Sixth QA Run i18n Notes" section below
+## Known Issues (carry-forward)
+- CONTACT_EMAIL = "netson94@gmail.com" in TermsPage.tsx, PrivacyPage.tsx, ContactPage.tsx
+  ISSUE: Should be hello@travelscapsule.com for brand consistency — MEDIUM severity
+- JSON-LD schema.org and noscript show prices ($5, $12, $29) — may differ from live UI promo pricing
+  ISSUE: Prices in index.html noscript/JSON-LD not updated when promo pricing changes
+- POLAR_ENV = "sandbox" in polarCheckout.ts — dead variable, not a prod bug but code clarity concern
 
-### Fifth QA Run 2026-03-02 (post Figma Make redesign)
-- BOTH domains returning HTTP 404 immediately after push — deployment still in-flight
-- When domains return 404, deployment is in GitHub Actions pipeline (3-5 min wait)
-- This is EXPECTED when a new push just happened — NOT a persistent error
-- Code audit shows correct structure; deployment will resolve on its own
-- DM Sans added as secondary font variable (--font-dm-sans) alongside Plus Jakarta Sans
-- body element correctly uses var(--font-sans) = Plus Jakarta Sans (CLAUDE.md spec)
-- --font-body: 'DM Sans' in :root CSS is a display-only token; not used for body text
+## Frontend Architecture (Current)
+- Active frontend: figma/ directory (Vite+React, React Router v7)
+- apps/web/ is LEGACY (Next.js, not deployed)
+- Routes: /, /onboarding/1-4, /preview, /checkout/success, /dashboard/standard|pro|annual
+  /share/:tripId, /examples/pro, /examples/annual, /privacy, /terms, /contact, /mypage
+  /demo/pro, /sitemap (also registered in routes.ts)
 
-### Third QA run 2026-03-01 (pre-redesign baseline)
-- BOTH domains FULLY DEPLOYED — all pages loaded correctly
-- travelscapsule.com: PASS for /, /trip, /auth/login, /legal/terms, /legal/privacy
-- travel-cloth-recommend.pages.dev: PASS for same pages
+## polarCheckout.ts Architecture (confirmed)
+- POLAR_ENV = "sandbox" at line 94 — ONLY used in commented-out stub functions
+- Live checkout path: createCheckoutSession → POST Worker /api/payment/checkout → Polar production API
+- confirmCheckoutSession() and getCheckoutSession() are MOCK stubs only (return hardcoded values)
+- The actual post-checkout flow is: Polar redirects to /checkout/success, CheckoutSuccess reads URL params
 
-## PreviewClient Email Bug — RESOLVED
-- apps/web/app/preview/[tripId]/PreviewClient.tsx line 494 now shows
-  mailto:hello@travelscapsule.com (correct — bug was fixed)
+## Design System (Figma/Vite frontend)
+- Colors in theme.css: --tc-primary: #C4613A (NOT #b8552e from CLAUDE.md — CLAUDE.md is outdated)
+- --tc-dark: #1A1410, --tc-cream: #FDF8F3, --tc-gold: #D4AF37
+- Fonts: Playfair Display (display), DM Sans (body), JetBrains Mono (mono)
+- Material Symbols Outlined for icons
+- body element: font-family: var(--font-body) = DM Sans (correct for this frontend)
+- Note: CLAUDE.md spec says Plus Jakarta Sans — but Figma frontend uses DM Sans (intentional design change)
 
-## /account Page
-- auth-gated via client-side redirect (router.push('/auth/login')) when no user
-- WebFetch returns landing page content (200) — NOT a redirect or 404
-- This is a false positive — the page is a client component that redirects on load
+## Onboarding Flow (confirmed)
+- Step 1: City search from cities.json (90+ cities including Bali confirmed at line 21)
+- Step 2: Gender, Height, Weight (metric/imperial toggle)
+- Step 3: Style aesthetics selection + photo upload (optional)
+- Step 4: AI analysis loading screen → submits to /api/preview
+- Login is optional but gated at checkout for Standard (free) plan
 
-## Auth Callback
-- Handles ?type=recovery → redirects to /account?reset=true  (PASS)
-- Handles code exchange error → redirects to /auth/login?error=auth_failed  (PASS)
-- Does NOT read incoming ?error= query param from Supabase directly (minor, not critical)
+## Secrets Status (tenth QA run 2026-03-07)
+- SKIP_TURNSTILE: REMOVED from wrangler.toml — Turnstile is active in production
+- POLAR_ACCESS_TOKEN: CONFIRMED SET (Worker returns 402, not 500/503)
+- SUPABASE_SERVICE_ROLE_KEY: WORKING (Worker returns 402 for unpaid trips)
+- CLOUDFLARE_TURNSTILE_SECRET_KEY: assumed set (Worker doesn't 503 on preview calls)
 
-## Secrets Status (fourth QA run 2026-03-01)
-- SUPABASE_SERVICE_ROLE_KEY: SET (Worker returns 402/404 correctly)
-- POLAR_ACCESS_TOKEN: CONFIRMED SET — POST /api/payment/checkout returns 200 + checkout_url
-  for all three plans (standard, pro, annual). Polar API fully working.
-- Plain vars in wrangler.toml: all present and correct (verified line-by-line)
-- NEXT_PUBLIC_SUPABASE_ANON_KEY: uses new sb_publishable_ format (NOT eyJ JWT format)
-  Confirmed valid: curl to /auth/v1/settings returns 200 with Supabase settings
-- deploy.yml injects all NEXT_PUBLIC_* at build time — Supabase error is RESOLVED
-
-## DB Schema Known Issues
+## DB Schema
+- polar_order_id UNIQUE constraint: CONFIRMED in migrations/001_initial_schema.sql line 121
 - generation_jobs.job_type CHECK constraint: MIGRATION 005 WRITTEN AND APPLIED
-  Now allows ('teaser', 'full', 'regen') — previous workaround no longer needed
-- Migration 005_add_regen_job_type.sql exists and backfills old rows
 
-## New Routes Added (not in original CLAUDE.md)
-- GET /api/preview/:tripId — returns free preview data (no payment)
-- POST /api/upload-photo — uploads face photo to R2
-- GET /api/result/:tripId — alias/extended version of trips/:tripId
-- POST /api/account/delete — deletes user account and data
-- GET /checklist/[tripId] — packing checklist page (post-result feature)
+## Worker API Routes (confirmed in index.ts)
+- GET /api/health
+- POST /api/preview
+- POST /api/preview/email
+- GET /api/preview/:tripId
+- POST /api/payment/checkout
+- POST /api/payment/webhook (HMAC-SHA256 verified)
+- POST /api/payment/upgrade
+- GET /api/result/:tripId
+- GET /api/share/:tripId
+- GET /api/trips/:tripId
+- POST /api/upload-photo
+- POST /api/account/delete
+- POST /api/regenerate
 
 ## False Positives / Known Acceptable Behaviors
-- /api/share/:tripId returning 400 for syntactically invalid UUID is CORRECT
-- /api/share/:tripId returning 404 JSON for valid UUID with no trip is CORRECT
-- /api/result/:tripId returning 402 for unpaid trip is CORRECT (use GET /api/result/ not /api/trips/)
-- /account returning landing-page content from WebFetch is expected (SPA redirect)
+- /api/share/:tripId returning 404 for valid UUID with no trip is CORRECT
+- /api/result/:tripId returning 402 for unpaid trip is CORRECT
+- /api/upload-photo returning 404 on GET is correct (POST only endpoint)
 - /api/payment/checkout returning 404 on GET is correct (POST only endpoint)
-- Google Search Console meta tag is NOW LIVE with value RuXip_6tZ1YWju0teoViUlg71HO_-3-P9H2JGfdGZ3I
-- /api/regenerate uses body parameter "trip_id" (NOT "tripId") — use trip_id for testing
+- OG tags not visible in WebFetch output — they ARE in static index.html (confirmed by file read)
+- WebFetch always returns landing page SPA shell for all SPA routes — not an error
+- POLAR_ENV = "sandbox" in polarCheckout.ts is a dead variable — not a production bug
+- SKIP_TURNSTILE still in Bindings type declaration — acceptable (no runtime effect since not in wrangler.toml)
+- "Stripe" mentions in figma/src/imports/api-endpoints.md — this is Polar's API docs file, not app code
 
-## Sixth QA Run i18n Notes (commit bf09c4b)
-- t() is now a FUNCTION in LanguageContext (v15 migration) — t("hero.cta") syntax is correct
-- page.tsx correctly calls t(item.key) for nav items — matches v15 function-based API
-- LanguageSelector shows nativeLabel (e.g. "English", "한국어") — NOT uppercase "ENGLISH"
-- Nav only shows "Start Planning" button in header (no separate "SIGN IN" button on landing)
-- Hero uses t('hero.tagline') — EN: "The End of\nWeather Guesswork." / KO: "날씨 걱정의 끝,\n완벽한 여행 코디."
-- Hero subtitle: t('hero.subtitle') — EN: "AI-Powered Capsule Wardrobe System" / KO: "AI 기반 캡슐 워드로브 시스템"
-- Hero body: t('hero.body') / Hero CTA: t('hero.cta') — EN: "Curate My Capsule" / KO: "나만의 캡슐 만들기"
-- Nav links: howItWorks/pricing/examples — EN: "How It Works"/"Pricing"/"Examples" / KO: "이용 방법"/"가격"/"예시"
-- font.sans in tailwind now references var(--font-body) = 'DM Sans' (Figma design system primary body font)
-- layout.tsx sets --font-sans = Plus Jakarta Sans CSS var, --font-dm-sans = DM Sans CSS var
-- DISCREPANCY: globals.css sets --font-body = 'DM Sans' but layout.tsx maps --font-sans = Plus Jakarta Sans
-  body element in globals.css uses var(--font-sans) = Plus Jakarta Sans (correct per CLAUDE.md)
-  tailwind font-sans uses var(--font-body) = DM Sans (Figma v15 deliberate change)
-- This split is intentional: body CSS = Plus Jakarta Sans, Tailwind font-sans utility = DM Sans
-
-## API Test UUID
-- Must use valid UUID v4 format: a1b2c3d4-e5f6-4a7b-8c9d-000000000001
-- UUID 00000000-0000-0000-0000-000000000001 fails (version 4 requires 4xxx in 3rd segment)
-
-## Stripe Check
-- "stripe" appears in UpgradeModal.tsx only as a CSS visual comment ("gradient stripe")
-- No actual Stripe payment imports or Stripe API usage anywhere in codebase — PASS
+## Security Checks (confirmed PASS)
+- No process.env in apps/worker/ — uses c.env throughout
+- No SUPABASE_SERVICE_ROLE_KEY in figma/src/ — PASS
+- .env.local in .gitignore — PASS (line 1)
+- No Stripe imports in actual source files — PASS
+- HMAC-SHA256 webhook verification at index.ts line 72 + line 605 — PASS
+- polar_order_id UNIQUE constraint — PASS
+- R2 photo deletion in orchestrator.ts (line 74) and fulfillmentAgent.ts (lines 168, 176, 199) — PASS
 
 ## deploy.yml Key Facts
-- NEXT_PUBLIC_SUPABASE_URL = https://lmrrawhvjmuexajllint.supabase.co (injected at build)
-- NEXT_PUBLIC_SUPABASE_ANON_KEY = sb_publishable_3_... (new Supabase key format, injected at build)
 - NEXT_PUBLIC_WORKER_URL = https://travel-capsule-worker.netson94.workers.dev
 - NEXT_PUBLIC_CLOUDFLARE_TURNSTILE_SITE_KEY = 0x4AAAAAACj5TNMi2k0b77UT

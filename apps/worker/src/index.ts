@@ -230,7 +230,19 @@ app.onError((err, c) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.get('/api/health', (c) =>
-  c.json({ ok: true, timestamp: new Date().toISOString() })
+  c.json({
+    ok: true,
+    timestamp: new Date().toISOString(),
+    services: {
+      gemini: !!c.env.NANOBANANA_API_KEY,
+      claude: !!c.env.ANTHROPIC_API_KEY,
+      supabase: !!c.env.SUPABASE_URL && !!c.env.SUPABASE_SERVICE_ROLE_KEY,
+      polar: !!c.env.POLAR_ACCESS_TOKEN,
+      r2: !!c.env.R2_PUBLIC_URL,
+      turnstile: !!c.env.CLOUDFLARE_TURNSTILE_SECRET_KEY,
+      resend: !!c.env.RESEND_API_KEY,
+    },
+  })
 );
 
 // ─────────────────────────────────────────────────────────────────────────────

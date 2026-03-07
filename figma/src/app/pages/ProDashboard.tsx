@@ -50,6 +50,17 @@ const CITY_HEROES: Record<string, string> = {
   barcelona: "https://images.unsplash.com/photo-1633378532456-103a55a27261?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
   tokyo: "https://images.unsplash.com/photo-1717084023989-20a9eef69fc3?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
   milan: "https://images.unsplash.com/photo-1771535641653-686927c8cda8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  bali: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  london: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  seoul: "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  "new york": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  bangkok: "https://images.unsplash.com/photo-1508009603885-50cf7c579365?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  istanbul: "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  lisbon: "https://images.unsplash.com/photo-1585208798174-6cedd86e019a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  amsterdam: "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  sydney: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  dubai: "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
+  singapore: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
 };
 
 export function ProDashboard() {
@@ -153,23 +164,27 @@ export function ProDashboard() {
       try {
         setGenStatus("generating");
         const face_url = onboarding.faceUrl || undefined;
+        // Use onboarding cities, fall back to result cities, then default
         const resolvedCities =
           onboarding.cities.length > 0
             ? onboarding.cities.map((c) => ({ city: c.city, country: c.country }))
+            : result?.cities?.length
+            ? result.cities.map((c) => ({ city: c.name, country: c.country }))
             : [{ city: "Paris", country: "France" }];
 
-        const ht = parseFloat(onboarding.height);
-        const wt = parseFloat(onboarding.weight);
+        // Use onboarding profile, fall back to result profile data
+        const ht = parseFloat(onboarding.height) || result?.height_cm || 0;
+        const wt = parseFloat(onboarding.weight) || result?.weight_kg || 0;
 
         const res = await fetch(`${WORKER_URL}/api/generate`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             cities: resolvedCities,
-            gender: onboarding.gender || "female",
-            height_cm: !isNaN(ht) && ht > 0 ? ht : undefined,
-            weight_kg: !isNaN(wt) && wt > 0 ? wt : undefined,
-            aesthetics: onboarding.aesthetics ?? [],
+            gender: onboarding.gender || result?.gender || "female",
+            height_cm: ht > 0 ? ht : undefined,
+            weight_kg: wt > 0 ? wt : undefined,
+            aesthetics: onboarding.aesthetics?.length ? onboarding.aesthetics : result?.aesthetics ?? [],
             face_url,
             count_per_city: 4,
           }),
@@ -209,7 +224,19 @@ export function ProDashboard() {
   const apiDailyPlan: DayPlan[] = result?.capsule?.daily_plan || [];
   const hasRealData = apiCapsuleItems.length > 0;
 
-  const profile = useMemo(() => buildProfile(onboarding), [onboarding]);
+  // Use onboarding data first; fall back to API result profile (survives page refresh)
+  const profile = useMemo(() => {
+    const hasOnboardingProfile = onboarding.gender || onboarding.height || onboarding.weight;
+    if (hasOnboardingProfile) return buildProfile(onboarding);
+    // Reconstruct from API result data
+    return buildProfile({
+      gender: result?.gender || onboarding.gender || "female",
+      height: result?.height_cm ? String(result.height_cm) : onboarding.height,
+      weight: result?.weight_kg ? String(result.weight_kg) : onboarding.weight,
+      aesthetics: result?.aesthetics?.length ? result.aesthetics : onboarding.aesthetics,
+      photo: onboarding.photo,
+    });
+  }, [onboarding, result]);
 
   const cities = useMemo(() => {
     if (result?.cities?.length) {

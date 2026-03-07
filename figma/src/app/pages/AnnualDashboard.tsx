@@ -152,7 +152,18 @@ export function AnnualDashboard() {
   const apiImages = result?.images || [];
   const hasRealData = apiCapsuleItems.length > 0;
 
-  const profile = useMemo(() => buildProfile(onboarding), [onboarding]);
+  // Use onboarding data first; fall back to API result profile (survives page refresh)
+  const profile = useMemo(() => {
+    const hasOnboardingProfile = onboarding.gender || onboarding.height || onboarding.weight;
+    if (hasOnboardingProfile) return buildProfile(onboarding);
+    return buildProfile({
+      gender: result?.gender || onboarding.gender || "female",
+      height: result?.height_cm ? String(result.height_cm) : onboarding.height,
+      weight: result?.weight_kg ? String(result.weight_kg) : onboarding.weight,
+      aesthetics: result?.aesthetics?.length ? result.aesthetics : onboarding.aesthetics,
+      photo: onboarding.photo,
+    });
+  }, [onboarding, result]);
   const primaryCity = onboarding.cities[0];
   const cityName = result?.cities?.[0]?.name || primaryCity?.city || "Tokyo";
   const countryName = result?.cities?.[0]?.country || primaryCity?.country || "Japan";
