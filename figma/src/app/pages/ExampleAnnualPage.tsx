@@ -114,7 +114,7 @@ interface ExOutfit {
    Packing efficiency: 9 unique items → 4 complete outfits (20 total slots)
    ═══════════════════════════════════════════════════════════════════════════════ */
 
-const TOKYO_OUTFITS: ExOutfit[] = [
+const EURO_OUTFITS: ExOutfit[] = [
   {
     id: "ea-paris-1",
     day: 1,
@@ -212,7 +212,7 @@ function derivePacking(outfits: ExOutfit[]): PackEntry[] {
   return Array.from(map.values()).sort((a, b) => b.usageCount - a.usageCount || a.name.localeCompare(b.name));
 }
 
-const PACKING = derivePacking(TOKYO_OUTFITS);
+const PACKING = derivePacking(EURO_OUTFITS);
 
 /* ─── Past Trips (for Annual member showcase) ─── */
 const PAST_TRIPS = [
@@ -347,7 +347,7 @@ export function ExampleAnnualPage() {
             <div className="rounded-2xl overflow-hidden bg-[#1A1410]">
               <div className="relative">
                 <div className="grid grid-cols-2 gap-1">
-                  {TOKYO_OUTFITS.map((outfit) => (
+                  {EURO_OUTFITS.map((outfit) => (
                     <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
                       <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
@@ -381,7 +381,7 @@ export function ExampleAnnualPage() {
                   {t("examples.annual.journeyTitle")}
                 </h2>
                 <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                  {TOKYO_OUTFITS.length} {t("examples.annual.outfitLooks")}
+                  {EURO_OUTFITS.length} {t("examples.annual.outfitLooks")}
                 </span>
               </div>
               <p className="text-[16px] text-[#57534e] mb-6" style={{ fontFamily: bodyFont }}>
@@ -390,7 +390,7 @@ export function ExampleAnnualPage() {
 
               {/* Outfit day cards */}
               <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
-                {TOKYO_OUTFITS.map((outfit, i) => (
+                {EURO_OUTFITS.map((outfit, i) => (
                   <button key={outfit.id} onClick={() => setActiveDayIdx(i)}
                     className={`flex-shrink-0 w-[200px] rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${activeDayIdx === i ? "border-[#C4613A] ring-1 ring-[#C4613A]/30" : "border-transparent hover:border-[#E8DDD4]"}`}>
                     <div className="relative h-[240px]">
@@ -412,40 +412,68 @@ export function ExampleAnnualPage() {
               </div>
 
               {/* Selected day detail */}
-              <div className="mt-4 bg-white rounded-xl border border-[#E8DDD4] p-5" style={{ boxShadow: "0 2px 8px rgba(0,0,0,.03)" }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <span className="w-8 h-8 rounded-full bg-[#C4613A]/10 flex items-center justify-center text-[13px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
-                    {TOKYO_OUTFITS[activeDayIdx].day}
+              <div className="mt-4 bg-white rounded-xl border border-[#E8DDD4] overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+                {/* Header */}
+                <div className="flex items-center gap-3 p-5 border-b border-[#EFE8DF]">
+                  <span className="w-9 h-9 rounded-full bg-[#C4613A]/10 flex items-center justify-center text-[13px] text-[#C4613A] flex-shrink-0" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                    {EURO_OUTFITS[activeDayIdx].day}
                   </span>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>
-                      {TOKYO_OUTFITS[activeDayIdx].title}: {TOKYO_OUTFITS[activeDayIdx].subtitle}
+                      {EURO_OUTFITS[activeDayIdx].title}
                     </span>
-                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] mt-1" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                      {TOKYO_OUTFITS[activeDayIdx].confidence}{t("examples.annual.match")}
-                    </span>
+                    <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{EURO_OUTFITS[activeDayIdx].subtitle}</span>
                   </div>
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] flex-shrink-0" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                    {EURO_OUTFITS[activeDayIdx].confidence}{t("examples.annual.match")}
+                  </span>
                 </div>
 
-                {/* Items with sizes */}
-                <div className="space-y-2 mt-4">
-                  {TOKYO_OUTFITS[activeDayIdx].items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                      <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
-                          <SizeChip size={item.size} />
-                        </div>
-                        <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{item.desc}</span>
+                <div className="p-5">
+                  {/* Two-col: image left, breakdown right */}
+                  <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-5">
+                    {/* Outfit image */}
+                    <div className="relative rounded-xl overflow-hidden self-start" style={{ aspectRatio: "3/4" }}>
+                      <ImageWithFallback src={EURO_OUTFITS[activeDayIdx].image} alt={EURO_OUTFITS[activeDayIdx].title} className="w-full h-full object-cover" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute top-2 left-2">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[8px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                          <Icon name="auto_awesome" size={8} className="text-white" filled /> AI
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
 
-                <p className="mt-4 text-[13px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: displayFont }}>
-                  "{TOKYO_OUTFITS[activeDayIdx].note}"
-                </p>
+                    {/* Right side */}
+                    <div className="min-w-0">
+                      {/* Stylist note */}
+                      <div className="bg-[#FDF8F3] rounded-xl p-4 mb-4 border-l-[3px] border-[#D4AF37]">
+                        <span className="text-[9px] uppercase tracking-[0.12em] text-[#D4AF37] block mb-1.5" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>Stylist Note</span>
+                        <p className="text-[13px] text-[#292524] leading-relaxed" style={{ fontFamily: displayFont, fontStyle: "italic" }}>
+                          "{EURO_OUTFITS[activeDayIdx].note}"
+                        </p>
+                      </div>
+
+                      {/* Items */}
+                      <span className="text-[9px] uppercase tracking-[0.12em] text-[#8A7B6E] block mb-3" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                        Outfit Breakdown
+                      </span>
+                      <div className="space-y-2">
+                        {EURO_OUTFITS[activeDayIdx].items.map((item) => (
+                          <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                            <ImageWithFallback src={item.img} alt={item.name} className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[13px] text-[#292524] leading-tight" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
+                                <SizeChip size={item.size} />
+                              </div>
+                              <span className="text-[11px] text-[#8A7B6E] block mt-0.5" style={{ fontFamily: bodyFont }}>{item.desc}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Actions */}
@@ -461,19 +489,32 @@ export function ExampleAnnualPage() {
           {/* Right */}
           <div className="lg:col-span-4 space-y-6">
             {/* Profile */}
-            <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+            <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-full bg-[#C4613A]/10 flex items-center justify-center">
-                  <Icon name="person" size={24} className="text-[#C4613A]" />
+                <div className="w-12 h-12 rounded-full bg-[#D4AF37]/10 flex items-center justify-center flex-shrink-0">
+                  <Icon name="person" size={22} className="text-[#D4AF37]" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>{t("examples.annual.profile")}</span>
-                  <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.persona")}</span>
+                  <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.persona")}</span>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-2 text-center mb-3">
+                {[
+                  { label: "Height", value: "185cm" },
+                  { label: "Weight", value: "75kg" },
+                  { label: "Size", value: "L / EU 43" },
+                  { label: "Aesthetic", value: "Casual" },
+                ].map(({ label, value }) => (
+                  <div key={label} className="bg-[#FDF8F3] rounded-lg p-2.5">
+                    <span className="text-[10px] text-[#8A7B6E] block" style={{ fontFamily: "var(--font-mono)" }}>{label}</span>
+                    <span className="text-[13px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{value}</span>
+                  </div>
+                ))}
+              </div>
               <div className="flex flex-wrap gap-1.5">
-                {["Casual"].map((a) => (
-                  <span key={a} className="px-2 py-0.5 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{a}</span>
+                {["Casual", "Minimalist", "Travel"].map((a) => (
+                  <span key={a} className="px-2 py-0.5 rounded-full bg-[#D4AF37]/8 border border-[#D4AF37]/20 text-[10px] text-[#D4AF37]" style={{ fontFamily: "var(--font-mono)" }}>{a}</span>
                 ))}
               </div>
             </div>
@@ -496,7 +537,7 @@ export function ExampleAnnualPage() {
                 </span>
               </div>
               <p className="text-[11px] text-[#57534e] mb-4" style={{ fontFamily: bodyFont }}>
-                {t("examples.annual.packingFrom")} {TOKYO_OUTFITS.length} {t("examples.annual.packingOutfits")} {PACKING.length} {t("examples.annual.packingUnique")}
+                {t("examples.annual.packingFrom")} {EURO_OUTFITS.length} {t("examples.annual.packingOutfits")} {PACKING.length} {t("examples.annual.packingUnique")}
               </p>
               <div className="space-y-2">
                 {PACKING.map((item, i) => (
@@ -545,7 +586,7 @@ export function ExampleAnnualPage() {
               <p className="text-[13px] text-white/80 mb-4" style={{ fontFamily: bodyFont }}>
                 {t("examples.annual.vipBody")}
               </p>
-              <button onClick={() => navigate("/onboarding/1")} className="w-full h-[40px] bg-white text-[#D4AF37] text-[12px] uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+              <button onClick={() => navigate("/onboarding/1")} className="w-full h-[40px] bg-white text-[#D4AF37] text-[12px] uppercase tracking-[0.08em] rounded-lg hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {t("examples.annual.vipBtn")}
               </button>
             </div>

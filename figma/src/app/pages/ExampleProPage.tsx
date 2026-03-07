@@ -320,29 +320,29 @@ export function ExampleProPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left — city content */}
           <div className="lg:col-span-8 space-y-10">
-            {/* 2x2 AI Outfit Grid Hero */}
-            <div className="relative rounded-2xl overflow-hidden bg-[#1A1410]" style={{ aspectRatio: "1/1" }}>
-              <div className="grid grid-cols-2 gap-2 h-full">
+            {/* 2x2 AI Outfit Grid Hero — natural height, not forced square */}
+            <div className="relative rounded-2xl overflow-hidden bg-[#1A1410]">
+              <div className="grid grid-cols-2 gap-[2px]">
                 {currentSet.outfits.map((outfit) => (
                   <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
                     <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    <div className="absolute bottom-2 left-2 right-2">
-                      <span className="text-white/60 text-[9px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
-                      <span className="text-white text-[13px] sm:text-[15px]" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    <div className="absolute bottom-0 left-0 right-0 p-3">
+                      <span className="text-white/55 text-[8px] sm:text-[9px] uppercase tracking-[0.14em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
+                      <span className="text-white text-[12px] sm:text-[15px] leading-tight block" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
                     </div>
                   </div>
                 ))}
               </div>
               {/* Overlay badges */}
-              <div className="absolute top-3 left-3 flex gap-2">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+              <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
                   <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
                 </span>
                 <TagChip label={`${currentSet.city}, ${currentSet.country}`} className="bg-white/20 text-white backdrop-blur-sm" />
               </div>
               <div className="absolute bottom-3 right-3">
-                <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[11px]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+                <span className="px-3 py-1 rounded-full bg-[#C4613A]/90 text-white text-[10px]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                   {currentSet.dates} · {currentSet.outfits.length} {t("examples.pro.looks")}
                 </span>
               </div>
@@ -350,79 +350,92 @@ export function ExampleProPage() {
 
             {/* Outfit cards */}
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: displayFont }}>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-[22px] sm:text-[26px] text-[#292524]" style={{ fontFamily: displayFont }}>
                   {currentSet.city} {t("examples.pro.outfitsLabel")}
                 </h2>
-                <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
+                <span className="text-[10px] uppercase tracking-[0.12em] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>
                   {currentSet.outfits.length} {t("examples.pro.looks")} · {t("examples.pro.womenswear")}
                 </span>
               </div>
 
-              <div className="space-y-6">
+              <div className="space-y-4">
                 {currentSet.outfits.map((outfit, idx) => (
-                  <div key={outfit.id} className="bg-white rounded-2xl border border-[#ebdacc] overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+                  <div key={outfit.id} className="bg-white rounded-2xl border border-[#ebdacc] overflow-hidden transition-shadow" style={{ boxShadow: expandedOutfit === idx ? "0 4px 24px rgba(196,97,58,.10)" : "0 2px 12px rgba(0,0,0,.04)" }}>
+                    {/* Accordion header */}
                     <button
                       onClick={() => setExpandedOutfit(expandedOutfit === idx ? -1 : idx)}
-                      className="w-full flex items-center justify-between p-5 cursor-pointer hover:bg-[#FDF8F3]/50 transition-colors"
+                      className="w-full flex items-center justify-between p-4 sm:p-5 cursor-pointer hover:bg-[#FDF8F3]/60 transition-colors"
                     >
-                      <div className="flex items-center gap-4">
-                        <span className="w-10 h-10 rounded-full bg-[#C4613A]/10 flex items-center justify-center text-[14px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{outfit.day}</span>
-                        <div className="text-left">
-                          <span className="text-[18px] text-[#292524] block" style={{ fontFamily: displayFont }}>{outfit.title}</span>
-                          <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{outfit.subtitle}</span>
+                      <div className="flex items-center gap-3 sm:gap-4 text-left">
+                        <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#C4613A]/10 flex-shrink-0 flex items-center justify-center text-[13px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{outfit.day}</span>
+                        <div>
+                          <span className="text-[16px] sm:text-[18px] text-[#292524] block leading-snug" style={{ fontFamily: displayFont }}>{outfit.title}</span>
+                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                            <span className="text-[12px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>{outfit.subtitle}</span>
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{outfit.confidence}{t("examples.pro.match")}</span>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{outfit.confidence}{t("examples.pro.match")}</span>
-                        <Icon name={expandedOutfit === idx ? "expand_less" : "expand_more"} size={24} className="text-[#57534e]" />
-                      </div>
+                      <Icon name={expandedOutfit === idx ? "expand_less" : "expand_more"} size={22} className="text-[#8A7B6E] flex-shrink-0 ml-2" />
                     </button>
 
                     {expandedOutfit === idx && (
-                      <div className="px-5 pb-6">
-                        <div className="space-y-6">
-                          <div className="relative rounded-xl overflow-hidden w-full max-w-[400px]" style={{ aspectRatio: "3/4" }}>
+                      <div className="px-4 sm:px-5 pb-6 border-t border-[#EFE8DF]">
+                        {/* Two-col layout: image left, breakdown right (desktop) */}
+                        <div className="mt-5 grid grid-cols-1 sm:grid-cols-[240px_1fr] gap-5 sm:gap-6">
+                          {/* Outfit image */}
+                          <div className="relative rounded-xl overflow-hidden self-start" style={{ aspectRatio: "3/4" }}>
                             <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
                             <div className="absolute top-3 left-3">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                                <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
+                                <Icon name="auto_awesome" size={9} className="text-white" filled /> AI
                               </span>
                             </div>
-                            <div className="absolute bottom-4 left-4 right-4">
+                            <div className="absolute bottom-3 left-3">
                               <div className="flex gap-1.5">
                                 {currentSet.colorPalette.map((color) => (
-                                  <div key={color} className="w-6 h-6 rounded-full border-2 border-white/50" style={{ backgroundColor: color }} />
+                                  <div key={color} className="w-5 h-5 rounded-full border-2 border-white/60" style={{ backgroundColor: color }} />
                                 ))}
                               </div>
                             </div>
                           </div>
 
-                          <div>
-                            <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+                          {/* Right side: breakdown + note */}
+                          <div className="min-w-0">
+                            {/* Stylist note — prominent at top */}
+                            <div className="bg-[#FDF8F3] rounded-xl p-4 mb-4 border-l-[3px] border-[#C4613A]">
+                              <span className="text-[9px] uppercase tracking-[0.12em] text-[#C4613A] block mb-1.5" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>Stylist Note</span>
+                              <p className="text-[13px] sm:text-[14px] text-[#292524] leading-relaxed" style={{ fontFamily: displayFont, fontStyle: "italic" }}>
+                                "{outfit.note}"
+                              </p>
+                            </div>
+
+                            {/* Outfit breakdown */}
+                            <span className="text-[9px] uppercase tracking-[0.12em] text-[#8A7B6E] block mb-3" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                               {t("examples.pro.outfitBreakdown")}
                             </span>
                             <div className="space-y-2">
                               {outfit.items.map((item) => (
-                                <div key={item.id} className="flex items-start gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                                  <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                                <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                  <ImageWithFallback src={item.img} alt={item.name} className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
                                   <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2 flex-wrap">
-                                      <span className="text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
+                                      <span className="text-[13px] text-[#292524] leading-tight" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                                       <SizeChip size={item.size} />
                                     </div>
-                                    <span className="text-[12px] text-[#57534e] block leading-relaxed" style={{ fontFamily: bodyFont }}>{item.desc}</span>
+                                    <span className="text-[11px] text-[#8A7B6E] block mt-0.5 leading-snug" style={{ fontFamily: bodyFont }}>{item.desc}</span>
                                   </div>
+                                  <span className="flex-shrink-0 text-[9px] uppercase tracking-[0.08em] text-[#8A7B6E] hidden sm:block" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
                                 </div>
                               ))}
                             </div>
-                            <p className="mt-5 text-[14px] text-[#57534e] italic leading-relaxed" style={{ fontFamily: displayFont }}>
-                              "{outfit.note}"
-                            </p>
+
+                            {/* Activities */}
                             <div className="mt-4 pt-3 border-t border-[#EFE8DF]">
-                              <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-2" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.pro.activities")}</span>
-                              <div className="flex flex-wrap gap-2">
+                              <span className="text-[9px] uppercase tracking-[0.12em] text-[#8A7B6E] block mb-2" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.pro.activities")}</span>
+                              <div className="flex flex-wrap gap-1.5">
                                 {currentSet.activities.map((a) => (
                                   <span key={a} className="px-2.5 py-1 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{a}</span>
                                 ))}
@@ -440,75 +453,84 @@ export function ExampleProPage() {
 
           {/* Right sidebar */}
           <aside className="lg:col-span-4">
-            <div className="lg:sticky lg:top-[120px] space-y-6">
+            <div className="lg:sticky lg:top-[120px] space-y-5">
               {/* Profile */}
-              <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="w-12 h-12 rounded-full bg-[#C4613A]/10 flex items-center justify-center">
-                    <Icon name="person" size={24} className="text-[#C4613A]" />
+                  <div className="w-12 h-12 rounded-full bg-[#C4613A]/10 flex items-center justify-center flex-shrink-0">
+                    <Icon name="person" size={22} className="text-[#C4613A]" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>{t("examples.pro.profile")}</span>
-                    <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.pro.persona")}</span>
+                    <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.pro.persona")}</span>
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2 text-center mb-3">
+                  {[
+                    { label: "Height", value: "170cm" },
+                    { label: "Weight", value: "45kg" },
+                    { label: "Size", value: "S / EU 37" },
+                    { label: "Aesthetic", value: "Classic" },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-[#FDF8F3] rounded-lg p-2.5">
+                      <span className="text-[10px] text-[#8A7B6E] block" style={{ fontFamily: "var(--font-mono)" }}>{label}</span>
+                      <span className="text-[13px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
                 <div className="flex flex-wrap gap-1.5">
-                  {["Classic"].map((a) => (
-                    <span key={a} className="px-2 py-0.5 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{a}</span>
+                  {["Classic", "Parisian", "Capsule"].map((a) => (
+                    <span key={a} className="px-2 py-0.5 rounded-full bg-[#C4613A]/8 border border-[#C4613A]/20 text-[10px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)" }}>{a}</span>
                   ))}
                 </div>
               </div>
 
               {/* Multi-City Packing */}
-              <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.pro.packingTitle")}</h3>
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[17px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.pro.packingTitle")}</h3>
                   <span className="px-2 py-0.5 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
                     {t("examples.pro.packingAuto")}
                   </span>
                 </div>
-                <p className="text-[12px] text-[#57534e] mb-4" style={{ fontFamily: bodyFont }}>
-                  {t("examples.pro.packingFrom")} {ALL_OUTFITS.length} {t("examples.pro.packingOutfits")} {EXAMPLE_CITIES.length} {t("examples.pro.packingCities")}
+                <p className="text-[11px] text-[#8A7B6E] mb-3" style={{ fontFamily: bodyFont }}>
+                  {PACKING.length} unique items · {ALL_OUTFITS.length} looks
                 </p>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
                   {PACKING.map((item, i) => (
-                    <div key={`${item.name}-${i}`} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                      <ImageWithFallback src={item.img} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                    <div key={`${item.name}-${i}`} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                      <ImageWithFallback src={item.img} alt={item.name} className="w-9 h-9 rounded-md object-cover flex-shrink-0" />
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[12px] text-[#292524] truncate" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.name}</span>
                           <SizeChip size={item.size} />
                         </div>
-                        <span className="text-[10px] text-[#57534e] truncate block" style={{ fontFamily: "var(--font-mono)" }}>
-                          {t("examples.pro.usedIn")} {item.usageCount} {t("examples.pro.look")}{item.usageCount > 1 ? "s" : ""} · {item.cities.join(", ")}
+                        <span className="text-[10px] text-[#8A7B6E] truncate block" style={{ fontFamily: "var(--font-mono)" }}>
+                          ×{item.usageCount} {item.usageCount > 1 ? t("examples.pro.looks") : t("examples.pro.look")}
                         </span>
                       </div>
                     </div>
                   ))}
                 </div>
-                <div className="mt-4 pt-3 border-t border-[#EFE8DF]">
-                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
-                    {PACKING.length} {t("examples.pro.packingUnique")} {ALL_OUTFITS.length} {t("examples.pro.packingLooks")}
-                  </span>
-                </div>
               </div>
 
               {/* Weather */}
-              <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: displayFont }}>{t("examples.pro.weatherTitle")}</h3>
-                <div className="space-y-4">
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <h3 className="text-[17px] text-[#292524] mb-4" style={{ fontFamily: displayFont }}>{t("examples.pro.weatherTitle")}</h3>
+                <div className="space-y-3">
                   {EXAMPLE_CITIES.map((cs) => (
-                    <div key={cs.city} className="py-3 border-b border-[#EFE8DF] last:border-0">
-                      <div className="flex items-center justify-between mb-2">
+                    <div key={cs.city} className="rounded-lg bg-[#FDF8F3] p-3">
+                      <div className="flex items-start justify-between mb-2">
                         <div>
-                          <span className="text-[14px] text-[#292524] block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{cs.city}</span>
-                          <span className="text-[11px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{cs.dates} · {cs.weather.condition}</span>
+                          <span className="text-[14px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{cs.city}</span>
+                          <span className="text-[11px] text-[#8A7B6E] block" style={{ fontFamily: bodyFont }}>{cs.dates}</span>
                         </div>
+                        <span className="text-[11px] text-[#57534e] text-right max-w-[100px] leading-tight" style={{ fontFamily: bodyFont }}>{cs.weather.condition}</span>
                       </div>
-                      <div className="flex items-center gap-4 text-[12px]" style={{ fontFamily: "var(--font-mono)" }}>
-                        <span className="flex items-center gap-1 text-[#292524]"><Icon name="thermostat" size={14} className="text-[#C4613A]" />{cs.weather.temp}°C</span>
-                        <span className="flex items-center gap-1 text-[#57534e]"><Icon name="water_drop" size={14} />{cs.weather.rain}%</span>
-                        <span className="flex items-center gap-1 text-[#57534e]"><Icon name="air" size={14} />{cs.weather.wind}km/h</span>
+                      <div className="flex items-center gap-3 text-[11px]" style={{ fontFamily: "var(--font-mono)" }}>
+                        <span className="flex items-center gap-0.5 text-[#292524] font-semibold"><Icon name="thermostat" size={13} className="text-[#C4613A]" />{cs.weather.temp}°C</span>
+                        <span className="flex items-center gap-0.5 text-[#57534e]"><Icon name="water_drop" size={13} />{cs.weather.rain}%</span>
+                        <span className="flex items-center gap-0.5 text-[#57534e]"><Icon name="air" size={13} />{cs.weather.wind}km/h</span>
                       </div>
                     </div>
                   ))}
@@ -516,9 +538,9 @@ export function ExampleProPage() {
               </div>
 
               {/* Stats */}
-              <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: displayFont }}>{t("examples.pro.statsTitle")}</h3>
-                <div className="space-y-3">
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <h3 className="text-[17px] text-[#292524] mb-3" style={{ fontFamily: displayFont }}>{t("examples.pro.statsTitle")}</h3>
+                <div className="space-y-2">
                   {[
                     { icon: "public", labelKey: "examples.pro.statCities", value: `${EXAMPLE_CITIES.length}` },
                     { icon: "style", labelKey: "examples.pro.statOutfits", value: `${ALL_OUTFITS.length} ${t("examples.pro.looks")}` },
@@ -528,27 +550,34 @@ export function ExampleProPage() {
                   ].map((stat) => (
                     <div key={stat.labelKey} className="flex items-center justify-between py-2 border-b border-[#EFE8DF] last:border-0">
                       <div className="flex items-center gap-2">
-                        <Icon name={stat.icon} size={16} className="text-[#C4613A]" />
-                        <span className="text-[13px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t(stat.labelKey)}</span>
+                        <Icon name={stat.icon} size={15} className="text-[#C4613A]" />
+                        <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t(stat.labelKey)}</span>
                       </div>
-                      <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{stat.value}</span>
+                      <span className="text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{stat.value}</span>
                     </div>
                   ))}
                 </div>
               </div>
 
               {/* CTA */}
-              <div className="bg-[#C4613A] rounded-xl p-6 text-white">
-                <h3 className="text-[18px] text-white mb-2" style={{ fontFamily: displayFont }}>{t("examples.pro.ctaTitle")}</h3>
-                <p className="text-[13px] text-white/80 mb-4" style={{ fontFamily: bodyFont }}>
+              <div className="rounded-xl p-5 text-white" style={{ background: "linear-gradient(135deg, #C4613A 0%, #a84d2e 100%)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="auto_awesome" size={16} className="text-white/70" filled />
+                  <h3 className="text-[17px] text-white" style={{ fontFamily: displayFont }}>{t("examples.pro.ctaTitle")}</h3>
+                </div>
+                <p className="text-[12px] text-white/80 mb-4 leading-relaxed" style={{ fontFamily: bodyFont }}>
                   {t("examples.pro.ctaBody")}
                 </p>
-                <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>
-                  <span className="flex items-center gap-2 text-[#C4613A]">
-                    {t("examples.pro.ctaBtn")}
-                    <Icon name="arrow_forward" size={16} className="text-[#C4613A]" />
-                  </span>
-                </BtnPrimary>
+                <button
+                  onClick={() => navigate("/onboarding/1")}
+                  className="w-full h-10 bg-white text-[#C4613A] rounded-lg text-[12px] uppercase tracking-[0.08em] hover:bg-white/90 active:bg-white/80 transition-colors cursor-pointer"
+                  style={{ fontFamily: bodyFont, fontWeight: 700 }}
+                >
+                  {t("examples.pro.ctaBtn")} &rarr;
+                </button>
+                <p className="text-[10px] text-white/60 text-center mt-3" style={{ fontFamily: "var(--font-mono)" }}>
+                  Free preview · No credit card needed
+                </p>
               </div>
             </div>
           </aside>

@@ -478,99 +478,182 @@ export function LandingPage() {
       </section>
 
       {/* ==================== EXAMPLES ==================== */}
-      <section id="examples" className="bg-[#FDF8F3] py-16 sm:py-32 px-6">
+      <section id="examples" className="bg-[#F5EFE6] py-16 sm:py-28 px-6">
         <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
-          <div className="text-center mb-16">
-            <h2 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: displayFont }}>
+          {/* Section header */}
+          <div className="text-center mb-12 sm:mb-16">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[10px] uppercase tracking-[0.12em] mb-4" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+              <Icon name="auto_awesome" size={12} className="text-[#C4613A]" filled />
+              Real AI Output
+            </span>
+            <h2 className="text-[#1A1410]" style={{ fontSize: "clamp(32px, 4vw, 54px)", fontFamily: displayFont, lineHeight: 1.1 }}>
               {t("section.examples.title")}
             </h2>
-            <p className="mt-4 text-[18px] text-[#57534e] max-w-[600px] mx-auto" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
+            <p className="mt-4 text-[16px] sm:text-[18px] text-[#57534e] max-w-[520px] mx-auto leading-relaxed" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
               {t("section.examples.subtitle")}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-[900px] mx-auto">
-            {/* Pro Example — Paris, Classic, Female */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-[960px] mx-auto">
+
+            {/* ── Pro Example Card ── */}
             <div
               onClick={() => navigate("/examples/pro")}
-              className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#C4613A]/30 transition-all"
-              style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}
+              className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#C4613A]/40 hover:shadow-xl transition-all duration-300"
+              style={{ boxShadow: "0 4px 20px rgba(0,0,0,.06)" }}
             >
-              <div className="relative h-[280px] overflow-hidden">
+              {/* Image hero */}
+              <div className="relative overflow-hidden" style={{ height: "clamp(260px, 30vw, 340px)" }}>
                 <ImageWithFallback
                   src="/examples/pro-outfit-1.png"
                   alt="Pro Example — Paris Style Guide"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 bg-[#C4613A] text-white rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                    Pro
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+
+                {/* Top badges */}
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <span className="px-2.5 py-1 bg-[#C4613A] text-white rounded-full text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                    Pro Plan
+                  </span>
+                  <span className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                    <Icon name="auto_awesome" size={9} className="text-white inline-block mr-0.5" filled />AI Generated
                   </span>
                 </div>
-                <div className="absolute bottom-4 left-4 right-4">
-                  <span className="text-white text-[24px] italic block" style={{ fontFamily: displayFont }}>
-                    {t("section.examples.pro.title")}
+
+                {/* Confidence badge — top right */}
+                <div className="absolute top-4 right-4">
+                  <span className="px-2 py-0.5 bg-black/30 backdrop-blur-sm text-white/90 rounded-full text-[9px]" style={{ fontFamily: "var(--font-mono)" }}>
+                    93% match
                   </span>
-                  <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
-                    {t("section.examples.pro.subtitle")}
-                  </span>
+                </div>
+
+                {/* Bottom overlay content */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <span className="text-white/60 text-[10px] uppercase tracking-[0.12em] block mb-0.5" style={{ fontFamily: "var(--font-mono)" }}>
+                        Paris · May 2026 · Classic
+                      </span>
+                      <span className="text-white block leading-tight" style={{ fontSize: "clamp(20px, 2.5vw, 26px)", fontFamily: displayFont }}>
+                        {t("section.examples.pro.title")}
+                      </span>
+                      <span className="text-white/75 text-[12px] mt-1 block" style={{ fontFamily: bodyFont }}>
+                        Female · 170cm · Slim build
+                      </span>
+                    </div>
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center group-hover:bg-[#C4613A] transition-colors duration-300">
+                      <Icon name="arrow_forward" size={18} className="text-white" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="p-5 flex items-center justify-between gap-3">
-                <div className="flex gap-2 flex-wrap">
-                  {[t("section.examples.pro.tag1"), t("section.examples.pro.tag2"), t("section.examples.pro.tag3")].map((s) => (
-                    <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                      {s}
+
+              {/* Card footer */}
+              <div className="p-4 sm:p-5">
+                {/* Feature chips */}
+                <div className="flex gap-2 flex-wrap mb-3">
+                  {[
+                    { icon: "location_city", text: t("section.examples.pro.tag1") },
+                    { icon: "style", text: t("section.examples.pro.tag2") },
+                    { icon: "checklist", text: t("section.examples.pro.tag3") },
+                  ].map(({ icon, text }) => (
+                    <span key={text} className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
+                      <Icon name={icon} size={10} className="text-[#C4613A]" />
+                      {text}
                     </span>
                   ))}
                 </div>
-                <span className="text-[12px] uppercase tracking-[0.08em] text-[#C4613A]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                  {t("section.examples.viewPro")} →
-                </span>
+                <div className="flex items-center justify-between pt-3 border-t border-[#EFE8DF]">
+                  <span className="text-[12px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>
+                    4 AI outfit images · Packing list · Day plan
+                  </span>
+                  <span className="text-[11px] uppercase tracking-[0.1em] text-[#C4613A] font-semibold flex items-center gap-1 group-hover:gap-2 transition-all duration-200" style={{ fontFamily: bodyFont }}>
+                    {t("section.examples.viewPro")} <span>&rarr;</span>
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Annual Example — Paris/Rome/Barcelona, Casual, Male */}
+            {/* ── Annual Example Card ── */}
             <div
               onClick={() => navigate("/examples/annual")}
-              className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#D4AF37]/30 transition-all"
-              style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}
+              className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] hover:border-[#D4AF37]/50 hover:shadow-xl transition-all duration-300"
+              style={{ boxShadow: "0 4px 20px rgba(0,0,0,.06)" }}
             >
-              <div className="relative h-[280px] overflow-hidden">
+              {/* Image hero */}
+              <div className="relative overflow-hidden" style={{ height: "clamp(260px, 30vw, 340px)" }}>
                 <ImageWithFallback
                   src="/examples/annual-hero.png"
                   alt="Annual Example — European Journey"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                <div className="absolute top-4 left-4">
-                  <span className="px-3 py-1 gold-gradient text-white rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                    Annual
+                <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+
+                {/* Top badges */}
+                <div className="absolute top-4 left-4 flex items-center gap-2">
+                  <span className="px-2.5 py-1 gold-gradient text-white rounded-full text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                    Annual Plan
+                  </span>
+                  <span className="px-2.5 py-1 bg-white/20 backdrop-blur-sm text-white rounded-full text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                    <Icon name="auto_awesome" size={9} className="text-white inline-block mr-0.5" filled />AI Generated
                   </span>
                 </div>
-                <div className="absolute bottom-4 left-4 right-4">
-                  <span className="text-white text-[24px] italic block" style={{ fontFamily: displayFont }}>
-                    {t("section.examples.annual.title")}
+
+                {/* Trip count badge — top right */}
+                <div className="absolute top-4 right-4">
+                  <span className="px-2 py-0.5 bg-black/30 backdrop-blur-sm text-white/90 rounded-full text-[9px]" style={{ fontFamily: "var(--font-mono)" }}>
+                    3 cities
                   </span>
-                  <span className="text-white/70 text-[13px]" style={{ fontFamily: bodyFont }}>
-                    {t("section.examples.annual.subtitle")}
-                  </span>
+                </div>
+
+                {/* Bottom overlay content */}
+                <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-5">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <span className="text-white/60 text-[10px] uppercase tracking-[0.12em] block mb-0.5" style={{ fontFamily: "var(--font-mono)" }}>
+                        Paris · Rome · Barcelona
+                      </span>
+                      <span className="text-white block leading-tight" style={{ fontSize: "clamp(20px, 2.5vw, 26px)", fontFamily: displayFont }}>
+                        {t("section.examples.annual.title")}
+                      </span>
+                      <span className="text-white/75 text-[12px] mt-1 block" style={{ fontFamily: bodyFont }}>
+                        Male · 185cm · Regular build
+                      </span>
+                    </div>
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors duration-300">
+                      <Icon name="arrow_forward" size={18} className="text-white" />
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="p-5 flex items-center justify-between gap-3">
-                <div className="flex gap-2 flex-wrap">
-                  {[t("section.examples.annual.tag1"), t("section.examples.annual.tag2"), t("section.examples.annual.tag3")].map((s) => (
-                    <span key={s} className="px-2 py-0.5 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                      {s}
+
+              {/* Card footer */}
+              <div className="p-4 sm:p-5">
+                {/* Feature chips */}
+                <div className="flex gap-2 flex-wrap mb-3">
+                  {[
+                    { icon: "public", text: t("section.examples.annual.tag1") },
+                    { icon: "style", text: t("section.examples.annual.tag2") },
+                    { icon: "psychology", text: t("section.examples.annual.tag3") },
+                  ].map(({ icon, text }) => (
+                    <span key={text} className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
+                      <Icon name={icon} size={10} className="text-[#D4AF37]" />
+                      {text}
                     </span>
                   ))}
                 </div>
-                <span className="text-[12px] uppercase tracking-[0.08em] text-[#D4AF37]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                  {t("section.examples.viewAnnual")} →
-                </span>
+                <div className="flex items-center justify-between pt-3 border-t border-[#EFE8DF]">
+                  <span className="text-[12px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>
+                    12 trips/yr · Style DNA · VIP concierge
+                  </span>
+                  <span className="text-[11px] uppercase tracking-[0.1em] text-[#D4AF37] font-semibold flex items-center gap-1 group-hover:gap-2 transition-all duration-200" style={{ fontFamily: bodyFont }}>
+                    {t("section.examples.viewAnnual")} <span>&rarr;</span>
+                  </span>
+                </div>
               </div>
             </div>
+
           </div>
         </div>
       </section>
