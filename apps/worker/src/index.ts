@@ -246,56 +246,99 @@ app.get('/api/health', (c) =>
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1b. GET /api/test-gemini — diagnostic endpoint (temporary)
+// 1b. GET /api/test-teaser — diagnostic: runs full teaser pipeline (temporary)
 // ─────────────────────────────────────────────────────────────────────────────
 
-app.get('/api/test-gemini', async (c) => {
+app.get('/api/test-teaser', async (c) => {
+  const steps: Array<{ step: string; ok: boolean; ms: number; detail?: string }> = [];
+  const t0 = Date.now();
+
+  // Step 1: Check API key
   const apiKey = c.env.NANOBANANA_API_KEY;
-  if (!apiKey) return c.json({ error: 'NANOBANANA_API_KEY not set' }, 500);
+  steps.push({ step: 'api_key', ok: !!apiKey, ms: Date.now() - t0, detail: apiKey ? apiKey.slice(0, 8) + '...' : 'MISSING' });
+  if (!apiKey) return c.json({ steps }, 500);
 
-  const MODEL = 'gemini-2.0-flash-exp';
-  const MODELS_TO_TRY = [
-    'gemini-3.1-flash-image-preview',
-    'gemini-2.5-flash-preview-image',
-    'gemini-2.0-flash-exp',
-  ];
+  // Step 2: Check R2 binding
+  const hasR2 = !!c.env.R2;
+  steps.push({ step: 'r2_binding', ok: hasR2, ms: Date.now() - t0, detail: hasR2 ? 'bound' : 'MISSING' });
 
-  const results: Array<{ model: string; status: number; ok: boolean; error?: string }> = [];
+  // Step 3: Check R2_PUBLIC_URL
+  const r2Url = c.env.R2_PUBLIC_URL;
+  steps.push({ step: 'r2_public_url', ok: !!r2Url, ms: Date.now() - t0, detail: r2Url || 'MISSING' });
 
-  for (const model of MODELS_TO_TRY) {
-    try {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
-        {
-          method: 'POST',
-          headers: {
-            'x-goog-api-key': apiKey,
-            'Content-Type': 'application/json',
+  // Step 4: Call Gemini with a simple fashion prompt
+  const t4 = Date.now();
+  try {
+    const prompt = 'Generate a photorealistic full-body fashion photograph of a young woman standing in front of the Eiffel Tower. She is wearing a stylish autumn outfit. Professional photography, natural lighting.';
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent`,
+      {
+        method: 'POST',
+        headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseModalities: ['IMAGE', 'TEXT'],
+            imageConfig: { aspectRatio: '3:4', imageSize: '2K' },
           },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: 'Generate a simple test image of a red circle on white background.' }] }],
-            generationConfig: {
-              responseModalities: ['IMAGE', 'TEXT'],
-              imageConfig: { aspectRatio: '1:1' },
-            },
-          }),
-          signal: AbortSignal.timeout(30_000),
-        }
-      );
-      const text = await res.text();
-      const hasImage = text.includes('"inlineData"');
-      results.push({
-        model,
-        status: res.status,
-        ok: res.ok && hasImage,
-        error: res.ok ? (hasImage ? undefined : 'No image in response') : text.slice(0, 300),
-      });
-    } catch (err) {
-      results.push({ model, status: 0, ok: false, error: (err as Error).message });
+        }),
+        signal: AbortSignal.timeout(45_000),
+      }
+    );
+    const data = await res.json() as Record<string, unknown>;
+    const candidates = (data as { candidates?: Array<{ content?: { parts?: Array<{ inlineData?: { data?: string; mimeType?: string }; text?: string }> } }> }).candidates;
+    const parts = candidates?.[0]?.content?.parts;
+    const imagePart = parts?.find((p) => p.inlineData?.data);
+    const textPart = parts?.find((p) => p.text);
+
+    if (!res.ok) {
+      steps.push({ step: 'gemini_generate', ok: false, ms: Date.now() - t4, detail: `HTTP ${res.status}: ${JSON.stringify(data).slice(0, 300)}` });
+      return c.json({ steps }, 500);
     }
+
+    if (!imagePart?.inlineData?.data) {
+      // Check for safety block
+      const blocked = (data as { candidates?: Array<{ finishReason?: string }> }).candidates?.[0]?.finishReason;
+      steps.push({ step: 'gemini_generate', ok: false, ms: Date.now() - t4, detail: `No image returned. finishReason=${blocked}. text=${textPart?.text?.slice(0, 200) || 'none'}. keys=${Object.keys(data).join(',')}` });
+      return c.json({ steps }, 500);
+    }
+
+    const imageSize = imagePart.inlineData.data.length;
+    steps.push({ step: 'gemini_generate', ok: true, ms: Date.now() - t4, detail: `image=${(imageSize / 1024).toFixed(0)}KB, mime=${imagePart.inlineData.mimeType}` });
+
+    // Step 5: Store in R2
+    if (hasR2) {
+      const t5 = Date.now();
+      try {
+        const binaryString = atob(imagePart.inlineData.data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+
+        const testKey = 'temp/test-diag/teaser.png';
+        await c.env.R2.put(testKey, bytes.buffer, {
+          httpMetadata: { contentType: 'image/png' },
+        });
+        const publicUrl = `${r2Url}/${testKey}`;
+        steps.push({ step: 'r2_store', ok: true, ms: Date.now() - t5, detail: publicUrl });
+
+        // Step 6: Verify the stored image is accessible
+        const t6 = Date.now();
+        try {
+          const verifyRes = await fetch(publicUrl, { method: 'HEAD', signal: AbortSignal.timeout(5_000) });
+          steps.push({ step: 'r2_verify', ok: verifyRes.ok, ms: Date.now() - t6, detail: `HTTP ${verifyRes.status}` });
+        } catch (err) {
+          steps.push({ step: 'r2_verify', ok: false, ms: Date.now() - t6, detail: (err as Error).message });
+        }
+      } catch (err) {
+        steps.push({ step: 'r2_store', ok: false, ms: Date.now() - t5, detail: (err as Error).message });
+      }
+    }
+  } catch (err) {
+    steps.push({ step: 'gemini_generate', ok: false, ms: Date.now() - t4, detail: (err as Error).message });
   }
 
-  return c.json({ results, keyPrefix: apiKey.slice(0, 8) + '...' });
+  const allOk = steps.every((s) => s.ok);
+  return c.json({ ok: allOk, total_ms: Date.now() - t0, steps });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
