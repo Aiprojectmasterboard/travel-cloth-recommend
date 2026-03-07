@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { Outlet, useLocation } from "react-router";
 import { OnboardingProvider } from "../context/OnboardingContext";
 import { LanguageProvider } from "../context/LanguageContext";
@@ -9,6 +9,9 @@ import { LoginModal, PasswordResetModal } from "../components/travel-capsule";
 /** Scroll to top + Google Analytics page view on every route change */
 function ScrollToTop() {
   const { pathname } = useLocation();
+  // Skip first render — index.html gtag config already fires initial page_view
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
     // If navigating to landing page with a pending scroll target, let LandingPage handle it
     if (pathname === "/" && sessionStorage.getItem("tc_scroll_target")) return;
@@ -17,10 +20,18 @@ function ScrollToTop() {
     window.scrollTo(0, 0);
   }, [pathname]);
 
-  // Send SPA page view to Google Analytics
+  // Send GA4 page_view event on SPA route changes
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return; // index.html send_page_view:true handles initial load
+    }
     if (typeof window.gtag === "function") {
-      window.gtag("config", "G-K0HR5HHCP6", { page_path: pathname });
+      window.gtag("event", "page_view", {
+        page_path: pathname,
+        page_location: window.location.href,
+        page_title: document.title,
+      });
     }
   }, [pathname]);
 
