@@ -852,6 +852,29 @@ export async function runResult(
   console.log(`[runResult] ${plan} pipeline complete for trip ${tripId}. Share: ${growth.share_url}`);
 }
 
+// ─── City-specific fallback images (used when Gemini fails) ──────────────────
+// These are generic fashion editorial images per city — NOT city-landmark photos.
+// Ensures users never see a wrong-city fallback (e.g. Paris image for London).
+const CITY_FALLBACK_IMAGES: Record<string, { male: string; female: string }> = {
+  london:        { male: 'https://images.unsplash.com/photo-1660686935418-22edff8f0625?w=1080', female: 'https://images.unsplash.com/photo-1677592737288-5ffcf72770d1?w=1080' },
+  paris:         { male: 'https://images.unsplash.com/photo-1767871893110-f9afbac26294?w=1080', female: 'https://images.unsplash.com/photo-1677592737288-5ffcf72770d1?w=1080' },
+  tokyo:         { male: 'https://images.unsplash.com/photo-1609561812031-24e3312230f4?w=1080', female: 'https://images.unsplash.com/photo-1717167172685-374de9c948dd?w=1080' },
+  rome:          { male: 'https://images.unsplash.com/photo-1643574546768-05ef9943b25e?w=1080', female: 'https://images.unsplash.com/photo-1536967674045-00c29460c1a7?w=1080' },
+  barcelona:     { male: 'https://images.unsplash.com/photo-1624353656309-8be1a6c457be?w=1080', female: 'https://images.unsplash.com/photo-1572030712991-5d489429598a?w=1080' },
+  'new york':    { male: 'https://images.unsplash.com/photo-1765816839382-1cc1486398d7?w=1080', female: 'https://images.unsplash.com/photo-1653152987833-1c1aa09ab3dd?w=1080' },
+  seoul:         { male: 'https://images.unsplash.com/photo-1609561812031-24e3312230f4?w=1080', female: 'https://images.unsplash.com/photo-1717167172685-374de9c948dd?w=1080' },
+  milan:         { male: 'https://images.unsplash.com/photo-1730338022783-0c1410a6989c?w=1080', female: 'https://images.unsplash.com/photo-1551374332-2c48196ae690?w=1080' },
+  bali:          { male: 'https://images.unsplash.com/photo-1627361673902-c80df14aecdd?w=1080', female: 'https://images.unsplash.com/photo-1590493298956-fbfef69619ff?w=1080' },
+  bangkok:       { male: 'https://images.unsplash.com/photo-1627361673902-c80df14aecdd?w=1080', female: 'https://images.unsplash.com/photo-1590493298956-fbfef69619ff?w=1080' },
+  _default:      { male: 'https://images.unsplash.com/photo-1673173044501-0d75c4f8de62?w=1080', female: 'https://images.unsplash.com/photo-1603045720683-5c6840a8eeca?w=1080' },
+};
+
+export function getCityFallbackImage(city: string, gender: string): string {
+  const key = city.toLowerCase().trim();
+  const entry = CITY_FALLBACK_IMAGES[key] || CITY_FALLBACK_IMAGES._default;
+  return gender === 'male' ? entry.male : entry.female;
+}
+
 // ─── runTeaserBackground ──────────────────────────────────────────────────────
 
 /**
@@ -911,8 +934,9 @@ export async function runTeaserBackground(
     console.log(`[runTeaserBackground] Success for trip ${trip_id}: ${teaserUrl}`);
   } catch (err) {
     teaserError = (err as Error).message;
-    teaserUrl = fallbackTeaser;
-    console.error(`[runTeaserBackground] FAILED for trip ${trip_id}:`, teaserError);
+    // Use city-specific fallback instead of empty string or generic fallback
+    teaserUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
+    console.error(`[runTeaserBackground] FAILED for trip ${trip_id}:`, teaserError, `| fallback: ${teaserUrl}`);
   }
 
   // Insert generation_jobs tracking row (frontend polls this via GET /api/teaser/:tripId)

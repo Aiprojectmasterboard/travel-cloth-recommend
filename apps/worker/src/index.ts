@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import Anthropic from '@anthropic-ai/sdk';
-import { runPreview, runResult, runTeaserBackground } from './agents/orchestrator';
+import { runPreview, runResult, runTeaserBackground, getCityFallbackImage } from './agents/orchestrator';
 import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
 import { imageGenAgent } from './agents/imageGenAgent';
 
@@ -591,7 +591,7 @@ app.post('/api/preview', async (c) => {
               weight_kg: safeWeightKg,
               aesthetics: safeAesthetics,
             },
-            fallbackTeaser: preview.teaser_url || '',
+            fallbackTeaser: preview.teaser_url || getCityFallbackImage(preview.vibes[0].city ?? '', safeGender || 'female'),
           },
           c.env
         ).catch((err) => {
