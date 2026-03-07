@@ -44,10 +44,10 @@ interface GeminiResponse {
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL = 'gemini-3.1-flash-image-preview';
-const MAX_ATTEMPTS = 3;
-const BACKOFF_MS = [2_000, 4_000, 8_000] as const;
-// Gemini image generation needs 10–30 s; allow enough headroom
-const FETCH_TIMEOUT_MS = 45_000;
+const MAX_ATTEMPTS = 2;
+const BACKOFF_MS = [1_500, 3_000] as const;
+// Gemini image generation needs 10–30 s; keep tight to avoid Worker timeout
+const FETCH_TIMEOUT_MS = 25_000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -65,7 +65,7 @@ const MAX_FACE_BYTES = 4_000_000; // 4 MB → ~5.3 MB base64 (Gemini accepts up 
  */
 async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+    const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
     if (!res.ok) {
       console.warn(`[teaserAgent] Face fetch HTTP ${res.status} for ${url}`);
       return null;
@@ -189,23 +189,15 @@ async function generateWithRetry(
 ): Promise<ArrayBuffer> {
   let lastError: Error | null = null;
 
-  // Phase 1: Try with face reference (if provided)
+  // Phase 1: Try with face reference (if provided) — single attempt to save time
   if (faceUrl) {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      if (attempt > 0) {
-        await sleep(BACKOFF_MS[attempt - 1] ?? 2_000);
-      }
-      try {
-        return await generateNanoBanana(prompt, apiKey, faceUrl);
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        console.warn(
-          `[teaserAgent] Face attempt ${attempt + 1}/2 failed: ${lastError.message}`
-        );
-      }
+    try {
+      return await generateNanoBanana(prompt, apiKey, faceUrl);
+    } catch (err) {
+      lastError = err instanceof Error ? err : new Error(String(err));
+      console.warn(`[teaserAgent] Face attempt failed: ${lastError.message}`);
+      console.warn(`[teaserAgent] Retrying WITHOUT face reference`);
     }
-    // Face-based generation failed — fall through to no-face retry
-    console.warn(`[teaserAgent] Face-based generation failed, retrying WITHOUT face reference`);
   }
 
   // Phase 2: Try without face reference (always works unless Gemini is fully down)

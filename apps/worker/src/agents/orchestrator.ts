@@ -589,14 +589,16 @@ export async function runPreview(
 
     let teaserError: string | null = null;
     if (firstVibe) {
+      const effectiveFaceUrl = face_url || (gender === 'male'
+        ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
+        : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png');
+      console.log(`[runPreview] Calling teaserAgent: trip=${trip_id}, city=${cities[0]?.name}, gender=${gender}, face=${effectiveFaceUrl ? 'yes' : 'no'}, faceUrl=${effectiveFaceUrl?.slice(0, 80)}`);
       try {
         const teaser = await teaserAgent(
           {
             tripId: trip_id,
             vibeResult: firstVibe,
-            faceUrl: face_url || (gender === 'male'
-              ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
-              : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png'),
+            faceUrl: effectiveFaceUrl,
             userProfile: user_profile
               ? {
                   gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
@@ -609,6 +611,7 @@ export async function runPreview(
           env
         );
         teaserUrl = teaser.image_url;
+        console.log(`[runPreview] Teaser generated successfully: ${teaserUrl}`);
       } catch (err) {
         teaserError = (err as Error).message;
         console.error(`[runPreview] Teaser AI generation FAILED for trip ${trip_id}:`, teaserError);
