@@ -3,7 +3,7 @@ import { useNavigate } from "react-router";
 import { Icon, BtnPrimary } from "../components/travel-capsule";
 import { SEO } from "../components/SEO";
 
-const SUPPORT_EMAIL = "netson94@gmail.com";
+const SUPPORT_EMAIL = "hello@travelscapsule.com";
 
 export function ContactPage() {
   const navigate = useNavigate();
