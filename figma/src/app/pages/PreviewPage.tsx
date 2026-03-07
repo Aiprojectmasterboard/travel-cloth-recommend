@@ -538,15 +538,41 @@ export function PreviewPage() {
 
         {/* Preview Card — Real AI Teaser */}
         <div className="mt-10 relative rounded-2xl overflow-hidden aspect-[16/9] sm:aspect-[21/9]">
-          <ImageWithFallback src={teaserUrl} alt="Trip preview" className="w-full h-full object-cover" />
-          {/* Shimmer overlay while AI teaser is still generating */}
-          {!teaserReady && (
-            <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
-              <div className="w-3 h-3 rounded-full bg-[#C4613A] animate-pulse" />
-              <span className="text-[11px] text-white/90 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono)" }}>
-                AI generating...
-              </span>
-            </div>
+          {!teaserReady ? (
+            /* Loading state: blurred gradient + shimmer animation */
+            <>
+              <div
+                className="w-full h-full animate-pulse"
+                style={{
+                  background: `linear-gradient(135deg, ${vibeColors[0] || '#8B7355'}40, ${vibeColors[1] || '#C4A882'}30, ${vibeColors[2] || '#4A5568'}40)`,
+                  filter: 'blur(0px)',
+                }}
+              />
+              {/* Shimmer sweep */}
+              <div className="absolute inset-0 overflow-hidden">
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
+                    animation: 'shimmer 2s infinite',
+                  }}
+                />
+              </div>
+              <style>{`@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
+              {/* Centered loading indicator */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
+                <div className="w-12 h-12 rounded-full border-3 border-white/20 border-t-[#C4613A] animate-spin" style={{ borderWidth: 3 }} />
+                <span className="text-[12px] text-white/80 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                  AI generating your look...
+                </span>
+                <span className="text-[10px] text-white/50" style={{ fontFamily: "var(--font-mono)" }}>
+                  ~30 seconds
+                </span>
+              </div>
+            </>
+          ) : (
+            /* Ready state: show the actual image */
+            <ImageWithFallback src={teaserUrl} alt="Trip preview" className="w-full h-full object-cover" />
           )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
           <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-[360px] p-4 sm:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(20px)" }}>
@@ -598,8 +624,9 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((idx) => {
-              const isUnlocked = idx === 0 && !!(polledTeaserUrl || preview?.teaser_url);
-              const imgSrc = teaserUrl; // All 4 slots use the same teaser image
+              const isUnlocked = idx === 0 && teaserReady && !!(polledTeaserUrl || preview?.teaser_url);
+              const imgSrc = teaserUrl;
+              const isSlot0Loading = idx === 0 && !teaserReady;
               // Each locked slot gets a unique CSS treatment so they look like different images
               const lockedStyles: React.CSSProperties[] = [
                 {},
@@ -615,12 +642,19 @@ export function PreviewPage() {
                   style={isUnlocked ? { cursor: "pointer" } : undefined}
                 >
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                    <ImageWithFallback
-                      src={imgSrc}
-                      alt={`Outfit ${idx + 1}`}
-                      className={`w-full h-full object-cover transition-transform duration-500 ${isUnlocked ? "group-hover:scale-105" : ""}`}
-                      style={isUnlocked ? { transform: "scale(1)" } : lockedStyles[idx]}
-                    />
+                    {isSlot0Loading ? (
+                      /* Slot 0 loading: gradient shimmer instead of fallback image */
+                      <div className="w-full h-full animate-pulse" style={{
+                        background: `linear-gradient(135deg, ${vibeColors[0] || '#8B7355'}50, ${vibeColors[1] || '#C4A882'}40, ${vibeColors[2] || '#4A5568'}50)`,
+                      }} />
+                    ) : (
+                      <ImageWithFallback
+                        src={imgSrc}
+                        alt={`Outfit ${idx + 1}`}
+                        className={`w-full h-full object-cover transition-transform duration-500 ${isUnlocked ? "group-hover:scale-105" : ""}`}
+                        style={isUnlocked ? { transform: "scale(1)" } : lockedStyles[idx]}
+                      />
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     {!isUnlocked && (
                       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">

@@ -177,7 +177,19 @@ export function pollTeaser(tripId: string): Promise<TeaserStatus> {
 
 /** Fire-and-forget: trigger teaser generation (long request ~30-50s) */
 export function triggerTeaserGeneration(tripId: string): void {
-  apiPost('/api/teaser/generate', { trip_id: tripId }).catch(() => {
-    // Intentionally fire-and-forget — polling will detect the result
+  // Use raw fetch with no timeout — Gemini takes 30-50s
+  // Don't use apiPost (has auth headers that may complicate things)
+  fetch(WORKER_URL + '/api/teaser/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ trip_id: tripId }),
+  }).then(res => {
+    if (!res.ok) {
+      res.text().then(t => console.error('[triggerTeaserGeneration] Error:', res.status, t.slice(0, 200)));
+    } else {
+      console.log('[triggerTeaserGeneration] Completed for trip:', tripId);
+    }
+  }).catch(err => {
+    console.error('[triggerTeaserGeneration] Network error:', err.message);
   })
 }
