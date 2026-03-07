@@ -543,11 +543,8 @@ export async function runPreview(
       ? `${staticBase}/annual-outfit-1.png`
       : `${staticBase}/pro-outfit-1.png`;
 
-    // ── 2. Weather + Teaser — RUN IN PARALLEL ────────────────────────────────
-    // Weather takes ~2s, Teaser takes ~20-40s via Gemini.
-    // Running them in parallel saves critical wall-clock time for Workers.
-
-    const weatherPromise = Promise.all(
+    // ── 2. Weather — fast API call (~2s) ────────────────────────────────────
+    const weatherResults = await Promise.all(
       cities.map(async (city): Promise<WeatherResult> => {
         if (!city.lat || !city.lon) {
           return {
@@ -571,63 +568,10 @@ export async function runPreview(
       })
     );
 
-    // Teaser: runs in parallel with weather
-    let teaserError: string | null = null;
-    const teaserPromise = (async (): Promise<string | null> => {
-      if (!firstVibe) return fallbackTeaser;
-      const effectiveFaceUrl = face_url || (gender === 'male'
-        ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
-        : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png');
-      console.log(`[runPreview] Calling teaserAgent: trip=${trip_id}, city=${cities[0]?.name}, gender=${gender}, faceUrl=${effectiveFaceUrl?.slice(0, 80)}`);
-      try {
-        const teaser = await teaserAgent(
-          {
-            tripId: trip_id,
-            vibeResult: firstVibe,
-            faceUrl: effectiveFaceUrl,
-            userProfile: user_profile
-              ? {
-                  gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
-                  height_cm: user_profile.height_cm,
-                  weight_kg: user_profile.weight_kg,
-                  aesthetics: user_profile.aesthetics,
-                }
-              : undefined,
-          },
-          env
-        );
-        console.log(`[runPreview] Teaser generated successfully: ${teaser.image_url}`);
-        return teaser.image_url;
-      } catch (err) {
-        teaserError = (err as Error).message;
-        console.error(`[runPreview] Teaser AI generation FAILED for trip ${trip_id}:`, teaserError);
-        return fallbackTeaser;
-      }
-    })();
-
-    // Await both in parallel
-    const [weatherResults, teaserUrl] = await Promise.all([weatherPromise, teaserPromise]);
-
-    // Insert generation_jobs row for tracking (includes error info if teaser failed)
-    try {
-      await sbFetch(env, '/generation_jobs', {
-        method: 'POST',
-        body: JSON.stringify({
-          trip_id,
-          city: cities[0]?.name ?? '',
-          mood: firstVibe?.mood_name ?? '',
-          prompt: teaserError
-            ? `FAILED: ${teaserError.slice(0, 200)} | Original prompt: ${firstVibe?.mood_label ?? 'teaser'}`
-            : (firstVibe?.mood_label ?? 'teaser'),
-          status: teaserError ? 'failed_fallback' : 'completed',
-          image_url: teaserUrl,
-          job_type: 'teaser',
-          attempts: 1,
-        }),
-      });
-    } catch (err) {
-      console.warn(`[runPreview] generation_jobs INSERT failed:`, (err as Error).message);
-    }
+    // NOTE: Teaser generation is NOT awaited here.
+    // Gemini takes ~30-40s which exceeds Workers wall-clock timeout.
+    // Instead, teaserAgent runs in the background via waitUntil() —
+    // see runTeaserBackground() below, called from index.ts.
 
     // ── 5. Capsule — DETERMINISTIC (no Claude API call) ──────────────────
     // Cost savings: ~$0.006 per preview → $0
@@ -647,25 +591,25 @@ export async function runPreview(
     };
 
     // ── 6. Mark trip as completed (free stage) ───────────────────────────────
+    // teaser_url starts null — will be set by runTeaserBackground() via waitUntil()
     await sbPatch(env, `/trips?id=eq.${trip_id}`, {
       status: 'completed',
-      // Store preview data on trip row so GET /api/preview/:tripId and runResult can read it
       vibe_data: vibeResults,
       weather_data: weatherResults,
       capsule_free: capsule,
     });
 
-    console.log(`[runPreview] Free preview complete for trip ${trip_id}`);
+    console.log(`[runPreview] Free preview complete for trip ${trip_id} (teaser generating in background)`);
 
     return {
       trip_id,
       status: 'completed',
-      teaser_url: teaserUrl,
+      teaser_url: fallbackTeaser,  // immediate response uses fallback; real teaser arrives via polling
       mood_label: firstVibe?.mood_label ?? null,
       capsule,
       vibes: vibeResults,
       weather: weatherResults,
-      teaser_error: teaserError,
+      teaser_error: null,
     };
   } catch (err) {
     await sbPatch(env, `/trips?id=eq.${trip_id}`, { status: 'failed' });
@@ -906,4 +850,89 @@ export async function runResult(
   });
 
   console.log(`[runResult] ${plan} pipeline complete for trip ${tripId}. Share: ${growth.share_url}`);
+}
+
+// ─── runTeaserBackground ──────────────────────────────────────────────────────
+
+/**
+ * Generates a teaser image in the background (called via waitUntil).
+ * Gemini takes ~30-40s which exceeds Workers' response deadline.
+ * waitUntil() allows this to run AFTER the HTTP response is sent.
+ *
+ * On success: updates trips.teaser_url + inserts generation_jobs row.
+ * On failure: inserts generation_jobs with 'failed_fallback' status.
+ * Frontend polls GET /api/teaser/:tripId to detect when the image is ready.
+ */
+export async function runTeaserBackground(
+  input: {
+    trip_id: string;
+    vibeResult: VibeResult;
+    face_url?: string;
+    gender: string;
+    user_profile?: {
+      gender?: string;
+      height_cm?: number;
+      weight_kg?: number;
+      aesthetics?: string[];
+    };
+    fallbackTeaser: string;
+  },
+  env: Bindings
+): Promise<void> {
+  const { trip_id, vibeResult, face_url, gender, user_profile, fallbackTeaser } = input;
+
+  const effectiveFaceUrl = face_url || (gender === 'male'
+    ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
+    : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png');
+
+  console.log(`[runTeaserBackground] Starting for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}`);
+
+  let teaserUrl: string | null = null;
+  let teaserError: string | null = null;
+
+  try {
+    const teaser = await teaserAgent(
+      {
+        tripId: trip_id,
+        vibeResult,
+        faceUrl: effectiveFaceUrl,
+        userProfile: user_profile
+          ? {
+              gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
+              height_cm: user_profile.height_cm,
+              weight_kg: user_profile.weight_kg,
+              aesthetics: user_profile.aesthetics,
+            }
+          : undefined,
+      },
+      env
+    );
+    teaserUrl = teaser.image_url;
+    console.log(`[runTeaserBackground] Success for trip ${trip_id}: ${teaserUrl}`);
+  } catch (err) {
+    teaserError = (err as Error).message;
+    teaserUrl = fallbackTeaser;
+    console.error(`[runTeaserBackground] FAILED for trip ${trip_id}:`, teaserError);
+  }
+
+  // Insert generation_jobs tracking row (frontend polls this via GET /api/teaser/:tripId)
+  try {
+    await sbFetch(env, '/generation_jobs', {
+      method: 'POST',
+      body: JSON.stringify({
+        trip_id,
+        city: vibeResult.city ?? '',
+        mood: vibeResult.mood_name ?? '',
+        prompt: teaserError
+          ? `FAILED: ${teaserError.slice(0, 200)} | mood: ${vibeResult.mood_label ?? 'teaser'}`
+          : (vibeResult.mood_label ?? 'teaser'),
+        status: teaserError ? 'failed_fallback' : 'completed',
+        image_url: teaserUrl,
+        job_type: 'teaser',
+        attempts: 1,
+      }),
+    });
+  } catch (err) {
+    console.warn(`[runTeaserBackground] generation_jobs INSERT failed:`, (err as Error).message);
+  }
 }

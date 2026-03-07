@@ -165,3 +165,12 @@ export interface RegenResponse {
 export function regenerateOutfit(tripId: string, city: string): Promise<RegenResponse> {
   return apiPost<RegenResponse>('/api/regenerate', { trip_id: tripId, city })
 }
+
+export interface TeaserStatus {
+  status: 'pending' | 'ready' | 'fallback'
+  teaser_url: string | null
+}
+
+export function pollTeaser(tripId: string): Promise<TeaserStatus> {
+  return apiGet<TeaserStatus>(`/api/teaser/${tripId}`)
+}

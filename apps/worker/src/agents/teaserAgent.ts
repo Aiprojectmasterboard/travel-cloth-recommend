@@ -45,9 +45,10 @@ interface GeminiResponse {
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL = 'gemini-3.1-flash-image-preview';
 const MAX_ATTEMPTS = 2;
-const BACKOFF_MS = [1_500, 3_000] as const;
-// Gemini image generation needs 10–30 s; keep tight to avoid Worker timeout
-const FETCH_TIMEOUT_MS = 25_000;
+const BACKOFF_MS = [2_000, 4_000] as const;
+// Gemini image generation needs 10–40s. This runs inside waitUntil()
+// (background after HTTP response), so we have more headroom than before.
+const FETCH_TIMEOUT_MS = 50_000;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

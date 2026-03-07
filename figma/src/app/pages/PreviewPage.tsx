@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { Icon, BtnSecondary, BtnDark, CheckItem, LanguageSelector } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
@@ -7,6 +7,7 @@ import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
+import { pollTeaser } from "../lib/api";
 import { GA } from "../lib/analytics";
 import { SEO } from "../components/SEO";
 
@@ -261,8 +262,56 @@ export function PreviewPage() {
 
   // Real data from AI preview — fall back to city-specific or onboarding image
   const cityFallback = data.cities[0]?.imageUrl || getCityFallbackImg(city);
-  const teaserUrl = preview?.teaser_url || cityFallback;
+  const initialTeaserUrl = preview?.teaser_url || cityFallback;
   const moodLabel = preview?.mood_label || `${city} \u2014 Style Analysis`;
+
+  // Poll for AI-generated teaser image (generated in background via waitUntil)
+  const [polledTeaserUrl, setPolledTeaserUrl] = useState<string | null>(null);
+  const [teaserReady, setTeaserReady] = useState(false);
+
+  useEffect(() => {
+    if (!tripId || teaserReady) return;
+
+    // Check if the initial teaser_url is already an AI-generated R2 image (not a fallback)
+    if (initialTeaserUrl && initialTeaserUrl.includes('/temp/')) {
+      setTeaserReady(true);
+      return;
+    }
+
+    let cancelled = false;
+    let attempts = 0;
+    const MAX_POLLS = 20; // ~60s total (3s intervals)
+
+    const poll = async () => {
+      while (!cancelled && attempts < MAX_POLLS) {
+        attempts++;
+        try {
+          const result = await pollTeaser(tripId);
+          if (cancelled) return;
+          if (result.status === 'ready' && result.teaser_url) {
+            setPolledTeaserUrl(result.teaser_url);
+            setTeaserReady(true);
+            return;
+          }
+          if (result.status === 'fallback' && result.teaser_url) {
+            // Fallback means generation failed — use what we have
+            setTeaserReady(true);
+            return;
+          }
+        } catch {
+          // Ignore polling errors — keep trying
+        }
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+      // After max polls, stop trying
+      setTeaserReady(true);
+    };
+
+    poll();
+    return () => { cancelled = true; };
+  }, [tripId, teaserReady, initialTeaserUrl]);
+
+  const teaserUrl = polledTeaserUrl || initialTeaserUrl;
 
   // All 4 slots use the same teaser image — slot 0 clear, slots 1-3 CSS-blurred
   // Per spec: "[1][2][3] 동일 이미지 + CSS blur(8px) + tint overlay + lock icon"

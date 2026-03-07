@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import Anthropic from '@anthropic-ai/sdk';
-import { runPreview, runResult } from './agents/orchestrator';
+import { runPreview, runResult, runTeaserBackground } from './agents/orchestrator';
 import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
 import { imageGenAgent } from './agents/imageGenAgent';
 
@@ -552,7 +552,8 @@ app.post('/api/preview', async (c) => {
     });
   }
 
-  // Run preview pipeline (async — results written to DB)
+  // Run preview pipeline (weather + vibe + capsule — fast, ~2-5s)
+  // Teaser image is generated SEPARATELY in background via waitUntil()
   try {
     const preview = await runPreview(
       {
@@ -571,16 +572,78 @@ app.post('/api/preview', async (c) => {
       },
       c.env
     );
+
+    // Fire teaser generation in background via waitUntil()
+    // This runs AFTER the HTTP response is sent — no wall-clock timeout issue.
+    // Gemini takes ~30-40s which exceeds Workers' response deadline but
+    // waitUntil() allows up to 30s (paid) / 15min (Durable Objects) after response.
+    if (preview.vibes?.[0]) {
+      c.executionCtx.waitUntil(
+        runTeaserBackground(
+          {
+            trip_id: tripId,
+            vibeResult: preview.vibes[0],
+            face_url,
+            gender: safeGender || 'female',
+            user_profile: {
+              gender: safeGender,
+              height_cm: safeHeightCm,
+              weight_kg: safeWeightKg,
+              aesthetics: safeAesthetics,
+            },
+            fallbackTeaser: preview.teaser_url || '',
+          },
+          c.env
+        )
+      );
+    }
+
     return c.json(preview);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    // Check for annual limit error
     if (msg.includes('AnnualLimitReached')) {
       return c.json({ error: 'Annual plan trip limit reached (12/year)' }, 429);
     }
     console.error(`[POST /api/preview] Pipeline error for trip ${tripId}:`, msg);
     return c.json({ error: `Preview generation failed: ${msg.slice(0, 200)}`, trip_id: tripId }, 500);
   }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2b. GET /api/teaser/:tripId — Poll for background-generated teaser image
+// ─────────────────────────────────────────────────────────────────────────────
+// Frontend polls this after /api/preview returns. The teaser is generated in
+// the background via waitUntil() (Gemini takes ~30-40s). This endpoint returns
+// the teaser_url once it's ready, or { status: "pending" } if still generating.
+
+app.get('/api/teaser/:tripId', async (c) => {
+  const tripId = c.req.param('tripId');
+  if (!tripId || !isValidUUID(tripId)) {
+    return c.json({ error: 'Valid tripId required' }, 400);
+  }
+
+  // Check generation_jobs for a completed teaser job
+  const res = await supabase(
+    c.env,
+    `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser&order=created_at.desc&limit=1&select=status,image_url`
+  );
+  if (!res.ok) return c.json({ error: 'Failed to query teaser status' }, 500);
+
+  const rows = (await res.json()) as Array<{ status: string; image_url: string | null }>;
+  if (rows.length === 0) {
+    // No job yet — still generating
+    return c.json({ status: 'pending', teaser_url: null });
+  }
+
+  const job = rows[0];
+  if (job.status === 'completed' && job.image_url) {
+    return c.json({ status: 'ready', teaser_url: job.image_url });
+  }
+  if (job.status === 'failed_fallback' && job.image_url) {
+    // Fallback image — still return it so frontend has something
+    return c.json({ status: 'fallback', teaser_url: job.image_url });
+  }
+  return c.json({ status: 'pending', teaser_url: null });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
