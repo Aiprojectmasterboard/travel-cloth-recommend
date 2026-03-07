@@ -636,11 +636,13 @@ app.get('/api/teaser/:tripId', async (c) => {
   }
 
   const job = rows[0];
-  if (job.status === 'completed' && job.image_url) {
+  const isRealAiImage = job.image_url?.includes('/temp/') ?? false;
+
+  if (job.status === 'completed' && job.image_url && isRealAiImage) {
     return c.json({ status: 'ready', teaser_url: job.image_url });
   }
-  if (job.status === 'failed_fallback' && job.image_url) {
-    // Fallback image — still return it so frontend has something
+  if (job.status === 'failed_fallback' || (job.status === 'completed' && !isRealAiImage)) {
+    // Fallback image (static) — generation failed or was a legacy job
     return c.json({ status: 'fallback', teaser_url: job.image_url });
   }
   return c.json({ status: 'pending', teaser_url: null });

@@ -424,9 +424,9 @@ export function PreviewPage() {
     <div className="min-h-screen bg-[#FDF8F3]">
       <SEO title="Your AI Style Preview" description="Preview your AI-generated travel outfit and city vibe analysis. Unlock the full capsule wardrobe to pack less and look better." noindex={true} />
       {/* Image Lightbox */}
-      {lightboxOpen && preview?.teaser_url && (
+      {lightboxOpen && teaserUrl && (
         <ImageLightbox
-          src={preview.teaser_url}
+          src={teaserUrl}
           moodLabel={moodLabel}
           onClose={() => setLightboxOpen(false)}
         />
@@ -514,6 +514,15 @@ export function PreviewPage() {
         {/* Preview Card — Real AI Teaser */}
         <div className="mt-10 relative rounded-2xl overflow-hidden aspect-[16/9] sm:aspect-[21/9]">
           <ImageWithFallback src={teaserUrl} alt="Trip preview" className="w-full h-full object-cover" />
+          {/* Shimmer overlay while AI teaser is still generating */}
+          {!teaserReady && (
+            <div className="absolute top-3 left-3 flex items-center gap-2 px-3 py-1.5 rounded-full" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(8px)" }}>
+              <div className="w-3 h-3 rounded-full bg-[#C4613A] animate-pulse" />
+              <span className="text-[11px] text-white/90 uppercase tracking-wider" style={{ fontFamily: "var(--font-mono)" }}>
+                AI generating...
+              </span>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
           <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-[360px] p-4 sm:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(20px)" }}>
             <div className="flex items-center gap-3 mb-4">
@@ -564,7 +573,7 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((idx) => {
-              const isUnlocked = idx === 0 && !!preview?.teaser_url;
+              const isUnlocked = idx === 0 && !!(polledTeaserUrl || preview?.teaser_url);
               const imgSrc = teaserUrl; // All 4 slots use the same teaser image
               // Each locked slot gets a unique CSS treatment so they look like different images
               const lockedStyles: React.CSSProperties[] = [
