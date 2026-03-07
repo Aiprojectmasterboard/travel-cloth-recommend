@@ -388,23 +388,29 @@ export function ExampleAnnualPage() {
                 {t("examples.annual.journeySubtitle")}
               </p>
 
-              {/* Outfit day cards */}
-              <div className="flex gap-4 overflow-x-auto pb-4 -mx-2 px-2">
+              {/* Outfit day cards — aspect-ratio based, full title visible */}
+              <div className="flex gap-3 overflow-x-auto pb-4 -mx-2 px-2" style={{ scrollSnapType: "x mandatory" }}>
                 {EURO_OUTFITS.map((outfit, i) => (
                   <button key={outfit.id} onClick={() => setActiveDayIdx(i)}
-                    className={`flex-shrink-0 w-[200px] rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${activeDayIdx === i ? "border-[#C4613A] ring-1 ring-[#C4613A]/30" : "border-transparent hover:border-[#E8DDD4]"}`}>
-                    <div className="relative h-[240px]">
+                    className={`flex-shrink-0 rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${activeDayIdx === i ? "border-[#C4613A] shadow-lg" : "border-transparent hover:border-[#E8DDD4] opacity-80 hover:opacity-100"}`}
+                    style={{ width: "clamp(155px, 20vw, 195px)", scrollSnapAlign: "start" }}>
+                    <div className="relative" style={{ aspectRatio: "3/4" }}>
                       <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                      <div className="absolute top-2 left-2">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+                      <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
                         <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[8px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
                           <Icon name="auto_awesome" size={8} className="text-white" filled /> AI
                         </span>
+                        {activeDayIdx === i && (
+                          <span className="w-5 h-5 rounded-full bg-[#C4613A] flex items-center justify-center flex-shrink-0">
+                            <Icon name="check" size={11} className="text-white" />
+                          </span>
+                        )}
                       </div>
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("examples.annual.day")} {outfit.day}</span>
-                        <span className="text-white text-[18px] italic block" style={{ fontFamily: displayFont }}>{outfit.title.split(" ")[0]}</span>
-                        <span className="text-white/60 text-[11px] block mt-0.5" style={{ fontFamily: bodyFont }}>{outfit.subtitle}</span>
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <span className="text-white/60 text-[8px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.day")} {outfit.day}</span>
+                        <span className="text-white text-[12px] italic block leading-snug" style={{ fontFamily: displayFont }}>{outfit.title}</span>
+                        <span className="text-white/70 text-[10px] block mt-0.5" style={{ fontFamily: bodyFont }}>{outfit.subtitle}</span>
                       </div>
                     </div>
                   </button>
@@ -487,7 +493,7 @@ export function ExampleAnnualPage() {
           </div>
 
           {/* Right */}
-          <div className="lg:col-span-4 space-y-6">
+          <div className="lg:col-span-4 space-y-5">
             {/* Profile */}
             <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-center gap-3 mb-4">
@@ -558,71 +564,100 @@ export function ExampleAnnualPage() {
             </div>
 
             {/* Style DNA */}
-            <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <h3 className="text-[18px] text-[#292524] mb-2" style={{ fontFamily: displayFont }}>{t("examples.annual.styleDnaTitle")}</h3>
-              <p className="text-[14px] text-[#57534e] mb-5" style={{ fontFamily: bodyFont }}>
+            <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+              <div className="flex items-start justify-between mb-1">
+                <h3 className="text-[17px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.annual.styleDnaTitle")}</h3>
+                <span className="px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>Annual Only</span>
+              </div>
+              <p className="text-[12px] text-[#8A7B6E] mb-4 leading-relaxed" style={{ fontFamily: bodyFont }}>
                 {t("examples.annual.styleDnaBody")}
               </p>
-              <div className="flex items-center gap-5 mb-6">
-                <DonutChart percent={STYLE_DNA[0].percent} />
+              {/* Donut + primary label */}
+              <div className="flex items-center gap-4 mb-5 pb-4 border-b border-[#EFE8DF]">
+                <DonutChart percent={STYLE_DNA[0].percent} size={80} stroke={8} />
                 <div>
-                  <span className="text-[18px] text-[#292524] block" style={{ fontFamily: displayFont }}>{STYLE_DNA[0].label}</span>
-                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t("examples.annual.primaryAesthetic")}</span>
+                  <span className="text-[20px] text-[#292524] block leading-tight" style={{ fontFamily: displayFont }}>{STYLE_DNA[0].label}</span>
+                  <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>{t("examples.annual.primaryAesthetic")}</span>
+                  <div className="mt-1.5 flex items-center gap-1">
+                    {[...Array(5)].map((_, i) => (
+                      <span key={i} className="text-[#D4AF37] text-[11px]">★</span>
+                    ))}
+                    <span className="text-[10px] text-[#8A7B6E] ml-1" style={{ fontFamily: "var(--font-mono)" }}>Dominant</span>
+                  </div>
                 </div>
               </div>
-              <div className="space-y-4">
-                {STYLE_DNA.slice(0, 4).map((s) => (
+              <div className="space-y-3">
+                {STYLE_DNA.map((s) => (
                   <BarStat key={s.label} label={s.label} percent={s.percent} />
                 ))}
               </div>
             </div>
 
             {/* VIP Concierge */}
-            <div className="gold-gradient rounded-xl p-6 text-white">
-              <div className="flex items-center gap-2 mb-3">
-                <Icon name="support_agent" size={20} className="text-white" />
-                <h3 className="text-[18px] text-white" style={{ fontFamily: displayFont }}>{t("examples.annual.vipTitle")}</h3>
+            <div className="gold-gradient rounded-xl p-5 text-white">
+              <div className="flex items-center gap-2 mb-2">
+                <Icon name="support_agent" size={18} className="text-white" />
+                <h3 className="text-[17px] text-white" style={{ fontFamily: displayFont }}>{t("examples.annual.vipTitle")}</h3>
               </div>
-              <p className="text-[13px] text-white/80 mb-4" style={{ fontFamily: bodyFont }}>
+              <p className="text-[12px] text-white/80 mb-4 leading-relaxed" style={{ fontFamily: bodyFont }}>
                 {t("examples.annual.vipBody")}
               </p>
-              <button onClick={() => navigate("/onboarding/1")} className="w-full h-[40px] bg-white text-[#D4AF37] text-[12px] uppercase tracking-[0.08em] rounded-lg hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+              <button
+                onClick={() => navigate("/onboarding/1")}
+                className="w-full h-10 bg-white text-[#C8A055] rounded-lg text-[12px] uppercase tracking-[0.08em] hover:bg-white/90 active:bg-white/80 transition-colors cursor-pointer"
+                style={{ fontFamily: bodyFont, fontWeight: 700 }}
+              >
                 {t("examples.annual.vipBtn")}
               </button>
+              <p className="text-[10px] text-white/55 text-center mt-2.5" style={{ fontFamily: "var(--font-mono)" }}>
+                $9.99/yr · 12 trips · Cancel anytime
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       {/* Past Trips */}
-      <div className="mx-auto px-6 pb-16" style={{ maxWidth: "var(--max-w)" }}>
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.annual.pastTrips")}</h2>
-          <span className="text-[12px] uppercase tracking-[0.08em] text-[#57534e]/50" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.annual.viewAll")}</span>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {PAST_TRIPS.map((trip) => (
-            <div key={trip.name} className="bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] group" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-              <div className="relative h-[200px] overflow-hidden">
-                <ImageWithFallback src={trip.img} alt={trip.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                <div className="absolute top-3 right-3">
-                  <span className="px-2 py-0.5 bg-white/20 backdrop-blur-sm rounded-full text-white text-[10px]" style={{ fontFamily: "var(--font-mono)" }}>{trip.rating} ★</span>
-                </div>
-              </div>
-              <div className="p-5">
-                <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: displayFont }}>{trip.name}</h3>
-                <div className="mt-2 flex items-center gap-3">
-                  <span className="text-[13px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{trip.date}</span>
-                  <TagChip label={trip.mood} />
-                </div>
-                <div className="mt-3 pt-3 border-t border-[#EFE8DF] flex items-center gap-4 text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                  <span>{trip.items} items</span>
-                  <span>{trip.outfits} outfits</span>
-                </div>
-              </div>
+      <div className="bg-[#F5EFE6] py-12 sm:py-16 px-6">
+        <div className="mx-auto" style={{ maxWidth: "var(--max-w)" }}>
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-[24px] sm:text-[28px] text-[#1A1410]" style={{ fontFamily: displayFont }}>{t("examples.annual.pastTrips")}</h2>
+              <p className="text-[13px] text-[#8A7B6E] mt-1" style={{ fontFamily: bodyFont }}>Your styling history, always accessible</p>
             </div>
-          ))}
+            <span className="text-[11px] uppercase tracking-[0.1em] text-[#D4AF37]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.annual.viewAll")} &rarr;</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {PAST_TRIPS.map((trip) => (
+              <div key={trip.name} className="bg-white rounded-2xl overflow-hidden border border-[#E8DDD4] group hover:shadow-xl transition-all duration-300 hover:-translate-y-1" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
+                <div className="relative overflow-hidden" style={{ height: "clamp(180px, 18vw, 220px)" }}>
+                  <ImageWithFallback src={trip.img} alt={trip.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                  {/* Rating badge */}
+                  <div className="absolute top-3 right-3 flex items-center gap-1 px-2 py-0.5 bg-[#D4AF37]/90 backdrop-blur-sm rounded-full">
+                    <span className="text-white text-[10px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{trip.rating}</span>
+                    <span className="text-white text-[9px]">★</span>
+                  </div>
+                  {/* Mood label on image */}
+                  <div className="absolute bottom-3 left-4">
+                    <span className="text-white/65 text-[9px] uppercase tracking-[0.1em] block" style={{ fontFamily: "var(--font-mono)" }}>Mood</span>
+                    <span className="text-white text-[14px] italic" style={{ fontFamily: displayFont }}>{trip.mood}</span>
+                  </div>
+                </div>
+                <div className="p-4 sm:p-5">
+                  <h3 className="text-[16px] sm:text-[18px] text-[#292524] leading-snug" style={{ fontFamily: displayFont }}>{trip.name}</h3>
+                  <div className="mt-1.5 flex items-center gap-2">
+                    <Icon name="calendar_today" size={12} className="text-[#8A7B6E]" />
+                    <span className="text-[12px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>{trip.date}</span>
+                  </div>
+                  <div className="mt-3 pt-3 border-t border-[#EFE8DF] flex items-center gap-4 text-[10px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>
+                    <span className="flex items-center gap-1"><Icon name="checkroom" size={12} className="text-[#C4613A]" />{trip.items} items</span>
+                    <span className="flex items-center gap-1"><Icon name="style" size={12} className="text-[#C4613A]" />{trip.outfits} outfits</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
