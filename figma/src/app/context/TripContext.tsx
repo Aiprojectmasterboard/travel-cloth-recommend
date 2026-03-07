@@ -6,6 +6,7 @@ import {
   type ResultData,
   type PreviewRequest,
 } from "../lib/api";
+import { getTurnstileToken } from "../lib/turnstile";
 import { useOnboarding } from "./OnboardingContext";
 import { useLang } from "./LanguageContext";
 
@@ -90,11 +91,20 @@ export function TripProvider({ children }: { children: ReactNode }) {
       const ht = parseFloat(onboarding.height);
       const wt = parseFloat(onboarding.weight);
 
+      // Get Turnstile token (invisible challenge)
+      let turnstileToken: string | undefined;
+      try {
+        turnstileToken = await getTurnstileToken();
+      } catch {
+        // Continue without token — worker will reject if required
+      }
+
       const req: PreviewRequest = {
         session_id: `sess_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
         cities,
         month,
         face_url: onboarding.faceUrl || undefined,
+        cf_turnstile_token: turnstileToken,
         gender: onboarding.gender || undefined,
         height_cm: !isNaN(ht) && ht > 0 ? ht : undefined,
         weight_kg: !isNaN(wt) && wt > 0 ? wt : undefined,
