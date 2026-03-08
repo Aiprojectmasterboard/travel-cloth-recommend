@@ -15,4 +15,10 @@ dist/
 
 # User photos
 IMG_7868.jpeg
+IMG_2130.jpeg
+IMG_2131.jpeg
+IMG_2134.png
 Gemini_Generated_Image*
+
+# Scripts with secrets
+scripts/generate-example-outfits.mjs

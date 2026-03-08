@@ -33,31 +33,11 @@ export function LandingPage() {
   }, []);
 
   const faqItems = [
-    {
-      question: "What is a travel capsule wardrobe?",
-      answer:
-        "A travel capsule wardrobe is a curated set of versatile clothing items that mix and match for every day of your trip. Travel Capsule AI uses weather data, city culture, and your body profile to build the perfect capsule for your destination.",
-    },
-    {
-      question: "How does AI travel styling work?",
-      answer:
-        "Our AI analyzes real-time weather forecasts, local fashion culture, and your personal style preferences to generate outfit recommendations and a packing list tailored to your specific trip.",
-    },
-    {
-      question: "How many cities can I plan outfits for?",
-      answer:
-        "You can plan outfits for up to 5 cities in a single trip. The AI adapts recommendations for each destination's weather and vibe.",
-    },
-    {
-      question: "Is Travel Capsule AI free to use?",
-      answer:
-        "Yes! You get free weather analysis, city vibe matching, and a teaser outfit image. Full capsule wardrobe lists and additional AI-generated outfits are available with paid plans starting at $5.",
-    },
-    {
-      question: "What do I get with the Standard plan?",
-      answer:
-        "The $5 Standard plan includes 1 clear AI-generated outfit image, 3 additional unlocked images, a complete capsule wardrobe packing list, and a day-by-day outfit plan.",
-    },
+    { question: t("faq.q1"), answer: t("faq.a1") },
+    { question: t("faq.q2"), answer: t("faq.a2") },
+    { question: t("faq.q3"), answer: t("faq.a3") },
+    { question: t("faq.q4"), answer: t("faq.a4") },
+    { question: t("faq.q5"), answer: t("faq.a5") },
   ];
 
   return (
