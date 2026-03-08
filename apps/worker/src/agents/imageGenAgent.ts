@@ -132,7 +132,7 @@ export async function imageGenAgent(
         : sp.prompt;
 
       // Generate image via OpenAI gpt-image-1.5 (medium quality for paid plans)
-      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1792', referenceBase64);
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536', referenceBase64);
 
       // Store in R2
       const r2Key = `outputs/${tripId}/${slug}/${idx}.png`;

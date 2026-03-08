@@ -5,8 +5,12 @@
  * AI travel preparation platform — generates outfit images with optional
  * identity preservation via reference photo input.
  *
- * - Teaser:     quality "low",    size 1024×1792  (fast, ~10-15s)
- * - Pro/Annual: quality "medium", size 1024×1024  (grid, ~15-25s)
+ * gpt-image-1.5 valid sizes: 1024x1024, 1536x1024, 1024x1536, auto
+ * gpt-image-1.5 valid quality: low, medium, high, auto
+ * gpt-image-1.5 always returns b64_json (response_format NOT supported)
+ *
+ * - Teaser:     quality "low",    size 1024x1536 (portrait, fast ~10-15s)
+ * - Pro/Annual: quality "medium", size 1024x1024 (grid, ~15-25s)
  *
  * Retry strategy: exponential backoff — 2s, 4s, 6s (3 attempts)
  */
@@ -27,7 +31,8 @@ interface OpenAIImageResponse {
 }
 
 export type ImageQuality = 'low' | 'medium' | 'high';
-export type ImageSize = '1024x1024' | '1024x1792' | '1792x1024';
+// gpt-image-1.5 supported sizes (NOT the same as DALL-E 3)
+export type ImageSize = '1024x1024' | '1536x1024' | '1024x1536';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -35,7 +40,7 @@ const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
 const MODEL = 'gpt-image-1.5';
 const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [2_000, 4_000, 6_000] as const;
-const FETCH_TIMEOUT_MS = 90_000; // gpt-image-1.5 can take longer with reference images
+const FETCH_TIMEOUT_MS = 90_000; // gpt-image-1.5 can take longer
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -44,8 +49,9 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
- * Fetches an image from a URL and returns it as a base64-encoded string.
+ * Fetches an image from a URL and returns it as a base64-encoded data URL string.
  * Used for Identity Engine — passing reference photos to gpt-image-1.5.
+ * Returns format: "data:image/png;base64,<base64data>"
  */
 export async function fetchImageAsBase64(url: string): Promise<string> {
   const res = await fetch(url, {
@@ -56,13 +62,16 @@ export async function fetchImageAsBase64(url: string): Promise<string> {
     throw new Error(`Failed to fetch reference image: HTTP ${res.status}`);
   }
 
+  const contentType = res.headers.get('content-type') || 'image/png';
   const buffer = await res.arrayBuffer();
   const bytes = new Uint8Array(buffer);
   let binary = '';
   for (let i = 0; i < bytes.length; i++) {
     binary += String.fromCharCode(bytes[i]);
   }
-  return btoa(binary);
+  const b64 = btoa(binary);
+  // Return as data URL — format expected by OpenAI image input
+  return `data:${contentType};base64,${b64}`;
 }
 
 // ─── Main Generation Function ─────────────────────────────────────────────────
@@ -71,24 +80,25 @@ export async function fetchImageAsBase64(url: string): Promise<string> {
  * Generates an image using OpenAI gpt-image-1.5.
  * Returns the raw image buffer (PNG).
  *
- * Supports Identity Engine: when referenceImageBase64 is provided,
+ * Supports Identity Engine: when referenceImageDataUrl is provided,
  * it preserves the person's facial structure, hairstyle, skin tone,
  * and identity across all generated images.
  *
- * @param prompt               - Text prompt for image generation
- * @param apiKey               - OpenAI API key
- * @param quality              - "low" for teasers, "medium" for paid plans, "high" for premium
- * @param size                 - Image dimensions. Defaults to "1024x1792" (portrait).
- * @param referenceImageBase64 - Optional base64-encoded reference photo for identity preservation
+ * @param prompt                - Text prompt for image generation
+ * @param apiKey                - OpenAI API key
+ * @param quality               - "low" for teasers, "medium" for paid plans, "high" for premium
+ * @param size                  - Image dimensions. Defaults to "1024x1536" (portrait).
+ * @param referenceImageDataUrl - Optional data URL (data:image/...;base64,...) for identity preservation
  */
 export async function generateImage(
   prompt: string,
   apiKey: string,
   quality: ImageQuality = 'low',
-  size: ImageSize = '1024x1792',
-  referenceImageBase64?: string,
+  size: ImageSize = '1024x1536',
+  referenceImageDataUrl?: string,
 ): Promise<ArrayBuffer> {
-  // Build the request body
+  // Build the request body — gpt-image-1.5 specific params
+  // NOTE: response_format is NOT supported for GPT image models (always returns b64_json)
   const body: Record<string, unknown> = {
     model: MODEL,
     prompt,
@@ -97,13 +107,10 @@ export async function generateImage(
     quality,
   };
 
-  // If reference image provided, include it for identity preservation
-  if (referenceImageBase64) {
-    body.image = [{
-      type: 'base64',
-      media_type: 'image/png',
-      data: referenceImageBase64,
-    }];
+  // If reference image provided, include as image input for identity preservation
+  // gpt-image-1.5 accepts image inputs as base64 data URLs
+  if (referenceImageDataUrl) {
+    body.image = referenceImageDataUrl;
   }
 
   const res = await fetch(OPENAI_API_URL, {
@@ -147,18 +154,18 @@ export async function generateImage(
 /**
  * Generates image with exponential-backoff retry (3 attempts).
  *
- * @param prompt               - Text prompt for image generation
- * @param apiKey               - OpenAI API key
- * @param quality              - "low" for teasers, "medium" for paid plans
- * @param size                 - Image dimensions. Defaults to "1024x1792" (portrait).
- * @param referenceImageBase64 - Optional base64 reference photo for identity preservation
+ * @param prompt                - Text prompt for image generation
+ * @param apiKey                - OpenAI API key
+ * @param quality               - "low" for teasers, "medium" for paid plans
+ * @param size                  - Image dimensions. Defaults to "1024x1536" (portrait).
+ * @param referenceImageDataUrl - Optional data URL reference photo for identity preservation
  */
 export async function generateImageWithRetry(
   prompt: string,
   apiKey: string,
   quality: ImageQuality = 'low',
-  size: ImageSize = '1024x1792',
-  referenceImageBase64?: string,
+  size: ImageSize = '1024x1536',
+  referenceImageDataUrl?: string,
 ): Promise<ArrayBuffer> {
   let lastError: Error | null = null;
 
@@ -167,17 +174,21 @@ export async function generateImageWithRetry(
       await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
     }
     try {
-      return await generateImage(prompt, apiKey, quality, size, referenceImageBase64);
+      return await generateImage(prompt, apiKey, quality, size, referenceImageDataUrl);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       console.warn(
         `[openaiImage] Attempt ${attempt + 1}/${MAX_ATTEMPTS} failed: ${lastError.message}`
       );
 
-      // If safety filter blocked, don't retry with reference image — retry without it
-      if (referenceImageBase64 && lastError.message.includes('safety')) {
-        console.warn('[openaiImage] Safety filter triggered with reference image — retrying without it');
-        referenceImageBase64 = undefined;
+      // If safety filter or image-related error, retry without reference image
+      if (referenceImageDataUrl && (
+        lastError.message.includes('safety') ||
+        lastError.message.includes('image') ||
+        lastError.message.includes('400')
+      )) {
+        console.warn('[openaiImage] Error with reference image — retrying without it');
+        referenceImageDataUrl = undefined;
       }
     }
   }

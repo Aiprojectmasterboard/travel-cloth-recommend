@@ -279,7 +279,7 @@ export function PreviewPage() {
   const activeCity = data.cities[activeCityIdx] || data.cities[0];
   const city = activeCity?.city || "Paris";
   const country = activeCity?.country || "";
-  const aestheticLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : "Classic, Minimalist";
+  const aestheticLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : t("preview.defaultAesthetic");
 
   // Match vibe/weather data to active city (API returns arrays with city field)
   const allVibes = preview?.vibes || [];
@@ -291,7 +291,7 @@ export function PreviewPage() {
   // Real data from AI preview — fall back to city-specific or onboarding image
   const cityFallback = activeCity?.imageUrl || getCityFallbackImg(city);
   const initialTeaserUrl = preview?.teaser_url || cityFallback;
-  const moodLabel = activeVibe?.mood_label || preview?.mood_label || `${city} \u2014 Style Analysis`;
+  const moodLabel = activeVibe?.mood_label || preview?.mood_label || t("preview.defaultMood").replace("{city}", city);
 
   // Poll for AI-generated teaser image + trigger generation via dedicated endpoint
   const [polledTeaserUrl, setPolledTeaserUrl] = useState<string | null>(null);
@@ -370,7 +370,7 @@ export function PreviewPage() {
 
   // Weather display from real data — per active city
   const weatherDisplay = activeWeather
-    ? `${Math.round(activeWeather.temperature_day_avg)}\u00B0C, ${Math.round(activeWeather.precipitation_prob * 100)}% rain`
+    ? `${Math.round(activeWeather.temperature_day_avg)}\u00B0C, ${t("preview.rainPercent").replace("{pct}", String(Math.round(activeWeather.precipitation_prob * 100)))}`
     : t("preview.processing");
 
   // Vibe color palette — per active city
@@ -405,7 +405,7 @@ export function PreviewPage() {
       });
 
       if (!session.url) {
-        throw new Error("No checkout URL received. Please try again.");
+        throw new Error(t("preview.checkoutErrorNoUrl"));
       }
 
       // Save checkout context before redirecting to Polar
@@ -420,7 +420,7 @@ export function PreviewPage() {
       window.location.href = session.url;
     } catch (err) {
       setCheckoutLoading(null);
-      setCheckoutError(err instanceof Error ? err.message : "Checkout failed. Please try again.");
+      setCheckoutError(err instanceof Error ? err.message : t("preview.checkoutErrorGeneric"));
     }
   };
 
@@ -467,7 +467,7 @@ export function PreviewPage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
-      <SEO title="Your AI Style Preview" description="Preview your AI-generated travel outfit and city vibe analysis. Unlock the full capsule wardrobe to pack less and look better." noindex={true} />
+      <SEO title={t("preview.seoTitle")} description={t("preview.seoDescription")} noindex={true} />
       {/* Image Lightbox */}
       {lightboxOpen && teaserUrl && (
         <ImageLightbox
@@ -494,11 +494,11 @@ export function PreviewPage() {
                 <Icon name="warning" size={22} className="text-[#D97706]" />
               </div>
               <h3 className="text-[20px] text-[#292524]" style={{ fontFamily: displayFont }}>
-                Standard plan supports 1 city only
+                {t("preview.cityLimitTitle")}
               </h3>
             </div>
             <p className="text-[15px] text-[#57534e] leading-relaxed mb-6" style={{ fontFamily: bodyFont }}>
-              You've selected {cityCount} cities. To get AI outfits for all your cities, upgrade to Pro.
+              {t("preview.cityLimitBody").replace("{n}", String(cityCount))}
             </p>
             <div className="flex flex-col gap-3">
               <button
@@ -506,7 +506,7 @@ export function PreviewPage() {
                 className="h-[52px] w-full bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#A84A25] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
-                Select Pro Plan ($3.99)
+                {t("preview.cityLimitUpgrade")}
               </button>
               <button
                 onClick={() => {
@@ -522,7 +522,7 @@ export function PreviewPage() {
                 className="h-[52px] w-full border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#FDF8F3] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
-                Continue with 1 city (Free)
+                {t("preview.cityLimitContinue")}
               </button>
             </div>
           </div>
@@ -632,16 +632,18 @@ export function PreviewPage() {
                 />
               </div>
               <style>{`@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
-              {/* Centered loading indicator */}
+              {/* Centered loading indicator with dark pill for visibility */}
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full border-3 border-white/20 border-t-[#C4613A] animate-spin" style={{ borderWidth: 3 }} />
-                <span className="text-[12px] text-white/80 uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                  {teaserProgress < 20 ? "Analyzing your style profile..." :
-                   teaserProgress < 50 ? "AI generating your look..." :
-                   teaserProgress < 80 ? "Styling your outfit..." :
-                   "Almost ready..."}
-                </span>
-                <span className="text-[10px] text-white/50" style={{ fontFamily: "var(--font-mono)" }}>
+                <div className="w-12 h-12 rounded-full border-3 border-[#1A1410]/20 border-t-[#C4613A] animate-spin" style={{ borderWidth: 3 }} />
+                <div className="px-5 py-2.5 rounded-full bg-[#1A1410]/80 backdrop-blur-sm">
+                  <span className="text-[12px] text-white uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                    {teaserProgress < 20 ? t("preview.progressAnalyzing") :
+                     teaserProgress < 50 ? t("preview.progressGenerating") :
+                     teaserProgress < 80 ? t("preview.progressStyling") :
+                     t("preview.progressAlmost")}
+                  </span>
+                </div>
+                <span className="text-[11px] text-[#1A1410]/60" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
                   {teaserProgress}%
                 </span>
               </div>
@@ -805,7 +807,7 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { labelKey: "preview.destination", value: hasMultipleCities ? `${city} + ${cityCount - 1} more` : (country ? `${city}, ${country}` : city) },
+              { labelKey: "preview.destination", value: hasMultipleCities ? t("preview.andMore").replace("{city}", city).replace("{n}", String(cityCount - 1)) : (country ? `${city}, ${country}` : city) },
               { labelKey: "preview.duration", value: durationValue },
               { labelKey: "preview.aesthetic", value: aestheticLabel },
               { labelKey: "preview.weather", value: weatherDisplay },

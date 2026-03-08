@@ -143,7 +143,7 @@ export async function teaserAgent(
     }
   }
 
-  const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1792', referenceBase64);
+  const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536', referenceBase64);
 
   // Store in R2
   const r2Key = `temp/${tripId}/teaser.png`;
@@ -205,7 +205,7 @@ export async function teaserAgentMultiple(
   // Generate all images in parallel
   const tasks = Array.from({ length: count }, (_, idx) => async () => {
     const prompt = buildPrompt(vibeResult, userProfile, idx);
-    const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1792', referenceBase64);
+    const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536', referenceBase64);
 
     const r2Key = `temp/${tripId}/teaser-${idx}.png`;
     await env.R2.put(r2Key, imageBuffer, {
