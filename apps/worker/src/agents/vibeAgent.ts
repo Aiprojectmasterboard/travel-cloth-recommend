@@ -1,16 +1,17 @@
 /**
  * vibeAgent.ts
  *
- * Uses the Claude API to generate a city-specific fashion mood from weather data.
+ * Uses OpenAI GPT-5.4 (Responses API) to generate a city-specific fashion mood
+ * from weather data.
  * Output: mood_name, vibe_tags, color_palette, avoid_note — plus a combined
  * `{City} — {mood_name}` label.
  *
- * Model: claude-sonnet-4-6
+ * Model: gpt-5.4
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { Bindings } from '../index';
 import type { WeatherResult } from './weatherAgent';
+import { chatCompletionJSON } from './openaiChat';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -29,17 +30,13 @@ export interface VibeResult {
   avoid_note: string;
 }
 
-// Claude response shape (raw parsed JSON)
-interface ClaudeVibeResponse {
+// GPT-4o response shape (raw parsed JSON)
+interface VibeResponse {
   mood_name: string;
   vibe_tags: string[];
   color_palette: string[];
   avoid_note: string;
 }
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const MODEL = 'claude-sonnet-4-6';
 
 // ─── Main Exported Function ───────────────────────────────────────────────────
 
@@ -47,15 +44,13 @@ const MODEL = 'claude-sonnet-4-6';
  * Generates a fashion vibe/mood for a city based on its current weather.
  *
  * @param input - city name, country, and WeatherResult for the travel month
- * @param env   - Cloudflare Worker bindings (needs ANTHROPIC_API_KEY)
+ * @param env   - Cloudflare Worker bindings (needs OPENAI_API_KEY)
  */
 export async function vibeAgent(
   input: { city: string; country: string; weather: WeatherResult },
   env: Bindings
 ): Promise<VibeResult> {
   const { city, country, weather } = input;
-
-  const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
   const systemPrompt =
     'You are an expert travel fashion stylist who specialises in creating location-specific ' +
@@ -86,38 +81,16 @@ Respond ONLY with this exact JSON (no surrounding text):
   "avoid_note": "..."
 }`;
 
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 512,
-    temperature: 0.9,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  });
-
-  const raw = message.content[0];
-  if (raw.type !== 'text') {
-    throw new Error(`[vibeAgent] Unexpected Claude response type: ${raw.type}`);
-  }
-
-  // Strip accidental markdown fences before parsing
-  const cleaned = raw.text
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '')
-    .trim();
-
-  let parsed: ClaudeVibeResponse;
-  try {
-    parsed = JSON.parse(cleaned) as ClaudeVibeResponse;
-  } catch (err) {
-    throw new Error(
-      `[vibeAgent] Failed to parse Claude JSON for ${city}: ${(err as Error).message}\nRaw: ${cleaned.slice(0, 300)}`
-    );
-  }
+  const parsed = await chatCompletionJSON<VibeResponse>(
+    env.OPENAI_API_KEY,
+    systemPrompt,
+    userPrompt,
+    { maxTokens: 1024, reasoningEffort: 'low' },
+  );
 
   // Validate required fields
   if (!parsed.mood_name || typeof parsed.mood_name !== 'string') {
-    throw new Error(`[vibeAgent] Claude returned empty mood_name for ${city}`);
+    throw new Error(`[vibeAgent] GPT-5.4 returned empty mood_name for ${city}`);
   }
   if (!Array.isArray(parsed.vibe_tags) || parsed.vibe_tags.length === 0) {
     parsed.vibe_tags = ['versatile', 'stylish', 'travel-ready'];

@@ -1,10 +1,9 @@
+// IMPORTANT: TDZ 방지 — const 파생 변수는 그것을 참조하는 모든 useEffect/useCallback 위에 선언해야 함.
+// BUG-001 참고: https://github.com/Aiprojectmasterboard/travel-cloth-recommend/blob/main/CLAUDE.md
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
-  BtnPrimary,
-  BtnSecondary,
-  TagChip,
   PlanBadge,
   SocialShareButton,
   SignupPrompt,
@@ -21,11 +20,10 @@ import {
   buildProfile,
   generateCityOutfits,
   derivePacking,
-  type GeneratedOutfit,
   type CityOutfitSet,
   type PackingItem,
 } from "../services/outfitGenerator";
-import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
+import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage, type GridImage } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { SEO } from "../components/SEO";
 
@@ -43,7 +41,7 @@ async function downloadImage(url: string, filename: string) {
   }
 }
 
-/* ─── City hero images (fallback) ─── */
+/* ─── City hero fallback images ─── */
 const CITY_HEROES: Record<string, string> = {
   paris: "https://images.unsplash.com/photo-1577056922428-a511301a562d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
   rome: "https://images.unsplash.com/photo-1753901150571-6da7c0ba03e0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
@@ -63,10 +61,58 @@ const CITY_HEROES: Record<string, string> = {
   singapore: "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080",
 };
 
+const CAT_ICON: Record<string, string> = {
+  top: "checkroom",
+  bottom: "layers",
+  outerwear: "dry_cleaning",
+  footwear: "footprint",
+  shoes: "footprint",
+  accessory: "watch",
+  bag: "shopping_bag",
+  dress: "checkroom",
+  "dress/jumpsuit": "checkroom",
+  skirt: "checkroom",
+  hat: "face_retouching_natural",
+  jewelry: "diamond",
+};
+
+/**
+ * Shows one quadrant of a 2x2 grid image using CSS object-position.
+ * quadrant: 0=top-left, 1=top-right, 2=bottom-left, 3=bottom-right
+ */
+function GridQuadrant({
+  imageUrl,
+  quadrant,
+  className,
+  alt,
+}: {
+  imageUrl: string;
+  quadrant: 0 | 1 | 2 | 3;
+  className?: string;
+  alt?: string;
+}) {
+  // Map quadrant to object-position for a 200%/200% scaled image
+  const positions: Record<number, string> = {
+    0: "0% 0%",
+    1: "100% 0%",
+    2: "0% 100%",
+    3: "100% 100%",
+  };
+  return (
+    <div className={`overflow-hidden ${className ?? ""}`}>
+      <img
+        src={imageUrl}
+        alt={alt ?? `Outfit ${quadrant + 1}`}
+        className="w-[200%] h-[200%] object-cover"
+        style={{ objectPosition: positions[quadrant] }}
+      />
+    </div>
+  );
+}
+
 export function ProDashboard() {
   const navigate = useNavigate();
   const [activeCity, setActiveCity] = useState(0);
-  const [expandedOutfit, setExpandedOutfit] = useState(0);
   const [regenUsed, setRegenUsed] = useState(false);
   const [regenLoading, setRegenLoading] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
@@ -77,17 +123,6 @@ export function ProDashboard() {
   const [pdfExporting, setPdfExporting] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
-  const handleExportPdf = useCallback(async () => {
-    if (!mainRef.current || pdfExporting) return;
-    setPdfExporting(true);
-    try {
-      const citySlug = cities?.[0]?.city?.toLowerCase().replace(/\s+/g, "-") || "trip";
-      await exportDashboardPdf(mainRef.current, `travel-capsule-pro-${citySlug}.pdf`);
-    } finally {
-      setPdfExporting(false);
-    }
-  }, [pdfExporting]);
-
   useEffect(() => {
     if (!purchasedPlan) navigate("/preview", { replace: true });
   }, [purchasedPlan, navigate]);
@@ -96,19 +131,17 @@ export function ProDashboard() {
     if (tripId && !result && !tripLoading) loadResult(tripId);
   }, [tripId, result, tripLoading, loadResult]);
 
-  // ─── IMPORTANT: Declare apiResultImages BEFORE any useEffect that references it.
-  // Moving this after hooks that reference it causes TDZ (Temporal Dead Zone) crash
-  // in production minified builds ("Cannot access 'X' before initialization").
+  // ─── IMPORTANT: Declare apiResultImages BEFORE any useEffect that references it (TDZ prevention).
   const apiResultImages: ResultImage[] = result?.images || [];
-  const hasApiImages = apiResultImages.length > 0;
+  const apiGridImages: GridImage[] = result?.grid_images || [];
+  const hasApiImages = apiResultImages.length > 0 || apiGridImages.length > 0;
 
-  // Re-poll for images if result loaded but has no full images yet
-  // (webhook pipeline may still be generating)
+  // Re-poll for images if result loaded but pipeline still generating
   useEffect(() => {
-    if (!tripId || !result || apiResultImages.length > 0 || tripLoading) return;
+    if (!tripId || !result || hasApiImages || tripLoading) return;
     const timer = setTimeout(() => loadResult(tripId), 15000);
     return () => clearTimeout(timer);
-  }, [tripId, result, apiResultImages.length, tripLoading, loadResult]);
+  }, [tripId, result, hasApiImages, tripLoading, loadResult]);
 
   useEffect(() => {
     if (!isLoggedIn) {
@@ -117,7 +150,7 @@ export function ProDashboard() {
     }
   }, [isLoggedIn, setShowSignupPrompt]);
 
-  // ─── AI Image Generation (existing pattern) ───
+  // ─── AI Image Generation (client-side fallback when webhook pipeline hasn't completed) ───
   const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
   const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
   const generationStarted = useRef(false);
@@ -126,7 +159,6 @@ export function ProDashboard() {
   const [aiOutfitItems, setAiOutfitItems] = useState<Record<string, AiItem[]>>({});
 
   useEffect(() => {
-    // If the webhook pipeline already produced images, skip /api/generate
     if (hasApiImages) {
       setGenStatus("done");
       return;
@@ -139,7 +171,6 @@ export function ProDashboard() {
       try {
         setGenStatus("generating");
         const face_url = onboarding.faceUrl || undefined;
-        // Use onboarding cities, fall back to result cities, then default
         const resolvedCities =
           onboarding.cities.length > 0
             ? onboarding.cities.map((c) => ({ city: c.city, country: c.country }))
@@ -147,7 +178,6 @@ export function ProDashboard() {
             ? result.cities.map((c) => ({ city: c.name, country: c.country }))
             : [{ city: "Paris", country: "France" }];
 
-        // Use onboarding profile, fall back to result profile data
         const ht = parseFloat(onboarding.height) || result?.height_cm || 0;
         const wt = parseFloat(onboarding.weight) || result?.weight_kg || 0;
 
@@ -203,7 +233,6 @@ export function ProDashboard() {
   const profile = useMemo(() => {
     const hasOnboardingProfile = onboarding.gender || onboarding.height || onboarding.weight;
     if (hasOnboardingProfile) return buildProfile(onboarding);
-    // Reconstruct from API result data
     return buildProfile({
       gender: result?.gender || onboarding.gender || "female",
       height: result?.height_cm ? String(result.height_cm) : onboarding.height,
@@ -227,8 +256,7 @@ export function ProDashboard() {
     return [{ city: "Paris", country: "France", fromDate: "2026-03-15", toDate: "2026-03-21" }];
   }, [result, onboarding.cities]);
 
-  // Teaser URL from API result (personalized AI image from preview)
-  // IMPORTANT: must be declared BEFORE citySets useMemo which references it
+  // IMPORTANT: teaserUrl must be declared BEFORE citySets useMemo (TDZ prevention)
   const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
 
   const citySets = useMemo<CityOutfitSet[]>(() => {
@@ -237,7 +265,6 @@ export function ProDashboard() {
       const outfits = generateCityOutfits(profile, c, 4);
       const vibeData = apiVibes[ci] || apiVibes[0];
       const weatherInfo = apiWeather.find((w) => w.city?.toLowerCase() === key) || apiWeather[ci] || apiWeather[0];
-
       return {
         city: c.city,
         country: c.country,
@@ -259,7 +286,6 @@ export function ProDashboard() {
   const allOutfits = useMemo(() => citySets.flatMap((cs) => cs.outfits), [citySets]);
   const packing: PackingItem[] = useMemo(() => derivePacking(allOutfits), [allOutfits]);
   const bodyFitLabel = allOutfits[0]?.bodyFitLabel || "";
-  // Derive simple size letter for SizeChip (bodyFitLabel is a full sentence)
   const sizeLabel = (() => {
     const h = parseFloat(profile.height) || 0;
     const w = parseFloat(profile.weight) || 0;
@@ -271,7 +297,7 @@ export function ProDashboard() {
     return "XL";
   })();
 
-  // Regenerate handler — must be declared AFTER citySets to avoid TDZ
+  // ─── Regenerate handler — AFTER citySets declaration (TDZ prevention) ───
   const handleRegenerate = useCallback(async () => {
     const activeSet = citySets[activeCity] || citySets[0];
     if (regenUsed || regenLoading || !activeSet) return;
@@ -282,7 +308,7 @@ export function ProDashboard() {
       if (res.ok && res.image_url) {
         setAiImages((prev) => {
           const next = new Map(prev);
-          next.set(`${res.city}::outfit-${expandedOutfit + 1}`, res.image_url);
+          next.set(`${res.city}::grid`, res.image_url);
           return next;
         });
         setRegenUsed(true);
@@ -297,7 +323,18 @@ export function ProDashboard() {
     } finally {
       setRegenLoading(false);
     }
-  }, [regenUsed, regenLoading, tripId, citySets, activeCity, expandedOutfit, t]);
+  }, [regenUsed, regenLoading, tripId, citySets, activeCity, t]);
+
+  const handleExportPdf = useCallback(async () => {
+    if (!mainRef.current || pdfExporting) return;
+    setPdfExporting(true);
+    try {
+      const citySlug = cities?.[0]?.city?.toLowerCase().replace(/\s+/g, "-") || "trip";
+      await exportDashboardPdf(mainRef.current, `travel-capsule-pro-${citySlug}.pdf`);
+    } finally {
+      setPdfExporting(false);
+    }
+  }, [pdfExporting, cities]);
 
   // AI packing list
   const aiPackingList = useMemo<Array<{ name: string; category: string; desc: string; essential: boolean; cities: string[] }>>(() => {
@@ -334,18 +371,62 @@ export function ProDashboard() {
   const currentSet = citySets[activeCity] || citySets[0];
   if (!currentSet) return null;
 
-  // Get image for outfit: API images (by city+index) > AI generated > local mock
-  const getOutfitImage = (cityName: string, idx: number, fallback: string): string => {
-    // 1. Check webhook-pipeline images (result.images[]) — match by city AND index
-    const apiImg = apiResultImages.find((img) => img.city.toLowerCase() === cityName.toLowerCase() && img.index === idx);
+  /**
+   * Get the 2x2 grid image URL for a city.
+   * Priority: API grid_images → API result_images (type=grid) → AI generated → city hero fallback
+   */
+  const getGridImageUrl = (cityName: string): string | null => {
+    // 1. Webhook pipeline grid images
+    const gridImg = apiGridImages.find((g) => g.city.toLowerCase() === cityName.toLowerCase());
+    if (gridImg) return gridImg.image_url;
+    // 2. Legacy: result images with type=grid (if backend sends that format)
+    const legacyGrid = apiResultImages.find(
+      (img) => img.city.toLowerCase() === cityName.toLowerCase() && (img as ResultImage & { type?: string }).type === "grid"
+    );
+    if (legacyGrid) return legacyGrid.url;
+    // 3. Client-side AI generated grid image
+    const aiGrid = aiImages.get(`${cityName}::grid`);
+    if (aiGrid) return aiGrid;
+    // 4. No grid image available yet
+    return null;
+  };
+
+  /**
+   * Get individual outfit image (index 0-3) for a city.
+   * Used when no grid image is available (fallback path).
+   * Priority: API result images → AI generated map → mock outfit image
+   */
+  const getSingleOutfitImage = (cityName: string, idx: number, fallback: string): string => {
+    const apiImg = apiResultImages.find(
+      (img) => img.city.toLowerCase() === cityName.toLowerCase() && img.index === idx
+        && (img as ResultImage & { type?: string }).type !== "grid"
+    );
     if (apiImg) return apiImg.url;
-    // 2. Check client-side generated images
     const aiKey = `${cityName}::outfit-${idx + 1}`;
     const aiUrl = aiImages.get(aiKey);
     if (aiUrl) return aiUrl;
-    // 3. Use local mock fallback (per-city images from outfitGenerator)
     return fallback;
   };
+
+  // quadrant index cycles every 4 days: day 5 → quadrant 0, day 6 → quadrant 1, etc.
+  const dayToQuadrant = (dayIndex: number): 0 | 1 | 2 | 3 => (dayIndex % 4) as 0 | 1 | 2 | 3;
+
+  // Get daily plans for the active city
+  const activeCityDays: DayPlan[] = hasRealData
+    ? apiDailyPlan.filter((d) => d.city?.toLowerCase() === currentSet.city.toLowerCase())
+    : [];
+
+  // Resolve outfit items for a given day plan entry (case-insensitive)
+  const resolveOutfitItems = (dayPlan: DayPlan | undefined): CapsuleItem[] => {
+    if (!dayPlan) return [];
+    return dayPlan.outfit
+      .map((name) => apiCapsuleItems.find((c) => c.name.toLowerCase() === name.toLowerCase()))
+      .filter((c): c is CapsuleItem => !!c);
+  };
+
+  const gridImageUrl = getGridImageUrl(currentSet.city);
+  const isGeneratingImages = genStatus === "generating";
+  const imagesReady = (genStatus === "done" && aiImages.size > 0) || hasApiImages;
 
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
@@ -362,18 +443,27 @@ export function ProDashboard() {
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:block"><PlanBadge label="Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" /></span>
             <SocialShareButton />
-            <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
+            <button
+              onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)}
+              className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer"
+            >
               <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
-            <button onClick={handleExportPdf} disabled={pdfExporting} className="no-print h-[36px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              {pdfExporting ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="download" size={14} className="text-[#C4613A]" />} <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
+            <button
+              onClick={handleExportPdf}
+              disabled={pdfExporting}
+              className="no-print h-[36px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+            >
+              {pdfExporting ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="download" size={14} className="text-[#C4613A]" />}
+              <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Title */}
-      <div className="mx-auto px-6 pt-10 pb-2" style={{ maxWidth: "var(--max-w)" }}>
+      <div className="mx-auto px-4 sm:px-6 pt-10 pb-2" style={{ maxWidth: "var(--max-w)" }}>
         <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
           {t("dashboard.multiCityStyleGuide")}
         </h1>
@@ -382,25 +472,28 @@ export function ProDashboard() {
         </p>
         <div className="mt-3 flex items-center gap-3 flex-wrap">
           <AiGeneratedBadge confidence={hasRealData ? 95 : 90} bodyFitLabel={bodyFitLabel} />
-          {genStatus === "generating" && (
+          {isGeneratingImages && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
               <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> {t("dashboard.generatingOutfits")}
             </span>
           )}
-          {(genStatus === "done" && aiImages.size > 0) || apiResultImages.length > 0 ? (
+          {imagesReady && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(apiResultImages.length || aiImages.size))}
+              <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(apiGridImages.length || apiResultImages.length || aiImages.size))}
             </span>
-          ) : null}
+          )}
         </div>
 
         {/* City tabs */}
         <div className="mt-5 overflow-x-auto scrollbar-hide">
           <div className="flex items-center gap-2 min-w-max">
             {citySets.map((cs, i) => (
-              <button key={cs.city} onClick={() => { setActiveCity(i); setExpandedOutfit(0); }}
+              <button
+                key={cs.city}
+                onClick={() => setActiveCity(i)}
                 className={`px-4 py-2 rounded-full text-[12px] uppercase tracking-[0.08em] transition-colors cursor-pointer border whitespace-nowrap ${activeCity === i ? "bg-[#C4613A] text-white border-[#C4613A]" : "bg-white text-[#57534e] border-[#E8DDD4] hover:border-[#C4613A]/40"}`}
-                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+              >
                 {cs.city} · {cs.dates}
               </button>
             ))}
@@ -413,164 +506,251 @@ export function ProDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left */}
           <div className="lg:col-span-8 space-y-10 order-last lg:order-none">
-            {/* 2x2 outfit grid hero */}
+
+            {/* ─── 2x2 Grid Image Section ─── */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
                   <em>{t("dashboard.yourCapsule").replace("{city}", currentSet.city)}</em>
                 </h2>
-                {!regenUsed && (
-                  <button onClick={handleRegenerate} disabled={regenLoading} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#C4613A]/30 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/5 transition-colors cursor-pointer disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                    {regenLoading ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="refresh" size={16} />} {regenLoading ? t("dashboard.generating") : `${t("dashboard.regenerate")} (1 ${t("dashboard.left")})`}
-                  </button>
-                )}
-                {regenError && (
-                  <span className="text-[11px] text-red-500 ml-2" style={{ fontFamily: "var(--font-body)" }}>{regenError}</span>
+                <div className="flex items-center gap-2">
+                  {!regenUsed && (
+                    <button
+                      onClick={handleRegenerate}
+                      disabled={regenLoading}
+                      className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-full border border-[#C4613A]/30 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/5 transition-colors cursor-pointer disabled:opacity-50"
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                    >
+                      {regenLoading ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="refresh" size={16} />}
+                      {regenLoading ? t("dashboard.generating") : `${t("dashboard.regenerate")} (1 ${t("dashboard.left")})`}
+                    </button>
+                  )}
+                  {regenError && (
+                    <span className="text-[11px] text-red-500" style={{ fontFamily: "var(--font-body)" }}>{regenError}</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Grid image — full 2x2 AI-generated image at top */}
+              <div className="relative rounded-2xl overflow-hidden w-full" style={{ aspectRatio: "1/1", boxShadow: "0 4px 24px rgba(0,0,0,.10)" }}>
+                {isGeneratingImages && !gridImageUrl ? (
+                  /* Generating state: show placeholder 2x2 grid */
+                  <div className="w-full h-full bg-gradient-to-br from-[#EFE8DF] via-[#F5EFE6] to-[#EFE8DF]" style={{ animation: "shimmer 2s ease-in-out infinite" }}>
+                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-1 p-1">
+                      {[0, 1, 2, 3].map((i) => (
+                        <div key={i} className="bg-[#EFE8DF]/80 rounded-lg flex flex-col items-center justify-center gap-2">
+                          <span className="w-8 h-8 border-2 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" style={{ animationDelay: `${i * 0.2}s` }} />
+                          <span className="text-[10px] text-[#a8a29e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                            Day {i + 1}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 text-center">
+                        <p className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("dashboard.generatingOutfits")}</p>
+                        <p className="text-[11px] text-[#a8a29e] mt-1" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.generatingTime")}</p>
+                        <p className="text-[10px] text-[#a8a29e]/70 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{t("dashboard.generatingSubtext")}</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : gridImageUrl ? (
+                  /* Grid image available: show full image */
+                  <>
+                    <img
+                      src={gridImageUrl}
+                      alt={`${currentSet.city} 4-outfit grid`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+                    <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/30 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                        <Icon name="auto_awesome" size={10} className="text-white" filled /> 4 AI Outfits · {currentSet.city}
+                      </span>
+                      <button
+                        onClick={() => downloadImage(gridImageUrl, `capsule-${currentSet.city.toLowerCase()}-grid.jpg`)}
+                        className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                        title={t("dashboard.downloadImage")}
+                      >
+                        <Icon name="download" size={16} className="text-white" />
+                      </button>
+                    </div>
+                    {/* Quadrant labels overlay on the grid */}
+                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 pointer-events-none">
+                      {[1, 2, 3, 4].map((day) => {
+                        const positions = [
+                          "items-end justify-start pb-3 pl-3",
+                          "items-end justify-end pb-3 pr-3",
+                          "items-end justify-start pb-3 pl-3",
+                          "items-end justify-end pb-3 pr-3",
+                        ];
+                        return (
+                          <div key={day} className={`flex ${positions[day - 1]}`}>
+                            <span className="text-white/80 text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>
+                              {t("dashboard.day")} {day}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                ) : (
+                  /* Fallback: show 2x2 mock outfit thumbnails */
+                  <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 bg-[#EFE8DF]">
+                    {currentSet.outfits.slice(0, 4).map((outfit, i) => {
+                      const imgSrc = getSingleOutfitImage(currentSet.city, i, outfit.image);
+                      return (
+                        <div key={outfit.id} className="relative overflow-hidden">
+                          <ImageWithFallback src={imgSrc} alt={outfit.title} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                          <div className="absolute bottom-2 left-2">
+                            <span className="text-white/80 text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>
+                              {t("dashboard.day")} {outfit.day}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
-                {currentSet.outfits.slice(0, 4).map((outfit, i) => {
-                  const imgSrc = getOutfitImage(currentSet.city, i, outfit.image);
-                  const isLoading = genStatus === "generating" && !aiImages.has(`${currentSet.city}::outfit-${i + 1}`);
+            </div>
+
+            {/* ─── Daily Breakdown (quadrant cropping) ─── */}
+            <div>
+              <h2 className="text-[24px] text-[#292524] mb-6" style={{ fontFamily: "var(--font-display)" }}>
+                Daily Breakdown
+              </h2>
+
+              <div className="space-y-4">
+                {(hasRealData ? activeCityDays : currentSet.outfits.slice(0, 4).map((o, i) => ({
+                  day: o.day,
+                  city: currentSet.city,
+                  outfit: o.items.map((it) => it.name),
+                  note: o.note || "",
+                }))).map((dayPlan, dayIdx) => {
+                  const quadrant = dayToQuadrant(dayIdx);
+                  const outfitItems = hasRealData ? resolveOutfitItems(dayPlan as DayPlan) : [];
+                  const mockOutfit = currentSet.outfits[dayIdx];
+
                   return (
-                    <button key={outfit.id} onClick={() => setExpandedOutfit(i)}
-                      className={`relative rounded-2xl overflow-hidden border-2 transition-all cursor-pointer ${expandedOutfit === i ? "border-[#C4613A] ring-2 ring-[#C4613A]/30" : "border-transparent hover:border-[#E8DDD4]"}`}
-                      style={{ aspectRatio: "4/5" }}>
-                      {isLoading ? (
-                        <div className="absolute inset-0 bg-gradient-to-b from-[#EFE8DF] to-[#d6cfc7] flex flex-col items-center justify-center gap-3">
-                          <span className="w-10 h-10 border-3 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" />
-                          <span className="text-[11px] text-[#57534e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.generating")}</span>
+                    <div
+                      key={dayPlan.day}
+                      className="bg-white rounded-2xl border border-[#E8DDD4] overflow-hidden"
+                      style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}
+                    >
+                      <div className="flex flex-col sm:flex-row">
+                        {/* Quadrant cropped image (or single slot fallback) */}
+                        <div className="relative w-full sm:w-[160px] lg:w-[200px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
+                          {gridImageUrl ? (
+                            <GridQuadrant
+                              imageUrl={gridImageUrl}
+                              quadrant={quadrant}
+                              className="w-full h-full rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none"
+                              alt={`Day ${dayPlan.day} outfit`}
+                            />
+                          ) : (
+                            <ImageWithFallback
+                              src={getSingleOutfitImage(currentSet.city, dayIdx, mockOutfit?.image || currentSet.heroImg)}
+                              alt={`Day ${dayPlan.day} outfit`}
+                              className="w-full h-full object-cover rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none"
+                            />
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none" />
+                          <div className="absolute bottom-3 left-3">
+                            <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>
+                              {t("dashboard.day")} {dayPlan.day}
+                            </span>
+                            {gridImageUrl && (
+                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[8px] uppercase tracking-[0.08em] mt-1" style={{ fontFamily: "var(--font-mono)" }}>
+                                <Icon name="crop" size={8} className="text-white" /> Quadrant {quadrant + 1}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      ) : (
-                        <img src={imgSrc} alt={outfit.title} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = outfit.image; }} />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                      <div className="absolute top-2 left-2 right-2 flex items-start justify-between">
-                        {aiImages.has(`${currentSet.city}::outfit-${i + 1}`) ? (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                            <Icon name="auto_awesome" size={10} className="text-white" filled /> AI
-                          </span>
-                        ) : <span />}
-                        <button
-                          onClick={(e) => { e.stopPropagation(); downloadImage(imgSrc, `capsule-${currentSet.city.toLowerCase()}-outfit-${i + 1}.jpg`); }}
-                          className="w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
-                          title={t("dashboard.downloadImage")}
-                        >
-                          <Icon name="download" size={14} className="text-white" />
-                        </button>
+
+                        {/* Outfit items breakdown */}
+                        <div className="flex-1 p-5">
+                          <div className="flex items-center gap-3 mb-4">
+                            <span className="w-8 h-8 rounded-full bg-[#C4613A]/10 flex items-center justify-center text-[12px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                              {dayPlan.day}
+                            </span>
+                            <div>
+                              <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>
+                                {hasRealData ? dayPlan.note?.split(" ").slice(0, 4).join(" ") || `Day ${dayPlan.day} Outfit` : mockOutfit?.title || `Day ${dayPlan.day}`}
+                              </span>
+                              <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
+                                Outfit Breakdown
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            {hasRealData ? (
+                              outfitItems.length > 0 ? outfitItems.map((item, i) => {
+                                const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
+                                return (
+                                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                    <div className="w-10 h-10 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
+                                      <Icon name={iconName} size={18} className="text-[#57534e]" />
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 flex-wrap">
+                                        <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                        <SizeChip size={sizeLabel} />
+                                      </div>
+                                      {item.why && <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>}
+                                    </div>
+                                  </div>
+                                );
+                              }) : (
+                                // No matched items — show placeholder rather than wrong city's items
+                                <p className="text-[13px] text-[#a8a29e] py-2" style={{ fontFamily: "var(--font-body)" }}>
+                                  Outfit details loading...
+                                </p>
+                              )
+                            ) : (
+                              mockOutfit?.items.map((item) => (
+                                <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                  <ImageWithFallback src={item.img} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                      <SizeChip size={item.recommendedSize} />
+                                    </div>
+                                    <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
+                                  </div>
+                                </div>
+                              ))
+                            )}
+                          </div>
+
+                          {hasRealData && dayPlan.note && (
+                            <p className="mt-4 text-[13px] text-[#57534e] italic leading-relaxed pl-3 border-l-2 border-[#C4613A]/30" style={{ fontFamily: "var(--font-display)" }}>
+                              {dayPlan.note}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                      <div className="absolute bottom-3 left-3 right-3">
-                        <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.day")} {outfit.day}</span>
-                        <span className="text-white text-[16px] italic block leading-tight" style={{ fontFamily: "var(--font-display)" }}>{outfit.title.split(" ")[0]}</span>
-                      </div>
-                    </button>
+                    </div>
                   );
                 })}
               </div>
-
-              {/* Expanded outfit detail */}
-              {expandedOutfit >= 0 && expandedOutfit < currentSet.outfits.length && (
-                <div className="bg-white rounded-2xl border border-[#E8DDD4] p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                  <div className="flex flex-col md:flex-row gap-6">
-                    {/* Outfit image — fixed width on desktop, max height on mobile */}
-                    <div className="relative rounded-xl overflow-hidden w-full max-h-[420px] md:max-h-none md:w-[320px] lg:w-[360px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
-                      <ImageWithFallback
-                        src={getOutfitImage(currentSet.city, expandedOutfit, currentSet.outfits[expandedOutfit].image)}
-                        alt={currentSet.outfits[expandedOutfit].title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                      <div className="absolute top-3 right-3">
-                        <button
-                          onClick={() => downloadImage(getOutfitImage(currentSet.city, expandedOutfit, currentSet.outfits[expandedOutfit].image), `capsule-${currentSet.city.toLowerCase()}-outfit-${expandedOutfit + 1}.jpg`)}
-                          className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
-                          title={t("dashboard.downloadImage")}
-                        >
-                          <Icon name="download" size={18} className="text-white" />
-                        </button>
-                      </div>
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <div className="flex gap-2">
-                          {currentSet.colorPalette.map((color) => (
-                            <div key={color} className="w-7 h-7 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: color }} />
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    {/* Outfit breakdown — right side on desktop */}
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-[22px] text-[#292524] mb-2" style={{ fontFamily: "var(--font-display)" }}>
-                        {currentSet.outfits[expandedOutfit].title}
-                      </h3>
-                      <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: "var(--font-mono)" }}>
-                        {t("examples.pro.outfitBreakdown")}
-                      </span>
-                      <div className="space-y-2">
-                        {hasRealData ? (
-                          // Use daily_plan outfit items for accurate matching with AI-generated image
-                          (() => {
-                            const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch", bag: "shopping_bag", dress: "checkroom", "dress/jumpsuit": "checkroom", skirt: "checkroom", hat: "face_retouching_natural", jewelry: "diamond" };
-                            // Find the matching daily_plan entry for this outfit
-                            // For multi-city: offset by city's starting day index
-                            const cityDays = apiDailyPlan.filter((d) => d.city?.toLowerCase() === currentSet.city.toLowerCase());
-                            // Only use city-matched day plan — never fall back to wrong city
-                            const dayPlan = expandedOutfit < cityDays.length ? cityDays[expandedOutfit] : undefined;
-                            const outfitItemNames: string[] = dayPlan?.outfit ?? [];
-                            // Resolve each outfit item name to its full capsule item data (case-insensitive)
-                            const outfitItems = outfitItemNames
-                              .map((name) => apiCapsuleItems.find((c) => c.name.toLowerCase() === name.toLowerCase()))
-                              .filter((c): c is CapsuleItem => !!c);
-                            // Fallback: show generic capsule items for this outfit slot
-                            const displayItems = outfitItems.length > 0
-                              ? outfitItems
-                              : apiCapsuleItems.slice(0, 4);
-                            return displayItems.map((item, i) => {
-                              const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
-                              return (
-                              <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                                <div className="w-12 h-12 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                                  <Icon name={iconName} size={20} className="text-[#57534e]" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                    <SizeChip size={sizeLabel} />
-                                  </div>
-                                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
-                                </div>
-                              </div>
-                              );
-                            });
-                          })()
-                        ) : (
-                          currentSet.outfits[expandedOutfit].items.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                              <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                  <SizeChip size={item.recommendedSize} />
-                                </div>
-                                <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                      <p className="mt-5 text-[15px] text-[#57534e] italic leading-relaxed pl-4 border-l-2 border-[#C4613A]/30" style={{ fontFamily: "var(--font-display)" }}>
-                        {currentSet.outfits[expandedOutfit].note}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
           {/* Right sidebar */}
           <aside className="lg:col-span-4 order-first lg:order-none">
             <div className="lg:sticky lg:top-[88px] space-y-6">
-              <ProfileBadge gender={profile.gender} height={profile.height} weight={profile.weight} aesthetics={profile.aesthetics} photo={profile.photo} faceUrl={onboarding.faceUrl} bodyFitLabel={bodyFitLabel} />
+              <ProfileBadge
+                gender={profile.gender}
+                height={profile.height}
+                weight={profile.weight}
+                aesthetics={profile.aesthetics}
+                photo={profile.photo}
+                faceUrl={onboarding.faceUrl}
+                bodyFitLabel={bodyFitLabel}
+              />
 
               {/* Multi-City Packing */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
@@ -583,13 +763,13 @@ export function ProDashboard() {
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {(aiPackingList.length > 0 ? aiPackingList : packing).slice(0, 15).map((item, i) => {
                     const isAi = aiPackingList.length > 0;
-                    const CAT_ICON: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", accessory: "watch" };
+                    const CAT_ICN: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", accessory: "watch" };
                     if (isAi) {
                       const ai = item as typeof aiPackingList[number];
                       return (
                         <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${ai.essential ? "bg-[#C4613A]/10" : "bg-[#EFE8DF]"}`}>
-                            <Icon name={CAT_ICON[ai.category] ?? "checkroom"} size={18} className={ai.essential ? "text-[#C4613A]" : "text-[#57534e]"} />
+                            <Icon name={CAT_ICN[ai.category] ?? "checkroom"} size={18} className={ai.essential ? "text-[#C4613A]" : "text-[#57534e]"} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <span className="text-[13px] text-[#292524] truncate block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{ai.name}</span>
@@ -614,7 +794,7 @@ export function ProDashboard() {
                 </div>
               </div>
 
-              {/* Weather */}
+              {/* Weather per city */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                 <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.weatherForecast")}</h3>
                 <div className="space-y-4">
@@ -637,7 +817,7 @@ export function ProDashboard() {
                 <div className="space-y-3">
                   {[
                     { icon: "public", label: t("dashboard.cities"), value: `${citySets.length}` },
-                    { icon: "style", label: t("dashboard.aiOutfits"), value: `${allOutfits.length} ${t("dashboard.looks")}` },
+                    { icon: "grid_view", label: "Grid Outfits", value: `${citySets.length * 4} ${t("dashboard.looks")}` },
                     { icon: "checkroom", label: t("dashboard.packingItems"), value: `${aiPackingList.length || packing.length} ${t("dashboard.pieces")}` },
                     { icon: "refresh", label: t("dashboard.regenerations"), value: regenUsed ? `0 ${t("dashboard.left")}` : `1 ${t("dashboard.left")}` },
                   ].map((stat) => (
@@ -655,6 +835,13 @@ export function ProDashboard() {
           </aside>
         </div>
       </div>
+
+      <style>{`
+        @keyframes shimmer {
+          0%, 100% { opacity: 0.6; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

@@ -23,6 +23,14 @@ import type { Bindings } from '../index';
 
 export type ClimateBand = 'cold' | 'mild' | 'warm' | 'hot' | 'rainy';
 
+export interface DailyForecast {
+  date: string;           // YYYY-MM-DD (last year's date)
+  temperature_max: number;
+  temperature_min: number;
+  precipitation_mm: number;
+  climate_band: ClimateBand;
+}
+
 export interface WeatherResult {
   city: string;
   month: number;
@@ -33,6 +41,8 @@ export interface WeatherResult {
   style_hint: string;
   /** Exact date range queried (if provided) */
   date_range?: string;
+  /** Per-day weather breakdown (when exact dates provided) */
+  daily_forecast?: DailyForecast[];
 }
 
 // Internal Open-Meteo archive API response shape
@@ -205,6 +215,22 @@ async function fetchOpenMeteo(
 
   const band = classifyClimateBand(dayAvg, precipFraction);
 
+  // Build per-day breakdown when exact dates are used
+  const daily_forecast: DailyForecast[] | undefined = (startDate && endDate)
+    ? data.daily.time.map((date, i) => {
+        const tMax = temperature_2m_max[i] ?? dayAvg;
+        const tMin = temperature_2m_min[i] ?? nightAvg;
+        const precip = precipitation_sum[i] ?? 0;
+        return {
+          date,
+          temperature_max: Math.round(tMax * 10) / 10,
+          temperature_min: Math.round(tMin * 10) / 10,
+          precipitation_mm: Math.round(precip * 10) / 10,
+          climate_band: classifyClimateBand(tMax, precip > 3 ? 1 : 0),
+        };
+      })
+    : undefined;
+
   return {
     city: '', // filled in by caller
     month,
@@ -214,6 +240,7 @@ async function fetchOpenMeteo(
     climate_band: band,
     style_hint: buildStyleHint(band, dayAvg),
     date_range: startDate && endDate ? `${queryStart}~${queryEnd}` : undefined,
+    daily_forecast,
   };
 }
 

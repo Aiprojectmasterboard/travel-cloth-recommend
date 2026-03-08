@@ -15,10 +15,10 @@
 import type { Bindings, PlanType } from '../index';
 import { weatherAgent, type WeatherResult } from './weatherAgent';
 import { vibeAgent, type VibeResult } from './vibeAgent';
-import { teaserAgent } from './teaserAgent';
+import { teaserAgent, teaserAgentMultiple } from './teaserAgent';
 import { capsuleAgent, type CapsuleResult } from './capsuleAgent';
-import { styleAgent, type UserProfile } from './styleAgent';
-import { imageGenAgent } from './imageGenAgent';
+import { styleAgent, styleAgentGrid, type UserProfile, type StyleGridPrompt } from './styleAgent';
+import { imageGenAgent, imageGenAgentGrid } from './imageGenAgent';
 import { fulfillmentAgent } from './fulfillmentAgent';
 import { growthAgent } from './growthAgent';
 
@@ -766,68 +766,61 @@ export async function runResult(
     const dailyOutfits = paidCapsule.daily_plan ?? [];
     const capsuleItems = paidCapsule.items ?? [];
 
-    // Build outfit descriptions keyed by day index (for styleAgent)
+    // Build outfit descriptions keyed by day index (for styleAgentGrid)
     const outfitDescriptions: Array<{ day: number; city: string; items: string[] }> = dailyOutfits.map((d) => ({
       day: d.day,
       city: d.city,
       items: d.outfit,
     }));
 
-    // a. Generate style prompts via Claude — now includes capsule item references
-    const stylePrompts = await styleAgent(
-      {
-        vibeResults: finalVibes,
-        cities: cities.map((c) => c.name),
-        weather: finalWeather,
-        userProfile,
-        outfitDescriptions,
-        capsuleItems: capsuleItems.map((i) => ({ name: i.name, category: i.category })),
-      },
-      env
-    );
-
-    // b. Insert generation_jobs rows for each prompt
-    const jobInsertRows = stylePrompts.map((sp) => ({
-      trip_id: tripId,
-      city: sp.city,
-      mood: sp.mood,
-      prompt: sp.prompt,
-      status: 'pending',
-      job_type: 'full',
-    }));
-
-    let jobIds: Record<string, string> = {};
+    // a. Generate 1 combined 2x2 grid prompt per city
+    let gridPrompts: StyleGridPrompt[] = [];
     try {
-      const insertRes = await sbFetch(env, '/generation_jobs', {
-        method: 'POST',
-        body: JSON.stringify(jobInsertRows),
-      });
-      if (insertRes.ok) {
-        const savedJobs = (await insertRes.json()) as Array<{ id: string; city: string; mood: string }>;
-        for (const job of savedJobs) {
-          jobIds[`${job.city}/${job.mood}`] = job.id;
-        }
-      }
+      gridPrompts = await styleAgentGrid(
+        {
+          vibeResults: finalVibes,
+          cities: cities.map((c) => c.name),
+          weather: finalWeather,
+          userProfile,
+          outfitDescriptions,
+          capsuleItems: capsuleItems.map((i) => ({ name: i.name, category: i.category })),
+        },
+        env
+      );
     } catch (err) {
-      console.warn('[runResult] Failed to insert generation_jobs:', (err as Error).message);
+      console.error('[runResult] styleAgentGrid failed:', (err as Error).message);
+      // gridPrompts stays empty — no images will be generated (non-fatal)
     }
 
-    // c. Use default model image when user hasn't uploaded a photo.
-    // Professional model photos produce body-matched outfit looks with Gemini.
-    const effectiveFaceUrl = getEffectiveFaceUrl(faceUrl, userProfile.gender);
+    // b. Insert 1 generation_job row per city (not per outfit)
+    if (gridPrompts.length > 0) {
+      const jobInsertRows = gridPrompts.map((gp) => ({
+        trip_id: tripId,
+        city: gp.city,
+        mood: 'grid',
+        prompt: gp.prompt,
+        status: 'pending',
+        job_type: 'full',
+      }));
 
-    // d. Generate images (Promise.allSettled internally — never throws)
-    await imageGenAgent(
-      {
-        prompts: stylePrompts,
-        tripId,
-        jobIds,
-        faceUrl: effectiveFaceUrl,
-      },
-      env
-    );
+      try {
+        const insertRes = await sbFetch(env, '/generation_jobs', {
+          method: 'POST',
+          body: JSON.stringify(jobInsertRows),
+        });
+        if (!insertRes.ok) {
+          console.warn('[runResult] generation_jobs insert returned non-OK:', insertRes.status);
+        }
+      } catch (err) {
+        console.warn('[runResult] Failed to insert generation_jobs:', (err as Error).message);
+      }
 
-    // e. Privacy cleanup: delete user-uploaded face only (not default images)
+      // c. Generate 1 grid image per city (1024x1024, medium quality, parallel)
+      // Identity Engine: pass faceUrl for reference photo preservation
+      await imageGenAgentGrid({ gridPrompts, tripId, faceUrl }, env);
+    }
+
+    // d. Privacy cleanup: delete user-uploaded face AFTER image generation completes
     if (faceUrl) {
       await cleanupFace(tripId, faceUrl, env);
     }
@@ -920,13 +913,12 @@ export function getEffectiveFaceUrl(userFaceUrl: string | undefined, gender: str
 // ─── runTeaserBackground ──────────────────────────────────────────────────────
 
 /**
- * Generates a teaser image in the background (called via waitUntil).
- * Gemini takes ~30-40s which exceeds Workers' response deadline.
- * waitUntil() allows this to run AFTER the HTTP response is sent.
+ * Generates 4 teaser images in the background via OpenAI DALL-E 3 (called via waitUntil).
+ * Each image uses a different mood/scene variation for visual diversity.
  *
- * On success: updates trips.teaser_url + inserts generation_jobs row.
+ * On success: inserts 4 generation_jobs rows (one per image).
  * On failure: inserts generation_jobs with 'failed_fallback' status.
- * Frontend polls GET /api/teaser/:tripId to detect when the image is ready.
+ * Frontend polls GET /api/teaser/:tripId to detect when images are ready.
  */
 export async function runTeaserBackground(
   input: {
@@ -944,73 +936,101 @@ export async function runTeaserBackground(
   },
   env: Bindings
 ): Promise<void> {
-  const { trip_id, vibeResult, face_url, gender, user_profile, fallbackTeaser } = input;
+  const { trip_id, vibeResult, gender, user_profile, fallbackTeaser } = input;
 
-  // Use default model image when user hasn't uploaded a photo.
-  // Professional model photos work well with Gemini and produce body-matched looks.
-  const effectiveFaceUrl = getEffectiveFaceUrl(face_url, gender);
+  console.log(`[runTeaserBackground] Starting 4-image generation for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}`);
 
-  console.log(`[runTeaserBackground] Starting for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}, face=${face_url ? 'user' : 'default'}`);
-
-  let teaserUrl: string | null = null;
-  let teaserError: string | null = null;
+  const userProfile = user_profile
+    ? {
+        gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
+        height_cm: user_profile.height_cm,
+        weight_kg: user_profile.weight_kg,
+        aesthetics: user_profile.aesthetics,
+      }
+    : undefined;
 
   try {
-    const teaser = await teaserAgent(
+    const result = await teaserAgentMultiple(
       {
         tripId: trip_id,
         vibeResult,
-        faceUrl: effectiveFaceUrl,
-        userProfile: user_profile
-          ? {
-              gender: user_profile.gender as 'male' | 'female' | 'non-binary' | undefined,
-              height_cm: user_profile.height_cm,
-              weight_kg: user_profile.weight_kg,
-              aesthetics: user_profile.aesthetics,
-            }
-          : undefined,
+        userProfile,
+        count: 4,
       },
       env
     );
-    teaserUrl = teaser.image_url;
-    console.log(`[runTeaserBackground] Success for trip ${trip_id}: ${teaserUrl}`);
+
+    // Insert generation_jobs for each successful image
+    for (const img of result.images) {
+      await insertTeaserJob(env, {
+        trip_id,
+        city: vibeResult.city ?? '',
+        mood: img.mood,
+        prompt: `${vibeResult.mood_label} — ${img.mood}`,
+        status: 'completed',
+        image_url: img.image_url,
+      });
+    }
+
+    // If some images failed, insert fallback jobs to reach 4 total
+    const failedCount = 4 - result.images.length;
+    if (failedCount > 0) {
+      const fallbackUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
+      for (let i = 0; i < failedCount; i++) {
+        await insertTeaserJob(env, {
+          trip_id,
+          city: vibeResult.city ?? '',
+          mood: `fallback-${i}`,
+          prompt: `FAILED: partial generation | mood: ${vibeResult.mood_label}`,
+          status: 'failed_fallback',
+          image_url: fallbackUrl,
+        });
+      }
+    }
+
+    console.log(`[runTeaserBackground] ${result.images.length}/4 teasers saved for trip ${trip_id}`);
   } catch (err) {
-    teaserError = (err as Error).message;
-    // Use city-specific fallback instead of empty string or generic fallback
-    teaserUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
-    console.error(`[runTeaserBackground] FAILED for trip ${trip_id}:`, teaserError, `| fallback: ${teaserUrl}`);
+    const teaserError = (err as Error).message;
+    const fallbackUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
+    console.error(`[runTeaserBackground] FAILED for trip ${trip_id}:`, teaserError);
+
+    // Insert single fallback job so frontend doesn't poll forever
+    await insertTeaserJob(env, {
+      trip_id,
+      city: vibeResult.city ?? '',
+      mood: vibeResult.mood_name ?? '',
+      prompt: `FAILED: ${teaserError.slice(0, 200)}`,
+      status: 'failed_fallback',
+      image_url: fallbackUrl,
+    });
   }
+}
 
-  // Insert generation_jobs tracking row (frontend polls this via GET /api/teaser/:tripId)
-  // This INSERT is critical — if it fails, frontend polls forever. Retry once.
-  const jobPayload = {
-    trip_id,
-    city: vibeResult.city ?? '',
-    mood: vibeResult.mood_name ?? '',
-    prompt: teaserError
-      ? `FAILED: ${teaserError.slice(0, 200)} | mood: ${vibeResult.mood_label ?? 'teaser'}`
-      : (vibeResult.mood_label ?? 'teaser'),
-    status: teaserError ? 'failed_fallback' : 'completed',
-    image_url: teaserUrl,
-    job_type: 'teaser',
-    attempts: 1,
-  };
-
+/** Helper: insert a generation_jobs row with retry */
+async function insertTeaserJob(
+  env: Bindings,
+  payload: {
+    trip_id: string;
+    city: string;
+    mood: string;
+    prompt: string;
+    status: string;
+    image_url: string;
+  },
+): Promise<void> {
+  const jobPayload = { ...payload, job_type: 'teaser', attempts: 1 };
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       const res = await sbFetch(env, '/generation_jobs', {
         method: 'POST',
         body: JSON.stringify(jobPayload),
       });
-      if (res.ok) {
-        console.log(`[runTeaserBackground] generation_jobs saved for trip ${trip_id} (status=${jobPayload.status})`);
-        break;
-      }
+      if (res.ok) return;
       const detail = await res.text();
-      console.warn(`[runTeaserBackground] generation_jobs INSERT HTTP ${res.status}: ${detail.slice(0, 200)}`);
+      console.warn(`[insertTeaserJob] HTTP ${res.status}: ${detail.slice(0, 200)}`);
     } catch (err) {
-      console.warn(`[runTeaserBackground] generation_jobs INSERT attempt ${attempt + 1} failed:`, (err as Error).message);
-      if (attempt === 0) await new Promise(r => setTimeout(r, 1000)); // retry after 1s
+      console.warn(`[insertTeaserJob] attempt ${attempt + 1} failed:`, (err as Error).message);
+      if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
     }
   }
 }

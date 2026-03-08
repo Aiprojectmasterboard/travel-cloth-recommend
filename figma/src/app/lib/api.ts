@@ -44,6 +44,14 @@ export async function apiGet<T>(path: string): Promise<T> {
 
 // ─── API Types ──────────────────────────────────────────────────────────────
 
+export interface DailyForecast {
+  date: string
+  temperature_max: number
+  temperature_min: number
+  precipitation_mm: number
+  climate_band: 'cold' | 'mild' | 'warm' | 'hot' | 'rainy'
+}
+
 export interface WeatherData {
   city: string
   month: number
@@ -52,6 +60,7 @@ export interface WeatherData {
   precipitation_prob: number
   climate_band: 'cold' | 'mild' | 'warm' | 'hot' | 'rainy'
   style_hint: string
+  daily_forecast?: DailyForecast[]
 }
 
 export interface VibeData {
@@ -109,6 +118,11 @@ export interface PreviewResponse {
 }
 
 // Response from GET /api/result/:tripId
+export interface GridImage {
+  city: string
+  image_url: string
+}
+
 export interface ResultData {
   trip_id: string
   plan: 'standard' | 'pro' | 'annual'
@@ -118,6 +132,8 @@ export interface ResultData {
   vibes: VibeData[]
   capsule: CapsuleData
   images: ResultImage[]
+  /** 2x2 grid images generated per city (Pro/Annual plans) */
+  grid_images?: GridImage[]
   teaser_url: string
   growth: GrowthData
   status?: string
@@ -167,8 +183,11 @@ export function regenerateOutfit(tripId: string, city: string): Promise<RegenRes
 }
 
 export interface TeaserStatus {
-  status: 'pending' | 'ready' | 'fallback'
+  status: 'pending' | 'ready' | 'fallback' | 'partial'
   teaser_url: string | null
+  teaser_urls?: string[]
+  total_expected?: number
+  completed?: number
 }
 
 export function pollTeaser(tripId: string): Promise<TeaserStatus> {

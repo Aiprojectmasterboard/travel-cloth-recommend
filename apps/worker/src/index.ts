@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import Anthropic from '@anthropic-ai/sdk';
+import { chatCompletionJSON } from './agents/openaiChat';
 import { runPreview, runResult, runTeaserBackground, getCityFallbackImage, getEffectiveFaceUrl } from './agents/orchestrator';
 import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
 import { imageGenAgent } from './agents/imageGenAgent';
@@ -12,8 +12,8 @@ import { imageGenAgent } from './agents/imageGenAgent';
 
 export type Bindings = {
   // Secrets
-  ANTHROPIC_API_KEY: string;
-  NANOBANANA_API_KEY: string;
+  NANOBANANA_API_KEY: string;  // legacy Gemini key — kept for backward compat
+  OPENAI_API_KEY: string;
   POLAR_ACCESS_TOKEN: string;
   POLAR_WEBHOOK_SECRET: string;
   SUPABASE_SERVICE_ROLE_KEY: string;
@@ -234,8 +234,9 @@ app.get('/api/health', (c) =>
     ok: true,
     timestamp: new Date().toISOString(),
     services: {
-      gemini: !!c.env.NANOBANANA_API_KEY,
-      claude: !!c.env.ANTHROPIC_API_KEY,
+      openai: !!c.env.OPENAI_API_KEY,
+      gemini_legacy: !!c.env.NANOBANANA_API_KEY,
+      claude_legacy: false, // migrated to OpenAI GPT-4o
       supabase: !!c.env.SUPABASE_URL && !!c.env.SUPABASE_SERVICE_ROLE_KEY,
       polar: !!c.env.POLAR_ACCESS_TOKEN,
       r2: !!c.env.R2_PUBLIC_URL,
@@ -576,7 +577,7 @@ app.post('/api/preview', async (c) => {
     // This runs AFTER the HTTP response is sent — no wall-clock timeout issue.
     // Gemini takes ~30-40s which exceeds Workers' response deadline but
     // waitUntil() allows up to 30s (paid) / 15min (Durable Objects) after response.
-    if (preview.vibes?.[0] && c.env.NANOBANANA_API_KEY) {
+    if (preview.vibes?.[0] && c.env.OPENAI_API_KEY) {
       c.executionCtx.waitUntil(
         runTeaserBackground(
           {
@@ -598,8 +599,8 @@ app.post('/api/preview', async (c) => {
           console.error(`[waitUntil] runTeaserBackground failed for trip ${tripId}:`, (err as Error).message);
         })
       );
-    } else if (!c.env.NANOBANANA_API_KEY) {
-      console.error('[POST /api/preview] NANOBANANA_API_KEY not configured — skipping teaser generation');
+    } else if (!c.env.OPENAI_API_KEY) {
+      console.error('[POST /api/preview] OPENAI_API_KEY not configured — skipping teaser generation');
     }
 
     return c.json(preview);
@@ -634,8 +635,8 @@ app.post('/api/teaser/generate', async (c) => {
     return c.json({ error: 'Valid trip_id required' }, 400);
   }
 
-  if (!c.env.NANOBANANA_API_KEY) {
-    return c.json({ error: 'Image generation not configured' }, 503);
+  if (!c.env.OPENAI_API_KEY) {
+    return c.json({ error: 'Image generation not configured (OPENAI_API_KEY)' }, 503);
   }
 
   // Check if teaser already exists (prevent duplicate generation)
@@ -724,30 +725,52 @@ app.get('/api/teaser/:tripId', async (c) => {
     return c.json({ error: 'Valid tripId required' }, 400);
   }
 
-  // Check generation_jobs for a completed teaser job
+  // Check generation_jobs for completed teaser jobs (up to 4 for Standard multi-teaser)
   const res = await supabase(
     c.env,
-    `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser&order=created_at.desc&limit=1&select=status,image_url`
+    `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.teaser&order=created_at.asc&limit=4&select=status,image_url,mood`
   );
   if (!res.ok) return c.json({ error: 'Failed to query teaser status' }, 500);
 
-  const rows = (await res.json()) as Array<{ status: string; image_url: string | null }>;
+  const rows = (await res.json()) as Array<{ status: string; image_url: string | null; mood?: string }>;
   if (rows.length === 0) {
-    // No job yet — still generating
-    return c.json({ status: 'pending', teaser_url: null });
+    return c.json({ status: 'pending', teaser_url: null, teaser_urls: [] });
   }
 
-  const job = rows[0];
-  const isRealAiImage = job.image_url?.includes('/temp/') ?? false;
+  const completedRows = rows.filter(r => r.status === 'completed' && r.image_url?.includes('/temp/'));
+  const fallbackRows = rows.filter(r => r.status === 'failed_fallback' || (r.status === 'completed' && !r.image_url?.includes('/temp/')));
+  const pendingCount = rows.filter(r => r.status !== 'completed' && r.status !== 'failed_fallback').length;
 
-  if (job.status === 'completed' && job.image_url && isRealAiImage) {
-    return c.json({ status: 'ready', teaser_url: job.image_url });
+  // Build array of all teaser URLs (completed real images)
+  const teaserUrls = completedRows.map(r => r.image_url!);
+
+  if (completedRows.length > 0 && pendingCount === 0) {
+    // All done — return ready with all URLs
+    return c.json({
+      status: 'ready',
+      teaser_url: completedRows[0].image_url,  // backward compat: first image
+      teaser_urls: teaserUrls,
+    });
   }
-  if (job.status === 'failed_fallback' || (job.status === 'completed' && !isRealAiImage)) {
-    // Fallback image (static) — generation failed or was a legacy job
-    return c.json({ status: 'fallback', teaser_url: job.image_url });
+  if (fallbackRows.length > 0 && pendingCount === 0 && completedRows.length === 0) {
+    // All failed — fallback
+    return c.json({
+      status: 'fallback',
+      teaser_url: fallbackRows[0].image_url,
+      teaser_urls: fallbackRows.map(r => r.image_url!).filter(Boolean),
+    });
   }
-  return c.json({ status: 'pending', teaser_url: null });
+  if (completedRows.length > 0 && pendingCount > 0) {
+    // Partially done — return what we have, frontend can show partial results
+    return c.json({
+      status: 'partial',
+      teaser_url: completedRows[0].image_url,
+      teaser_urls: teaserUrls,
+      total_expected: rows.length,
+      completed: completedRows.length,
+    });
+  }
+  return c.json({ status: 'pending', teaser_url: null, teaser_urls: [] });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1397,15 +1420,30 @@ app.get('/api/result/:tripId', async (c) => {
 
   // Normalise images: api.ts ResultData expects { city, url, index }[]
   // generation_jobs stores the URL in `image_url`; filter to completed full-gen images only.
-  // Index is PER-CITY (0-based) — dashboards look up images by city+index.
+  // Grid images (mood === 'grid') are separated into grid_images with type: 'grid'.
+  // Non-grid images keep per-city (0-based) index — dashboards look up by city+index.
   const completedImages = jobRows.filter(
     (j) =>
       j.status === 'completed' &&
       (j.job_type === 'full' || j.job_type === 'regen') &&
       j.image_url
   );
+
+  // Separate grid vs individual images
+  const gridJobRows = completedImages.filter((j) => j.mood === 'grid');
+  const individualJobRows = completedImages.filter((j) => j.mood !== 'grid');
+
+  // grid_images: one entry per city with type: 'grid'
+  const grid_images = gridJobRows.map((j) => ({
+    city: (j.city as string) ?? '',
+    image_url: (j.image_url as string) ?? '',
+    type: 'grid' as const,
+    index: 0,
+  }));
+
+  // Individual images with per-city index (legacy / fallback)
   const cityIndexCounters: Record<string, number> = {};
-  const images = completedImages.map((j) => {
+  const images = individualJobRows.map((j) => {
     const city = (j.city as string) ?? '';
     const cityKey = city.toLowerCase();
     const idx = cityIndexCounters[cityKey] ?? 0;
@@ -1439,6 +1477,7 @@ app.get('/api/result/:tripId', async (c) => {
       daily_plan: (capsuleRow?.daily_plan as unknown[]) ?? [],
     },
     images,
+    grid_images,
     teaser_url: teaserUrl,
     // User profile fields (stored during /api/preview)
     // PostgREST may return NUMERIC as strings — coerce to number for JSON response
@@ -1878,11 +1917,12 @@ async function generateOutfitItems(
   count: number,
   apiKey: string
 ): Promise<CityOutfitBreakdown> {
-  const client = new Anthropic({ apiKey });
   const contexts = OUTFIT_CONTEXTS.slice(0, Math.min(count, 4));
   const stylingNote = aesthetics.length > 0 ? aesthetics.slice(0, 3).join(', ') : vibeData.tags.slice(0, 2).join(', ');
 
-  const prompt = `You are a professional travel stylist. Generate outfit item lists for a ${vibeData.mood} trip to ${cityEntry.city}.
+  const systemPrompt = 'You are a professional travel stylist. Always respond with valid JSON only — no markdown fences, no explanations.';
+
+  const userPrompt = `Generate outfit item lists for a ${vibeData.mood} trip to ${cityEntry.city}.
 
 Traveller profile:
 - Gender: ${gender}
@@ -1891,7 +1931,7 @@ Traveller profile:
 
 Generate exactly ${contexts.length} outfits. Each outfit must have 4-5 items. Keep names concise (2-4 words). Make choices realistic for ${cityEntry.city} in this style.
 
-Return ONLY valid JSON (no markdown fences, no explanation):
+Return ONLY valid JSON:
 {
   "outfits": [
     {
@@ -1912,15 +1952,12 @@ Outfits to generate:
 ${contexts.map((o) => `- key: "${o.key}", title: "${o.title}", context: ${o.ctx}`).join('\n')}`;
 
   try {
-    const msg = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1500,
-      messages: [{ role: 'user', content: prompt }],
-    });
-    const text = msg.content[0].type === 'text' ? msg.content[0].text.trim() : '{}';
-    // Strip potential markdown fences
-    const clean = text.replace(/^```[a-z]*\n?/m, '').replace(/\n?```$/m, '').trim();
-    const parsed = JSON.parse(clean) as { outfits: Array<{ key: string; title: string; items: OutfitItemAI[] }> };
+    const parsed = await chatCompletionJSON<{ outfits: Array<{ key: string; title: string; items: OutfitItemAI[] }> }>(
+      apiKey,
+      systemPrompt,
+      userPrompt,
+      { maxTokens: 2048, reasoningEffort: 'low' },
+    );
     return {
       city: cityEntry.city,
       outfits: parsed.outfits.map((o) => ({ mood: o.key, title: o.title, items: o.items })),
@@ -2050,7 +2087,7 @@ app.post('/api/generate', async (c) => {
           mood: `${cityEntry.city} Style`,
           tags: aesthetics.length > 0 ? aesthetics : ['chic', 'travel-ready'],
         };
-        return generateOutfitItems(cityEntry, vibeData, userProfile.aesthetics, safeGender, safeCount, c.env.ANTHROPIC_API_KEY);
+        return generateOutfitItems(cityEntry, vibeData, userProfile.aesthetics, safeGender, safeCount, c.env.OPENAI_API_KEY);
       }),
     ]);
 

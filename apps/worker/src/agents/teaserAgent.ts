@@ -1,17 +1,20 @@
 /**
  * teaserAgent.ts
  *
- * Generates ONE teaser fashion image via Nano Banana 2 (Gemini 3.1 Flash Image)
- * and stores it in R2.
- * The remaining 3 images shown in the preview are CSS-blurred placeholders
- * rendered client-side — only this single image is actually generated.
+ * Generates teaser fashion images via OpenAI gpt-image-1.5 and stores them in R2.
+ * Supports Identity Engine: if user uploaded a reference photo, preserves their
+ * facial features across generated images.
  *
- * R2 path: temp/{tripId}/teaser.png  (TTL: 48 h, deleted after paid fulfillment)
- * Public URL: {R2_PUBLIC_URL}/temp/{tripId}/teaser.png
+ * Standard plan: 4 images with different moods (parallel generation)
+ * R2 path: temp/{tripId}/teaser-{index}.png
+ * Public URL: {R2_PUBLIC_URL}/temp/{tripId}/teaser-{index}.png
+ *
+ * Single teaser mode (backward compat): temp/{tripId}/teaser.png
  */
 
 import type { Bindings } from '../index';
 import type { VibeResult } from './vibeAgent';
+import { generateImageWithRetry, fetchImageAsBase64 } from './openaiImage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -20,218 +23,15 @@ export interface TeaserResult {
   expires_at: string; // ISO 8601, 48 h from now
 }
 
-// Gemini API response shapes (camelCase from API)
-interface GeminiInlineData {
-  mimeType: string;
-  data: string; // base64
-}
-
-interface GeminiPart {
-  text?: string;
-  inlineData?: GeminiInlineData;
-}
-
-interface GeminiResponse {
-  candidates?: Array<{
-    content?: {
-      parts?: GeminiPart[];
-    };
+export interface MultipleTeaserResult {
+  images: Array<{
+    index: number;
+    image_url: string;
+    mood: string;
   }>;
-  error?: { message: string; code: number };
+  expires_at: string;
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const MODEL = 'gemini-3.1-flash-image-preview';
-const MAX_ATTEMPTS = 3;
-const BACKOFF_MS = [1_500, 3_000, 5_000] as const;
-// Gemini image generation typically takes 10-30s.
-// Keep timeout tight to fail fast and use fallback images instead of hanging.
-const FETCH_TIMEOUT_MS = 35_000;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/** Max face image size for Gemini inlineData (bytes). Default images are ~2.4 MB PNG. */
-const MAX_FACE_BYTES = 4_000_000; // 4 MB → ~5.3 MB base64 (Gemini accepts up to 20 MB)
-
-/**
- * Fetches an image from a URL and returns base64-encoded data + mime type.
- * Skips images larger than MAX_FACE_BYTES to avoid Gemini request-size failures.
- * Uses chunked base64 encoding to avoid stack overflow on large buffers.
- */
-async function fetchImageAsBase64(url: string): Promise<{ data: string; mimeType: string } | null> {
-  try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
-    if (!res.ok) {
-      console.warn(`[teaserAgent] Face fetch HTTP ${res.status} for ${url}`);
-      return null;
-    }
-
-    const buffer = await res.arrayBuffer();
-
-    // Skip oversized images — Gemini rejects large inlineData
-    if (buffer.byteLength > MAX_FACE_BYTES) {
-      console.warn(`[teaserAgent] Face image too large (${(buffer.byteLength / 1024 / 1024).toFixed(1)}MB > 4MB limit), skipping face reference`);
-      return null;
-    }
-
-    const contentType = res.headers.get('content-type') || 'image/jpeg';
-    const bytes = new Uint8Array(buffer);
-
-    // Chunked base64 encoding — avoids call-stack overflow for large buffers
-    const CHUNK = 8192;
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      const slice = bytes.subarray(i, Math.min(i + CHUNK, bytes.length));
-      binary += String.fromCharCode(...slice);
-    }
-
-    return { data: btoa(binary), mimeType: contentType };
-  } catch (err) {
-    console.warn('[teaserAgent] Failed to fetch face image:', (err as Error).message);
-    return null;
-  }
-}
-
-/**
- * Calls Gemini Nano Banana 2 once to generate a single image.
- * Returns the raw image buffer (PNG).
- */
-async function generateNanoBanana(
-  prompt: string,
-  apiKey: string,
-  faceUrl?: string
-): Promise<ArrayBuffer> {
-  const parts: Array<{ text: string } | { inlineData: { mimeType: string; data: string } }> = [];
-
-  // If face image is provided, fetch it and send as inlineData for Gemini to use as reference
-  if (faceUrl) {
-    const faceData = await fetchImageAsBase64(faceUrl);
-    if (faceData) {
-      parts.push({ inlineData: { mimeType: faceData.mimeType, data: faceData.data } });
-      parts.push({ text: 'Reference photo of the person. Generate a new fashion image of a person with similar appearance wearing a travel outfit for the destination below. Travel fashion styling service.' });
-    }
-  }
-
-  parts.push({ text: prompt });
-
-  const body = {
-    contents: [{ parts }],
-    generationConfig: {
-      responseModalities: ['IMAGE', 'TEXT'],
-      imageConfig: {
-        aspectRatio: '3:4',
-        imageSize: '1K',
-      },
-    },
-  };
-
-  const res = await fetch(
-    `${GEMINI_BASE}/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-    }
-  );
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`[teaserAgent] Gemini API HTTP ${res.status}: ${text.slice(0, 300)}`);
-  }
-
-  const data = (await res.json()) as GeminiResponse;
-
-  if (data.error) {
-    throw new Error(`[teaserAgent] Gemini API error: ${data.error.message}`);
-  }
-
-  // Extract base64 image from response
-  const candidate = data.candidates?.[0];
-  const responseParts = candidate?.content?.parts;
-  if (!responseParts) {
-    const finishReason = (candidate as { finishReason?: string } | undefined)?.finishReason;
-    throw new Error(`[teaserAgent] Gemini returned no content parts (finishReason=${finishReason || 'unknown'})`);
-  }
-
-  const imagePart = responseParts.find((p) => p.inlineData?.data);
-  if (!imagePart?.inlineData) {
-    const textParts = responseParts.filter((p) => p.text).map((p) => p.text).join(' ');
-    throw new Error(`[teaserAgent] Gemini returned no image data. Text: ${textParts.slice(0, 200)}`);
-  }
-
-  // Decode base64 to ArrayBuffer
-  const binaryString = atob(imagePart.inlineData.data);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-/**
- * Calls generateNanoBanana with exponential-backoff retry (3 attempts).
- * If face-based generation fails (often Gemini safety filters), automatically
- * retries WITHOUT the face reference to ensure an image is always generated.
- */
-async function generateWithRetry(
-  prompt: string,
-  apiKey: string,
-  faceUrl?: string
-): Promise<ArrayBuffer> {
-  let lastError: Error | null = null;
-
-  // Phase 1: Try with face reference (if provided) — single attempt to save time
-  if (faceUrl) {
-    try {
-      return await generateNanoBanana(prompt, apiKey, faceUrl);
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      console.warn(`[teaserAgent] Face attempt failed: ${lastError.message}`);
-      console.warn(`[teaserAgent] Retrying WITHOUT face reference`);
-    }
-  }
-
-  // Phase 2: Try without face reference (always works unless Gemini is fully down)
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    if (attempt > 0) {
-      await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
-    }
-    try {
-      return await generateNanoBanana(prompt, apiKey, undefined);
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      console.warn(
-        `[teaserAgent] No-face attempt ${attempt + 1}/${MAX_ATTEMPTS} failed: ${lastError.message}`
-      );
-    }
-  }
-
-  throw lastError ?? new Error(`Teaser generation failed after all attempts`);
-}
-
-// ─── Main Exported Function ───────────────────────────────────────────────────
-
-/**
- * Generates a teaser image for the free preview.
- *
- * Steps:
- * 1. Build an editorial fashion prompt from the vibe
- * 2. Call Nano Banana 2 (Gemini 3.1 Flash Image) with optional face reference
- * 3. Store returned image buffer in R2 at temp/{tripId}/teaser.png
- * 5. Return the public CDN URL
- *
- * @param input - tripId, vibeResult, optional faceUrl
- * @param env   - Cloudflare Worker bindings
- */
 export interface TeaserUserProfile {
   gender?: 'male' | 'female' | 'non-binary';
   height_cm?: number;
@@ -239,24 +39,33 @@ export interface TeaserUserProfile {
   aesthetics?: string[];
 }
 
-export async function teaserAgent(
-  input: { tripId: string; vibeResult: VibeResult; faceUrl?: string; userProfile?: TeaserUserProfile },
-  env: Bindings
-): Promise<TeaserResult> {
-  const { tripId, vibeResult, faceUrl, userProfile } = input;
+// ─── Mood Variations ──────────────────────────────────────────────────────────
 
-  // Guard: NANOBANANA_API_KEY must be configured as a Worker secret
-  if (!env.NANOBANANA_API_KEY) {
-    throw new Error('[teaserAgent] NANOBANANA_API_KEY is not configured — run: wrangler secret put NANOBANANA_API_KEY');
-  }
+/**
+ * 4 different outfit mood/scene variations for Standard plan diversity.
+ * Each produces a visually distinct look from the same vibe.
+ */
+const MOOD_VARIATIONS = [
+  { scene: 'walking through a famous landmark area', time: 'golden hour morning light', style: 'polished editorial' },
+  { scene: 'sitting at a stylish outdoor café', time: 'soft afternoon light', style: 'relaxed chic' },
+  { scene: 'exploring a charming local street', time: 'natural daylight', style: 'smart casual' },
+  { scene: 'standing at a scenic viewpoint', time: 'warm sunset light', style: 'effortlessly elegant' },
+] as const;
 
-  // Detect infant: height < 85cm AND weight < 13kg (non-walking infant/toddler)
+// ─── Prompt Builder ───────────────────────────────────────────────────────────
+
+function buildPrompt(
+  vibeResult: VibeResult,
+  userProfile: TeaserUserProfile | undefined,
+  variationIndex: number,
+): string {
+  // Detect infant
   const isInfant = !!(
     userProfile?.height_cm && userProfile.height_cm < 85 &&
     userProfile?.weight_kg && userProfile.weight_kg < 13
   );
 
-  // Build model descriptor from user profile
+  // Build model descriptor
   let genderDesc: string;
   let heightDesc = '';
   let bodyDesc = '';
@@ -266,14 +75,13 @@ export async function teaserAgent(
     genderDesc = 'a cute baby';
   } else {
     genderDesc = userProfile?.gender === 'male'
-      ? 'a young Asian man'
+      ? 'a stylish young man'
       : userProfile?.gender === 'non-binary'
       ? 'an androgynous person'
-      : 'a young woman';
+      : 'a stylish young woman';
     if (userProfile?.height_cm) {
       heightDesc = `, ${userProfile.height_cm}cm tall`;
     }
-    // BMI-based body description
     if (userProfile?.height_cm && userProfile?.weight_kg) {
       const heightM = userProfile.height_cm / 100;
       const bmi = userProfile.weight_kg / (heightM * heightM);
@@ -283,34 +91,59 @@ export async function teaserAgent(
       else bodyDesc = ', full-figured build';
     }
     styleDesc = userProfile?.aesthetics?.length
-      ? ` wearing ${userProfile.aesthetics.slice(0, 2).join(' and ')} style outfit`
+      ? ` in ${userProfile.aesthetics.slice(0, 2).join(' and ')} style`
       : '';
   }
 
-  // Extract city name for landmark background
   const cityName = vibeResult.city || vibeResult.mood_label?.split(' — ')[0] || 'a famous city';
-
-  // Build image prompt: travel outfit with city landmark background
   const tagString = vibeResult.vibe_tags.join(', ');
-  let prompt: string;
+  const variation = MOOD_VARIATIONS[variationIndex % MOOD_VARIATIONS.length];
 
   if (isInfant) {
-    prompt =
-      `Photorealistic photo: ${genderDesc} in a stylish stroller near a famous ${cityName} landmark. ` +
-      `Cute weather-appropriate outfit. Mood: ${vibeResult.mood_label}. ` +
-      'Professional photography, natural light, sharp focus, 4K.';
-  } else {
-    prompt =
-      `Photorealistic full-body fashion photo: ${genderDesc}${heightDesc}${bodyDesc}${styleDesc} ` +
-      `standing near a famous ${cityName} landmark. ` +
-      `Style: ${vibeResult.mood_label}, ${tagString}. Stylish travel outfit. ` +
-      'Fashion editorial, natural light, sharp focus, 4K.';
+    return (
+      `Photorealistic photo: ${genderDesc} in a stylish stroller ` +
+      `${variation.scene} in ${cityName}. ` +
+      `Cute weather-appropriate outfit, ${variation.style}. Mood: ${vibeResult.mood_label}. ` +
+      `Professional photography, ${variation.time}, sharp focus.`
+    );
   }
 
-  console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);
+  return (
+    `Photorealistic full-body fashion photo: ${genderDesc}${heightDesc}${bodyDesc}${styleDesc} ` +
+    `${variation.scene} in ${cityName}. ` +
+    `Travel outfit style: ${vibeResult.mood_label}, ${tagString}. ` +
+    `${variation.style} look. ` +
+    `Fashion editorial photography, ${variation.time}, sharp focus, high quality.`
+  );
+}
 
-  // Generate via Nano Banana 2 with 3-attempt exponential backoff
-  const imageBuffer = await generateWithRetry(prompt, env.NANOBANANA_API_KEY, faceUrl);
+// ─── Main: Single Teaser (backward compat) ────────────────────────────────────
+
+export async function teaserAgent(
+  input: { tripId: string; vibeResult: VibeResult; faceUrl?: string; userProfile?: TeaserUserProfile },
+  env: Bindings,
+): Promise<TeaserResult> {
+  const { tripId, vibeResult, faceUrl, userProfile } = input;
+
+  if (!env.OPENAI_API_KEY) {
+    throw new Error('[teaserAgent] OPENAI_API_KEY is not configured — run: wrangler secret put OPENAI_API_KEY');
+  }
+
+  const prompt = buildPrompt(vibeResult, userProfile, 0);
+  console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}, face: ${faceUrl ? 'yes' : 'no'}`);
+
+  // Identity Engine: fetch reference photo if user uploaded one
+  let referenceBase64: string | undefined;
+  if (faceUrl) {
+    try {
+      referenceBase64 = await fetchImageAsBase64(faceUrl);
+      console.log(`[teaserAgent] Reference photo fetched for identity preservation`);
+    } catch (err) {
+      console.warn(`[teaserAgent] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
+    }
+  }
+
+  const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1792', referenceBase64);
 
   // Store in R2
   const r2Key = `temp/${tripId}/teaser.png`;
@@ -327,6 +160,90 @@ export async function teaserAgent(
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
 
   console.log(`[teaserAgent] Teaser stored at ${publicUrl} (expires ${expiresAt})`);
-
   return { image_url: publicUrl, expires_at: expiresAt };
+}
+
+// ─── Main: Multiple Teasers (Standard 4-image) ───────────────────────────────
+
+/**
+ * Generates 4 teaser images with different moods in parallel.
+ * Each image uses a different scene/lighting/style variation.
+ * Stores in R2 as temp/{tripId}/teaser-{0-3}.png
+ */
+export async function teaserAgentMultiple(
+  input: {
+    tripId: string;
+    vibeResult: VibeResult;
+    faceUrl?: string;
+    userProfile?: TeaserUserProfile;
+    count?: number;
+  },
+  env: Bindings,
+): Promise<MultipleTeaserResult> {
+  const { tripId, vibeResult, faceUrl, userProfile, count = 4 } = input;
+
+  if (!env.OPENAI_API_KEY) {
+    throw new Error('[teaserAgent] OPENAI_API_KEY is not configured');
+  }
+
+  console.log(`[teaserAgent] Generating ${count} teasers for trip ${tripId} — mood: ${vibeResult.mood_label}, face: ${faceUrl ? 'yes' : 'no'}`);
+
+  // Identity Engine: fetch reference photo once, share across all teasers
+  let referenceBase64: string | undefined;
+  if (faceUrl) {
+    try {
+      referenceBase64 = await fetchImageAsBase64(faceUrl);
+      console.log(`[teaserAgent] Reference photo fetched for identity preservation`);
+    } catch (err) {
+      console.warn(`[teaserAgent] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
+    }
+  }
+
+  const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
+  const moodLabels = MOOD_VARIATIONS.map(v => v.style);
+
+  // Generate all images in parallel
+  const tasks = Array.from({ length: count }, (_, idx) => async () => {
+    const prompt = buildPrompt(vibeResult, userProfile, idx);
+    const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1792', referenceBase64);
+
+    const r2Key = `temp/${tripId}/teaser-${idx}.png`;
+    await env.R2.put(r2Key, imageBuffer, {
+      httpMetadata: { contentType: 'image/png' },
+      customMetadata: {
+        trip_id: tripId,
+        mood: moodLabels[idx] || `variation-${idx}`,
+        index: String(idx),
+        generated_at: new Date().toISOString(),
+      },
+    });
+
+    const publicUrl = `${env.R2_PUBLIC_URL}/${r2Key}`;
+    console.log(`[teaserAgent] Teaser ${idx} stored at ${publicUrl}`);
+
+    return {
+      index: idx,
+      image_url: publicUrl,
+      mood: moodLabels[idx] || `variation-${idx}`,
+    };
+  });
+
+  const settled = await Promise.allSettled(tasks.map(t => t()));
+  const images: Array<{ index: number; image_url: string; mood: string }> = [];
+  for (const r of settled) {
+    if (r.status === 'fulfilled') {
+      images.push(r.value);
+    }
+  }
+
+  // Log failures
+  settled.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      console.error(`[teaserAgent] Teaser ${i} failed:`, (r.reason as Error)?.message);
+    }
+  });
+
+  console.log(`[teaserAgent] ${images.length}/${count} teasers generated for trip ${tripId}`);
+
+  return { images, expires_at: expiresAt };
 }

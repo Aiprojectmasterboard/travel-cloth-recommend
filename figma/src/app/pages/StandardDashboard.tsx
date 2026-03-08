@@ -1,9 +1,10 @@
+// IMPORTANT: TDZ 방지 — const 파생 변수는 그것을 참조하는 모든 useEffect/useCallback 위에 선언해야 함.
+// BUG-001 참고: https://github.com/Aiprojectmasterboard/travel-cloth-recommend/blob/main/CLAUDE.md
 import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import {
   Icon,
   BtnPrimary,
-  BtnSecondary,
   PlanBadge,
   TagChip,
   DayPlanStrip,
@@ -25,12 +26,11 @@ import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import {
   buildProfile,
-  generateCityOutfits,
   derivePacking,
-  type GeneratedOutfit,
+  generateCityOutfits,
   type PackingItem,
 } from "../services/outfitGenerator";
-import { pollTeaser, type CapsuleItem, type DayPlan, type WeatherData, type VibeData } from "../lib/api";
+import { pollTeaser, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type DailyForecast } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { createCheckoutSession } from "../services/polarCheckout";
 import { GA } from "../lib/analytics";
@@ -50,17 +50,31 @@ async function downloadImage(url: string, filename: string) {
   }
 }
 
-// Generic travel-themed fallbacks (not city-specific)
+// Generic travel-themed fallback (not city-specific)
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
 const FALLBACK_MOOD = "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
+
+const CAT_ICON: Record<string, string> = {
+  top: "checkroom",
+  bottom: "layers",
+  outerwear: "dry_cleaning",
+  footwear: "footprint",
+  shoes: "footprint",
+  accessory: "watch",
+  bag: "shopping_bag",
+  dress: "checkroom",
+  "dress/jumpsuit": "checkroom",
+  skirt: "checkroom",
+  hat: "face_retouching_natural",
+  jewelry: "diamond",
+};
 
 export function StandardDashboard() {
   const navigate = useNavigate();
   const [activeDay, setActiveDay] = useState(1);
-  const [expandedOutfit, setExpandedOutfit] = useState(0);
-  const { isLoggedIn, setShowSignupPrompt, authLoading, setShowLoginModal, setLoginModalContext } = useAuth();
+  const { isLoggedIn, authLoading, setShowLoginModal, setLoginModalContext } = useAuth();
   const { data: onboarding } = useOnboarding();
-  const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
+  const { result, preview, tripId, loading: tripLoading } = useTrip();
   const { t } = useLang();
   const [pdfExporting, setPdfExporting] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
@@ -74,59 +88,17 @@ export function StandardDashboard() {
     }
   }, [authLoading, isLoggedIn, navigate, setShowLoginModal, setLoginModalContext]);
 
-  // Standard plan is free — no paid order exists, so /api/result returns 402.
-  // Only load result if there's already a paid order (e.g. user upgraded from standard).
-  useEffect(() => {
-    if (tripId && !result && !tripLoading && result?.plan) {
-      loadResult(tripId);
-    }
-  }, [tripId, result, tripLoading, loadResult]);
-
-  // ─── Extract real API data ───────────────────────────────────────────────
+  // ─── Extract real API data (MUST be before useEffect/useCallback that reference them) ───
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
   const apiVibes: VibeData[] = result?.vibes || preview?.vibes || [];
   const apiCapsuleItems: CapsuleItem[] = result?.capsule?.items || [];
   const apiDailyPlan: DayPlan[] = result?.capsule?.daily_plan || [];
-  const apiImages = result?.images || [];
 
-  // ─── Teaser URL: polled AI image > API result > sessionStorage preview ────
-  const [polledTeaser, setPolledTeaser] = useState("");
-  const teaserUrl = polledTeaser || result?.teaser_url || preview?.teaser_url || "";
+  // ─── Teaser URL: single AI outfit image (Standard plan) ────────────────
+  const [polledTeaserUrl, setPolledTeaserUrl] = useState<string>("");
+  const teaserUrl = polledTeaserUrl || result?.teaser_url || preview?.teaser_url || "";
 
-  // Check if we already have a real AI-generated teaser (R2 URL contains /temp/)
-  const hasRealTeaser = teaserUrl.includes('/temp/') || teaserUrl.includes('/outputs/');
-
-  // Poll for AI teaser image if current URL is a static fallback
-  useEffect(() => {
-    if (hasRealTeaser || !tripId) return;
-    let cancelled = false;
-    let attempts = 0;
-    const maxAttempts = 20; // ~60s total
-    const poll = async () => {
-      while (!cancelled && attempts < maxAttempts) {
-        attempts++;
-        try {
-          const res = await pollTeaser(tripId);
-          if (res.status === "ready" && res.teaser_url) {
-            setPolledTeaser(res.teaser_url);
-            return;
-          }
-          if (res.status === "fallback" && res.teaser_url) {
-            setPolledTeaser(res.teaser_url);
-            return;
-          }
-        } catch { /* ignore */ }
-        await new Promise((r) => setTimeout(r, 3000));
-      }
-    };
-    poll();
-    return () => { cancelled = true; };
-  }, [tripId, hasRealTeaser]);
-
-  const hasRealData = apiCapsuleItems.length > 0;
-
-  // ─── Fallback to mock data when API not ready ────────────────────────────
-  // Use onboarding data first; fall back to API result profile (survives page refresh)
+  // ─── Profile & city ────────────────────────────────────────────────────
   const profile = useMemo(() => {
     const hasOnboardingProfile = onboarding.gender || onboarding.height || onboarding.weight;
     if (hasOnboardingProfile) return buildProfile(onboarding);
@@ -138,13 +110,84 @@ export function StandardDashboard() {
       photo: onboarding.photo,
     });
   }, [onboarding, result]);
+
   const primaryCity = onboarding.cities[0];
   const cityName = result?.cities?.[0]?.name || primaryCity?.city || "Paris";
   const countryName = result?.cities?.[0]?.country || primaryCity?.country || "France";
 
-  // ─── IMPORTANT: These callbacks use cityName/tripId declared above.
-  // They MUST be placed AFTER those declarations to avoid TDZ crash in
-  // production minified builds ("Cannot access 'X' before initialization").
+  const cityInput = useMemo(() => ({
+    city: cityName,
+    country: countryName,
+    fromDate: primaryCity?.fromDate || "2026-04-12",
+    toDate: primaryCity?.toDate || "2026-04-18",
+  }), [cityName, countryName, primaryCity]);
+
+  const mockOutfits = useMemo(() => generateCityOutfits(profile, cityInput, 4), [profile, cityInput]);
+  const mockPacking: PackingItem[] = useMemo(() => derivePacking(mockOutfits), [mockOutfits]);
+
+  // ─── Derived display values ─────────────────────────────────────────────
+  const hasRealData = apiCapsuleItems.length > 0;
+
+  const bodyFitLabel = mockOutfits[0]?.bodyFitLabel || "";
+  const sizeLabel = (() => {
+    const h = parseFloat(profile.height) || 0;
+    const w = parseFloat(profile.weight) || 0;
+    if (!h || !w) return "M";
+    const bmi = w / ((h / 100) ** 2);
+    if (bmi < 19) return "S";
+    if (bmi < 23) return "M";
+    if (bmi < 27) return "L";
+    return "XL";
+  })();
+
+  const primaryWeather = apiWeather[0];
+  const dailyForecast: DailyForecast[] | undefined = primaryWeather?.daily_forecast;
+
+  const getWeatherForDay = (dayNum: number) => {
+    if (dailyForecast && dailyForecast.length > 0) {
+      const dayIdx = Math.min(dayNum - 1, dailyForecast.length - 1);
+      const day = dailyForecast[dayIdx];
+      return {
+        tempMax: Math.round(day.temperature_max),
+        tempMin: Math.round(day.temperature_min),
+        precipMm: day.precipitation_mm,
+        band: day.climate_band,
+      };
+    }
+    if (primaryWeather) {
+      return {
+        tempMax: Math.round(primaryWeather.temperature_day_avg),
+        tempMin: Math.round(primaryWeather.temperature_night_avg),
+        precipMm: 0,
+        band: primaryWeather.climate_band,
+      };
+    }
+    return { tempMax: 0, tempMin: 0, precipMm: 0, band: "—" };
+  };
+
+  const primaryVibe = apiVibes[0];
+  const moodLabel = primaryVibe?.mood_label || preview?.mood_label || `${cityName} Style`;
+  const moodName = primaryVibe?.mood_name || "Curated Style";
+  const vibeColors = primaryVibe?.color_palette || ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"];
+
+  const dayPlanData = apiDailyPlan.length > 0
+    ? apiDailyPlan.map((d) => ({ day: d.day, activity: d.note?.split(" ").slice(0, 2).join(" ") || `Day ${d.day}` }))
+    : [
+        { day: 1, activity: "Arrival" }, { day: 2, activity: "Explore" },
+        { day: 3, activity: "Museums" }, { day: 4, activity: "Shopping" },
+        { day: 5, activity: "Local Life" }, { day: 6, activity: "Day Trip" },
+        { day: 7, activity: "Departure" },
+      ];
+
+  const displayItems = hasRealData
+    ? apiCapsuleItems
+    : mockPacking.map((p) => ({ name: p.name, category: p.category, why: "", versatility_score: p.usageCount }));
+
+  // Image loading state: still waiting for AI teaser?
+  const teaserLoading = !teaserUrl && !!tripId && !tripLoading;
+
+  // ─── IMPORTANT: Callbacks declared AFTER all derived variables above (TDZ prevention) ───
+
   const handleExportPdf = useCallback(async () => {
     if (!mainRef.current || pdfExporting) return;
     setPdfExporting(true);
@@ -176,75 +219,37 @@ export function StandardDashboard() {
     }
   }, [tripId, navigate]);
 
-  const cityInput = useMemo(() => ({
-    city: cityName,
-    country: countryName,
-    fromDate: primaryCity?.fromDate || "2026-04-12",
-    toDate: primaryCity?.toDate || "2026-04-18",
-  }), [cityName, countryName, primaryCity]);
+  // ─── Poll for AI teaser image (1 image for Standard plan) ────────────
+  useEffect(() => {
+    if (polledTeaserUrl || !tripId) return;
+    let cancelled = false;
+    let attempts = 0;
+    const maxAttempts = 25;
 
-  const mockOutfits: GeneratedOutfit[] = useMemo(
-    () => generateCityOutfits(profile, cityInput, 4),
-    [profile, cityInput],
-  );
-  const mockPacking: PackingItem[] = useMemo(() => derivePacking(mockOutfits), [mockOutfits]);
-
-  // ─── Merge: prefer real data, fall back to mock ──────────────────────────
-  const primaryWeather = apiWeather[0];
-  const primaryVibe = apiVibes[0];
-  const moodLabel = primaryVibe?.mood_label || preview?.mood_label || `${cityName} Style`;
-  const moodName = primaryVibe?.mood_name || "Curated Style";
-  const vibeColors = primaryVibe?.color_palette || ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"];
-
-  // Day plans — use API data if available
-  const dayPlanData = apiDailyPlan.length > 0
-    ? apiDailyPlan.map((d) => ({ day: d.day, activity: d.note?.split(" ").slice(0, 2).join(" ") || `Day ${d.day}` }))
-    : [
-        { day: 1, activity: "Arrival" }, { day: 2, activity: "Explore" },
-        { day: 3, activity: "Museums" }, { day: 4, activity: "Shopping" },
-        { day: 5, activity: "Local Life" }, { day: 6, activity: "Day Trip" },
-        { day: 7, activity: "Departure" },
-      ];
-
-  // Image loading state: are we still waiting for AI teaser?
-  const teaserLoading = !teaserUrl && !!tripId;
-
-  // Which outfit image to show — API images > teaser (personalized) > mock
-  // Standard plan: 1 AI teaser + 3 CSS variants = all 4 slots use teaser after signup
-  const getOutfitImage = (idx: number): string => {
-    if (apiImages.length > idx) return apiImages[idx].url;
-    // Use teaser image (personalized from preview) as better fallback than mock
-    if (teaserUrl) return teaserUrl;
-    return mockOutfits[idx]?.image || FALLBACK_HERO;
-  };
-
-  // CSS variations so teaser-based outfit images look distinct per slot
-  // Standard plan: 1 AI teaser + 3 visually distinct variants
-  const outfitImageStyles: React.CSSProperties[] = [
-    {},
-    { transform: "scaleX(-1)", filter: "hue-rotate(30deg) brightness(0.93) contrast(1.05)" },
-    { objectPosition: "20% 0%", filter: "sepia(0.15) saturate(1.3) brightness(0.9)" },
-    { transform: "scaleX(-1)", objectPosition: "80% 100%", filter: "hue-rotate(-25deg) brightness(0.92) contrast(1.08)" },
-  ];
-  const usesTeaserVariant = (idx: number) => apiImages.length <= idx && !!teaserUrl;
-
-  // Capsule items to display
-  const displayItems = hasRealData
-    ? apiCapsuleItems
-    : mockPacking.map((p) => ({ name: p.name, category: p.category, why: "", versatility_score: p.usageCount }));
-
-  const bodyFitLabel = mockOutfits[0]?.bodyFitLabel || "";
-  // Derive simple size letter for SizeChip (bodyFitLabel is a full sentence)
-  const sizeLabel = (() => {
-    const h = parseFloat(profile.height) || 0;
-    const w = parseFloat(profile.weight) || 0;
-    if (!h || !w) return "M";
-    const bmi = w / ((h / 100) ** 2);
-    if (bmi < 19) return "S";
-    if (bmi < 23) return "M";
-    if (bmi < 27) return "L";
-    return "XL";
-  })();
+    const poll = async () => {
+      while (!cancelled && attempts < maxAttempts) {
+        attempts++;
+        try {
+          const res = await pollTeaser(tripId);
+          if (cancelled) return;
+          if (res.teaser_url) {
+            setPolledTeaserUrl(res.teaser_url);
+            return;
+          }
+          if (res.teaser_urls && res.teaser_urls.length > 0) {
+            setPolledTeaserUrl(res.teaser_urls[0]);
+            return;
+          }
+          if (res.status === "ready" || res.status === "fallback") {
+            return;
+          }
+        } catch { /* ignore poll errors */ }
+        await new Promise((r) => setTimeout(r, 3000));
+      }
+    };
+    poll();
+    return () => { cancelled = true; };
+  }, [tripId, polledTeaserUrl]);
 
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
@@ -261,19 +266,30 @@ export function StandardDashboard() {
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:block"><PlanBadge label={`Standard · ${t("pricing.promoFree")}`} /></span>
             <SocialShareButton />
-            <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
+            <button
+              onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)}
+              className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer"
+            >
               <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
-            <button onClick={handleExportPdf} disabled={pdfExporting} className="no-print h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-              {pdfExporting ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" />} <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
+            <button
+              onClick={handleExportPdf}
+              disabled={pdfExporting}
+              className="no-print h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+            >
+              {pdfExporting
+                ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" />
+                : <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" />}
+              <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
             </button>
           </div>
         </div>
       </header>
 
       {/* Title */}
-      <div className="mx-auto px-6 pt-10 pb-6" style={{ maxWidth: "var(--max-w)" }}>
-        <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
+      <div className="mx-auto px-4 sm:px-6 pt-10 pb-6" style={{ maxWidth: "var(--max-w)" }}>
+        <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 4vw, 52px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
           {moodLabel}
         </h1>
         <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
@@ -291,143 +307,138 @@ export function StandardDashboard() {
           {/* Left column */}
           <div className="lg:col-span-8 space-y-10 order-last lg:order-none">
 
-            {/* AI Outfit Cards */}
+            {/* ─── Single AI Outfit Image ─── */}
             <div>
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
-                  {hasRealData ? t("dashboard.aiCuratedOutfits") : t("dashboard.yourStylePreview")}
-                </h2>
-                <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                  {hasRealData ? `${Math.min(apiCapsuleItems.length, 4)} Looks` : "4 Looks"}
-                </span>
-              </div>
+              <h2 className="text-[24px] text-[#292524] mb-6" style={{ fontFamily: "var(--font-display)" }}>
+                Your AI Travel Outfit
+              </h2>
 
-              <div className="space-y-6">
-                {(hasRealData ? apiDailyPlan.slice(0, 4) : mockOutfits).map((item, idx) => {
-                  const outfit = hasRealData ? null : (item as GeneratedOutfit);
-                  const dayPlan = hasRealData ? (item as DayPlan) : null;
-                  const title = outfit?.title || `Day ${dayPlan?.day || idx + 1} Outfit`;
-                  const subtitle = outfit?.subtitle || dayPlan?.note || "";
-                  const confidence = outfit?.aiConfidence || 90;
+              <div className="flex flex-col sm:flex-row gap-6">
+                {/* Outfit image */}
+                <div className="relative rounded-2xl overflow-hidden w-full sm:w-auto sm:max-w-[320px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
+                  {teaserLoading ? (
+                    <>
+                      <div
+                        className="w-full h-full bg-gradient-to-br from-[#EFE8DF] via-[#F5EFE6] to-[#EFE8DF]"
+                        style={{ animation: "shimmer 2s ease-in-out infinite" }}
+                      />
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center">
+                        <div className="w-10 h-10 border-[3px] border-[#E8DDD4] border-t-[#C4613A] rounded-full" style={{ animation: "spin 0.8s linear infinite" }} />
+                        <span className="text-[13px] text-[#57534e]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                          {t("dashboard.generatingOutfits")}
+                        </span>
+                        <p className="text-[11px] text-[#a8a29e] mt-1" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.generatingTime")}</p>
+                        <p className="text-[10px] text-[#a8a29e]/70 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{t("dashboard.generatingSubtext")}</p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <ImageWithFallback
+                        src={teaserUrl || FALLBACK_HERO}
+                        alt={`${cityName} AI outfit`}
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                      <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                          <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                        </span>
+                        {teaserUrl && (
+                          <button
+                            onClick={() => downloadImage(teaserUrl, `capsule-outfit-${cityName.toLowerCase()}.jpg`)}
+                            className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                            title={t("dashboard.downloadImage")}
+                          >
+                            <Icon name="download" size={16} className="text-white" />
+                          </button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
 
-                  return (
-                    <div key={idx} className="bg-white rounded-2xl border border-[#ebdacc] overflow-hidden" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}>
-                      <button
-                        onClick={() => setExpandedOutfit(expandedOutfit === idx ? -1 : idx)}
-                        className="w-full flex items-center justify-between p-5 cursor-pointer hover:bg-[#FDF8F3]/50 transition-colors"
-                      >
-                        <div className="flex items-center gap-4">
-                          <span className="w-10 h-10 rounded-full bg-[#C4613A]/10 flex items-center justify-center text-[14px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
-                            {dayPlan?.day || outfit?.day || idx + 1}
-                          </span>
-                          <div className="text-left">
-                            <span className="text-[18px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>{title}</span>
-                            <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{subtitle}</span>
+                {/* Right panel: weather + vibe + capsule items */}
+                <div className="flex-1 min-w-0 space-y-5">
+                  {/* City vibe */}
+                  <div className="bg-white rounded-xl border border-[#E8DDD4] p-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,.03)" }}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Icon name="location_on" size={16} className="text-[#C4613A]" />
+                      <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                        {cityName}, {countryName}
+                      </span>
+                    </div>
+                    <p className="text-[13px] text-[#57534e] italic" style={{ fontFamily: "var(--font-display)" }}>
+                      {moodName}
+                    </p>
+                    {primaryVibe?.vibe_tags && primaryVibe.vibe_tags.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {primaryVibe.vibe_tags.slice(0, 4).map((tag) => (
+                          <TagChip key={tag} label={tag} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Weather */}
+                  {primaryWeather && (
+                    <div className="bg-[#E0F2FE]/60 rounded-xl border border-[#BAE6FD] p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Icon name="thermostat" size={16} className="text-[#0369A1]" />
+                        <span className="text-[12px] text-[#0369A1] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                          Weather Outlook
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        {[
+                          { icon: "thermostat", val: `${Math.round(primaryWeather.temperature_day_avg)}°C`, label: "Day Avg" },
+                          { icon: "water_drop", val: `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: "Rain" },
+                          { icon: "explore", val: primaryWeather.climate_band, label: "Climate" },
+                        ].map((s) => (
+                          <div key={s.label} className="py-2 bg-white/60 rounded-lg">
+                            <Icon name={s.icon} size={16} className="text-[#0369A1] mx-auto mb-1" />
+                            <span className="text-[13px] text-[#292524] block capitalize" style={{ fontFamily: "var(--font-mono)" }}>{s.val}</span>
+                            <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{s.label}</span>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                            {confidence}% match
-                          </span>
-                          <Icon name={expandedOutfit === idx ? "expand_less" : "expand_more"} size={24} className="text-[#57534e]" />
-                        </div>
-                      </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                      {expandedOutfit === idx && (
-                        <div className="px-5 pb-6">
-                          <div className="space-y-6">
-                            {/* Outfit image — shimmer when AI teaser still generating */}
-                            <div className="relative rounded-xl overflow-hidden w-full max-w-[400px]" style={{ aspectRatio: "3/4" }}>
-                              {teaserLoading && !apiImages.length ? (
-                                <>
-                                  <div className="w-full h-full bg-gradient-to-br from-[#EFE8DF] via-[#F5EFE6] to-[#EFE8DF]" style={{ animation: "shimmer 2s ease-in-out infinite" }} />
-                                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                                    <div className="w-10 h-10 border-3 border-[#E8DDD4] border-t-[#C4613A] rounded-full" style={{ animation: "spin 0.8s linear infinite" }} />
-                                    <span className="text-[13px] text-[#57534e] px-4 text-center" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                                      AI is generating your personalized outfit...
-                                    </span>
-                                    <span className="text-[11px] text-[#a8a29e]" style={{ fontFamily: "var(--font-mono)" }}>
-                                      ~30 seconds
-                                    </span>
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <ImageWithFallback src={getOutfitImage(idx)} alt={title} className="w-full h-full object-cover" style={usesTeaserVariant(idx) ? outfitImageStyles[idx] : undefined} />
-                                  <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                                  <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                                      <Icon name="auto_awesome" size={10} className="text-white" filled /> {teaserUrl ? "AI Generated" : "Style Preview"}
-                                    </span>
-                                    <button
-                                      onClick={(e) => { e.stopPropagation(); downloadImage(getOutfitImage(idx), `capsule-outfit-${idx + 1}.jpg`); }}
-                                      className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
-                                      title={t("dashboard.downloadImage")}
-                                    >
-                                      <Icon name="download" size={16} className="text-white" />
-                                    </button>
-                                  </div>
-                                </>
+                  {/* Capsule items list */}
+                  <div className="bg-white rounded-xl border border-[#E8DDD4] p-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,.03)" }}>
+                    <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-3" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                      {hasRealData ? "AI-Recommended Items" : "Style Preview"}
+                    </span>
+                    <div className="space-y-2">
+                      {displayItems.slice(0, 5).map((item, i) => {
+                        const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
+                        return (
+                          <div key={i} className="flex items-center gap-3">
+                            <div className="w-9 h-9 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
+                              <Icon name={iconName} size={16} className="text-[#57534e]" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                                  {item.name}
+                                </span>
+                                <SizeChip size={sizeLabel} />
+                              </div>
+                              {item.why && (
+                                <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>
                               )}
                             </div>
-
-                            {/* Items breakdown */}
-                            <div>
-                              <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                                {hasRealData ? "AI-Recommended Items" : "Outfit Breakdown"}
-                              </span>
-                              <div className="space-y-2">
-                                {hasRealData ? (
-                                  // Real capsule items
-                                  (dayPlan?.outfit || apiCapsuleItems.slice(0, 4).map((c) => c.name)).map((name, i) => {
-                                    const capsuleItem = typeof name === "string"
-                                      ? apiCapsuleItems.find((c) => c.name.toLowerCase() === name.toLowerCase()) || { name, category: "", why: "", versatility_score: 0 }
-                                      : name;
-                                    const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
-                                    const itemCat = typeof capsuleItem !== "string" ? capsuleItem.category?.toLowerCase() : "";
-                                    const iconName = catIcon[itemCat] ?? "checkroom";
-                                    return (
-                                      <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                                        <div className="w-12 h-12 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                                          <Icon name={iconName} size={20} className="text-[#57534e]" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                          <div className="flex items-center gap-2 flex-wrap">
-                                            <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                                              {typeof capsuleItem === "string" ? capsuleItem : capsuleItem.name}
-                                            </span>
-                                            <SizeChip size={sizeLabel} />
-                                          </div>
-                                          {typeof capsuleItem !== "string" && capsuleItem.why && (
-                                            <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{capsuleItem.why}</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })
-                                ) : (
-                                  // Mock items
-                                  outfit?.items.map((item) => (
-                                    <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                                      <ImageWithFallback src={item.img} alt={item.name} className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2">
-                                          <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                          <SizeChip size={item.recommendedSize} />
-                                        </div>
-                                        <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
-                                      </div>
-                                    </div>
-                                  ))
-                                )}
-                              </div>
-                            </div>
                           </div>
-                        </div>
+                        );
+                      })}
+                      {displayItems.length > 5 && (
+                        <p className="text-[11px] text-[#a8a29e] pt-1" style={{ fontFamily: "var(--font-mono)" }}>
+                          +{displayItems.length - 5} more items in packing list below
+                        </p>
                       )}
                     </div>
-                  );
-                })}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -445,22 +456,23 @@ export function StandardDashboard() {
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-                  {primaryWeather ? (
-                    [
-                      { icon: "thermostat", val: `${Math.round(primaryWeather.temperature_day_avg)}°C`, label: "Avg Temp" },
-                      { icon: "water_drop", val: `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: "Rain" },
-                      { icon: "explore", val: primaryWeather.climate_band, label: "Climate" },
+                  {primaryWeather ? (() => {
+                    const dayW = getWeatherForDay(activeDay);
+                    return [
+                      { icon: "thermostat", val: `${dayW.tempMax}°/${dayW.tempMin}°`, label: dailyForecast ? "High / Low" : "Avg Temp" },
+                      { icon: "water_drop", val: dailyForecast ? `${dayW.precipMm}mm` : `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: dailyForecast ? "Precip" : "Rain" },
+                      { icon: "explore", val: dayW.band, label: "Climate" },
                     ].map((s) => (
                       <div key={s.label} className="py-3 bg-[#FDF8F3] rounded-lg">
                         <Icon name={s.icon} size={18} className="text-[#C4613A] mx-auto mb-1" />
-                        <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-mono)" }}>{s.val}</span>
+                        <span className="text-[14px] text-[#292524] block capitalize" style={{ fontFamily: "var(--font-mono)" }}>{s.val}</span>
                         <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{s.label}</span>
                       </div>
-                    ))
-                  ) : (
+                    ));
+                  })() : (
                     [
-                      { icon: "thermostat", val: "—", label: "Avg Temp" },
-                      { icon: "water_drop", val: "—", label: "Rain" },
+                      { icon: "thermostat", val: "—", label: "High / Low" },
+                      { icon: "water_drop", val: "—", label: "Precip" },
                       { icon: "explore", val: "Loading…", label: "Climate" },
                     ].map((s) => (
                       <div key={s.label} className="py-3 bg-[#FDF8F3] rounded-lg">
@@ -484,30 +496,66 @@ export function StandardDashboard() {
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                 {displayItems.map((item, i) => {
-                  const CAT_ICON: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                   const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
                   return (
-                  <div key={i} className="group bg-white rounded-xl border border-[#E8DDD4] overflow-hidden hover:border-[#C4613A]/30 transition-colors">
-                    <div className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Icon name={iconName} size={16} className="text-[#C4613A]" />
-                        <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                    <div key={i} className="bg-white rounded-xl border border-[#E8DDD4] overflow-hidden hover:border-[#C4613A]/30 transition-colors">
+                      <div className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Icon name={iconName} size={16} className="text-[#C4613A]" />
+                          <span className="text-[13px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                        </div>
+                        <span className="text-[10px] text-[#57534e] capitalize block" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
+                        {hasRealData && item.why && (
+                          <p className="mt-2 text-[11px] text-[#57534e] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>{item.why}</p>
+                        )}
                       </div>
-                      <span className="text-[10px] text-[#57534e] capitalize block" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
-                      {hasRealData && item.why && (
-                        <p className="mt-2 text-[11px] text-[#57534e] leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>{item.why}</p>
-                      )}
                     </div>
-                  </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Pro Upgrade Card */}
-            <ProUpsellCard onUpgrade={handleUpgradeToPro} />
+            {/* Upgrade CTA */}
+            <div className="bg-gradient-to-br from-[#1A1410] to-[#2D1F17] rounded-2xl p-6 sm:p-8 text-white">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-[#C4613A]/20 flex items-center justify-center flex-shrink-0">
+                  <Icon name="auto_awesome" size={24} className="text-[#C4613A]" filled />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-[20px] italic mb-2" style={{ fontFamily: "var(--font-display)" }}>
+                    Upgrade to Pro for 4 AI outfits per city
+                  </h3>
+                  <p className="text-[14px] text-white/70 mb-4" style={{ fontFamily: "var(--font-body)" }}>
+                    Get 4 unique AI-generated outfit images, a 2x2 grid view, and full daily breakdown — all tailored to your style.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    <BtnPrimary
+                      onClick={handleUpgradeToPro}
+                      className="bg-[#C4613A] hover:bg-[#b5572f] text-white px-6 h-[44px] rounded-xl text-[13px] uppercase tracking-[0.08em]"
+                      style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+                    >
+                      Unlock Full AI Styling — $3.99
+                    </BtnPrimary>
+                  </div>
+                  <ul className="mt-4 space-y-1.5">
+                    {[
+                      "4 unique AI outfit images per city",
+                      "2×2 grid view with daily quadrant breakdown",
+                      "Full capsule wardrobe with size guidance",
+                      "1 free regeneration per trip",
+                    ].map((feat) => (
+                      <li key={feat} className="flex items-center gap-2 text-[13px] text-white/80" style={{ fontFamily: "var(--font-body)" }}>
+                        <Icon name="check_circle" size={14} className="text-[#C4613A] flex-shrink-0" filled />
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
 
-            {/* Timer banner */}
+            {/* Pro Upsell Card & Timer banner */}
+            <ProUpsellCard onUpgrade={handleUpgradeToPro} />
             <UpgradeBanner initialMinutes={14} initialSeconds={59} onUpgrade={handleUpgradeToPro} />
           </div>
 
@@ -525,7 +573,7 @@ export function StandardDashboard() {
 
             <StyleCodeCard
               description={primaryVibe
-                ? `${moodName} \u2014 ${primaryVibe.vibe_tags?.join(", ") || "Curated style adapted to local weather and culture."}`
+                ? `${moodName} — ${primaryVibe.vibe_tags?.join(", ") || "Curated style adapted to local weather and culture."}`
                 : `AI-curated travel style for ${cityName}.`}
               city={`${cityName}, ${countryName.slice(0, 2).toUpperCase()}`}
               temp={primaryWeather ? Math.round(primaryWeather.temperature_day_avg) : 0}
@@ -546,7 +594,7 @@ export function StandardDashboard() {
               <div className="space-y-3">
                 {[
                   { icon: "checkroom", label: "Packing Items", value: `${displayItems.length} pieces` },
-                  { icon: "style", label: "AI Outfits", value: `${Math.min(apiDailyPlan.length || 4, 4)} looks` },
+                  { icon: "style", label: "AI Outfits", value: "1 look" },
                   { icon: "thermostat", label: "Climate", value: primaryWeather?.climate_band || "mild" },
                   { icon: "auto_awesome", label: "Mood", value: moodName },
                 ].map((stat) => (
@@ -567,7 +615,6 @@ export function StandardDashboard() {
       {/* Floating bottom upgrade bar */}
       <FloatingUpgradeBar onUpgrade={handleUpgradeToPro} />
 
-      {/* Shimmer + spin animations for loading states */}
       <style>{`
         @keyframes shimmer {
           0%, 100% { opacity: 0.6; }

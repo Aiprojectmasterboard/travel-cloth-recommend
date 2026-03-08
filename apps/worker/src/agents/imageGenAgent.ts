@@ -1,18 +1,22 @@
 /**
  * imageGenAgent.ts  (Pro / Annual plan)
  *
- * Calls Nano Banana 2 (Gemini 3.1 Flash Image) for each StylePrompts entry
- * in parallel (Promise.allSettled), stores the resulting image in R2,
+ * Calls OpenAI gpt-image-1.5 for each StylePrompts entry in parallel
+ * (Promise.allSettled), stores the resulting image in R2,
  * and updates generation_jobs in Supabase.
+ *
+ * Supports Identity Engine: passes reference photo base64 for identity
+ * preservation across all generated outfit images.
  *
  * R2 key pattern: outputs/{tripId}/{city}/{index}.png
  * Public URL:     {R2_PUBLIC_URL}/outputs/{tripId}/{city}/{index}.png
  *
- * Retry strategy: exponential backoff — 1 s, 2 s, 4 s (3 attempts per image)
+ * Retry strategy: exponential backoff — 2s, 4s, 6s (3 attempts per image)
  */
 
 import type { Bindings } from '../index';
-import type { StylePrompts } from './styleAgent';
+import type { StylePrompts, StyleGridPrompt } from './styleAgent';
+import { generateImageWithRetry, fetchImageAsBase64 } from './openaiImage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,187 +45,15 @@ export interface GeneratedImages {
   failed: number;
 }
 
-// Gemini API response shapes (camelCase from API)
-interface GeminiInlineData {
-  mimeType: string;
-  data: string; // base64
-}
-
-interface GeminiPart {
-  text?: string;
-  inlineData?: GeminiInlineData;
-}
-
-interface GeminiResponse {
-  candidates?: Array<{
-    content?: {
-      parts?: GeminiPart[];
-    };
-  }>;
-  error?: { message: string; code: number };
-}
-
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-// Must match teaserAgent model — gemini-2.0 is deprecated/removed
-const MODEL = 'gemini-3.1-flash-image-preview';
 const MAX_ATTEMPTS = 3;
-const BACKOFF_MS = [2_000, 4_000, 6_000] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 /** Slugify a city name for use as an R2 path segment. */
 function citySlug(city: string): string {
   return city.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-}
-
-// ─── Gemini Image Generation ─────────────────────────────────────────────────
-
-/**
- * Calls Gemini Nano Banana 2 with exponential-backoff retry (3 attempts).
- * Returns the raw image buffer (PNG).
- */
-/**
- * Fetches face image from URL and returns Gemini-compatible inline parts.
- * Returns empty array if face is unavailable, too large, or fetch fails.
- */
-async function fetchFaceParts(faceUrl: string): Promise<GeminiPart[]> {
-  try {
-    const imgRes = await fetch(faceUrl, { signal: AbortSignal.timeout(10_000) });
-    if (!imgRes.ok) return [];
-    const imgBuf = await imgRes.arrayBuffer();
-    if (imgBuf.byteLength > 4_000_000) {
-      console.warn(`[imageGenAgent] Face image too large (${(imgBuf.byteLength / 1024 / 1024).toFixed(1)}MB > 4MB limit), skipping`);
-      return [];
-    }
-    const bytes = new Uint8Array(imgBuf);
-    const CHUNK = 8192;
-    let binary = '';
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      const slice = bytes.subarray(i, Math.min(i + CHUNK, bytes.length));
-      binary += String.fromCharCode(...slice);
-    }
-    const imgBase64 = btoa(binary);
-    const mimeType = imgRes.headers.get('content-type') ?? 'image/jpeg';
-    return [
-      { inlineData: { mimeType, data: imgBase64 } },
-      {
-        text: 'Reference photo. Generate a new fashion image of a person with similar appearance wearing a travel outfit as described below. Travel fashion styling service.',
-      },
-    ];
-  } catch (err) {
-    console.warn('[imageGenAgent] Could not fetch face reference:', (err as Error).message);
-    return [];
-  }
-}
-
-/**
- * Calls Gemini once to generate an image. Returns raw PNG buffer.
- */
-async function callGemini(
-  sp: StylePrompts,
-  apiKey: string,
-  faceParts: GeminiPart[]
-): Promise<ArrayBuffer> {
-  const parts: GeminiPart[] = [...faceParts];
-  const fullPrompt = sp.negative_prompt
-    ? `${sp.prompt}\n\nAvoid: ${sp.negative_prompt}`
-    : sp.prompt;
-  parts.push({ text: fullPrompt });
-
-  const body = {
-    contents: [{ parts }],
-    generationConfig: {
-      responseModalities: ['IMAGE', 'TEXT'],
-      imageConfig: {
-        aspectRatio: '3:4',
-        imageSize: '1K',
-      },
-    },
-  };
-
-  const res = await fetch(
-    `${GEMINI_BASE}/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(45_000),
-    }
-  );
-
-  if (!res.ok) {
-    throw new Error(`Gemini HTTP ${res.status}: ${await res.text()}`);
-  }
-
-  const data = (await res.json()) as GeminiResponse;
-  if (data.error) throw new Error(`Gemini API error: ${data.error.message}`);
-
-  const responseParts = data.candidates?.[0]?.content?.parts;
-  if (!responseParts) throw new Error('Gemini returned no content parts');
-
-  const imagePart = responseParts.find((p) => p.inlineData?.data);
-  if (!imagePart?.inlineData) throw new Error('Gemini returned no image data');
-
-  const binaryString = atob(imagePart.inlineData.data);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return bytes.buffer;
-}
-
-/**
- * Generates image with retry + face fallback.
- * Phase 1: Try with face (1 attempt). If Gemini safety-blocks the face, fall back.
- * Phase 2: Try without face (up to MAX_ATTEMPTS).
- * This ensures images are always generated even when face triggers safety filters.
- */
-async function generateWithRetry(
-  sp: StylePrompts,
-  apiKey: string,
-  faceUrl?: string
-): Promise<ArrayBuffer> {
-  let lastError: Error | null = null;
-
-  // Phase 1: Try WITH face reference (single attempt to save time)
-  if (faceUrl) {
-    const faceParts = await fetchFaceParts(faceUrl);
-    if (faceParts.length > 0) {
-      try {
-        return await callGemini(sp, apiKey, faceParts);
-      } catch (err) {
-        lastError = err instanceof Error ? err : new Error(String(err));
-        console.warn(`[imageGenAgent] Face attempt failed for ${sp.city}/${sp.mood}: ${lastError.message}`);
-        console.warn(`[imageGenAgent] Retrying WITHOUT face reference`);
-      }
-    }
-  }
-
-  // Phase 2: Try WITHOUT face reference (always works unless Gemini is fully down)
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-    if (attempt > 0) {
-      await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
-    }
-    try {
-      return await callGemini(sp, apiKey, []);
-    } catch (err) {
-      lastError = err instanceof Error ? err : new Error(String(err));
-      console.warn(
-        `[imageGenAgent] No-face attempt ${attempt + 1}/${MAX_ATTEMPTS} failed for ${sp.city}/${sp.mood}:`,
-        lastError.message
-      );
-    }
-  }
-
-  throw lastError ?? new Error(`Image gen failed after all attempts`);
 }
 
 // ─── Supabase Helper (local) ──────────────────────────────────────────────────
@@ -248,7 +80,7 @@ async function sbPatch(env: Bindings, path: string, body: Record<string, unknown
  * @param input.prompts  - Array of StylePrompts (from styleAgent)
  * @param input.tripId   - Trip UUID
  * @param input.jobIds   - Optional map from "city/mood" → generation_jobs.id
- * @param input.faceUrl  - Optional face image URL for face preservation
+ * @param input.faceUrl  - Optional R2 URL of user's reference photo (Identity Engine)
  * @param env            - Cloudflare Worker bindings
  */
 export async function imageGenAgent(
@@ -261,6 +93,17 @@ export async function imageGenAgent(
   env: Bindings
 ): Promise<GeneratedImages> {
   const { prompts, tripId, jobIds = {}, faceUrl } = input;
+
+  // Identity Engine: fetch reference photo once, share across all images
+  let referenceBase64: string | undefined;
+  if (faceUrl) {
+    try {
+      referenceBase64 = await fetchImageAsBase64(faceUrl);
+      console.log(`[imageGenAgent] Reference photo fetched for identity preservation`);
+    } catch (err) {
+      console.warn(`[imageGenAgent] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
+    }
+  }
 
   // Track index per city for R2 naming
   const cityIndexCounter: Record<string, number> = {};
@@ -283,8 +126,13 @@ export async function imageGenAgent(
       cityIndexCounter[slug] = (cityIndexCounter[slug] ?? 0) + 1;
       const idx = cityIndexCounter[slug];
 
-      // Generate image (returns raw buffer directly from Gemini)
-      const buffer = await generateWithRetry(sp, env.NANOBANANA_API_KEY, faceUrl);
+      // Build prompt — include negative prompt as avoidance instruction
+      const fullPrompt = sp.negative_prompt
+        ? `${sp.prompt}\n\nDo NOT include: ${sp.negative_prompt}`
+        : sp.prompt;
+
+      // Generate image via OpenAI gpt-image-1.5 (medium quality for paid plans)
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1792', referenceBase64);
 
       // Store in R2
       const r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
@@ -359,4 +207,110 @@ export async function imageGenAgent(
   console.log(`[imageGenAgent] Done: ${succeeded} succeeded, ${failed} failed`);
 
   return { results, succeeded, failed };
+}
+
+// ─── Grid Generation ──────────────────────────────────────────────────────────
+
+export interface GridImageResult {
+  city: string;
+  image_url: string;  // public R2 CDN URL
+  r2_key: string;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Generates one 1024x1024 grid image per city using the combined 2x2 grid
+ * prompt from styleAgentGrid. Runs all cities in parallel via Promise.allSettled.
+ *
+ * R2 key pattern: outputs/{tripId}/{citySlug}/grid.png
+ *
+ * @param input.gridPrompts - Array of StyleGridPrompt (one per city, from styleAgentGrid)
+ * @param input.tripId      - Trip UUID
+ * @param input.faceUrl     - Optional R2 URL of user's reference photo (Identity Engine)
+ * @param env               - Cloudflare Worker bindings
+ */
+export async function imageGenAgentGrid(
+  input: {
+    gridPrompts: StyleGridPrompt[];
+    tripId: string;
+    faceUrl?: string;
+  },
+  env: Bindings
+): Promise<GridImageResult[]> {
+  const { gridPrompts, tripId, faceUrl } = input;
+
+  // Identity Engine: fetch reference photo once, share across all grid images
+  let referenceBase64: string | undefined;
+  if (faceUrl) {
+    try {
+      referenceBase64 = await fetchImageAsBase64(faceUrl);
+      console.log(`[imageGenAgentGrid] Reference photo fetched for identity preservation`);
+    } catch (err) {
+      console.warn(`[imageGenAgentGrid] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
+    }
+  }
+
+  const tasks = gridPrompts.map((gp) => async (): Promise<GridImageResult> => {
+    const slug = citySlug(gp.city);
+    const r2Key = `outputs/${tripId}/${slug}/grid.png`;
+
+    try {
+      // Append negative prompt as avoidance instruction (same pattern as imageGenAgent)
+      const fullPrompt = gp.negative_prompt
+        ? `${gp.prompt}\n\nDo NOT include: ${gp.negative_prompt}`
+        : gp.prompt;
+
+      // 1024x1024 square — best for 2x2 grid layout, medium quality for paid plans
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1024', referenceBase64);
+
+      // Store in R2
+      await env.R2.put(r2Key, buffer, {
+        httpMetadata: { contentType: 'image/png' },
+        customMetadata: {
+          trip_id: tripId,
+          city: gp.city,
+          image_type: 'grid',
+          generated_at: new Date().toISOString(),
+        },
+      });
+
+      const publicUrl = `${env.R2_PUBLIC_URL}/${r2Key}`;
+
+      console.log(`[imageGenAgentGrid] Generated ${gp.city} grid → ${publicUrl}`);
+
+      return {
+        city: gp.city,
+        image_url: publicUrl,
+        r2_key: r2Key,
+        success: true,
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      console.error(`[imageGenAgentGrid] Failed ${gp.city} grid:`, errorMsg);
+
+      return {
+        city: gp.city,
+        image_url: '',
+        r2_key: r2Key,
+        success: false,
+        error: errorMsg,
+      };
+    }
+  });
+
+  // Run all cities in parallel — never throws
+  const settled = await Promise.allSettled(tasks.map((t) => t()));
+
+  return settled.map((r, i) => {
+    if (r.status === 'fulfilled') return r.value;
+    const city = gridPrompts[i]?.city ?? 'unknown';
+    return {
+      city,
+      image_url: '',
+      r2_key: `outputs/${tripId}/${citySlug(city)}/grid.png`,
+      success: false,
+      error: (r.reason as Error)?.message ?? 'Unknown error',
+    };
+  });
 }

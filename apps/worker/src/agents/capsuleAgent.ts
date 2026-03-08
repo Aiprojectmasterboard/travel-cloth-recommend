@@ -1,19 +1,19 @@
 /**
  * capsuleAgent.ts
  *
- * Generates a travel capsule wardrobe via Claude API.
+ * Generates a travel capsule wardrobe via OpenAI GPT-5.4 (Responses API).
  *
  * Two modes:
  *   free  → Returns only item count + 3 layering principles (shown on preview page)
  *   paid  → Returns full items (8–12) + daily outfit plan
  *
- * Model: claude-sonnet-4-6
+ * Model: gpt-5.4
  */
 
-import Anthropic from '@anthropic-ai/sdk';
 import type { Bindings, PlanType } from '../index';
 import type { VibeResult } from './vibeAgent';
 import type { WeatherResult } from './weatherAgent';
+import { chatCompletionJSON } from './openaiChat';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,8 +49,6 @@ export type CapsuleResult = FreeCapsuleResult | PaidCapsuleResult;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const MODEL = 'claude-sonnet-4-6';
-
 const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
@@ -80,7 +78,7 @@ function buildCityContext(
 // ─── Free Mode ────────────────────────────────────────────────────────────────
 
 async function generateFree(
-  client: Anthropic,
+  apiKey: string,
   cities: Array<{ name: string; days: number }>,
   vibeResults: VibeResult[],
   weatherResults: WeatherResult[],
@@ -110,24 +108,12 @@ Respond ONLY with this JSON:
   ]
 }`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 256,
-    temperature: 0.5,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  });
-
-  const raw = message.content[0];
-  if (raw.type !== 'text') throw new Error('[capsuleAgent:free] Unexpected Claude response type');
-
-  const cleaned = raw.text
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '')
-    .trim();
-
-  const parsed = JSON.parse(cleaned) as { count: number; principles: string[] };
+  const parsed = await chatCompletionJSON<{ count: number; principles: string[] }>(
+    apiKey,
+    systemPrompt,
+    userPrompt,
+    { maxTokens: 1024, reasoningEffort: 'low' },
+  );
 
   return {
     plan: 'free',
@@ -168,7 +154,7 @@ function buildUserProfileBlock(profile?: CapsuleUserProfile): string {
 }
 
 async function generatePaid(
-  client: Anthropic,
+  apiKey: string,
   plan: PlanType,
   cities: Array<{ name: string; days: number }>,
   vibeResults: VibeResult[],
@@ -241,33 +227,16 @@ Respond ONLY with:
   ]
 }`;
 
-  const message = await client.messages.create({
-    model: MODEL,
-    max_tokens: 2048,
-    temperature: 0.7,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-  });
-
-  const raw = message.content[0];
-  if (raw.type !== 'text') throw new Error('[capsuleAgent:paid] Unexpected Claude response type');
-
-  const cleaned = raw.text
-    .replace(/^```json\s*/i, '')
-    .replace(/^```\s*/i, '')
-    .replace(/```\s*$/i, '')
-    .trim();
-
-  const parsed = JSON.parse(cleaned) as {
+  const parsed = await chatCompletionJSON<{
     items: Array<{ name: string; category: string; why: string; versatility_score: number }>;
     daily_plan: Array<{ day: number; city: string; outfit: string[]; note: string }>;
-  };
+  }>(apiKey, systemPrompt, userPrompt, { maxTokens: 4096, reasoningEffort: 'medium' });
 
   if (!Array.isArray(parsed.items) || parsed.items.length === 0) {
-    throw new Error('[capsuleAgent] Claude returned no items');
+    throw new Error('[capsuleAgent] GPT-5.4 returned no items');
   }
   if (!Array.isArray(parsed.daily_plan) || parsed.daily_plan.length === 0) {
-    throw new Error('[capsuleAgent] Claude returned no daily_plan');
+    throw new Error('[capsuleAgent] GPT-5.4 returned no daily_plan');
   }
 
   const items: CapsuleItem[] = parsed.items.slice(0, 12).map((item) => ({
@@ -278,7 +247,6 @@ Respond ONLY with:
   }));
 
   // Build a case-insensitive lookup map for item name consistency validation
-  // Claude sometimes returns slightly different casing in daily_plan vs items[]
   const itemNameMap = new Map<string, string>(); // lowercase → canonical name
   for (const item of items) {
     itemNameMap.set(item.name.toLowerCase(), item.name);
@@ -301,7 +269,6 @@ Respond ONLY with:
   for (const day of daily_plan) {
     const combo = [...day.outfit].sort().join('|');
     if (combos.has(combo)) {
-      // Log warning but don't fail — the AI sometimes slips
       console.warn(`[capsuleAgent] Duplicate outfit combination on day ${day.day}`);
     }
     combos.add(combo);
@@ -312,17 +279,6 @@ Respond ONLY with:
 
 // ─── Main Exported Function ───────────────────────────────────────────────────
 
-/**
- * Generates a capsule wardrobe for a multi-city trip.
- *
- * @param input.vibeResult    - Array of VibeResult per city (from vibeAgent)
- * @param input.weather       - Array of WeatherResult per city (from weatherAgent)
- * @param input.plan          - "free" | "standard" | "pro" | "annual"
- * @param input.cities        - Array of { name, days }
- * @param input.month         - Travel month (1–12)
- * @param input.tripDays      - Optional total days override
- * @param env                 - Cloudflare Worker bindings
- */
 export async function capsuleAgent(
   input: {
     vibeResults: VibeResult[];
@@ -337,11 +293,9 @@ export async function capsuleAgent(
 ): Promise<CapsuleResult> {
   const { vibeResults, weather, plan, cities, month, tripDays, userProfile } = input;
 
-  const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
-
   if (plan === 'free') {
-    return generateFree(client, cities, vibeResults, weather, month);
+    return generateFree(env.OPENAI_API_KEY, cities, vibeResults, weather, month);
   }
 
-  return generatePaid(client, plan, cities, vibeResults, weather, month, tripDays, userProfile);
+  return generatePaid(env.OPENAI_API_KEY, plan, cities, vibeResults, weather, month, tripDays, userProfile);
 }
