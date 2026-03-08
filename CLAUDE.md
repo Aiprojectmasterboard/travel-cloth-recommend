@@ -38,7 +38,7 @@ AI가 날씨·도시 바이브 분석 → 무드 네이밍 → 티저 이미지 
 | DB | Supabase (Postgres + RLS) |
 | Storage | Cloudflare R2 |
 | 결제 | Polar (MoR) — Stripe 사용 금지 |
-| 이미지 생성 | **Gemini** (NANOBANANA_API_KEY = Gemini API 키) |
+| 이미지 생성 | **OpenAI gpt-image-1.5** (OPENAI_API_KEY) + Identity Engine |
 | AI (Vibe) | Claude API (claude-sonnet-4-6) — vibeDb 정적 조회 병행 |
 | 기후 데이터 | Open-Meteo (무료, 가입 불필요) |
 | 도시 검색 | 자체 city-vibes-db (90+ 도시, 한국어 alias 포함) |
@@ -97,8 +97,8 @@ travel-cloth-recom/
 │       │       ├── orchestrator.ts   ← 파이프라인 오케스트레이터
 │       │       ├── weatherAgent.ts
 │       │       ├── vibeAgent.ts
-│       │       ├── teaserAgent.ts    ← Gemini 티저 이미지 생성
-│       │       ├── imageGenAgent.ts  ← Gemini 풀 이미지 생성
+│       │       ├── teaserAgent.ts    ← gpt-image-1.5 티저 이미지 + Identity Engine
+│       │       ├── imageGenAgent.ts  ← gpt-image-1.5 풀 이미지 + Identity Engine
 │       │       ├── capsuleAgent.ts
 │       │       ├── fulfillmentAgent.ts
 │       │       └── growthAgent.ts
@@ -132,7 +132,7 @@ travel-cloth-recom/
     ↓
 [POST /api/preview] → runPreview() → 즉시 응답 (날씨+바이브+폴백URL)
     ↓ waitUntil()
-[runTeaserBackground] → teaserAgent → Gemini 이미지 생성 → R2 저장
+[runTeaserBackground] → teaserAgent → gpt-image-1.5 이미지 생성 → R2 저장
     ↓                     ↓ (실패 시)
     ↓               getCityFallbackImage(city, gender)
     ↓                     ↓
@@ -146,12 +146,13 @@ travel-cloth-recom/
     ↓
 [결제] Polar checkout → webhook → runResult()
     ↓
-[Post-payment] imageGenAgent → Gemini → R2 → result images
+[Post-payment] imageGenAgent → gpt-image-1.5 → R2 → result images
 ```
 
 **핵심 규칙:**
-- teaserAgent: Gemini 1장만 실제 생성. 나머지 3장은 CSS blur+tint overlay (프론트 처리)
-- Gemini 실패 시 반드시 **도시별** 폴백 이미지 사용 (빈 문자열이나 파리 이미지 절대 금지)
+- teaserAgent: gpt-image-1.5로 1장 실제 생성. 나머지 3장은 CSS blur+tint overlay (프론트 처리)
+- Identity Engine: 사용자 사진 업로드 시 /images/edits로 동일 인물 유지, 미업로드 시 기본 모델
+- gpt-image-1.5 실패 시 반드시 **도시별** 폴백 이미지 사용 (빈 문자열이나 파리 이미지 절대 금지)
 - waitUntil()에 반드시 `.catch()` 핸들러 필요 — 없으면 에러가 조용히 삼켜짐
 - generation_jobs INSERT 1회 재시도 (실패 시 프론트가 영원히 pending)
 
@@ -159,7 +160,7 @@ travel-cloth-recom/
 
 ## 도시별 폴백 이미지 시스템
 
-Gemini 이미지 생성 실패 시 사용. **3곳에 모두 일관되게 유지 필수.**
+gpt-image-1.5 이미지 생성 실패 시 사용. **3곳에 모두 일관되게 유지 필수.**
 
 ### 1. Worker — `orchestrator.ts` → `CITY_FALLBACK_IMAGES`
 - 10개 도시 + _default, male/female 분리
@@ -287,13 +288,13 @@ data:    JetBrains Mono
 
 ### BUG-004: 불필요한 기본 얼굴 이미지 강제 전달 [2026-03-07]
 - **파일**: `orchestrator.ts` → `runTeaserBackground()`
-- **증상**: 사용자가 사진을 안 올렸는데도 Gemini에 default face 이미지를 전달 → 안전 필터 차단 → 40초 낭비 후 재시도
+- **증상**: 사용자가 사진을 안 올렸는데도 gpt-image-1.5에 default face 이미지를 전달 → 안전 필터 차단 → 40초 낭비 후 재시도
 - **원인**: `effectiveFaceUrl = face_url || default-male/female.png` — 항상 face 포함
 - **수정**: `effectiveFaceUrl = face_url || undefined` — 사용자가 올린 사진만 사용
 - **규칙**: AI 이미지 생성 시 사용자가 명시적으로 제공한 데이터만 전달. 플레이스홀더 데이터 전달 금지.
 
 ### BUG-005: PreviewPage 폴백 URL 미반영 [2026-03-07]
-- **증상**: Gemini 실패 시 서버가 보낸 폴백 URL이 무시됨
+- **증상**: gpt-image-1.5 실패 시 서버가 보낸 폴백 URL이 무시됨
 - **원인**: `status === 'fallback'`일 때 `setPolledTeaserUrl(result.teaser_url)` 누락
 - **수정**: fallback 상태에서 서버 URL을 `setPolledTeaserUrl()`로 반영
 - **규칙**: 폴링 응답의 모든 status 분기에서 URL 데이터를 항상 반영할 것
@@ -476,7 +477,7 @@ images.map((img) => {
 ```
 
 ### AI 응답 문자열 매칭 규칙
-- AI(Claude/Gemini) 응답에서 문자열 비교는 항상 `.toLowerCase()` 사용
+- AI(Claude/GPT) 응답에서 문자열 비교는 항상 `.toLowerCase()` 사용
 - 특히 `daily_plan[].outfit[]` ↔ `items[].name` 매칭에 필수
 - `Map<lowercase, canonical>` 패턴 권장
 

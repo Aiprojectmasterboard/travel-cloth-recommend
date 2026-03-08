@@ -5,6 +5,7 @@ import { SocialShareButton } from "../components/travel-capsule/SocialShare";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { WORKER_URL } from "../lib/api";
 import { SEO } from "../components/SEO";
+import { useLang } from "../context/LanguageContext";
 
 interface ShareData {
   trip_id: string;
@@ -17,22 +18,23 @@ interface ShareData {
 
 const FALLBACK_HERO = "https://images.unsplash.com/photo-1659003505996-d5d7ca66bb25?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
 
-const STYLE_FEATURES = [
-  { icon: "wb_sunny", label: "Weather-adapted outfit recommendations" },
-  { icon: "palette", label: "City vibe & color palette analysis" },
-  { icon: "checkroom", label: "Complete capsule wardrobe with packing list" },
-  { icon: "auto_awesome", label: "AI-generated outfit visualizations" },
+const STYLE_FEATURE_KEYS = [
+  { icon: "wb_sunny", key: "share.featureWeather" },
+  { icon: "palette", key: "share.featureVibe" },
+  { icon: "checkroom", key: "share.featureCapsule" },
+  { icon: "auto_awesome", key: "share.featureAi" },
 ];
 
-const SOCIAL_PROOF_STATS = [
-  { value: "12,400+", label: "Trips styled" },
-  { value: "94%", label: "Packing accuracy" },
-  { value: "4.9 / 5", label: "User satisfaction" },
+const SOCIAL_PROOF_STAT_KEYS = [
+  { value: "12,400+", key: "share.statTrips" },
+  { value: "94%", key: "share.statAccuracy" },
+  { value: "4.9 / 5", key: "share.statSatisfaction" },
 ];
 
 export function SharePage() {
   const { tripId } = useParams<{ tripId: string }>();
   const navigate = useNavigate();
+  const { t } = useLang();
   const [data, setData] = useState<ShareData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export function SharePage() {
         const json = await res.json() as ShareData;
         setData(json);
       } catch {
-        setError("This style guide is no longer available.");
+        setError(t("share.notAvailable"));
       } finally {
         setLoading(false);
       }
@@ -59,7 +61,7 @@ export function SharePage() {
       <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-[#C4613A] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[14px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>Loading style guide...</p>
+          <p className="text-[14px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{t("share.loading")}</p>
         </div>
       </div>
     );
@@ -70,9 +72,9 @@ export function SharePage() {
       <div className="min-h-screen bg-[#FDF8F3] flex items-center justify-center">
         <div className="text-center max-w-[400px] px-6">
           <Icon name="explore_off" size={48} className="text-[#E8DDD4] mx-auto mb-4" />
-          <h2 className="text-[24px] text-[#292524] mb-2" style={{ fontFamily: "var(--font-display)" }}>Style Guide Not Found</h2>
+          <h2 className="text-[24px] text-[#292524] mb-2" style={{ fontFamily: "var(--font-display)" }}>{t("share.notFound")}</h2>
           <p className="text-[14px] text-[#57534e] mb-6" style={{ fontFamily: "var(--font-body)" }}>{error}</p>
-          <BtnPrimary onClick={() => navigate("/")}>Create Your Own</BtnPrimary>
+          <BtnPrimary onClick={() => navigate("/")}>{t("share.createYourOwn")}</BtnPrimary>
         </div>
       </div>
     );
@@ -85,7 +87,7 @@ export function SharePage() {
 
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
-      <SEO title="Shared Travel Capsule" description="Check out this AI-styled travel outfit! Create your own personalized capsule wardrobe with Travel Capsule AI." />
+      <SEO title={t("share.seoTitle")} description={t("share.seoDescription")} />
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
         <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
@@ -102,7 +104,7 @@ export function SharePage() {
             {/* Allow visitors to reshare this page */}
             <SocialShareButton shareUrl={shareUrl} shareTitle={cleanTitle} />
             <BtnPrimary onClick={() => navigate("/onboarding/1")} className="text-[11px]">
-              Create Yours
+              {t("share.createYours")}
             </BtnPrimary>
           </div>
         </div>
@@ -120,12 +122,12 @@ export function SharePage() {
                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[10px] uppercase tracking-[0.1em]"
                 style={{ fontFamily: "var(--font-mono)" }}
               >
-                <Icon name="auto_awesome" size={12} className="text-white" /> AI Styled
+                <Icon name="auto_awesome" size={12} className="text-white" /> {t("share.aiStyled")}
               </span>
             </div>
             <div className="absolute bottom-5 left-5 right-5">
               <p className="text-white/70 text-[11px] uppercase tracking-[0.12em] mb-1.5" style={{ fontFamily: "var(--font-mono)" }}>
-                Mood
+                {t("share.mood")}
               </p>
               <TagChip label={data.mood_name} className="bg-white/20 text-white backdrop-blur-sm" />
             </div>
@@ -137,7 +139,7 @@ export function SharePage() {
               className="text-[10px] uppercase tracking-[0.15em] text-[#C4613A] mb-3"
               style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}
             >
-              Shared Style Guide
+              {t("share.sharedStyleGuide")}
             </span>
             <h1
               className="text-[#292524] italic mb-4"
@@ -151,12 +153,12 @@ export function SharePage() {
 
             {/* Feature highlights */}
             <div className="space-y-4 mb-8">
-              {STYLE_FEATURES.map((f) => (
-                <div key={f.label} className="flex items-center gap-3">
+              {STYLE_FEATURE_KEYS.map((f) => (
+                <div key={f.key} className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-[#C4613A]/10 flex items-center justify-center flex-shrink-0">
                     <Icon name={f.icon} size={18} className="text-[#C4613A]" />
                   </div>
-                  <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)" }}>{f.label}</span>
+                  <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)" }}>{t(f.key)}</span>
                 </div>
               ))}
             </div>
@@ -164,14 +166,14 @@ export function SharePage() {
             {/* CTA */}
             <div className="flex flex-col sm:flex-row gap-3">
               <BtnPrimary onClick={() => navigate("/onboarding/1")} className="text-[13px] px-8 py-3">
-                Create Your Style Guide
+                {t("share.createStyleGuide")}
               </BtnPrimary>
               <button
                 onClick={() => navigate("/")}
                 className="h-[44px] px-6 border border-[#E8DDD4] rounded-full text-[13px] text-[#57534e] hover:border-[#C4613A]/30 hover:text-[#C4613A] transition-colors cursor-pointer"
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
-                Learn More
+                {t("share.learnMore")}
               </button>
             </div>
           </div>
@@ -182,8 +184,8 @@ export function SharePage() {
       <div className="border-y border-[#E8DDD4] bg-white py-8">
         <div className="mx-auto px-6" style={{ maxWidth: "var(--max-w)" }}>
           <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center">
-            {SOCIAL_PROOF_STATS.map((stat) => (
-              <div key={stat.label}>
+            {SOCIAL_PROOF_STAT_KEYS.map((stat) => (
+              <div key={stat.key}>
                 <p
                   className="text-[22px] sm:text-[32px] text-[#C4613A] mb-1"
                   style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
@@ -191,7 +193,7 @@ export function SharePage() {
                   {stat.value}
                 </p>
                 <p className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-                  {stat.label}
+                  {t(stat.key)}
                 </p>
               </div>
             ))}
@@ -209,10 +211,10 @@ export function SharePage() {
             className="text-[#292524] mb-3"
             style={{ fontSize: "clamp(20px, 2.5vw, 28px)", fontFamily: "var(--font-display)", lineHeight: 1.2 }}
           >
-            Love this look?
+            {t("share.loveThisLook")}
           </h2>
           <p className="text-[15px] text-[#57534e] mb-6" style={{ fontFamily: "var(--font-body)" }}>
-            Share this style guide with friends planning their next trip, or save it for inspiration.
+            {t("share.shareDescription")}
           </p>
           <div className="flex justify-center">
             <SocialShareButton shareUrl={shareUrl} shareTitle={cleanTitle} />
@@ -227,13 +229,13 @@ export function SharePage() {
             className="text-white italic mb-3"
             style={{ fontSize: "clamp(24px, 3vw, 36px)", fontFamily: "var(--font-display)", lineHeight: 1.2 }}
           >
-            Your Perfect Travel Wardrobe, AI-Curated
+            {t("share.bottomCtaTitle")}
           </h2>
           <p className="text-white/60 text-[15px] mb-8" style={{ fontFamily: "var(--font-body)" }}>
-            Get weather-adapted, culture-aware outfit recommendations for any city. Start free.
+            {t("share.bottomCtaDescription")}
           </p>
           <BtnPrimary onClick={() => navigate("/onboarding/1")} className="text-[13px] px-10 py-3">
-            Get Started Free
+            {t("share.getStartedFree")}
           </BtnPrimary>
         </div>
       </div>
@@ -242,7 +244,7 @@ export function SharePage() {
       <footer className="border-t border-[#E8DDD4] py-8">
         <div className="mx-auto px-6 text-center" style={{ maxWidth: "var(--max-w)" }}>
           <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-            Travel Capsule AI — AI-powered travel styling
+            Travel Capsule AI — {t("share.footerTagline")}
           </span>
         </div>
       </footer>

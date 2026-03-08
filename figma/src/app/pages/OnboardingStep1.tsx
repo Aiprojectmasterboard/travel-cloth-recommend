@@ -9,6 +9,7 @@ import bagImg from "../../assets/36d7b5af63872a88256d99de04037e3a04cbed5f.png";
 import citiesData from "../../../../packages/city-vibes-db/cities.json";
 import { geocodeCity, getCityImageUrl } from "../services/geocodeCity";
 import { GA } from "../lib/analytics";
+import { useLang } from "../context/LanguageContext";
 import { SEO } from "../components/SEO";
 
 // ---------------------------------------------------------------------------
@@ -208,6 +209,7 @@ function resolveKoreanAlias(term: string): string | null {
 export function OnboardingStep1() {
   const navigate = useNavigate();
   const { data, setData } = useOnboarding();
+  const { t } = useLang();
   const [search, setSearch] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [error, setError] = useState("");
@@ -295,7 +297,7 @@ export function OnboardingStep1() {
     setValidating(false);
 
     if (!result) {
-      setError(`"${trimmedSearch}" is not a valid city. Please check the spelling and try again.`);
+      setError(t("onboarding1.invalidCity").replace("{city}", trimmedSearch));
       return;
     }
 
@@ -368,14 +370,14 @@ export function OnboardingStep1() {
       quote="The world is a book, and those who do not travel read only one page."
       attribution="St. Augustine"
     >
-      <ProgressBar currentStep={1} sublabel="Setting the scene" />
+      <ProgressBar currentStep={1} sublabel={t("onboarding1.sublabel")} />
 
       <div className="mt-10">
         <h1 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-          Where are you <em>heading?</em>
+          {t("onboarding1.title")} <em>{t("onboarding1.titleEm")}</em>
         </h1>
         <p className="mt-4 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-          Tell us your destinations so we can tailor your capsule wardrobe to each city's climate and culture.
+          {t("onboarding1.subtitle")}
         </p>
       </div>
 
@@ -385,7 +387,7 @@ export function OnboardingStep1() {
           <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#57534e]/50" />
           <input
             type="text"
-            placeholder="Search cities..."
+            placeholder={t("onboarding1.searchPlaceholder")}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -433,7 +435,7 @@ export function OnboardingStep1() {
                   )}
                 </div>
                 <span className="text-[14px] text-[#C4613A]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-                  {validating ? `Validating "${trimmedSearch}"...` : `Add "${trimmedSearch}" as destination`}
+                  {validating ? t("onboarding1.validating").replace("{city}", trimmedSearch) : t("onboarding1.addCustomCity").replace("{city}", trimmedSearch)}
                 </span>
               </button>
             )}
@@ -446,7 +448,7 @@ export function OnboardingStep1() {
           className="mt-3 inline-flex items-center gap-1.5 text-[#C4613A] text-[14px] hover:text-[#A84A25] transition-colors cursor-pointer"
           style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
         >
-          Add Destination
+          {t("onboarding1.addDestination")}
           <Icon name="arrow_forward" size={16} className="text-[#C4613A]" />
         </button>
       </div>
@@ -458,7 +460,7 @@ export function OnboardingStep1() {
             className="text-[11px] uppercase tracking-[0.12em] text-[#57534e] block mb-3"
             style={{ fontFamily: "var(--font-mono)" }}
           >
-            Current Itinerary
+            {t("onboarding1.currentItinerary")}
           </label>
           <div className="space-y-3">
             {data.cities.map((city) => (
@@ -488,10 +490,10 @@ export function OnboardingStep1() {
 
       {/* Navigation */}
       <div className="mt-8 flex items-center justify-between gap-3">
-        <BtnSecondary size="sm" onClick={() => navigate("/")}>Back</BtnSecondary>
+        <BtnSecondary size="sm" onClick={() => navigate("/")}>{t("onboarding1.back")}</BtnSecondary>
         <BtnPrimary size="sm" onClick={() => {
           if (data.cities.length === 0) {
-            setError("Please add at least one destination to continue.");
+            setError(t("onboarding1.noDestinationError"));
             return;
           }
           setError("");
@@ -499,8 +501,8 @@ export function OnboardingStep1() {
           navigate("/onboarding/2");
         }}>
           <span className="flex items-center gap-2">
-            <span className="hidden sm:inline">Continue to Style Profile</span>
-            <span className="sm:hidden">Continue</span>
+            <span className="hidden sm:inline">{t("onboarding1.continueToStyle")}</span>
+            <span className="sm:hidden">{t("onboarding1.continue")}</span>
             <Icon name="arrow_forward" size={16} className="text-white" />
           </span>
         </BtnPrimary>

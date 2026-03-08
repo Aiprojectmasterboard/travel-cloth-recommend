@@ -281,7 +281,7 @@ export function StandardDashboard() {
               {pdfExporting
                 ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" />
                 : <Icon name="picture_as_pdf" size={16} className="text-[#C4613A]" />}
-              <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
+              <span className="hidden sm:inline">{pdfExporting ? t("dashboard.exporting") : t("dashboard.savePdf")}</span>
             </button>
           </div>
         </div>
@@ -310,7 +310,7 @@ export function StandardDashboard() {
             {/* ─── Single AI Outfit Image ─── */}
             <div>
               <h2 className="text-[24px] text-[#292524] mb-6" style={{ fontFamily: "var(--font-display)" }}>
-                Your AI Travel Outfit
+                {t("dashboard.yourAiOutfit")}
               </h2>
 
               <div className="flex flex-col sm:flex-row gap-6">
@@ -341,7 +341,7 @@ export function StandardDashboard() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                       <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                          <Icon name="auto_awesome" size={10} className="text-white" filled /> AI Generated
+                          <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.aiGenerated")}
                         </span>
                         {teaserUrl && (
                           <button
@@ -385,14 +385,14 @@ export function StandardDashboard() {
                       <div className="flex items-center gap-2 mb-3">
                         <Icon name="thermostat" size={16} className="text-[#0369A1]" />
                         <span className="text-[12px] text-[#0369A1] uppercase tracking-[0.08em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                          Weather Outlook
+                          {t("dashboard.weatherOutlook")}
                         </span>
                       </div>
                       <div className="grid grid-cols-3 gap-2 text-center">
                         {[
-                          { icon: "thermostat", val: `${Math.round(primaryWeather.temperature_day_avg)}°C`, label: "Day Avg" },
-                          { icon: "water_drop", val: `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: "Rain" },
-                          { icon: "explore", val: primaryWeather.climate_band, label: "Climate" },
+                          { icon: "thermostat", val: `${Math.round(primaryWeather.temperature_day_avg)}°C`, label: t("dashboard.dayAvg") },
+                          { icon: "water_drop", val: `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: t("dashboard.rain") },
+                          { icon: "explore", val: primaryWeather.climate_band, label: t("dashboard.climate") },
                         ].map((s) => (
                           <div key={s.label} className="py-2 bg-white/60 rounded-lg">
                             <Icon name={s.icon} size={16} className="text-[#0369A1] mx-auto mb-1" />
@@ -407,7 +407,7 @@ export function StandardDashboard() {
                   {/* Capsule items list */}
                   <div className="bg-white rounded-xl border border-[#E8DDD4] p-4" style={{ boxShadow: "0 2px 8px rgba(0,0,0,.03)" }}>
                     <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-3" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                      {hasRealData ? "AI-Recommended Items" : "Style Preview"}
+                      {hasRealData ? t("dashboard.aiRecommendedItems") : t("dashboard.yourStylePreview")}
                     </span>
                     <div className="space-y-2">
                       {displayItems.slice(0, 5).map((item, i) => {
@@ -433,7 +433,7 @@ export function StandardDashboard() {
                       })}
                       {displayItems.length > 5 && (
                         <p className="text-[11px] text-[#a8a29e] pt-1" style={{ fontFamily: "var(--font-mono)" }}>
-                          +{displayItems.length - 5} more items in packing list below
+                          +{displayItems.length - 5} {t("dashboard.moreItemsBelow")}
                         </p>
                       )}
                     </div>
@@ -459,9 +459,9 @@ export function StandardDashboard() {
                   {primaryWeather ? (() => {
                     const dayW = getWeatherForDay(activeDay);
                     return [
-                      { icon: "thermostat", val: `${dayW.tempMax}°/${dayW.tempMin}°`, label: dailyForecast ? "High / Low" : "Avg Temp" },
-                      { icon: "water_drop", val: dailyForecast ? `${dayW.precipMm}mm` : `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: dailyForecast ? "Precip" : "Rain" },
-                      { icon: "explore", val: dayW.band, label: "Climate" },
+                      { icon: "thermostat", val: `${dayW.tempMax}°/${dayW.tempMin}°`, label: dailyForecast ? t("dashboard.highLow") : t("dashboard.avgTemp") },
+                      { icon: "water_drop", val: dailyForecast ? `${dayW.precipMm}mm` : `${Math.round(primaryWeather.precipitation_prob * 100)}%`, label: dailyForecast ? t("dashboard.precip") : t("dashboard.rain") },
+                      { icon: "explore", val: dayW.band, label: t("dashboard.climate") },
                     ].map((s) => (
                       <div key={s.label} className="py-3 bg-[#FDF8F3] rounded-lg">
                         <Icon name={s.icon} size={18} className="text-[#C4613A] mx-auto mb-1" />
@@ -471,9 +471,9 @@ export function StandardDashboard() {
                     ));
                   })() : (
                     [
-                      { icon: "thermostat", val: "—", label: "High / Low" },
-                      { icon: "water_drop", val: "—", label: "Precip" },
-                      { icon: "explore", val: "Loading…", label: "Climate" },
+                      { icon: "thermostat", val: "—", label: t("dashboard.highLow") },
+                      { icon: "water_drop", val: "—", label: t("dashboard.precip") },
+                      { icon: "explore", val: t("dashboard.loadingEllipsis"), label: t("dashboard.climate") },
                     ].map((s) => (
                       <div key={s.label} className="py-3 bg-[#FDF8F3] rounded-lg">
                         <Icon name={s.icon} size={18} className="text-[#C4613A] mx-auto mb-1" />
@@ -491,7 +491,7 @@ export function StandardDashboard() {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-[24px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.yourPackingList")}</h2>
                 <span className="px-3 py-1 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[10px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  {displayItems.length} items {hasRealData && "· AI curated"}
+                  {displayItems.length} {t("dashboard.items")} {hasRealData && `· ${t("dashboard.aiCurated")}`}
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
@@ -523,10 +523,10 @@ export function StandardDashboard() {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-[20px] italic mb-2" style={{ fontFamily: "var(--font-display)" }}>
-                    Upgrade to Pro for 4 AI outfits per city
+                    {t("dashboard.upgradeProTitle")}
                   </h3>
                   <p className="text-[14px] text-white/70 mb-4" style={{ fontFamily: "var(--font-body)" }}>
-                    Get 4 unique AI-generated outfit images, a 2x2 grid view, and full daily breakdown — all tailored to your style.
+                    {t("dashboard.upgradeProDescription")}
                   </p>
                   <div className="flex flex-wrap gap-3">
                     <BtnPrimary
@@ -593,10 +593,10 @@ export function StandardDashboard() {
               <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.capsuleSummary")}</h3>
               <div className="space-y-3">
                 {[
-                  { icon: "checkroom", label: "Packing Items", value: `${displayItems.length} pieces` },
-                  { icon: "style", label: "AI Outfits", value: "1 look" },
-                  { icon: "thermostat", label: "Climate", value: primaryWeather?.climate_band || "mild" },
-                  { icon: "auto_awesome", label: "Mood", value: moodName },
+                  { icon: "checkroom", label: t("dashboard.packingItems"), value: `${displayItems.length} ${t("dashboard.pieces")}` },
+                  { icon: "style", label: t("dashboard.aiOutfits"), value: `1 ${t("dashboard.look")}` },
+                  { icon: "thermostat", label: t("dashboard.climate"), value: primaryWeather?.climate_band || t("dashboard.mild") },
+                  { icon: "auto_awesome", label: t("dashboard.mood"), value: moodName },
                 ].map((stat) => (
                   <div key={stat.label} className="flex items-center justify-between py-2 border-b border-[#EFE8DF] last:border-0">
                     <div className="flex items-center gap-2">

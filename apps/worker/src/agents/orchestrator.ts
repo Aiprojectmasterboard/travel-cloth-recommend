@@ -816,7 +816,7 @@ export async function runResult(
       }
 
       // c. Generate 1 grid image per city (1024x1024, medium quality, parallel)
-      await imageGenAgentGrid({ gridPrompts, tripId }, env);
+      await imageGenAgentGrid({ gridPrompts, tripId, faceUrl }, env);
     }
 
     // d. Privacy cleanup: delete user-uploaded face AFTER image generation completes

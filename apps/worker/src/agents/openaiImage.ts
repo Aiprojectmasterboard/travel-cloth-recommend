@@ -1,16 +1,21 @@
 /**
  * openaiImage.ts
  *
- * OpenAI Images API wrapper (gpt-image-1).
+ * OpenAI Images API wrapper (gpt-image-1.5).
  * AI travel preparation platform — generates outfit images.
  *
- * gpt-image-1 valid sizes: 1024x1024, 1536x1024, 1024x1536, auto
- * gpt-image-1 valid quality: low, medium, high, auto
- * gpt-image-1 always returns b64_json (no response_format param needed)
- * gpt-image-1 uses output_format instead of response_format
+ * gpt-image-1.5 valid sizes: 1024x1024, 1536x1024, 1024x1536, auto
+ * gpt-image-1.5 valid quality: low, medium, high, auto
+ * gpt-image-1.5 always returns b64_json (no response_format param needed)
  *
- * - Teaser:     quality "low",    size 1024x1536 (portrait, fast ~10-15s)
- * - Pro/Annual: quality "medium", size 1024x1024 (grid, ~15-25s)
+ * - Teaser (Standard):  quality "low",    size 1024x1536 (portrait, fast ~10-15s)
+ * - Pro/Annual grid:    quality "medium", size 1024x1024 (2×2 grid, ~15-25s)
+ *
+ * Identity Engine:
+ *   If user uploaded a reference photo, use /v1/images/edits endpoint to
+ *   preserve traveler identity (facial structure, hairstyle, skin tone).
+ *   If no reference photo, use /v1/images/generations with consistent
+ *   default traveler model descriptor in the prompt.
  *
  * Retry strategy: exponential backoff — 2s, 4s, 6s (3 attempts)
  */
@@ -31,13 +36,14 @@ interface OpenAIImageResponse {
 }
 
 export type ImageQuality = 'low' | 'medium' | 'high';
-// gpt-image-1 supported sizes (NOT the same as DALL-E 3)
+// gpt-image-1.5 supported sizes
 export type ImageSize = '1024x1024' | '1536x1024' | '1024x1536';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/images/generations';
-const MODEL = 'gpt-image-1';
+const OPENAI_GENERATIONS_URL = 'https://api.openai.com/v1/images/generations';
+const OPENAI_EDITS_URL = 'https://api.openai.com/v1/images/edits';
+const MODEL = 'gpt-image-1.5';
 const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [2_000, 4_000, 6_000] as const;
 const FETCH_TIMEOUT_MS = 90_000;
@@ -48,15 +54,39 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// ─── Main Generation Function ─────────────────────────────────────────────────
+/** Decode base64 string to ArrayBuffer */
+function b64ToArrayBuffer(b64: string): ArrayBuffer {
+  const binaryString = atob(b64);
+  const bytes = new Uint8Array(binaryString.length);
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes.buffer;
+}
 
 /**
- * Generates an image using OpenAI gpt-image-1.
+ * Fetch an image URL and return its raw bytes as a Blob.
+ * Used by the Identity Engine to download user reference photos from R2.
+ */
+export async function fetchImageAsBlob(url: string): Promise<Blob> {
+  const res = await fetch(url, {
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch reference image: HTTP ${res.status}`);
+  }
+  return res.blob();
+}
+
+// ─── Generation (no reference photo) ──────────────────────────────────────────
+
+/**
+ * Generates an image using OpenAI gpt-image-1.5 (text-to-image).
  * Returns the raw image buffer (PNG).
  *
  * @param prompt  - Text prompt for image generation
  * @param apiKey  - OpenAI API key
- * @param quality - "low" for teasers, "medium" for paid plans, "high" for premium
+ * @param quality - "low" for teasers, "medium" for paid plans
  * @param size    - Image dimensions. Defaults to "1024x1536" (portrait).
  */
 export async function generateImage(
@@ -73,7 +103,7 @@ export async function generateImage(
     quality,
   };
 
-  const res = await fetch(OPENAI_API_URL, {
+  const res = await fetch(OPENAI_GENERATIONS_URL, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -99,31 +129,119 @@ export async function generateImage(
     throw new Error('OpenAI returned no image data');
   }
 
-  // Decode base64 to ArrayBuffer
-  const binaryString = atob(imageData);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
+  return b64ToArrayBuffer(imageData);
+}
+
+// ─── Generation with Reference Photo (Identity Engine) ───────────────────────
+
+/**
+ * Generates an image using OpenAI gpt-image-1.5 /images/edits endpoint
+ * with a reference photo to preserve traveler identity.
+ *
+ * The reference photo is sent as an input image so gpt-image-1.5 can
+ * preserve the person's facial structure, hairstyle, and skin tone
+ * while generating the outfit and destination background.
+ *
+ * @param prompt       - Text prompt for image generation
+ * @param referenceUrl - URL of the user's reference photo (R2 CDN)
+ * @param apiKey       - OpenAI API key
+ * @param quality      - "low" for teasers, "medium" for paid plans
+ * @param size         - Image dimensions
+ */
+export async function generateImageWithReference(
+  prompt: string,
+  referenceUrl: string,
+  apiKey: string,
+  quality: ImageQuality = 'low',
+  size: ImageSize = '1024x1536',
+): Promise<ArrayBuffer> {
+  // Fetch user reference photo as blob
+  const refBlob = await fetchImageAsBlob(referenceUrl);
+
+  // Build multipart form data for /v1/images/edits
+  const formData = new FormData();
+  formData.append('model', MODEL);
+  formData.append('prompt', prompt);
+  formData.append('n', '1');
+  formData.append('size', size);
+  formData.append('quality', quality);
+  formData.append('image', refBlob, 'reference.png');
+
+  const res = await fetch(OPENAI_EDITS_URL, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`,
+    },
+    body: formData,
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`OpenAI Edits HTTP ${res.status}: ${text.slice(0, 300)}`);
   }
 
-  return bytes.buffer;
+  const data = (await res.json()) as OpenAIImageResponse;
+
+  if (data.error) {
+    throw new Error(`OpenAI Edits API error: ${data.error.message}`);
+  }
+
+  const imageData = data.data?.[0]?.b64_json;
+  if (!imageData) {
+    throw new Error('OpenAI Edits returned no image data');
+  }
+
+  return b64ToArrayBuffer(imageData);
+}
+
+// ─── Smart Generation (auto-selects endpoint) ────────────────────────────────
+
+/**
+ * Generates an image, automatically choosing the right endpoint:
+ * - With referenceUrl → /images/edits (Identity Engine, preserves traveler)
+ * - Without referenceUrl → /images/generations (default traveler model)
+ *
+ * Falls back to generations endpoint if edits fails (safety filter etc.).
+ */
+export async function generateImageSmart(
+  prompt: string,
+  apiKey: string,
+  quality: ImageQuality = 'low',
+  size: ImageSize = '1024x1536',
+  referenceUrl?: string,
+): Promise<ArrayBuffer> {
+  if (referenceUrl) {
+    try {
+      return await generateImageWithReference(prompt, referenceUrl, apiKey, quality, size);
+    } catch (err) {
+      console.warn(
+        `[openaiImage] Identity Engine failed, falling back to generations: ${(err as Error).message}`
+      );
+      // Fall back to text-to-image generation without reference
+    }
+  }
+  return generateImage(prompt, apiKey, quality, size);
 }
 
 // ─── With Retry ───────────────────────────────────────────────────────────────
 
 /**
  * Generates image with exponential-backoff retry (3 attempts).
+ * Supports Identity Engine via optional referenceUrl.
  *
- * @param prompt  - Text prompt for image generation
- * @param apiKey  - OpenAI API key
- * @param quality - "low" for teasers, "medium" for paid plans
- * @param size    - Image dimensions. Defaults to "1024x1536" (portrait).
+ * @param prompt       - Text prompt for image generation
+ * @param apiKey       - OpenAI API key
+ * @param quality      - "low" for teasers, "medium" for paid plans
+ * @param size         - Image dimensions. Defaults to "1024x1536" (portrait).
+ * @param referenceUrl - Optional reference photo URL for Identity Engine
  */
 export async function generateImageWithRetry(
   prompt: string,
   apiKey: string,
   quality: ImageQuality = 'low',
   size: ImageSize = '1024x1536',
+  referenceUrl?: string,
 ): Promise<ArrayBuffer> {
   let lastError: Error | null = null;
 
@@ -132,7 +250,7 @@ export async function generateImageWithRetry(
       await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
     }
     try {
-      return await generateImage(prompt, apiKey, quality, size);
+      return await generateImageSmart(prompt, apiKey, quality, size, referenceUrl);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       console.warn(

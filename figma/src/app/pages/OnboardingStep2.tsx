@@ -5,12 +5,13 @@ import { OnboardingLayout } from "../components/travel-capsule/OnboardingLayout"
 import { ProgressBar, BtnPrimary, BtnSecondary, Icon, TCInput } from "../components/travel-capsule";
 import { useOnboarding } from "../context/OnboardingContext";
 import { GA } from "../lib/analytics";
+import { useLang } from "../context/LanguageContext";
 import { SEO } from "../components/SEO";
 
 const GENDERS = [
-  { value: "male", label: "Male", icon: "male" },
-  { value: "female", label: "Female", icon: "female" },
-  { value: "non-binary", label: "Non-binary", icon: "transgender" },
+  { value: "male", labelKey: "onboarding2.genderMale", icon: "male" },
+  { value: "female", labelKey: "onboarding2.genderFemale", icon: "female" },
+  { value: "non-binary", labelKey: "onboarding2.genderNonBinary", icon: "transgender" },
 ];
 
 /** Convert cm to { ft, in } */
@@ -34,6 +35,7 @@ function lbToKg(lb: number): number {
 export function OnboardingStep2() {
   const navigate = useNavigate();
   const { data, setData } = useOnboarding();
+  const { t } = useLang();
   const [unit, setUnit] = useState<"metric" | "imperial">("metric");
 
   // Imperial display state (derived from metric values on switch)
@@ -99,14 +101,14 @@ export function OnboardingStep2() {
       quote="Style is a way to say who you are without having to speak."
       attribution="Rachel Zoe"
     >
-      <ProgressBar currentStep={2} sublabel="Personalize your look" />
+      <ProgressBar currentStep={2} sublabel={t("onboarding2.sublabel")} />
 
       <div className="mt-10">
         <h1 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
-          Personalize <em>your look</em>
+          {t("onboarding2.title")} <em>{t("onboarding2.titleEm")}</em>
         </h1>
         <p className="mt-4 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-          Help us understand your preferences to create the perfect capsule wardrobe for your body and style.
+          {t("onboarding2.subtitle")}
         </p>
       </div>
 
@@ -116,7 +118,7 @@ export function OnboardingStep2() {
           className="text-[11px] uppercase tracking-[0.12em] text-[#57534e] block mb-4"
           style={{ fontFamily: "var(--font-mono)" }}
         >
-          Gender Selection
+          {t("onboarding2.genderSelection")}
         </label>
         <div className="grid grid-cols-3 gap-3">
           {GENDERS.map((g) => {
@@ -142,7 +144,7 @@ export function OnboardingStep2() {
                   className={`text-[14px] ${selected ? "text-[#C4613A]" : "text-[#292524]"}`}
                   style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                 >
-                  {g.label}
+                  {t(g.labelKey)}
                 </span>
               </button>
             );
@@ -157,7 +159,7 @@ export function OnboardingStep2() {
             className="text-[11px] uppercase tracking-[0.12em] text-[#57534e]"
             style={{ fontFamily: "var(--font-mono)" }}
           >
-            Body Info
+            {t("onboarding2.bodyInfo")}
           </label>
           {/* Unit toggle */}
           <div className="flex items-center gap-0 rounded-lg border border-[#E8DDD4] overflow-hidden">
@@ -186,20 +188,20 @@ export function OnboardingStep2() {
           </div>
         </div>
         <span className="text-[12px] text-[#57534e]/60 block mb-4" style={{ fontFamily: "var(--font-body)" }}>
-          Optional — helps with more accurate sizing recommendations
+          {t("onboarding2.bodyInfoHint")}
         </span>
 
         {unit === "metric" ? (
           <div className="grid grid-cols-2 gap-4">
             <TCInput
-              label="Height (cm)"
+              label={t("onboarding2.heightCm")}
               placeholder="175"
               type="number"
               value={data.height}
               onChange={(e) => setData((prev) => ({ ...prev, height: e.target.value }))}
             />
             <TCInput
-              label="Weight (kg)"
+              label={t("onboarding2.weightKg")}
               placeholder="70"
               type="number"
               value={data.weight}
@@ -209,21 +211,21 @@ export function OnboardingStep2() {
         ) : (
           <div className="grid grid-cols-3 gap-3">
             <TCInput
-              label="Height (ft)"
+              label={t("onboarding2.heightFt")}
               placeholder="5"
               type="number"
               value={impFt}
               onChange={(e) => handleImpFtChange(e.target.value)}
             />
             <TCInput
-              label="Height (in)"
+              label={t("onboarding2.heightIn")}
               placeholder="9"
               type="number"
               value={impIn}
               onChange={(e) => handleImpInChange(e.target.value)}
             />
             <TCInput
-              label="Weight (lb)"
+              label={t("onboarding2.weightLb")}
               placeholder="154"
               type="number"
               value={impLb}
@@ -235,11 +237,11 @@ export function OnboardingStep2() {
 
       {/* Navigation */}
       <div className="mt-12 flex items-center justify-between gap-3">
-        <BtnSecondary size="sm" onClick={() => navigate("/onboarding/1")}>Back</BtnSecondary>
+        <BtnSecondary size="sm" onClick={() => navigate("/onboarding/1")}>{t("onboarding2.back")}</BtnSecondary>
         <BtnPrimary size="sm" onClick={() => { GA.onboardingStep(2); navigate("/onboarding/3"); }}>
           <span className="flex items-center gap-2">
-            <span className="hidden sm:inline">Continue to Style Profile</span>
-            <span className="sm:hidden">Continue</span>
+            <span className="hidden sm:inline">{t("onboarding2.continueToStyle")}</span>
+            <span className="sm:hidden">{t("onboarding2.continue")}</span>
             <Icon name="arrow_forward" size={16} className="text-white" />
           </span>
         </BtnPrimary>

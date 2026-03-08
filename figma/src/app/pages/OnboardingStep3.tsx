@@ -187,7 +187,7 @@ export function OnboardingStep3() {
   const handleFile = async (file: File) => {
     setUploadError("");
     if (!file.type.startsWith("image/")) {
-      setUploadError("Please upload an image file.");
+      setUploadError(t("onboarding3.invalidFileType"));
       return;
     }
 
@@ -274,7 +274,7 @@ export function OnboardingStep3() {
       quote="The joy of dressing is an art."
       attribution="John Galliano"
     >
-      <ProgressBar currentStep={3} sublabel="Curating your vibe" />
+      <ProgressBar currentStep={3} sublabel={t("onboarding3.sublabel")} />
 
       <div className="mt-10">
         <h1
@@ -285,13 +285,13 @@ export function OnboardingStep3() {
             lineHeight: 1.1,
           }}
         >
-          Your Style <em>Profile</em>
+          {t("onboarding3.title")} <em>{t("onboarding3.titleEm")}</em>
         </h1>
         <p
           className="mt-4 text-[16px] text-[#57534e]"
           style={{ fontFamily: "var(--font-body)" }}
         >
-          Define your travel aesthetic so our AI can match outfits to your personal style.
+          {t("onboarding3.subtitle")}
         </p>
       </div>
 
@@ -301,13 +301,13 @@ export function OnboardingStep3() {
           className="text-[#292524] mb-1"
           style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 16 }}
         >
-          Select Your Aesthetic
+          {t("onboarding3.selectAesthetic")}
         </h4>
         <p
           className="text-[14px] text-[#57534e] mb-5"
           style={{ fontFamily: "var(--font-body)" }}
         >
-          Choose the looks that best represent your travel personality.
+          {t("onboarding3.selectAestheticHint")}
         </p>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -329,14 +329,13 @@ export function OnboardingStep3() {
           className="text-[#292524] mb-1"
           style={{ fontFamily: "var(--font-body)", fontWeight: 600, fontSize: 16 }}
         >
-          Personalize with AI
+          {t("onboarding3.personalizeWithAI")}
         </h4>
         <p
           className="text-[14px] text-[#57534e] mb-3"
           style={{ fontFamily: "var(--font-body)" }}
         >
-          Upload a reference photo so AI can tailor outfit proportions to your body type.
-          Photo is deleted immediately after generation.
+          {t("onboarding3.personalizeHint")}
         </p>
 
         <div className="mb-5 rounded-lg bg-[#F5EFE6] px-4 py-3 flex flex-col gap-1.5">
@@ -345,14 +344,14 @@ export function OnboardingStep3() {
             style={{ fontFamily: "var(--font-body)" }}
           >
             <Icon name="photo_camera" size={16} className="text-[#78716c] flex-shrink-0" />
-            Best results: A clear photo of one person, facing the camera
+            {t("onboarding3.photoTip1")}
           </p>
           <p
             className="text-[13px] text-[#78716c] flex items-center gap-2"
             style={{ fontFamily: "var(--font-body)" }}
           >
             <Icon name="lightbulb" size={16} className="text-[#78716c] flex-shrink-0" />
-            Use a well-lit photo showing your full or upper body
+            {t("onboarding3.photoTip2")}
           </p>
         </div>
 
@@ -381,7 +380,7 @@ export function OnboardingStep3() {
                     className="text-[13px] text-amber-600"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    Compressing photo...
+                    {t("onboarding3.compressing")}
                   </span>
                 </>
               )}
@@ -392,7 +391,7 @@ export function OnboardingStep3() {
                     className="text-[13px] text-[#57534e]"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    Uploading photo…
+                    {t("onboarding3.uploading")}
                   </span>
                 </>
               )}
@@ -403,7 +402,7 @@ export function OnboardingStep3() {
                     className="text-[13px] text-green-700"
                     style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
                   >
-                    Photo uploaded — AI will personalize your outfits
+                    {t("onboarding3.uploadDone")}
                   </span>
                 </>
               )}
@@ -414,7 +413,7 @@ export function OnboardingStep3() {
                     className="text-[13px] text-[#57534e]"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    Checking photo quality…
+                    {t("onboarding3.detecting")}
                   </span>
                 </>
               )}
@@ -425,7 +424,7 @@ export function OnboardingStep3() {
                     className="text-[13px] text-red-600"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    {uploadError || "Upload failed — please try again"}
+                    {uploadError || t("onboarding3.uploadFailed")}
                   </span>
                 </>
               )}
@@ -441,8 +440,8 @@ export function OnboardingStep3() {
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     {faceWarning === "no_face"
-                      ? "We couldn't detect a face in this photo. For best results, use a clear photo of one person facing the camera."
-                      : "Multiple faces detected. Please upload a photo with only one person for accurate outfit matching."}
+                      ? t("onboarding3.noFaceWarning")
+                      : t("onboarding3.multipleFacesWarning")}
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
@@ -451,14 +450,14 @@ export function OnboardingStep3() {
                     className="px-4 py-3 rounded-lg text-[13px] font-medium bg-[#C4613A] text-white hover:bg-[#a8502f] transition-colors cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    Re-upload Photo
+                    {t("onboarding3.reupload")}
                   </button>
                   <button
                     onClick={handleUseDefault}
                     className="px-4 py-3 rounded-lg text-[13px] font-medium border border-[#E8DDD4] text-[#57534e] hover:bg-[#F5EFE6] transition-colors cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    Continue with default look
+                    {t("onboarding3.continueDefault")}
                   </button>
                 </div>
               </div>
@@ -491,21 +490,21 @@ export function OnboardingStep3() {
                 className="text-[14px] text-[#292524]"
                 style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
               >
-                Drop your photo here or{" "}
+                {t("onboarding3.dropPhoto")}{" "}
                 <label
                   htmlFor="photo-upload-input"
                   onClick={(e) => e.stopPropagation()}
                   className="text-[#C4613A] underline underline-offset-2 font-medium cursor-pointer"
                   style={{ fontFamily: "var(--font-body)", fontSize: "14px" }}
                 >
-                  Browse
+                  {t("onboarding3.browse")}
                 </label>
               </p>
               <p
                 className="mt-1 text-[12px] text-[#57534e]"
                 style={{ fontFamily: "var(--font-body)" }}
               >
-                JPG, PNG or WEBP · Auto-compressed if needed
+                {t("onboarding3.fileFormats")}
               </p>
             </div>
             {uploadError && (
@@ -569,14 +568,14 @@ export function OnboardingStep3() {
       <div className="mt-12 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <BtnSecondary size="sm" onClick={() => navigate("/onboarding/2")}>
-            Back
+            {t("onboarding3.back")}
           </BtnSecondary>
           <button
             onClick={() => navigate("/onboarding/4")}
             className="text-[13px] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer underline underline-offset-4"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            Skip this step
+            {t("onboarding3.skip")}
           </button>
         </div>
         <BtnPrimary
@@ -585,7 +584,7 @@ export function OnboardingStep3() {
           disabled={uploadStatus === "uploading" || uploadStatus === "compressing" || uploadStatus === "detecting"}
         >
           <span className="flex items-center justify-center gap-2">
-            Continue
+            {t("onboarding3.continue")}
             <Icon name="arrow_forward" size={16} className="text-white" />
           </span>
         </BtnPrimary>

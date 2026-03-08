@@ -398,7 +398,7 @@ export function AnnualDashboard() {
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
               {pdfExporting ? <span className="w-3.5 h-3.5 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="picture_as_pdf" size={14} className="text-[#C4613A]" />}
-              {pdfExporting ? "Exporting..." : "Save PDF"}
+              {pdfExporting ? t("dashboard.exporting") : t("dashboard.savePdf")}
             </button>
             <button
               onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)}
@@ -411,8 +411,8 @@ export function AnnualDashboard() {
               className="inline-flex items-center justify-center whitespace-nowrap h-[36px] sm:h-[44px] px-3 sm:px-5 bg-[#1A1410] text-white text-[11px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#C4613A] transition-all cursor-pointer"
               style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
             >
-              <span className="hidden sm:inline">Plan Your Next Trip</span>
-              <span className="sm:hidden">New</span>
+              <span className="hidden sm:inline">{t("dashboard.planTrip")}</span>
+              <span className="sm:hidden">{t("dashboard.new")}</span>
             </button>
           </div>
         </div>
@@ -424,18 +424,18 @@ export function AnnualDashboard() {
           {moodLabel}
         </h1>
         <p className="mt-2 text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-          Your annual membership is active. {hasRealData ? "AI-curated results ready." : "Results generating..."}
+          {t("dashboard.annualActive")} {hasRealData ? t("dashboard.aiResultsReady") : t("dashboard.resultsGenerating")}
         </p>
         <div className="mt-3 flex items-center gap-3 flex-wrap">
           <AiGeneratedBadge confidence={hasRealData ? 95 : 92} bodyFitLabel={bodyFitLabel} />
           {isGeneratingImages && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C4613A]/10 text-[#C4613A] text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> Generating AI outfits...
+              <span className="w-2 h-2 rounded-full bg-[#C4613A] animate-ping" /> {t("dashboard.generatingOutfits")}
             </span>
           )}
           {imagesReady && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-100 text-green-700 text-[11px]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <Icon name="check_circle" size={14} className="text-green-600" /> {apiGridImages.length || apiResultImages.length || aiImages.size} AI images ready
+              <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(apiGridImages.length || apiResultImages.length || aiImages.size))}
             </span>
           )}
         </div>
@@ -490,7 +490,7 @@ export function AnnualDashboard() {
             {/* ─── 2x2 Grid Image Section ─── */}
             <div>
               <h2 className="text-[28px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>
-                Your <em>{cityName} Capsule</em>
+                <em>{t("dashboard.yourCapsule").replace("{city}", cityName)}</em>
               </h2>
 
               {/* Full 2x2 grid image */}
@@ -501,7 +501,7 @@ export function AnnualDashboard() {
                       {[0, 1, 2, 3].map((i) => (
                         <div key={i} className="bg-[#EFE8DF]/80 rounded-lg flex flex-col items-center justify-center gap-2">
                           <span className="w-8 h-8 border-2 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" style={{ animationDelay: `${i * 0.2}s` }} />
-                          <span className="text-[10px] text-[#a8a29e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>Day {i + 1}</span>
+                          <span className="text-[10px] text-[#a8a29e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.day")} {i + 1}</span>
                         </div>
                       ))}
                     </div>
@@ -523,7 +523,7 @@ export function AnnualDashboard() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                     <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/30 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                        <Icon name="auto_awesome" size={10} className="text-white" filled /> 4 AI Outfits · {cityName}
+                        <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.nAiOutfits").replace("{n}", "4")} · {cityName}
                       </span>
                       <button
                         onClick={() => downloadImage(gridImageUrl, `capsule-${cityName.toLowerCase()}-grid.jpg`)}
@@ -575,7 +575,7 @@ export function AnnualDashboard() {
 
               {/* ─── Daily Breakdown (quadrant cropping) ─── */}
               <h3 className="text-[20px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>
-                Daily Breakdown
+                {t("dashboard.dailyBreakdown")}
               </h3>
               <div className="space-y-4">
                 {(hasRealData ? cityDays : outfits.slice(0, 4).map((o, i) => ({
@@ -618,7 +618,7 @@ export function AnnualDashboard() {
                             </span>
                             {gridImageUrl && (
                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[8px] uppercase tracking-[0.08em] mt-1" style={{ fontFamily: "var(--font-mono)" }}>
-                                <Icon name="crop" size={8} className="text-white" /> Quadrant {quadrant + 1}
+                                <Icon name="crop" size={8} className="text-white" /> {t("dashboard.quadrant")} {quadrant + 1}
                               </span>
                             )}
                           </div>
@@ -632,9 +632,9 @@ export function AnnualDashboard() {
                             </span>
                             <div>
                               <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>
-                                {hasRealData ? dayPlan.note?.split(" ").slice(0, 4).join(" ") || `Day ${dayPlan.day} Outfit` : mockOutfit?.title || `Day ${dayPlan.day}`}
+                                {hasRealData ? dayPlan.note?.split(" ").slice(0, 4).join(" ") || `${t("dashboard.day")} ${dayPlan.day} ${t("dashboard.outfit")}` : mockOutfit?.title || `${t("dashboard.day")} ${dayPlan.day}`}
                               </span>
-                              <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>Outfit Breakdown</span>
+                              <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.outfitBreakdown")}</span>
                             </div>
                           </div>
 
@@ -658,7 +658,7 @@ export function AnnualDashboard() {
                                 );
                               }) : (
                                 <p className="text-[13px] text-[#a8a29e] py-2" style={{ fontFamily: "var(--font-body)" }}>
-                                  Outfit details loading...
+                                  {t("dashboard.outfitDetailsLoading")}
                                 </p>
                               )
                             ) : (
@@ -705,7 +705,7 @@ export function AnnualDashboard() {
 
             {/* Weather */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-              <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{cityName} Weather</h3>
+              <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{cityName} {t("dashboard.weather")}</h3>
               <WeatherWidget
                 temp={primaryWeather ? Math.round(primaryWeather.temperature_day_avg) : 18}
                 rain={primaryWeather ? Math.round(primaryWeather.precipitation_prob * 100) : 38}
@@ -719,7 +719,7 @@ export function AnnualDashboard() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.packingList")}</h3>
                 <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-[0.1em] ${hasRealData ? "bg-[#C4613A]/10 text-[#C4613A]" : "bg-[#EFE8DF] text-[#57534e]"}`} style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                  {hasRealData ? "AI curated" : "Auto-derived"}
+                  {hasRealData ? t("dashboard.aiCurated") : t("dashboard.autoDerived")}
                 </span>
               </div>
               <div className="space-y-2">
@@ -747,7 +747,7 @@ export function AnnualDashboard() {
                 <DonutChart percent={primaryPercent} />
                 <div>
                   <span className="text-[18px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>{primaryStyle}</span>
-                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>Primary aesthetic</span>
+                  <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{t("dashboard.primaryAesthetic")}</span>
                 </div>
               </div>
               <div className="space-y-4">
@@ -778,8 +778,8 @@ export function AnnualDashboard() {
                   <TagChip label={trip.mood} />
                 </div>
                 <div className="mt-3 pt-3 border-t border-[#EFE8DF] flex items-center gap-4 text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                  <span>{trip.items} items</span>
-                  <span>{trip.outfits} outfits</span>
+                  <span>{trip.items} {t("dashboard.items")}</span>
+                  <span>{trip.outfits} {t("dashboard.outfits")}</span>
                 </div>
               </div>
             </div>

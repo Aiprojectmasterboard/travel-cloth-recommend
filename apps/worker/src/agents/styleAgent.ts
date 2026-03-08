@@ -1,8 +1,12 @@
 /**
  * styleAgent.ts  (Pro plan only)
  *
- * Uses OpenAI GPT-5.4 (Responses API) to generate DALL-E 3 image prompts
+ * Uses OpenAI GPT-5.4 (Responses API) to generate gpt-image-1.5 image prompts
  * for each city. Produces 4 prompts per city (max 12 total for a 3-city trip).
+ *
+ * Image style: luxury travel editorial, fashion week street style
+ * Each panel must show: same traveler, different outfit, full body head-to-toe,
+ * destination landmark background (no repeated landmarks within same grid).
  *
  * Model: gpt-5.4
  */
@@ -224,10 +228,13 @@ export async function styleAgent(
 
   const isInfant = isInfantProfile(userProfile);
   const systemPrompt =
-    'You are a professional fashion stylist and AI image director. ' +
-    'Your task is to write precise, vivid DALL-E 3 image generation prompts ' +
-    'for fashion editorial photography. Each prompt must be photorealistic and ' +
-    'capture the unique spirit of the destination and its current weather. ' +
+    'You are a professional fashion stylist and AI image director for TravelCapsule, ' +
+    'an AI travel preparation platform. ' +
+    'Your task is to write precise, vivid gpt-image-1.5 image generation prompts ' +
+    'for luxury travel editorial photography. ' +
+    'Images must look like: luxury travel editorial, fashion week street style, ' +
+    'professional stylist curated fashion. ' +
+    'Each prompt must be photorealistic and capture the unique spirit of the destination. ' +
     (isInfant
       ? 'IMPORTANT: The subject is a baby/infant who cannot walk. Every prompt MUST show the baby ' +
         'lying comfortably in a stylish stroller/pram, wearing cute weather-appropriate baby clothing. ' +
@@ -250,13 +257,15 @@ Rules for each prompt:
 3. Each prompt must specify:
    - ${hasOutfitRef ? 'The EXACT clothing items from the pre-assigned outfit above — describe each item with its specific color, material, and style' : 'Specific clothing items appropriate for the climate, city vibe, AND the travel occasion'}${aestheticRule ? `\n${aestheticRule}` : ''}
    - A SPECIFIC famous landmark or iconic location in that city as background (e.g. Eiffel Tower, Louvre Museum, Champs-Élysées)
+   - Each prompt MUST use a DIFFERENT landmark — landmarks must NOT repeat within the same city
    - The person must be standing naturally in front of or near the landmark
    - Lighting style (golden hour, soft overcast, neon-lit evening, bright midday, etc.)
-   - Camera angle: ${isInfant ? 'eye-level shot of the baby in the stroller, showing the full outfit and stroller' : 'full body shot showing the complete outfit from head to toe'}
-   - End with: "fashion editorial photography, photorealistic, 4K, sharp focus"
-4. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
+   - Camera angle: ${isInfant ? 'eye-level shot of the baby in the stroller, showing the full outfit and stroller' : 'full body shot showing the complete outfit from head to toe — entire body visible'}
+   - End with: "luxury travel editorial photography, photorealistic, 4K, sharp focus"
+4. negative_prompt: include "blurry, low quality, cartoon, nsfw, generic tourist clothing, cropped body" plus any style-specific items to avoid
 5. Each prompt for the same city MUST depict a completely different travel scenario, outfit style, and landmark. No two prompts should have similar compositions.
-${hasOutfitRef ? '6. CRITICAL: Each prompt MUST depict EXACTLY the items listed in the pre-assigned outfit. Do NOT substitute, swap, or add items. The image must match the item breakdown shown to the user.' : ''}
+6. Style MUST look like luxury travel editorial or fashion week street style — avoid generic outfits or low-fashion tourist clothing.
+${hasOutfitRef ? '7. CRITICAL: Each prompt MUST depict EXACTLY the items listed in the pre-assigned outfit. Do NOT substitute, swap, or add items. The image must match the item breakdown shown to the user.' : ''}
 
 Climate clothing guide:
 - cold (<10°C): heavy coats, thermal layers, knits, waterproof boots
@@ -378,10 +387,15 @@ export async function styleAgentGrid(
   const modelDesc = imagePrefix || 'A fashion model, ';
 
   const systemPrompt =
-    'You are a professional fashion stylist and AI image director. ' +
-    'Your task is to write a single, precise DALL-E 3 image generation prompt per city. ' +
+    'You are a professional fashion stylist and AI image director for TravelCapsule, ' +
+    'an AI travel preparation platform. ' +
+    'Your task is to write a single, precise gpt-image-1.5 image generation prompt per city. ' +
     'Each prompt must describe a 2x2 editorial grid photo where each quadrant shows a ' +
     'different outfit at a different city landmark. The panels are divided by thin white lines. ' +
+    'Images must look like: luxury travel editorial, fashion week street style, ' +
+    'professional stylist curated fashion. ' +
+    'Each panel MUST show: same traveler, different outfit, full body head-to-toe, ' +
+    'destination landmark background. Landmarks must NOT repeat within the same grid. ' +
     (isInfant
       ? 'IMPORTANT: The subject is a baby/infant who cannot walk. Every quadrant MUST show the baby ' +
         'lying comfortably in a stylish stroller/pram, wearing cute weather-appropriate baby clothing. '
@@ -399,14 +413,16 @@ Rules for each grid prompt:
 1. The prompt must describe a "professional 2x2 fashion editorial grid photo" with "four separate panels arranged in a grid, each clearly divided by thin white lines"
 2. Each quadrant (top-left, top-right, bottom-left, bottom-right) must describe:
    - ${modelDesc}wearing [EXACT outfit items from pre-assigned list above] — include specific colors, materials, styles
-   - A SPECIFIC famous landmark or iconic location in the city (different landmark per quadrant)
+   - A SPECIFIC famous landmark or iconic location in the city — each quadrant MUST use a DIFFERENT landmark (e.g. London: Big Ben, Tower Bridge, Buckingham Palace, Covent Garden)
+   - Landmarks must NOT repeat within the same grid
    - Lighting style (golden hour / soft overcast / neon-lit evening / bright midday)
-   - Full body shot showing complete outfit from head to toe
-3. End every prompt with: "Fashion editorial photography, photorealistic, 4K, sharp focus, consistent model appearance across all four panels."
+   - Full body shot showing complete outfit from head to toe — entire body visible
+3. End every prompt with: "Luxury travel editorial photography, photorealistic, 4K, sharp focus, consistent model appearance across all four panels."
 4. The same model must appear in all four quadrants — consistent hair, face, physique
-5. negative_prompt: always include "blurry, low quality, cartoon, nsfw, collage grid lines missing, merged panels"
-6. For "outfits" array: list each quadrant's mood (2-3 word label) and the exact item names used
-${hasOutfitRef ? '7. CRITICAL: Each quadrant MUST depict EXACTLY the pre-assigned outfit items. Do NOT substitute or add items.' : ''}
+5. Style must look like luxury travel editorial or fashion week street style — avoid generic outfits or low-fashion tourist clothing
+6. negative_prompt: always include "blurry, low quality, cartoon, nsfw, collage grid lines missing, merged panels, generic tourist clothing, cropped body"
+7. For "outfits" array: list each quadrant's mood (2-3 word label) and the exact item names used
+${hasOutfitRef ? '8. CRITICAL: Each quadrant MUST depict EXACTLY the pre-assigned outfit items. Do NOT substitute or add items.' : ''}
 
 Climate clothing guide (apply per weather data):
 - cold (<10°C): heavy coats, thermal layers, knits, waterproof boots

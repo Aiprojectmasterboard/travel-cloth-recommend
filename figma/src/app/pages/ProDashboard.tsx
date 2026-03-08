@@ -441,7 +441,7 @@ export function ProDashboard() {
             <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="hidden sm:block"><PlanBadge label="Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" /></span>
+            <span className="hidden sm:block"><PlanBadge label={t("upgrade.proPlan")} className="bg-[#C4613A]/10 text-[#C4613A]" /></span>
             <SocialShareButton />
             <button
               onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)}
@@ -456,7 +456,7 @@ export function ProDashboard() {
               style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
             >
               {pdfExporting ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="download" size={14} className="text-[#C4613A]" />}
-              <span className="hidden sm:inline">{pdfExporting ? "Exporting..." : "Save PDF"}</span>
+              <span className="hidden sm:inline">{pdfExporting ? t("dashboard.exporting") : t("dashboard.savePdf")}</span>
             </button>
           </div>
         </div>
@@ -541,7 +541,7 @@ export function ProDashboard() {
                         <div key={i} className="bg-[#EFE8DF]/80 rounded-lg flex flex-col items-center justify-center gap-2">
                           <span className="w-8 h-8 border-2 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" style={{ animationDelay: `${i * 0.2}s` }} />
                           <span className="text-[10px] text-[#a8a29e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                            Day {i + 1}
+                            {t("dashboard.day")} {i + 1}
                           </span>
                         </div>
                       ))}
@@ -565,7 +565,7 @@ export function ProDashboard() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                     <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/30 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                        <Icon name="auto_awesome" size={10} className="text-white" filled /> 4 AI Outfits · {currentSet.city}
+                        <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.nAiOutfits").replace("{n}", "4")} · {currentSet.city}
                       </span>
                       <button
                         onClick={() => downloadImage(gridImageUrl, `capsule-${currentSet.city.toLowerCase()}-grid.jpg`)}
@@ -619,7 +619,7 @@ export function ProDashboard() {
             {/* ─── Daily Breakdown (quadrant cropping) ─── */}
             <div>
               <h2 className="text-[24px] text-[#292524] mb-6" style={{ fontFamily: "var(--font-display)" }}>
-                Daily Breakdown
+                {t("dashboard.dailyBreakdown")}
               </h2>
 
               <div className="space-y-4">
@@ -663,7 +663,7 @@ export function ProDashboard() {
                             </span>
                             {gridImageUrl && (
                               <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[8px] uppercase tracking-[0.08em] mt-1" style={{ fontFamily: "var(--font-mono)" }}>
-                                <Icon name="crop" size={8} className="text-white" /> Quadrant {quadrant + 1}
+                                <Icon name="crop" size={8} className="text-white" /> {t("dashboard.quadrant")} {quadrant + 1}
                               </span>
                             )}
                           </div>
@@ -677,10 +677,10 @@ export function ProDashboard() {
                             </span>
                             <div>
                               <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>
-                                {hasRealData ? dayPlan.note?.split(" ").slice(0, 4).join(" ") || `Day ${dayPlan.day} Outfit` : mockOutfit?.title || `Day ${dayPlan.day}`}
+                                {hasRealData ? dayPlan.note?.split(" ").slice(0, 4).join(" ") || `${t("dashboard.day")} ${dayPlan.day} ${t("dashboard.outfit")}` : mockOutfit?.title || `${t("dashboard.day")} ${dayPlan.day}`}
                               </span>
                               <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                                Outfit Breakdown
+                                {t("dashboard.outfitBreakdown")}
                               </span>
                             </div>
                           </div>
@@ -706,7 +706,7 @@ export function ProDashboard() {
                               }) : (
                                 // No matched items — show placeholder rather than wrong city's items
                                 <p className="text-[13px] text-[#a8a29e] py-2" style={{ fontFamily: "var(--font-body)" }}>
-                                  Outfit details loading...
+                                  {t("dashboard.outfitDetailsLoading")}
                                 </p>
                               )
                             ) : (
@@ -817,7 +817,7 @@ export function ProDashboard() {
                 <div className="space-y-3">
                   {[
                     { icon: "public", label: t("dashboard.cities"), value: `${citySets.length}` },
-                    { icon: "grid_view", label: "Grid Outfits", value: `${citySets.length * 4} ${t("dashboard.looks")}` },
+                    { icon: "grid_view", label: t("dashboard.gridOutfits"), value: `${citySets.length * 4} ${t("dashboard.looks")}` },
                     { icon: "checkroom", label: t("dashboard.packingItems"), value: `${aiPackingList.length || packing.length} ${t("dashboard.pieces")}` },
                     { icon: "refresh", label: t("dashboard.regenerations"), value: regenUsed ? `0 ${t("dashboard.left")}` : `1 ${t("dashboard.left")}` },
                   ].map((stat) => (

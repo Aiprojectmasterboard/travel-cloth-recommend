@@ -153,7 +153,7 @@ function DeleteAccountModal({
             className="flex-1 h-[44px] bg-white border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.06em] rounded-xl hover:bg-[#FDF8F3] transition-colors cursor-pointer"
             style={{ fontFamily: bodyFont, fontWeight: 600 }}
           >
-            Cancel
+            {t("mypage.cancel")}
           </button>
           <button
             onClick={onConfirm}
@@ -161,7 +161,7 @@ function DeleteAccountModal({
             className="flex-1 h-[44px] bg-red-600 text-white text-[13px] uppercase tracking-[0.06em] rounded-xl hover:bg-red-700 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
             style={{ fontFamily: bodyFont, fontWeight: 600 }}
           >
-            {loading ? "Deleting..." : t("mypage.confirmDelete")}
+            {loading ? t("mypage.deleting") : t("mypage.confirmDelete")}
           </button>
         </div>
       </div>
@@ -275,11 +275,11 @@ export function MyPage() {
       });
       if (resetError) throw resetError;
       setPasswordResetSent(true);
-      setToast("Password reset link sent to your email.");
+      setToast(t("mypage.passwordResetSent"));
       setTimeout(() => setToast(""), 5000);
     } catch (err) {
       console.error("[MyPage] password reset error:", err);
-      setToast("Failed to send password reset email.");
+      setToast(t("mypage.passwordResetFailed"));
       setTimeout(() => setToast(""), 4000);
     }
   };
@@ -293,7 +293,7 @@ export function MyPage() {
 
   const planLabel = purchasedPlan
     ? purchasedPlan.charAt(0).toUpperCase() + purchasedPlan.slice(1)
-    : "Free";
+    : t("mypage.free");
 
   const createdAt = user?.id
     ? (() => {
@@ -344,7 +344,7 @@ export function MyPage() {
   /* ─── Main Page ──────────────────────────────────────────────────── */
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
-      <SEO title="My Page" description="Your Travel Capsule AI dashboard — trip history, account settings, and style preferences." noindex={true} />
+      <SEO title={t("mypage.title")} description={t("mypage.seoDescription")} noindex={true} />
       {/* Toast */}
       {toast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[200] px-5 py-3 bg-[#1A1410] text-white rounded-xl text-[13px] shadow-lg" style={{ fontFamily: bodyFont }}>
@@ -368,7 +368,7 @@ export function MyPage() {
             <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: displayFont, fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
           <div className="flex items-center gap-3">
-            <PlanBadge label={`${planLabel} Plan`} />
+            <PlanBadge label={`${planLabel} ${t("mypage.plan")}`} />
             <button
               onClick={() => navigate("/onboarding/1")}
               className="h-[36px] px-4 bg-[#C4613A] text-white rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#A84A25] transition-colors cursor-pointer flex items-center gap-2"
@@ -428,13 +428,13 @@ export function MyPage() {
                 <div className="flex items-center gap-3">
                   <Icon name="trip_origin" size={16} className="text-[#57534e]" />
                   <span className="text-[13px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
-                    {trips.length} {trips.length === 1 ? "trip" : "trips"} created
+                    {trips.length} {t(trips.length === 1 ? "mypage.tripCreated" : "mypage.tripsCreated")}
                   </span>
                 </div>
                 <div className="flex items-center gap-3">
                   <Icon name="paid" size={16} className="text-[#57534e]" />
                   <span className="text-[13px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
-                    {orders.length} {orders.length === 1 ? "order" : "orders"}
+                    {orders.length} {t(orders.length === 1 ? "mypage.order" : "mypage.orders")}
                   </span>
                 </div>
               </div>
@@ -462,7 +462,7 @@ export function MyPage() {
                     </span>
                     {passwordResetSent && (
                       <span className="text-[11px] text-green-600" style={{ fontFamily: bodyFont }}>
-                        Reset email sent
+                        {t("mypage.resetEmailSent")}
                       </span>
                     )}
                   </div>
@@ -510,7 +510,7 @@ export function MyPage() {
                 {t("mypage.tripHistory")}
               </h2>
               <span className="text-[10px] uppercase tracking-[0.12em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                {trips.length} {trips.length === 1 ? "trip" : "trips"}
+                {trips.length} {t(trips.length === 1 ? "mypage.trip" : "mypage.trips")}
               </span>
             </div>
 
@@ -539,7 +539,7 @@ export function MyPage() {
                   {t("mypage.noTrips")}
                 </h3>
                 <p className="text-[14px] text-[#57534e] mb-8 max-w-[360px]" style={{ fontFamily: bodyFont }}>
-                  Plan your first AI-powered capsule wardrobe and start traveling with confidence.
+                  {t("mypage.noTripsDescription")}
                 </p>
                 <BtnPrimary onClick={() => navigate("/onboarding/1")}>
                   <span className="flex items-center gap-2">

@@ -1,9 +1,14 @@
 /**
  * teaserAgent.ts
  *
- * Generates teaser fashion images via OpenAI gpt-image-1 and stores them in R2.
+ * Generates teaser fashion images via OpenAI gpt-image-1.5 and stores them in R2.
  *
- * Standard plan: 1 teaser image (single generation)
+ * Identity Engine:
+ *   If user uploaded a reference photo (faceUrl), the Identity Engine preserves
+ *   their facial structure, hairstyle, and skin tone via /images/edits endpoint.
+ *   If no reference photo, generates a consistent default traveler model.
+ *
+ * Standard plan: 1 full-body preview image (single generation)
  * R2 path: temp/{tripId}/teaser-{index}.png
  * Public URL: {R2_PUBLIC_URL}/temp/{tripId}/teaser-{index}.png
  *
@@ -40,14 +45,14 @@ export interface TeaserUserProfile {
 // ─── Mood Variations ──────────────────────────────────────────────────────────
 
 /**
- * 4 different outfit mood/scene variations for Standard plan diversity.
+ * Different outfit mood/scene variations for diversity.
  * Each produces a visually distinct look from the same vibe.
  */
 const MOOD_VARIATIONS = [
-  { scene: 'walking through a famous landmark area', time: 'golden hour morning light', style: 'polished editorial' },
-  { scene: 'sitting at a stylish outdoor café', time: 'soft afternoon light', style: 'relaxed chic' },
-  { scene: 'exploring a charming local street', time: 'natural daylight', style: 'smart casual' },
-  { scene: 'standing at a scenic viewpoint', time: 'warm sunset light', style: 'effortlessly elegant' },
+  { scene: 'walking through a famous landmark area', time: 'golden hour morning light', style: 'luxury travel editorial' },
+  { scene: 'sitting at a stylish outdoor café', time: 'soft afternoon light', style: 'fashion week street style' },
+  { scene: 'exploring a charming local street', time: 'natural daylight', style: 'professional stylist curated' },
+  { scene: 'standing at a scenic viewpoint', time: 'warm sunset light', style: 'effortlessly elegant editorial' },
 ] as const;
 
 // ─── Prompt Builder ───────────────────────────────────────────────────────────
@@ -110,8 +115,9 @@ function buildPrompt(
     `Photorealistic full-body fashion photo: ${genderDesc}${heightDesc}${bodyDesc}${styleDesc} ` +
     `${variation.scene} in ${cityName}. ` +
     `Travel outfit style: ${vibeResult.mood_label}, ${tagString}. ` +
-    `${variation.style} look. ` +
-    `Fashion editorial photography, ${variation.time}, sharp focus, high quality.`
+    `${variation.style} look. Full body head-to-toe visible, entire outfit visible. ` +
+    `Luxury travel editorial photography, ${variation.time}, sharp focus, high quality, 4K. ` +
+    `Avoid: generic tourist clothing, cropped body shots.`
   );
 }
 
@@ -128,9 +134,10 @@ export async function teaserAgent(
   }
 
   const prompt = buildPrompt(vibeResult, userProfile, 0);
-  console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);
+  console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}, identity: ${faceUrl ? 'reference photo' : 'default model'}`);
 
-  const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536');
+  // Identity Engine: pass faceUrl if user uploaded a reference photo
+  const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536', faceUrl);
 
   // Store in R2
   const r2Key = `temp/${tripId}/teaser.png`;
@@ -150,12 +157,14 @@ export async function teaserAgent(
   return { image_url: publicUrl, expires_at: expiresAt };
 }
 
-// ─── Main: Multiple Teasers (Standard 4-image) ───────────────────────────────
+// ─── Main: Multiple Teasers ──────────────────────────────────────────────────
 
 /**
- * Generates 4 teaser images with different moods in parallel.
+ * Generates teaser images with different moods in parallel.
  * Each image uses a different scene/lighting/style variation.
- * Stores in R2 as temp/{tripId}/teaser-{0-3}.png
+ * Stores in R2 as temp/{tripId}/teaser-{0-N}.png
+ *
+ * Identity Engine: if faceUrl provided, all images preserve the same traveler identity.
  */
 export async function teaserAgentMultiple(
   input: {
@@ -167,13 +176,13 @@ export async function teaserAgentMultiple(
   },
   env: Bindings,
 ): Promise<MultipleTeaserResult> {
-  const { tripId, vibeResult, userProfile, count = 4 } = input;
+  const { tripId, vibeResult, faceUrl, userProfile, count = 1 } = input;
 
   if (!env.OPENAI_API_KEY) {
     throw new Error('[teaserAgent] OPENAI_API_KEY is not configured');
   }
 
-  console.log(`[teaserAgent] Generating ${count} teasers for trip ${tripId} — mood: ${vibeResult.mood_label}`);
+  console.log(`[teaserAgent] Generating ${count} teasers for trip ${tripId} — mood: ${vibeResult.mood_label}, identity: ${faceUrl ? 'reference photo' : 'default model'}`);
 
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   const moodLabels = MOOD_VARIATIONS.map(v => v.style);
@@ -181,7 +190,8 @@ export async function teaserAgentMultiple(
   // Generate all images in parallel
   const tasks = Array.from({ length: count }, (_, idx) => async () => {
     const prompt = buildPrompt(vibeResult, userProfile, idx);
-    const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536');
+    // Identity Engine: pass faceUrl for consistent traveler identity
+    const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536', faceUrl);
 
     const r2Key = `temp/${tripId}/teaser-${idx}.png`;
     await env.R2.put(r2Key, imageBuffer, {

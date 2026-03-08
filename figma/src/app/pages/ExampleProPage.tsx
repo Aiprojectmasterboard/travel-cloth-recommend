@@ -275,7 +275,7 @@ export function ExampleProPage() {
             ))}
           </nav>
           <div className="flex items-center gap-3">
-            <PlanBadge label="Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" />
+            <PlanBadge label={t("examples.pro.planBadge")} className="bg-[#C4613A]/10 text-[#C4613A]" />
             <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]/60 hidden sm:inline" style={{ fontFamily: "var(--font-mono)" }}>
               {t("examples.mode")}
             </span>
@@ -328,7 +328,7 @@ export function ExampleProPage() {
                     <ImageWithFallback src={outfit.image} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <span className="text-white/55 text-[8px] sm:text-[9px] uppercase tracking-[0.14em] block" style={{ fontFamily: "var(--font-mono)" }}>Day {outfit.day}</span>
+                      <span className="text-white/55 text-[8px] sm:text-[9px] uppercase tracking-[0.14em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.pro.day")} {outfit.day}</span>
                       <span className="text-white text-[12px] sm:text-[15px] leading-tight block" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
                     </div>
                   </div>
@@ -406,7 +406,7 @@ export function ExampleProPage() {
                           <div className="min-w-0">
                             {/* Stylist note — prominent at top */}
                             <div className="bg-[#FDF8F3] rounded-xl p-4 mb-4 border-l-[3px] border-[#C4613A]">
-                              <span className="text-[9px] uppercase tracking-[0.12em] text-[#C4613A] block mb-1.5" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>Stylist Note</span>
+                              <span className="text-[9px] uppercase tracking-[0.12em] text-[#C4613A] block mb-1.5" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{t("examples.pro.stylistNote")}</span>
                               <p className="text-[13px] sm:text-[14px] text-[#292524] leading-relaxed" style={{ fontFamily: displayFont, fontStyle: "italic" }}>
                                 "{outfit.note}"
                               </p>
@@ -467,10 +467,10 @@ export function ExampleProPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-2 text-center mb-3">
                   {[
-                    { label: "Height", value: "170cm" },
-                    { label: "Weight", value: "45kg" },
-                    { label: "Size", value: "S / EU 37" },
-                    { label: "Aesthetic", value: "Classic" },
+                    { label: t("examples.pro.profileHeight"), value: "170cm" },
+                    { label: t("examples.pro.profileWeight"), value: "45kg" },
+                    { label: t("examples.pro.profileSize"), value: "S / EU 37" },
+                    { label: t("examples.pro.profileAesthetic"), value: "Classic" },
                   ].map(({ label, value }) => (
                     <div key={label} className="bg-[#FDF8F3] rounded-lg p-2.5">
                       <span className="text-[10px] text-[#8A7B6E] block" style={{ fontFamily: "var(--font-mono)" }}>{label}</span>
@@ -494,7 +494,7 @@ export function ExampleProPage() {
                   </span>
                 </div>
                 <p className="text-[11px] text-[#8A7B6E] mb-3" style={{ fontFamily: bodyFont }}>
-                  {PACKING.length} unique items · {ALL_OUTFITS.length} looks
+                  {PACKING.length} {t("examples.pro.uniqueItems")} · {ALL_OUTFITS.length} {t("examples.pro.looks")}
                 </p>
                 <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
                   {PACKING.map((item, i) => (
@@ -544,7 +544,7 @@ export function ExampleProPage() {
                   {[
                     { icon: "public", labelKey: "examples.pro.statCities", value: `${EXAMPLE_CITIES.length}` },
                     { icon: "style", labelKey: "examples.pro.statOutfits", value: `${ALL_OUTFITS.length} ${t("examples.pro.looks")}` },
-                    { icon: "checkroom", labelKey: "examples.pro.statPacking", value: `${PACKING.length} pieces` },
+                    { icon: "checkroom", labelKey: "examples.pro.statPacking", value: `${PACKING.length} ${t("examples.pro.pieces")}` },
                     { icon: "hd", labelKey: "examples.pro.statQuality", value: t("examples.pro.statQualityVal") },
                     { icon: "refresh", labelKey: "examples.pro.statRegen", value: t("examples.pro.statRegenVal") },
                   ].map((stat) => (
@@ -576,7 +576,7 @@ export function ExampleProPage() {
                   {t("examples.pro.ctaBtn")} &rarr;
                 </button>
                 <p className="text-[10px] text-white/60 text-center mt-3" style={{ fontFamily: "var(--font-mono)" }}>
-                  Free preview · No credit card needed
+                  {t("examples.pro.freePreview")}
                 </p>
               </div>
             </div>

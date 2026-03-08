@@ -453,7 +453,7 @@ export function ExampleAnnualPage() {
                     <div className="min-w-0">
                       {/* Stylist note */}
                       <div className="bg-[#FDF8F3] rounded-xl p-4 mb-4 border-l-[3px] border-[#D4AF37]">
-                        <span className="text-[9px] uppercase tracking-[0.12em] text-[#D4AF37] block mb-1.5" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>Stylist Note</span>
+                        <span className="text-[9px] uppercase tracking-[0.12em] text-[#D4AF37] block mb-1.5" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{t("examples.pro.stylistNote")}</span>
                         <p className="text-[13px] text-[#292524] leading-relaxed" style={{ fontFamily: displayFont, fontStyle: "italic" }}>
                           "{EURO_OUTFITS[activeDayIdx].note}"
                         </p>
@@ -461,7 +461,7 @@ export function ExampleAnnualPage() {
 
                       {/* Items */}
                       <span className="text-[9px] uppercase tracking-[0.12em] text-[#8A7B6E] block mb-3" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                        Outfit Breakdown
+                        {t("examples.annual.outfitBreakdown")}
                       </span>
                       <div className="space-y-2">
                         {EURO_OUTFITS[activeDayIdx].items.map((item) => (
@@ -507,10 +507,10 @@ export function ExampleAnnualPage() {
               </div>
               <div className="grid grid-cols-2 gap-2 text-center mb-3">
                 {[
-                  { label: "Height", value: "185cm" },
-                  { label: "Weight", value: "75kg" },
-                  { label: "Size", value: "L / EU 43" },
-                  { label: "Aesthetic", value: "Casual" },
+                  { label: t("examples.pro.profileHeight"), value: "185cm" },
+                  { label: t("examples.pro.profileWeight"), value: "75kg" },
+                  { label: t("examples.pro.profileSize"), value: "L / EU 43" },
+                  { label: t("examples.pro.profileAesthetic"), value: "Casual" },
                 ].map(({ label, value }) => (
                   <div key={label} className="bg-[#FDF8F3] rounded-lg p-2.5">
                     <span className="text-[10px] text-[#8A7B6E] block" style={{ fontFamily: "var(--font-mono)" }}>{label}</span>
@@ -555,7 +555,7 @@ export function ExampleAnnualPage() {
                         <SizeChip size={item.size} />
                       </div>
                       <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                        {item.usageCount > 1 ? `x${item.usageCount} looks` : "1 look"}
+                        {item.usageCount > 1 ? `x${item.usageCount} ${t("examples.annual.looks")}` : `1 ${t("examples.annual.look")}`}
                       </span>
                     </div>
                   </div>
@@ -567,7 +567,7 @@ export function ExampleAnnualPage() {
             <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
               <div className="flex items-start justify-between mb-1">
                 <h3 className="text-[17px] text-[#292524]" style={{ fontFamily: displayFont }}>{t("examples.annual.styleDnaTitle")}</h3>
-                <span className="px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>Annual Only</span>
+                <span className="px-2 py-0.5 rounded-full bg-[#D4AF37]/10 text-[#D4AF37] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{t("examples.annual.annualOnly")}</span>
               </div>
               <p className="text-[12px] text-[#8A7B6E] mb-4 leading-relaxed" style={{ fontFamily: bodyFont }}>
                 {t("examples.annual.styleDnaBody")}
@@ -582,7 +582,7 @@ export function ExampleAnnualPage() {
                     {[...Array(5)].map((_, i) => (
                       <span key={i} className="text-[#D4AF37] text-[11px]">★</span>
                     ))}
-                    <span className="text-[10px] text-[#8A7B6E] ml-1" style={{ fontFamily: "var(--font-mono)" }}>Dominant</span>
+                    <span className="text-[10px] text-[#8A7B6E] ml-1" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.dominant")}</span>
                   </div>
                 </div>
               </div>
@@ -610,7 +610,7 @@ export function ExampleAnnualPage() {
                 {t("examples.annual.vipBtn")}
               </button>
               <p className="text-[10px] text-white/55 text-center mt-2.5" style={{ fontFamily: "var(--font-mono)" }}>
-                $9.99/yr · 12 trips · Cancel anytime
+                {t("examples.annual.pricingNote")}
               </p>
             </div>
           </div>
@@ -623,7 +623,7 @@ export function ExampleAnnualPage() {
           <div className="flex items-center justify-between mb-8">
             <div>
               <h2 className="text-[24px] sm:text-[28px] text-[#1A1410]" style={{ fontFamily: displayFont }}>{t("examples.annual.pastTrips")}</h2>
-              <p className="text-[13px] text-[#8A7B6E] mt-1" style={{ fontFamily: bodyFont }}>Your styling history, always accessible</p>
+              <p className="text-[13px] text-[#8A7B6E] mt-1" style={{ fontFamily: bodyFont }}>{t("examples.annual.pastTripsSubtitle")}</p>
             </div>
             <span className="text-[11px] uppercase tracking-[0.1em] text-[#D4AF37]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("examples.annual.viewAll")} &rarr;</span>
           </div>
@@ -640,7 +640,7 @@ export function ExampleAnnualPage() {
                   </div>
                   {/* Mood label on image */}
                   <div className="absolute bottom-3 left-4">
-                    <span className="text-white/65 text-[9px] uppercase tracking-[0.1em] block" style={{ fontFamily: "var(--font-mono)" }}>Mood</span>
+                    <span className="text-white/65 text-[9px] uppercase tracking-[0.1em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.mood")}</span>
                     <span className="text-white text-[14px] italic" style={{ fontFamily: displayFont }}>{trip.mood}</span>
                   </div>
                 </div>
@@ -651,8 +651,8 @@ export function ExampleAnnualPage() {
                     <span className="text-[12px] text-[#8A7B6E]" style={{ fontFamily: bodyFont }}>{trip.date}</span>
                   </div>
                   <div className="mt-3 pt-3 border-t border-[#EFE8DF] flex items-center gap-4 text-[10px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>
-                    <span className="flex items-center gap-1"><Icon name="checkroom" size={12} className="text-[#C4613A]" />{trip.items} items</span>
-                    <span className="flex items-center gap-1"><Icon name="style" size={12} className="text-[#C4613A]" />{trip.outfits} outfits</span>
+                    <span className="flex items-center gap-1"><Icon name="checkroom" size={12} className="text-[#C4613A]" />{trip.items} {t("examples.annual.items")}</span>
+                    <span className="flex items-center gap-1"><Icon name="style" size={12} className="text-[#C4613A]" />{trip.outfits} {t("examples.annual.outfits")}</span>
                   </div>
                 </div>
               </div>

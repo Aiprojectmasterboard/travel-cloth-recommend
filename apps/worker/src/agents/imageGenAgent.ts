@@ -1,9 +1,12 @@
 /**
  * imageGenAgent.ts  (Pro / Annual plan)
  *
- * Calls OpenAI gpt-image-1 for each StylePrompts entry in parallel
+ * Calls OpenAI gpt-image-1.5 for each StylePrompts entry in parallel
  * (Promise.allSettled), stores the resulting image in R2,
  * and updates generation_jobs in Supabase.
+ *
+ * Identity Engine: if faceUrl is provided, all generated images preserve
+ * the same traveler identity using /images/edits endpoint.
  *
  * R2 key pattern: outputs/{tripId}/{city}/{index}.png
  * Public URL:     {R2_PUBLIC_URL}/outputs/{tripId}/{city}/{index}.png
@@ -89,7 +92,7 @@ export async function imageGenAgent(
   },
   env: Bindings
 ): Promise<GeneratedImages> {
-  const { prompts, tripId, jobIds = {} } = input;
+  const { prompts, tripId, jobIds = {}, faceUrl } = input;
 
   // Track index per city for R2 naming
   const cityIndexCounter: Record<string, number> = {};
@@ -117,8 +120,9 @@ export async function imageGenAgent(
         ? `${sp.prompt}\n\nDo NOT include: ${sp.negative_prompt}`
         : sp.prompt;
 
-      // Generate image via OpenAI gpt-image-1 (medium quality for paid plans)
-      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536');
+      // Generate image via OpenAI gpt-image-1.5 (medium quality for paid plans)
+      // Identity Engine: pass faceUrl for consistent traveler identity
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536', faceUrl);
 
       // Store in R2
       const r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
@@ -209,6 +213,9 @@ export interface GridImageResult {
  * Generates one 1024x1024 grid image per city using the combined 2x2 grid
  * prompt from styleAgentGrid. Runs all cities in parallel via Promise.allSettled.
  *
+ * Each grid contains 4 outfit panels with different landmarks.
+ * Identity Engine: if faceUrl provided, preserves same traveler across all panels.
+ *
  * R2 key pattern: outputs/{tripId}/{citySlug}/grid.png
  *
  * @param input.gridPrompts - Array of StyleGridPrompt (one per city, from styleAgentGrid)
@@ -224,7 +231,7 @@ export async function imageGenAgentGrid(
   },
   env: Bindings
 ): Promise<GridImageResult[]> {
-  const { gridPrompts, tripId } = input;
+  const { gridPrompts, tripId, faceUrl } = input;
 
   const tasks = gridPrompts.map((gp) => async (): Promise<GridImageResult> => {
     const slug = citySlug(gp.city);
@@ -237,7 +244,8 @@ export async function imageGenAgentGrid(
         : gp.prompt;
 
       // 1024x1024 square — best for 2x2 grid layout, medium quality for paid plans
-      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1024');
+      // Identity Engine: pass faceUrl for consistent traveler identity across all 4 quadrants
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1024', faceUrl);
 
       // Store in R2
       await env.R2.put(r2Key, buffer, {

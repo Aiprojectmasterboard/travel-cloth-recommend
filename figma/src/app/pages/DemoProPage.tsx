@@ -19,6 +19,7 @@ import {
   type PackingItem,
 } from "../services/outfitGenerator";
 import { SEO } from "../components/SEO";
+import { useLang } from "../context/LanguageContext";
 
 /* ================================================================ */
 /*  DEMO PRO PAGE — Busan, South Korea                              */
@@ -72,6 +73,7 @@ const DEMO_ACTIVITIES = [
 
 export function DemoProPage() {
   const navigate = useNavigate();
+  const { t } = useLang();
   const [expandedOutfit, setExpandedOutfit] = useState(0);
 
   /* ─── Generate outfits & packing from outfitGenerator ─── */
@@ -97,14 +99,14 @@ export function DemoProPage() {
           className="text-[12px] uppercase tracking-[0.1em]"
           style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
         >
-          Demo Preview — Busan, South Korea &middot; Pro Plan ($3.99)
+          {t("demo.banner")} — Busan, South Korea &middot; {t("demo.proPlan")} ($3.99)
         </span>
         <button
           onClick={() => navigate("/onboarding/1")}
           className="ml-4 inline-flex items-center gap-1 px-3 py-0.5 bg-white text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] cursor-pointer hover:bg-white/90 transition-colors"
           style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
         >
-          Get Started <span className="text-[13px]">&rarr;</span>
+          {t("demo.getStarted")} <span className="text-[13px]">&rarr;</span>
         </button>
       </div>
 
@@ -128,7 +130,7 @@ export function DemoProPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden sm:block">
-              <PlanBadge label="Demo \u2014 Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" />
+              <PlanBadge label={t("demo.demoPlanBadge")} className="bg-[#C4613A]/10 text-[#C4613A]" />
             </span>
             <SocialShareButton />
             <button
@@ -137,7 +139,7 @@ export function DemoProPage() {
               style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
             >
               <Icon name="download" size={14} className="text-[#C4613A]" />
-              <span className="hidden sm:inline">Hi-Res Export</span>
+              <span className="hidden sm:inline">{t("demo.hiResExport")}</span>
             </button>
           </div>
         </div>
@@ -150,7 +152,7 @@ export function DemoProPage() {
             className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] uppercase tracking-[0.1em]"
             style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}
           >
-            <Icon name="auto_awesome" size={10} className="text-[#C4613A]" filled /> Demo
+            <Icon name="auto_awesome" size={10} className="text-[#C4613A]" filled /> {t("demo.badge")}
           </span>
         </div>
         <h1
@@ -167,7 +169,7 @@ export function DemoProPage() {
           className="mt-2 text-[15px] text-[#57534e] max-w-[600px]"
           style={{ fontFamily: "var(--font-body)" }}
         >
-          6 days in Busan, one seamlessly curated capsule wardrobe for the hot & humid Korean summer coast.
+          {t("demo.subtitle")}
         </p>
         <div className="mt-3">
           <AiGeneratedBadge confidence={92} bodyFitLabel={bodyFitLabel} />
@@ -215,7 +217,7 @@ export function DemoProPage() {
                     className="text-[28px] text-white italic"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
-                    {outfits.length} AI Outfits
+                    {outfits.length} {t("demo.aiOutfits")}
                   </span>
                 </div>
                 <span
@@ -233,7 +235,7 @@ export function DemoProPage() {
                 className="text-[28px] text-[#292524] mb-4"
                 style={{ fontFamily: "var(--font-display)" }}
               >
-                Your <em>Busan Capsule</em>
+                {t("demo.yourCapsule")} <em>Busan {t("demo.capsule")}</em>
               </h2>
               <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
                 {outfits.slice(0, 4).map((outfit, i) => (
@@ -266,7 +268,7 @@ export function DemoProPage() {
                         className="text-white/70 text-[10px] uppercase tracking-[0.12em] block"
                         style={{ fontFamily: "var(--font-mono)" }}
                       >
-                        Day {outfit.day}
+                        {t("demo.day")} {outfit.day}
                       </span>
                       <span
                         className="text-white text-[16px] italic block leading-tight"
@@ -301,8 +303,7 @@ export function DemoProPage() {
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]"
                           style={{ fontFamily: "var(--font-mono)" }}
                         >
-                          <Icon name="auto_awesome" size={10} className="text-white" filled /> AI
-                          Generated
+                          <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("demo.aiGenerated")}
                         </span>
                       </div>
                       <div className="absolute bottom-4 left-4 right-4">
@@ -334,7 +335,7 @@ export function DemoProPage() {
                         className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-4"
                         style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
                       >
-                        Outfit Breakdown &middot; Your Sizes
+                        {t("demo.outfitBreakdown")}
                       </span>
                       <div className="space-y-2">
                         {outfits[expandedOutfit].items.map((item) => (
@@ -381,7 +382,7 @@ export function DemoProPage() {
                           className="text-[10px] uppercase tracking-[0.12em] text-[#57534e] block mb-2"
                           style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
                         >
-                          Activities
+                          {t("demo.activities")}
                         </span>
                         <div className="flex flex-wrap gap-2">
                           {DEMO_ACTIVITIES.map((a) => (
@@ -426,7 +427,7 @@ export function DemoProPage() {
                     className="text-[18px] text-[#292524]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
-                    City Mood
+                    {t("demo.cityMood")}
                   </h3>
                 </div>
                 <div className="px-4 py-3 bg-[#C4613A]/5 rounded-lg mb-3">
@@ -464,20 +465,20 @@ export function DemoProPage() {
                     className="text-[18px] text-[#292524]"
                     style={{ fontFamily: "var(--font-display)" }}
                   >
-                    Packing List
+                    {t("demo.packingList")}
                   </h3>
                   <span
                     className="px-2 py-0.5 rounded-full bg-[#EFE8DF] text-[#57534e] text-[9px] uppercase tracking-[0.1em]"
                     style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}
                   >
-                    Auto-derived
+                    {t("demo.autoDerived")}
                   </span>
                 </div>
                 <p
                   className="text-[12px] text-[#57534e] mb-4"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
-                  Consolidated from {outfits.length} outfits
+                  {t("demo.consolidatedFrom")} {outfits.length} {t("demo.outfits")}
                 </p>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {packing.slice(0, 15).map((item) => (
@@ -504,7 +505,7 @@ export function DemoProPage() {
                           className="text-[10px] text-[#57534e]"
                           style={{ fontFamily: "var(--font-mono)" }}
                         >
-                          Used in {item.usageCount} look{item.usageCount > 1 ? "s" : ""}
+                          {t("demo.usedIn")} {item.usageCount} {item.usageCount > 1 ? t("demo.looks") : t("demo.look")}
                         </span>
                       </div>
                     </div>
@@ -515,7 +516,7 @@ export function DemoProPage() {
                     className="text-[12px] text-[#57534e]"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    {packing.length} unique items for {outfits.length} looks
+                    {packing.length} {t("demo.uniqueItems")} {outfits.length} {t("demo.looks")}
                   </span>
                 </div>
               </div>
@@ -529,7 +530,7 @@ export function DemoProPage() {
                   className="text-[18px] text-[#292524] mb-5"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  Weather Forecast
+                  {t("demo.weatherForecast")}
                 </h3>
                 <div className="py-3">
                   <span
@@ -566,13 +567,13 @@ export function DemoProPage() {
                       className="px-2 py-0.5 bg-amber-50 border border-amber-200 rounded-full text-[10px] text-amber-700"
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
-                      Humidity 75%
+                      {t("demo.humidity")} 75%
                     </span>
                     <span
                       className="px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-full text-[10px] text-blue-600"
                       style={{ fontFamily: "var(--font-mono)" }}
                     >
-                      Avg 28&deg;C
+                      {t("demo.avg")} 28&deg;C
                     </span>
                   </div>
                 </div>
@@ -587,20 +588,20 @@ export function DemoProPage() {
                   className="text-[18px] text-[#292524] mb-4"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  Capsule Stats
+                  {t("demo.capsuleStats")}
                 </h3>
                 <div className="space-y-3">
                   {[
-                    { icon: "public", label: "City", value: "Busan" },
-                    { icon: "calendar_month", label: "Duration", value: "6 days" },
-                    { icon: "style", label: "AI Outfits", value: `${outfits.length} looks` },
+                    { icon: "public", label: t("demo.statCity"), value: "Busan" },
+                    { icon: "calendar_month", label: t("demo.statDuration"), value: `6 ${t("demo.statDays")}` },
+                    { icon: "style", label: t("demo.statAiOutfits"), value: `${outfits.length} ${t("demo.looks")}` },
                     {
                       icon: "checkroom",
-                      label: "Packing Items",
-                      value: `${packing.length} pieces`,
+                      label: t("demo.statPackingItems"),
+                      value: `${packing.length} ${t("demo.statPieces")}`,
                     },
-                    { icon: "hd", label: "Export Quality", value: "Ultra Hi-Res" },
-                    { icon: "refresh", label: "Regenerations", value: "1 included" },
+                    { icon: "hd", label: t("demo.statExportQuality"), value: t("demo.statUltraHiRes") },
+                    { icon: "refresh", label: t("demo.statRegenerations"), value: t("demo.statRegenVal") },
                   ].map((stat) => (
                     <div
                       key={stat.label}
@@ -632,18 +633,17 @@ export function DemoProPage() {
                   className="text-[18px] text-white mb-2"
                   style={{ fontFamily: "var(--font-display)" }}
                 >
-                  Start Your Own Capsule
+                  {t("demo.ctaTitle")}
                 </h3>
                 <p
                   className="text-[13px] text-white/80 mb-4"
                   style={{ fontFamily: "var(--font-body)" }}
                 >
-                  Create your personalized style guide with AI-generated outfits tailored to your
-                  body, style preferences, and travel itinerary.
+                  {t("demo.ctaBody")}
                 </p>
                 <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>
                   <span className="flex items-center gap-2 text-[#C4613A]">
-                    Start Planning
+                    {t("demo.startPlanning")}
                     <Icon name="arrow_forward" size={16} className="text-[#C4613A]" />
                   </span>
                 </BtnPrimary>
@@ -664,18 +664,18 @@ export function DemoProPage() {
               className="text-[14px] text-[#292524] block"
               style={{ fontFamily: "var(--font-display)" }}
             >
-              Ready to pack for your trip?
+              {t("demo.bottomCtaTitle")}
             </span>
             <span
               className="text-[12px] text-[#57534e]"
               style={{ fontFamily: "var(--font-body)" }}
             >
-              Get your own AI-curated capsule wardrobe for free
+              {t("demo.bottomCtaSubtitle")}
             </span>
           </div>
           <BtnPrimary size="sm" onClick={() => navigate("/onboarding/1")}>
             <span className="flex items-center gap-2 text-[#C4613A]">
-              Start Your Own Capsule
+              {t("demo.startYourOwn")}
               <Icon name="arrow_forward" size={16} className="text-[#C4613A]" />
             </span>
           </BtnPrimary>

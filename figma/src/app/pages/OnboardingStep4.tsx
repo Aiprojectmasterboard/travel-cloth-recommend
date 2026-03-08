@@ -197,7 +197,7 @@ export function OnboardingStep4() {
       quote="The journey of a thousand miles begins with a single step."
       attribution="Lao Tzu"
     >
-      <ProgressBar currentStep={4} sublabel="About your destination" />
+      <ProgressBar currentStep={4} sublabel={t("onboarding4.sublabel")} />
 
       <div className="mt-10">
         <h1 className="text-[#292524]" style={{ fontSize: "clamp(36px, 4vw, 56px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
@@ -315,7 +315,7 @@ export function OnboardingStep4() {
             onClick={() => setError(null)}
             className="mt-2 text-[12px] text-red-500 underline cursor-pointer"
           >
-            Dismiss
+            {t("onboarding4.dismiss")}
           </button>
         </div>
       )}
