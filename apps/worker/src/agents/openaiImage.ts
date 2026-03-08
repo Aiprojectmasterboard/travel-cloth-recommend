@@ -43,7 +43,8 @@ export type ImageSize = '1024x1024' | '1536x1024' | '1024x1536';
 
 const OPENAI_GENERATIONS_URL = 'https://api.openai.com/v1/images/generations';
 const OPENAI_EDITS_URL = 'https://api.openai.com/v1/images/edits';
-const MODEL = 'gpt-image-1.5';
+const MODEL_PRIMARY = 'gpt-image-1.5';
+const MODEL_FALLBACK = 'gpt-image-1';
 const MAX_ATTEMPTS = 3;
 const BACKOFF_MS = [2_000, 4_000, 6_000] as const;
 const FETCH_TIMEOUT_MS = 90_000;
@@ -95,41 +96,56 @@ export async function generateImage(
   quality: ImageQuality = 'low',
   size: ImageSize = '1024x1536',
 ): Promise<ArrayBuffer> {
-  const body = {
-    model: MODEL,
-    prompt,
-    n: 1,
-    size,
-    quality,
-  };
+  // Try primary model (gpt-image-1.5) first, fallback to gpt-image-1 on model error
+  const models = [MODEL_PRIMARY, MODEL_FALLBACK];
 
-  const res = await fetch(OPENAI_GENERATIONS_URL, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
+  let lastError: Error | null = null;
+  for (const model of models) {
+    const body = {
+      model,
+      prompt,
+      n: 1,
+      size,
+      quality,
+    };
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenAI HTTP ${res.status}: ${text.slice(0, 300)}`);
+    const res = await fetch(OPENAI_GENERATIONS_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      const errMsg = `OpenAI HTTP ${res.status}: ${text.slice(0, 300)}`;
+      // If model not found or access denied, try fallback model
+      if ((res.status === 404 || res.status === 403 || res.status === 400) && model === MODEL_PRIMARY) {
+        console.warn(`[openaiImage] ${MODEL_PRIMARY} failed (${res.status}), trying ${MODEL_FALLBACK}...`);
+        lastError = new Error(errMsg);
+        continue;
+      }
+      throw new Error(errMsg);
+    }
+
+    const data = (await res.json()) as OpenAIImageResponse;
+
+    if (data.error) {
+      throw new Error(`OpenAI API error: ${data.error.message}`);
+    }
+
+    const imageData = data.data?.[0]?.b64_json;
+    if (!imageData) {
+      throw new Error('OpenAI returned no image data');
+    }
+
+    return b64ToArrayBuffer(imageData);
   }
 
-  const data = (await res.json()) as OpenAIImageResponse;
-
-  if (data.error) {
-    throw new Error(`OpenAI API error: ${data.error.message}`);
-  }
-
-  const imageData = data.data?.[0]?.b64_json;
-  if (!imageData) {
-    throw new Error('OpenAI returned no image data');
-  }
-
-  return b64ToArrayBuffer(imageData);
+  throw lastError ?? new Error('Image generation failed after all model attempts');
 }
 
 // ─── Generation with Reference Photo (Identity Engine) ───────────────────────
@@ -160,7 +176,7 @@ export async function generateImageWithReference(
 
   // Build multipart form data for /v1/images/edits
   const formData = new FormData();
-  formData.append('model', MODEL);
+  formData.append('model', MODEL_PRIMARY);
   formData.append('prompt', prompt);
   formData.append('n', '1');
   formData.append('size', size);

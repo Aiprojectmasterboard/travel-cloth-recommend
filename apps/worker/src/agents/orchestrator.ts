@@ -935,10 +935,10 @@ export async function runTeaserBackground(
   },
   env: Bindings
 ): Promise<void> {
-  const { trip_id, vibeResult, gender, user_profile, fallbackTeaser } = input;
+  const { trip_id, vibeResult, face_url, gender, user_profile, fallbackTeaser } = input;
 
   // Standard plan: generate 1 teaser image (not 4)
-  console.log(`[runTeaserBackground] Starting teaser generation for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}`);
+  console.log(`[runTeaserBackground] Starting teaser generation for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}, identity=${face_url ? 'reference photo' : 'default model'}`);
 
   const userProfile = user_profile
     ? {
@@ -954,6 +954,7 @@ export async function runTeaserBackground(
       {
         tripId: trip_id,
         vibeResult,
+        faceUrl: face_url,
         userProfile,
         count: 1,
       },
