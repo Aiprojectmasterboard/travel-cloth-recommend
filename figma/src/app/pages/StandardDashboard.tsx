@@ -219,11 +219,12 @@ export function StandardDashboard() {
   };
 
   // CSS variations so teaser-based outfit images look distinct per slot
+  // Standard plan: 1 AI teaser + 3 visually distinct variants
   const outfitImageStyles: React.CSSProperties[] = [
     {},
-    { transform: "scaleX(-1)", filter: "hue-rotate(15deg) brightness(0.95)" },
-    { objectPosition: "top", filter: "saturate(1.2) brightness(0.92)" },
-    { transform: "scaleX(-1)", objectPosition: "bottom", filter: "hue-rotate(-15deg) brightness(0.95)" },
+    { transform: "scaleX(-1)", filter: "hue-rotate(30deg) brightness(0.93) contrast(1.05)" },
+    { objectPosition: "20% 0%", filter: "sepia(0.15) saturate(1.3) brightness(0.9)" },
+    { transform: "scaleX(-1)", objectPosition: "80% 100%", filter: "hue-rotate(-25deg) brightness(0.92) contrast(1.08)" },
   ];
   const usesTeaserVariant = (idx: number) => apiImages.length <= idx && !!teaserUrl;
 

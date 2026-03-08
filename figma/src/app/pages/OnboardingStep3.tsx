@@ -528,14 +528,41 @@ export function OnboardingStep3() {
           onChange={handleInputChange}
         />
 
-        {/* Default image notice */}
-        <p
-          className="mt-3 text-[13px] text-[#78716c] flex items-start gap-2"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          <Icon name="info" size={16} className="text-[#78716c] flex-shrink-0 mt-0.5" />
-          {t("onboarding.photoDefaultNotice")}
-        </p>
+        {/* Default model image notice */}
+        {!data.photo && (
+          <div className="mt-4 rounded-xl border border-[#E8DDD4] bg-white p-4">
+            <div className="flex items-start gap-2 mb-3">
+              <Icon name="info" size={16} className="text-[#C4613A] flex-shrink-0 mt-0.5" />
+              <p
+                className="text-[13px] text-[#57534e]"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                {t("onboarding.photoDefaultNotice")}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="relative w-16 h-20 rounded-lg overflow-hidden border border-[#E8DDD4] flex-shrink-0">
+                <img
+                  src="/defaults/default-male.png"
+                  alt="Default male model"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute bottom-0 inset-x-0 bg-black/40 text-white text-[9px] text-center py-0.5" style={{ fontFamily: "var(--font-mono)" }}>Male</span>
+              </div>
+              <div className="relative w-16 h-20 rounded-lg overflow-hidden border border-[#E8DDD4] flex-shrink-0">
+                <img
+                  src="/defaults/default-female.png"
+                  alt="Default female model"
+                  className="w-full h-full object-cover"
+                />
+                <span className="absolute bottom-0 inset-x-0 bg-black/40 text-white text-[9px] text-center py-0.5" style={{ fontFamily: "var(--font-mono)" }}>Female</span>
+              </div>
+              <p className="text-[12px] text-[#78716c]" style={{ fontFamily: "var(--font-body)" }}>
+                {t("onboarding.photoDefaultModelDesc")}
+              </p>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Navigation */}

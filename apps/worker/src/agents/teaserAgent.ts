@@ -44,8 +44,8 @@ interface GeminiResponse {
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL = 'gemini-3.1-flash-image-preview';
-const MAX_ATTEMPTS = 2;
-const BACKOFF_MS = [1_500, 3_000] as const;
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [1_500, 3_000, 5_000] as const;
 // Gemini image generation typically takes 10-30s.
 // Keep timeout tight to fail fast and use fallback images instead of hanging.
 const FETCH_TIMEOUT_MS = 35_000;
@@ -114,7 +114,7 @@ async function generateNanoBanana(
     const faceData = await fetchImageAsBase64(faceUrl);
     if (faceData) {
       parts.push({ inlineData: { mimeType: faceData.mimeType, data: faceData.data } });
-      parts.push({ text: 'This is a reference photo of the person. Generate a new fashion editorial image featuring a person with the same general appearance — similar face shape, skin tone, hair color, body build. Dress them in a completely new travel-appropriate outfit for the destination as described below. This is for a travel fashion styling service.' });
+      parts.push({ text: 'Reference photo of the person. Generate a new fashion image of a person with similar appearance wearing a travel outfit for the destination below. Travel fashion styling service.' });
     }
   }
 
@@ -132,11 +132,10 @@ async function generateNanoBanana(
   };
 
   const res = await fetch(
-    `${GEMINI_BASE}/models/${MODEL}:generateContent`,
+    `${GEMINI_BASE}/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
     {
       method: 'POST',
       headers: {
-        'x-goog-api-key': apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -297,21 +296,15 @@ export async function teaserAgent(
 
   if (isInfant) {
     prompt =
-      `Generate a photorealistic photograph of ${genderDesc} lying comfortably in a stylish baby stroller (pram). ` +
-      `The baby is wearing a cute, weather-appropriate outfit. ` +
-      `The stroller is positioned in front of a famous landmark in ${cityName} as the background. ` +
-      `Style mood: ${vibeResult.mood_label}, ${tagString}. ` +
-      `The scene should look warm, adorable, and travel-ready. ` +
-      `${vibeResult.avoid_note ? `Avoid: ${vibeResult.avoid_note}. ` : ''}` +
-      'Professional photography, natural lighting, sharp focus, 4K quality.';
+      `Photorealistic photo: ${genderDesc} in a stylish stroller near a famous ${cityName} landmark. ` +
+      `Cute weather-appropriate outfit. Mood: ${vibeResult.mood_label}. ` +
+      'Professional photography, natural light, sharp focus, 4K.';
   } else {
     prompt =
-      `Generate a photorealistic full-body fashion photograph of ${genderDesc}${heightDesc}${bodyDesc}${styleDesc}. ` +
-      `The person is standing in front of a famous landmark in ${cityName} as the background. ` +
-      `Style mood: ${vibeResult.mood_label}, ${tagString}. ` +
-      `The outfit should be stylish, travel-appropriate, and coordinated. ` +
-      `${vibeResult.avoid_note ? `Avoid: ${vibeResult.avoid_note}. ` : ''}` +
-      'Professional fashion editorial photography, natural lighting, sharp focus, 4K quality.';
+      `Photorealistic full-body fashion photo: ${genderDesc}${heightDesc}${bodyDesc}${styleDesc} ` +
+      `standing near a famous ${cityName} landmark. ` +
+      `Style: ${vibeResult.mood_label}, ${tagString}. Stylish travel outfit. ` +
+      'Fashion editorial, natural light, sharp focus, 4K.';
   }
 
   console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);

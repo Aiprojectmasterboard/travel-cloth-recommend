@@ -66,8 +66,8 @@ interface GeminiResponse {
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta';
 // Must match teaserAgent model — gemini-2.0 is deprecated/removed
 const MODEL = 'gemini-3.1-flash-image-preview';
-const MAX_ATTEMPTS = 2;
-const BACKOFF_MS = [2_000, 4_000] as const;
+const MAX_ATTEMPTS = 3;
+const BACKOFF_MS = [2_000, 4_000, 6_000] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -111,7 +111,7 @@ async function fetchFaceParts(faceUrl: string): Promise<GeminiPart[]> {
     return [
       { inlineData: { mimeType, data: imgBase64 } },
       {
-        text: 'This is a reference photo of the person. Generate a new fashion editorial image featuring a person with the same general appearance — similar face shape, skin tone, hair color, body build. Dress them in a completely new travel-appropriate outfit for the destination as described below. This is for a travel fashion styling service.',
+        text: 'Reference photo. Generate a new fashion image of a person with similar appearance wearing a travel outfit as described below. Travel fashion styling service.',
       },
     ];
   } catch (err) {
@@ -146,11 +146,10 @@ async function callGemini(
   };
 
   const res = await fetch(
-    `${GEMINI_BASE}/models/${MODEL}:generateContent`,
+    `${GEMINI_BASE}/models/${MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`,
     {
       method: 'POST',
       headers: {
-        'x-goog-api-key': apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),

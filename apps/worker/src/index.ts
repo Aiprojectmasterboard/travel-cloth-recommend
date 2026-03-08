@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import Anthropic from '@anthropic-ai/sdk';
-import { runPreview, runResult, runTeaserBackground, getCityFallbackImage } from './agents/orchestrator';
+import { runPreview, runResult, runTeaserBackground, getCityFallbackImage, getEffectiveFaceUrl } from './agents/orchestrator';
 import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
 import { imageGenAgent } from './agents/imageGenAgent';
 
@@ -328,10 +328,9 @@ app.get('/api/test-gemini', async (c) => {
       },
     };
 
-    const res = await fetch(`${GEMINI_BASE}/models/${MODEL}:generateContent`, {
+    const res = await fetch(`${GEMINI_BASE}/models/${MODEL}:generateContent?key=${encodeURIComponent(c.env.NANOBANANA_API_KEY)}`, {
       method: 'POST',
       headers: {
-        'x-goog-api-key': c.env.NANOBANANA_API_KEY,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),

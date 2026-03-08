@@ -812,11 +812,9 @@ export async function runResult(
       console.warn('[runResult] Failed to insert generation_jobs:', (err as Error).message);
     }
 
-    // c. Apply gender-based default face if user didn't upload a photo
-    // BUG-004 fix: Only use face_url if user actually uploaded a photo.
-    // Do NOT use default placeholder faces — they waste Gemini API time (~40s)
-    // and risk safety filter blocks with no benefit to the result.
-    const effectiveFaceUrl = faceUrl || undefined;
+    // c. Use default model image when user hasn't uploaded a photo.
+    // Professional model photos produce body-matched outfit looks with Gemini.
+    const effectiveFaceUrl = getEffectiveFaceUrl(faceUrl, userProfile.gender);
 
     // d. Generate images (Promise.allSettled internally — never throws)
     await imageGenAgent(
@@ -897,6 +895,28 @@ export function getCityFallbackImage(city: string, gender: string): string {
   return gender === 'male' ? entry.male : entry.female;
 }
 
+// ─── Default Model Images ────────────────────────────────────────────────────
+// When user doesn't upload a photo, use these professional model images as
+// face references for Gemini. This produces body-matched outfit looks.
+const DEFAULT_MODEL_IMAGES = {
+  male: 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png',
+  female: 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png',
+};
+
+/**
+ * Returns the effective face URL for image generation.
+ * - If user uploaded a photo → use their photo
+ * - If no photo → use default model image based on gender
+ * - For non-binary → randomly pick male or female model
+ */
+export function getEffectiveFaceUrl(userFaceUrl: string | undefined, gender: string): string {
+  if (userFaceUrl) return userFaceUrl;
+  if (gender === 'male') return DEFAULT_MODEL_IMAGES.male;
+  if (gender === 'female') return DEFAULT_MODEL_IMAGES.female;
+  // non-binary / unknown → random pick
+  return Math.random() < 0.5 ? DEFAULT_MODEL_IMAGES.male : DEFAULT_MODEL_IMAGES.female;
+}
+
 // ─── runTeaserBackground ──────────────────────────────────────────────────────
 
 /**
@@ -926,12 +946,11 @@ export async function runTeaserBackground(
 ): Promise<void> {
   const { trip_id, vibeResult, face_url, gender, user_profile, fallbackTeaser } = input;
 
-  // Only use face_url if user actually uploaded a photo.
-  // Do NOT use default placeholder faces — they waste Gemini API time (~40s)
-  // and risk safety filter blocks with no benefit to the result.
-  const effectiveFaceUrl = face_url || undefined;
+  // Use default model image when user hasn't uploaded a photo.
+  // Professional model photos work well with Gemini and produce body-matched looks.
+  const effectiveFaceUrl = getEffectiveFaceUrl(face_url, gender);
 
-  console.log(`[runTeaserBackground] Starting for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}`);
+  console.log(`[runTeaserBackground] Starting for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}, face=${face_url ? 'user' : 'default'}`);
 
   let teaserUrl: string | null = null;
   let teaserError: string | null = null;
