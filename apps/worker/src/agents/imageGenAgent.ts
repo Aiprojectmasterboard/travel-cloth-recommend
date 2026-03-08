@@ -1,12 +1,9 @@
 /**
  * imageGenAgent.ts  (Pro / Annual plan)
  *
- * Calls OpenAI gpt-image-1.5 for each StylePrompts entry in parallel
+ * Calls OpenAI gpt-image-1 for each StylePrompts entry in parallel
  * (Promise.allSettled), stores the resulting image in R2,
  * and updates generation_jobs in Supabase.
- *
- * Supports Identity Engine: passes reference photo base64 for identity
- * preservation across all generated outfit images.
  *
  * R2 key pattern: outputs/{tripId}/{city}/{index}.png
  * Public URL:     {R2_PUBLIC_URL}/outputs/{tripId}/{city}/{index}.png
@@ -16,7 +13,7 @@
 
 import type { Bindings } from '../index';
 import type { StylePrompts, StyleGridPrompt } from './styleAgent';
-import { generateImageWithRetry, fetchImageAsBase64 } from './openaiImage';
+import { generateImageWithRetry } from './openaiImage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,18 +89,7 @@ export async function imageGenAgent(
   },
   env: Bindings
 ): Promise<GeneratedImages> {
-  const { prompts, tripId, jobIds = {}, faceUrl } = input;
-
-  // Identity Engine: fetch reference photo once, share across all images
-  let referenceBase64: string | undefined;
-  if (faceUrl) {
-    try {
-      referenceBase64 = await fetchImageAsBase64(faceUrl);
-      console.log(`[imageGenAgent] Reference photo fetched for identity preservation`);
-    } catch (err) {
-      console.warn(`[imageGenAgent] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
-    }
-  }
+  const { prompts, tripId, jobIds = {} } = input;
 
   // Track index per city for R2 naming
   const cityIndexCounter: Record<string, number> = {};
@@ -131,8 +117,8 @@ export async function imageGenAgent(
         ? `${sp.prompt}\n\nDo NOT include: ${sp.negative_prompt}`
         : sp.prompt;
 
-      // Generate image via OpenAI gpt-image-1.5 (medium quality for paid plans)
-      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536', referenceBase64);
+      // Generate image via OpenAI gpt-image-1 (medium quality for paid plans)
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536');
 
       // Store in R2
       const r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
@@ -238,18 +224,7 @@ export async function imageGenAgentGrid(
   },
   env: Bindings
 ): Promise<GridImageResult[]> {
-  const { gridPrompts, tripId, faceUrl } = input;
-
-  // Identity Engine: fetch reference photo once, share across all grid images
-  let referenceBase64: string | undefined;
-  if (faceUrl) {
-    try {
-      referenceBase64 = await fetchImageAsBase64(faceUrl);
-      console.log(`[imageGenAgentGrid] Reference photo fetched for identity preservation`);
-    } catch (err) {
-      console.warn(`[imageGenAgentGrid] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
-    }
-  }
+  const { gridPrompts, tripId } = input;
 
   const tasks = gridPrompts.map((gp) => async (): Promise<GridImageResult> => {
     const slug = citySlug(gp.city);
@@ -262,7 +237,7 @@ export async function imageGenAgentGrid(
         : gp.prompt;
 
       // 1024x1024 square — best for 2x2 grid layout, medium quality for paid plans
-      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1024', referenceBase64);
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1024');
 
       // Store in R2
       await env.R2.put(r2Key, buffer, {

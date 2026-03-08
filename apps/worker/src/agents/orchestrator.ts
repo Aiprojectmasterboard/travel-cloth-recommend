@@ -816,8 +816,7 @@ export async function runResult(
       }
 
       // c. Generate 1 grid image per city (1024x1024, medium quality, parallel)
-      // Identity Engine: pass faceUrl for reference photo preservation
-      await imageGenAgentGrid({ gridPrompts, tripId, faceUrl }, env);
+      await imageGenAgentGrid({ gridPrompts, tripId }, env);
     }
 
     // d. Privacy cleanup: delete user-uploaded face AFTER image generation completes
@@ -938,7 +937,8 @@ export async function runTeaserBackground(
 ): Promise<void> {
   const { trip_id, vibeResult, gender, user_profile, fallbackTeaser } = input;
 
-  console.log(`[runTeaserBackground] Starting 4-image generation for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}`);
+  // Standard plan: generate 1 teaser image (not 4)
+  console.log(`[runTeaserBackground] Starting teaser generation for trip ${trip_id}, city=${vibeResult.city}, gender=${gender}`);
 
   const userProfile = user_profile
     ? {
@@ -955,7 +955,7 @@ export async function runTeaserBackground(
         tripId: trip_id,
         vibeResult,
         userProfile,
-        count: 4,
+        count: 1,
       },
       env
     );
@@ -972,8 +972,8 @@ export async function runTeaserBackground(
       });
     }
 
-    // If some images failed, insert fallback jobs to reach 4 total
-    const failedCount = 4 - result.images.length;
+    // If teaser failed, insert fallback job
+    const failedCount = 1 - result.images.length;
     if (failedCount > 0) {
       const fallbackUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
       for (let i = 0; i < failedCount; i++) {

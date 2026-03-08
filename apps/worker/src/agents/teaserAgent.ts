@@ -1,11 +1,9 @@
 /**
  * teaserAgent.ts
  *
- * Generates teaser fashion images via OpenAI gpt-image-1.5 and stores them in R2.
- * Supports Identity Engine: if user uploaded a reference photo, preserves their
- * facial features across generated images.
+ * Generates teaser fashion images via OpenAI gpt-image-1 and stores them in R2.
  *
- * Standard plan: 4 images with different moods (parallel generation)
+ * Standard plan: 1 teaser image (single generation)
  * R2 path: temp/{tripId}/teaser-{index}.png
  * Public URL: {R2_PUBLIC_URL}/temp/{tripId}/teaser-{index}.png
  *
@@ -14,7 +12,7 @@
 
 import type { Bindings } from '../index';
 import type { VibeResult } from './vibeAgent';
-import { generateImageWithRetry, fetchImageAsBase64 } from './openaiImage';
+import { generateImageWithRetry } from './openaiImage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -130,20 +128,9 @@ export async function teaserAgent(
   }
 
   const prompt = buildPrompt(vibeResult, userProfile, 0);
-  console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}, face: ${faceUrl ? 'yes' : 'no'}`);
+  console.log(`[teaserAgent] Generating teaser for trip ${tripId} — mood: ${vibeResult.mood_label}`);
 
-  // Identity Engine: fetch reference photo if user uploaded one
-  let referenceBase64: string | undefined;
-  if (faceUrl) {
-    try {
-      referenceBase64 = await fetchImageAsBase64(faceUrl);
-      console.log(`[teaserAgent] Reference photo fetched for identity preservation`);
-    } catch (err) {
-      console.warn(`[teaserAgent] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
-    }
-  }
-
-  const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536', referenceBase64);
+  const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536');
 
   // Store in R2
   const r2Key = `temp/${tripId}/teaser.png`;
@@ -180,24 +167,13 @@ export async function teaserAgentMultiple(
   },
   env: Bindings,
 ): Promise<MultipleTeaserResult> {
-  const { tripId, vibeResult, faceUrl, userProfile, count = 4 } = input;
+  const { tripId, vibeResult, userProfile, count = 4 } = input;
 
   if (!env.OPENAI_API_KEY) {
     throw new Error('[teaserAgent] OPENAI_API_KEY is not configured');
   }
 
-  console.log(`[teaserAgent] Generating ${count} teasers for trip ${tripId} — mood: ${vibeResult.mood_label}, face: ${faceUrl ? 'yes' : 'no'}`);
-
-  // Identity Engine: fetch reference photo once, share across all teasers
-  let referenceBase64: string | undefined;
-  if (faceUrl) {
-    try {
-      referenceBase64 = await fetchImageAsBase64(faceUrl);
-      console.log(`[teaserAgent] Reference photo fetched for identity preservation`);
-    } catch (err) {
-      console.warn(`[teaserAgent] Failed to fetch reference photo, proceeding without:`, (err as Error).message);
-    }
-  }
+  console.log(`[teaserAgent] Generating ${count} teasers for trip ${tripId} — mood: ${vibeResult.mood_label}`);
 
   const expiresAt = new Date(Date.now() + 48 * 60 * 60 * 1000).toISOString();
   const moodLabels = MOOD_VARIATIONS.map(v => v.style);
@@ -205,7 +181,7 @@ export async function teaserAgentMultiple(
   // Generate all images in parallel
   const tasks = Array.from({ length: count }, (_, idx) => async () => {
     const prompt = buildPrompt(vibeResult, userProfile, idx);
-    const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536', referenceBase64);
+    const imageBuffer = await generateImageWithRetry(prompt, env.OPENAI_API_KEY, 'low', '1024x1536');
 
     const r2Key = `temp/${tripId}/teaser-${idx}.png`;
     await env.R2.put(r2Key, imageBuffer, {

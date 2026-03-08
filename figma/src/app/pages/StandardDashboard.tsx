@@ -534,15 +534,15 @@ export function StandardDashboard() {
                       className="bg-[#C4613A] hover:bg-[#b5572f] text-white px-6 h-[44px] rounded-xl text-[13px] uppercase tracking-[0.08em]"
                       style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
                     >
-                      Unlock Full AI Styling — $3.99
+                      {t("upgrade.cta")}
                     </BtnPrimary>
                   </div>
                   <ul className="mt-4 space-y-1.5">
                     {[
-                      "4 unique AI outfit images per city",
-                      "2×2 grid view with daily quadrant breakdown",
-                      "Full capsule wardrobe with size guidance",
-                      "1 free regeneration per trip",
+                      t("upgrade.feature1"),
+                      t("upgrade.feature2"),
+                      t("upgrade.feature3"),
+                      t("upgrade.feature4"),
                     ].map((feat) => (
                       <li key={feat} className="flex items-center gap-2 text-[13px] text-white/80" style={{ fontFamily: "var(--font-body)" }}>
                         <Icon name="check_circle" size={14} className="text-[#C4613A] flex-shrink-0" filled />
