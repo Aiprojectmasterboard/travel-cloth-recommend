@@ -378,9 +378,9 @@ export function StandardDashboard() {
                               <div className="space-y-2">
                                 {hasRealData ? (
                                   // Real capsule items
-                                  (dayPlan?.outfit || apiCapsuleItems.slice(idx * 3, idx * 3 + 5)).map((name, i) => {
+                                  (dayPlan?.outfit || apiCapsuleItems.slice(0, 4).map((c) => c.name)).map((name, i) => {
                                     const capsuleItem = typeof name === "string"
-                                      ? apiCapsuleItems.find((c) => c.name === name) || { name, category: "", why: "", versatility_score: 0 }
+                                      ? apiCapsuleItems.find((c) => c.name.toLowerCase() === name.toLowerCase()) || { name, category: "", why: "", versatility_score: 0 }
                                       : name;
                                     const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                                     const itemCat = typeof capsuleItem !== "string" ? capsuleItem.category?.toLowerCase() : "";

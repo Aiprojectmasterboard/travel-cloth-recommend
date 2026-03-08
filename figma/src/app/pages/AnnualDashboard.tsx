@@ -25,7 +25,7 @@ import {
   type GeneratedOutfit,
   type PackingItem,
 } from "../services/outfitGenerator";
-import { WORKER_URL, regenerateOutfit, type CapsuleItem, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
+import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { SEO } from "../components/SEO";
 
@@ -215,6 +215,7 @@ export function AnnualDashboard() {
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
   const apiVibes: VibeData[] = result?.vibes || preview?.vibes || [];
   const apiCapsuleItems: CapsuleItem[] = result?.capsule?.items || [];
+  const apiDailyPlan: DayPlan[] = result?.capsule?.daily_plan || [];
   const apiImages = apiResultImages;
   const hasRealData = apiCapsuleItems.length > 0;
 
@@ -428,7 +429,17 @@ export function AnnualDashboard() {
                 </div>
                 <div className="space-y-2 mt-4">
                   {hasRealData ? (
-                    apiCapsuleItems.slice(activeDayIdx * 3, activeDayIdx * 3 + 5).map((item, i) => {
+                    (() => {
+                      // Use daily_plan items for accurate matching with AI-generated images
+                      const dayPlan = apiDailyPlan[activeDayIdx];
+                      const outfitNames: string[] = dayPlan?.outfit ?? [];
+                      const outfitItems = outfitNames
+                        .map((name) => apiCapsuleItems.find((c) => c.name.toLowerCase() === name.toLowerCase()))
+                        .filter((c): c is CapsuleItem => !!c);
+                      // Fallback: show generic capsule items if daily_plan missing
+                      const displayItems = outfitItems.length > 0 ? outfitItems : apiCapsuleItems.slice(0, 4);
+                      return displayItems;
+                    })().map((item, i) => {
                       const catIcon: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", shoes: "footprint", accessory: "watch" };
                       const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
                       return (

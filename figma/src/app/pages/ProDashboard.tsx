@@ -511,16 +511,17 @@ export function ProDashboard() {
                             // Find the matching daily_plan entry for this outfit
                             // For multi-city: offset by city's starting day index
                             const cityDays = apiDailyPlan.filter((d) => d.city?.toLowerCase() === currentSet.city.toLowerCase());
-                            const dayPlan = cityDays[expandedOutfit] ?? apiDailyPlan[expandedOutfit];
+                            // Only use city-matched day plan — never fall back to wrong city
+                            const dayPlan = expandedOutfit < cityDays.length ? cityDays[expandedOutfit] : undefined;
                             const outfitItemNames: string[] = dayPlan?.outfit ?? [];
-                            // Resolve each outfit item name to its full capsule item data
+                            // Resolve each outfit item name to its full capsule item data (case-insensitive)
                             const outfitItems = outfitItemNames
-                              .map((name) => apiCapsuleItems.find((c) => c.name === name))
+                              .map((name) => apiCapsuleItems.find((c) => c.name.toLowerCase() === name.toLowerCase()))
                               .filter((c): c is CapsuleItem => !!c);
-                            // Fallback: if daily_plan didn't produce matches, use first N items
+                            // Fallback: show generic capsule items for this outfit slot
                             const displayItems = outfitItems.length > 0
                               ? outfitItems
-                              : apiCapsuleItems.slice(expandedOutfit * 3, expandedOutfit * 3 + 5);
+                              : apiCapsuleItems.slice(0, 4);
                             return displayItems.map((item, i) => {
                               const iconName = catIcon[item.category?.toLowerCase()] ?? "checkroom";
                               return (

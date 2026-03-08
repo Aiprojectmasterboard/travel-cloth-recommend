@@ -1398,18 +1398,21 @@ app.get('/api/result/:tripId', async (c) => {
 
   // Normalise images: api.ts ResultData expects { city, url, index }[]
   // generation_jobs stores the URL in `image_url`; filter to completed full-gen images only.
-  const images = jobRows
-    .filter(
-      (j) =>
-        j.status === 'completed' &&
-        (j.job_type === 'full' || j.job_type === 'regen') &&
-        j.image_url
-    )
-    .map((j, idx) => ({
-      city: (j.city as string) ?? '',
-      url: (j.image_url as string) ?? '',
-      index: idx,
-    }));
+  // Index is PER-CITY (0-based) — dashboards look up images by city+index.
+  const completedImages = jobRows.filter(
+    (j) =>
+      j.status === 'completed' &&
+      (j.job_type === 'full' || j.job_type === 'regen') &&
+      j.image_url
+  );
+  const cityIndexCounters: Record<string, number> = {};
+  const images = completedImages.map((j) => {
+    const city = (j.city as string) ?? '';
+    const cityKey = city.toLowerCase();
+    const idx = cityIndexCounters[cityKey] ?? 0;
+    cityIndexCounters[cityKey] = idx + 1;
+    return { city, url: (j.image_url as string) ?? '', index: idx };
+  });
 
   // Also expose the teaser as a fallback image if no full images exist
   const teaserJobs = jobRows.filter(

@@ -277,15 +277,21 @@ Respond ONLY with:
     versatility_score: Math.min(10, Math.max(1, Number(item.versatility_score ?? 5))),
   }));
 
-  // Build a set of valid item names for consistency validation
-  const validItemNames = new Set(items.map((i) => i.name));
+  // Build a case-insensitive lookup map for item name consistency validation
+  // Claude sometimes returns slightly different casing in daily_plan vs items[]
+  const itemNameMap = new Map<string, string>(); // lowercase → canonical name
+  for (const item of items) {
+    itemNameMap.set(item.name.toLowerCase(), item.name);
+  }
 
   const daily_plan: DailyOutfit[] = parsed.daily_plan.map((p) => ({
     day: Number(p.day ?? 1),
     city: String(p.city ?? ''),
-    // Filter outfit items to only include names that exist in the capsule items list
+    // Match outfit items case-insensitively, map to canonical capsule item names
     outfit: Array.isArray(p.outfit)
-      ? p.outfit.map(String).filter((name) => validItemNames.has(name))
+      ? p.outfit.map(String)
+          .map((name) => itemNameMap.get(name.toLowerCase()) ?? name)
+          .filter((name) => itemNameMap.has(name.toLowerCase()))
       : [],
     note: String(p.note ?? ''),
   }));
