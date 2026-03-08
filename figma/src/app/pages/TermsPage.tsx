@@ -219,7 +219,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="text-[20px] text-[#1A1410] mb-3" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
         {title}
       </h2>
-      <div className="text-[15px] text-[#57534e] leading-relaxed space-y-3" style={{ fontFamily: "var(--font-body)" }}>
+      <div className="text-[15px] text-[#57534e] leading-relaxed space-y-3 [&_ul]:list-disc [&_ul]:list-outside [&_ul]:pl-5 [&_ul]:space-y-1" style={{ fontFamily: "var(--font-body)" }}>
         {children}
       </div>
     </section>
@@ -249,7 +249,7 @@ function LegalFooter({ active }: { active?: string }) {
   const link = (label: string, path: string) => (
     <button
       onClick={() => navigate(path)}
-      className={`text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer ${active === path.slice(1) ? "text-[#C4613A]" : "text-[#57534e] hover:text-[#C4613A]"}`}
+      className={`text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer py-3 px-1 ${active === path.slice(1) ? "text-[#C4613A]" : "text-[#57534e] hover:text-[#C4613A]"}`}
       style={{ fontFamily: "var(--font-body)", fontWeight: active === path.slice(1) ? 600 : 500 }}
     >
       {label}

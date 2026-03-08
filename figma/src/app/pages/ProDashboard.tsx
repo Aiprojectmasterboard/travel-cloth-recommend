@@ -354,15 +354,15 @@ export function ProDashboard() {
 
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
-        <div className="mx-auto flex items-center justify-between px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
+        <div className="mx-auto flex items-center justify-between px-4 sm:px-6 py-4" style={{ maxWidth: "var(--max-w)" }}>
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate("/")}>
             <Icon name="luggage" size={22} className="text-[#C4613A]" />
             <span className="text-[15px] sm:text-[18px] tracking-tight text-[#1A1410] whitespace-nowrap" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:block"><PlanBadge label="Pro Plan" className="bg-[#C4613A]/10 text-[#C4613A]" /></span>
             <SocialShareButton />
-            <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print w-9 h-9 rounded-full bg-white border border-[#E8DDD4] flex items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
+            <button onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)} className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer">
               <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
             <button onClick={handleExportPdf} disabled={pdfExporting} className="no-print h-[36px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
@@ -395,22 +395,24 @@ export function ProDashboard() {
         </div>
 
         {/* City tabs */}
-        <div className="mt-5 flex flex-wrap items-center gap-2">
-          {citySets.map((cs, i) => (
-            <button key={cs.city} onClick={() => { setActiveCity(i); setExpandedOutfit(0); }}
-              className={`px-4 py-1.5 rounded-full text-[12px] uppercase tracking-[0.08em] transition-colors cursor-pointer border ${activeCity === i ? "bg-[#C4613A] text-white border-[#C4613A]" : "bg-white text-[#57534e] border-[#E8DDD4] hover:border-[#C4613A]/40"}`}
-              style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
-              <span className="truncate max-w-[200px]">{cs.city} · {cs.dates}</span>
-            </button>
-          ))}
+        <div className="mt-5 overflow-x-auto scrollbar-hide">
+          <div className="flex items-center gap-2 min-w-max">
+            {citySets.map((cs, i) => (
+              <button key={cs.city} onClick={() => { setActiveCity(i); setExpandedOutfit(0); }}
+                className={`px-4 py-2 rounded-full text-[12px] uppercase tracking-[0.08em] transition-colors cursor-pointer border whitespace-nowrap ${activeCity === i ? "bg-[#C4613A] text-white border-[#C4613A]" : "bg-white text-[#57534e] border-[#E8DDD4] hover:border-[#C4613A]/40"}`}
+                style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>
+                {cs.city} · {cs.dates}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       {/* Main */}
-      <div className="mx-auto px-6 pt-8 pb-16" style={{ maxWidth: "var(--max-w)" }}>
+      <div className="mx-auto px-4 sm:px-6 pt-8 pb-16" style={{ maxWidth: "var(--max-w)" }}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Left */}
-          <div className="lg:col-span-8 space-y-10">
+          <div className="lg:col-span-8 space-y-10 order-last lg:order-none">
             {/* 2x2 outfit grid hero */}
             <div>
               <div className="flex items-center justify-between mb-4">
@@ -566,7 +568,7 @@ export function ProDashboard() {
           </div>
 
           {/* Right sidebar */}
-          <aside className="lg:col-span-4">
+          <aside className="lg:col-span-4 order-first lg:order-none">
             <div className="lg:sticky lg:top-[88px] space-y-6">
               <ProfileBadge gender={profile.gender} height={profile.height} weight={profile.weight} aesthetics={profile.aesthetics} photo={profile.photo} faceUrl={onboarding.faceUrl} bodyFitLabel={bodyFitLabel} />
 

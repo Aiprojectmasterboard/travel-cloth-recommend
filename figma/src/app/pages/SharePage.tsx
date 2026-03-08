@@ -112,7 +112,7 @@ export function SharePage() {
       <div className="mx-auto px-6 pt-8 pb-12" style={{ maxWidth: "var(--max-w)" }}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* Image */}
-          <div className="relative rounded-2xl overflow-hidden" style={{ aspectRatio: "3/4", maxHeight: "600px" }}>
+          <div className="relative rounded-2xl overflow-hidden max-h-[320px] sm:max-h-[480px] lg:max-h-[600px]" style={{ aspectRatio: "3/4" }}>
             <ImageWithFallback src={heroImage} alt={data.mood_name} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
             <div className="absolute top-4 left-4">
@@ -181,11 +181,11 @@ export function SharePage() {
       {/* Social Proof Strip */}
       <div className="border-y border-[#E8DDD4] bg-white py-8">
         <div className="mx-auto px-6" style={{ maxWidth: "var(--max-w)" }}>
-          <div className="grid grid-cols-3 gap-6 text-center">
+          <div className="grid grid-cols-3 gap-3 sm:gap-6 text-center">
             {SOCIAL_PROOF_STATS.map((stat) => (
               <div key={stat.label}>
                 <p
-                  className="text-[28px] sm:text-[32px] text-[#C4613A] mb-1"
+                  className="text-[22px] sm:text-[32px] text-[#C4613A] mb-1"
                   style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}
                 >
                   {stat.value}

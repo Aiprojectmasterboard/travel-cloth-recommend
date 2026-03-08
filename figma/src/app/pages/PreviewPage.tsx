@@ -455,7 +455,7 @@ export function PreviewPage() {
           </p>
           <button
             onClick={() => navigate("/onboarding/1")}
-            className="mt-6 h-[48px] px-8 bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
+            className="mt-6 h-[48px] px-8 bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#A84A25] transition-colors cursor-pointer"
             style={{ fontFamily: bodyFont, fontWeight: 600 }}
           >
             {t("preview.startTrip")}
@@ -503,7 +503,7 @@ export function PreviewPage() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => { setShowCityLimitModal(false); doCheckout("pro"); }}
-                className="h-[52px] w-full bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#A84A25] transition-colors cursor-pointer"
+                className="h-[52px] w-full bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#A84A25] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
                 Select Pro Plan ($3.99)
@@ -519,7 +519,7 @@ export function PreviewPage() {
                     setShowLoginModal(true);
                   }
                 }}
-                className="h-[52px] w-full border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#FDF8F3] transition-colors cursor-pointer"
+                className="h-[52px] w-full border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#FDF8F3] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
                 Continue with 1 city (Free)
@@ -556,7 +556,7 @@ export function PreviewPage() {
       {/* ─── Multi-city tabs ─────────────────────────────────────────────── */}
       {hasMultipleCities && (
         <div className="border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.6)" }}>
-          <div className="mx-auto px-6 overflow-x-auto scrollbar-hide" style={{ maxWidth: 1200 }}>
+          <div className="mx-auto px-4 sm:px-6 overflow-x-auto scrollbar-hide" style={{ maxWidth: 1200 }}>
             <div className="flex items-center gap-1 py-3 min-w-max">
               {data.cities.map((c, idx) => {
                 const isActive = idx === activeCityIdx;
@@ -583,7 +583,7 @@ export function PreviewPage() {
                     </span>
                     {cityVibe && (
                       <span
-                        className={`text-[10px] ${isActive ? "text-white/50" : "text-[#57534e]/40"}`}
+                        className={`text-[10px] hidden sm:inline ${isActive ? "text-white/50" : "text-[#57534e]/40"}`}
                         style={{ fontFamily: "var(--font-mono)" }}
                       >
                         {cityVibe.mood_name || ""}
@@ -597,12 +597,12 @@ export function PreviewPage() {
         </div>
       )}
 
-      <main className="mx-auto px-6 py-12" style={{ maxWidth: 1200 }}>
+      <main className="mx-auto px-4 sm:px-6 py-8 sm:py-12" style={{ maxWidth: 1200 }}>
         <span className="text-[10px] uppercase tracking-[0.15em] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
           {hasMultipleCities ? `${city} \u2014 ${t("preview.step")}` : t("preview.step")}
         </span>
 
-        <h1 className="mt-4 text-[#292524] italic whitespace-pre-line break-words" style={{ fontSize: "clamp(40px, 5vw, 72px)", fontFamily: displayFont, lineHeight: 1.05 }}>
+        <h1 className="mt-4 text-[#292524] italic whitespace-pre-line break-words" style={{ fontSize: "clamp(28px, 5vw, 72px)", fontFamily: displayFont, lineHeight: 1.05 }}>
           {moodLabel}
         </h1>
         <p className="mt-4 text-[18px] text-[#57534e] max-w-[600px]" style={{ fontFamily: bodyFont, fontWeight: 300 }}>
@@ -610,7 +610,7 @@ export function PreviewPage() {
         </p>
 
         {/* Preview Card — Real AI Teaser */}
-        <div className="mt-10 relative rounded-2xl overflow-hidden aspect-[16/9] sm:aspect-[21/9]">
+        <div className="mt-10 relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9]">
           {!teaserReady ? (
             /* Loading state: blurred gradient + shimmer animation */
             <>
@@ -670,7 +670,7 @@ export function PreviewPage() {
         </div>
 
         {/* AI-Generated Vibe Tags & Color Palette */}
-        {vibes.length > 0 && (
+        {vibeTags.length > 0 && (
           <div className="mt-8 flex flex-wrap items-center gap-4">
             {vibeTags.map((tag) => (
               <span key={tag} className="px-3 py-1.5 bg-white border border-[#E8DDD4] rounded-full text-[12px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
@@ -814,7 +814,7 @@ export function PreviewPage() {
                 <span className="text-[10px] uppercase tracking-[0.12em] text-[#C4613A] block mb-1" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                   {t(item.labelKey)}
                 </span>
-                <span className="text-[15px] sm:text-[20px] text-[#292524] truncate block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.value}</span>
+                <span className="text-[14px] sm:text-[20px] text-[#292524] break-words block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{item.value}</span>
               </div>
             ))}
           </div>
@@ -881,7 +881,7 @@ export function PreviewPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
             {/* Standard */}
-            <div className="relative flex flex-col p-8 bg-white border border-[#C4613A]/10 rounded-2xl">
+            <div className="relative flex flex-col p-5 sm:p-8 bg-white border border-[#C4613A]/10 rounded-2xl mt-4">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-[#C4613A] to-[#e0734a] text-white text-[10px] uppercase tracking-[0.12em] rounded-full animate-pulse" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {t("pricing.promoBadge")}
               </span>
@@ -904,7 +904,7 @@ export function PreviewPage() {
             </div>
 
             {/* Pro */}
-            <div className="relative flex flex-col p-8 bg-[#C4613A] text-white rounded-2xl" style={{ boxShadow: "0 4px 16px rgba(196,97,58,.25)" }}>
+            <div className="relative flex flex-col p-5 sm:p-8 bg-[#C4613A] text-white rounded-2xl mt-4" style={{ boxShadow: "0 4px 16px rgba(196,97,58,.25)" }}>
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#1A1410] text-white text-[10px] uppercase tracking-[0.12em] rounded-full" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {t("pricing.pro.badge")}
               </span>
@@ -924,13 +924,13 @@ export function PreviewPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => handleCheckout("pro")} className="mt-8 h-[56px] w-full bg-white text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+              <button onClick={() => handleCheckout("pro")} className="mt-8 h-[56px] w-full bg-white text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-xl hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {checkoutLoading === "pro" ? t("preview.processing") : t("pricing.pro.cta")}
               </button>
             </div>
 
             {/* Annual */}
-            <div className="relative flex flex-col p-8 bg-white border border-[#C4613A]/10 rounded-2xl">
+            <div className="relative flex flex-col p-5 sm:p-8 bg-white border border-[#C4613A]/10 rounded-2xl mt-4">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 gold-gradient text-white text-[10px] uppercase tracking-[0.12em] rounded-full whitespace-nowrap" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {t("pricing.annual.badge")}
               </span>
@@ -969,7 +969,7 @@ export function PreviewPage() {
             { key: "footer.terms", path: "/terms" },
             { key: "footer.contact", path: "/contact" },
           ].map((item) => (
-            <button key={item.key} onClick={() => navigate(item.path)} className="text-[11px] uppercase tracking-[0.1em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
+            <button key={item.key} onClick={() => navigate(item.path)} className="text-[11px] uppercase tracking-[0.1em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer py-3 px-1" style={{ fontFamily: bodyFont, fontWeight: 500 }}>
               {t(item.key)}
             </button>
           ))}

@@ -703,7 +703,7 @@ export function LandingPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => navigate("/onboarding/1")} className="mt-8 h-[56px] w-full bg-white border-2 border-[#C4613A] text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] hover:text-white transition-all cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+              <button onClick={() => navigate("/onboarding/1")} className="mt-8 h-[56px] w-full bg-white border-2 border-[#C4613A] text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#C4613A] hover:text-white transition-all cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {t("pricing.standard.cta")}
               </button>
             </div>
@@ -729,7 +729,7 @@ export function LandingPage() {
                   </div>
                 ))}
               </div>
-              <button onClick={() => navigate("/onboarding/1")} className="mt-8 h-[56px] w-full bg-white text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-none hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+              <button onClick={() => navigate("/onboarding/1")} className="mt-8 h-[56px] w-full bg-white text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-xl hover:bg-white/90 transition-colors cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {t("pricing.pro.cta")}
               </button>
             </div>
@@ -757,7 +757,7 @@ export function LandingPage() {
                   );
                 })}
               </div>
-              <button onClick={() => navigate("/onboarding/1")} className="mt-8 h-[56px] w-full bg-[#1A1410] text-white text-[14px] uppercase tracking-[0.08em] rounded-none hover:bg-[#C4613A] transition-all cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
+              <button onClick={() => navigate("/onboarding/1")} className="mt-8 h-[56px] w-full bg-[#1A1410] text-white text-[14px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#C4613A] transition-all cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
                 {t("pricing.annual.cta")}
               </button>
             </div>

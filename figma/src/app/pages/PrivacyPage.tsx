@@ -169,7 +169,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
       <h2 className="text-[20px] text-[#1A1410] mb-3" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>
         {title}
       </h2>
-      <div className="text-[15px] text-[#57534e] leading-relaxed space-y-3" style={{ fontFamily: "var(--font-body)" }}>
+      <div className="text-[15px] text-[#57534e] leading-relaxed space-y-3 [&_ul]:list-disc [&_ul]:list-outside [&_ul]:pl-5 [&_ul]:space-y-1" style={{ fontFamily: "var(--font-body)" }}>
         {children}
       </div>
     </section>
@@ -180,7 +180,7 @@ function SubSection({ label, children }: { label: string; children: React.ReactN
   return (
     <div>
       <p className="text-[13px] uppercase tracking-[0.08em] text-[#292524] mb-2" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{label}</p>
-      <div className="text-[15px] text-[#57534e] leading-relaxed space-y-1">{children}</div>
+      <div className="text-[15px] text-[#57534e] leading-relaxed space-y-1 [&_ul]:list-disc [&_ul]:list-outside [&_ul]:pl-5">{children}</div>
     </div>
   );
 }
@@ -195,9 +195,9 @@ function LegalFooter() {
           <span className="text-[14px] text-[#1A1410]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>Travel Capsule AI</span>
         </button>
         <div className="flex items-center gap-5">
-          <button onClick={() => navigate("/privacy")} className="text-[11px] uppercase tracking-[0.08em] text-[#C4613A] cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Privacy</button>
-          <button onClick={() => navigate("/terms")} className="text-[11px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Terms</button>
-          <button onClick={() => navigate("/contact")} className="text-[11px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Contact</button>
+          <button onClick={() => navigate("/privacy")} className="text-[11px] uppercase tracking-[0.08em] text-[#C4613A] cursor-pointer py-3 px-1" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>Privacy</button>
+          <button onClick={() => navigate("/terms")} className="text-[11px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer py-3 px-1" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Terms</button>
+          <button onClick={() => navigate("/contact")} className="text-[11px] uppercase tracking-[0.08em] text-[#57534e] hover:text-[#C4613A] transition-colors cursor-pointer py-3 px-1" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>Contact</button>
         </div>
       </div>
     </footer>

@@ -163,7 +163,7 @@ export function OnboardingStep2() {
           <div className="flex items-center gap-0 rounded-lg border border-[#E8DDD4] overflow-hidden">
             <button
               onClick={() => unit === "imperial" && switchToMetric()}
-              className={`px-3 py-1 text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer ${
+              className={`px-3 py-2 text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer ${
                 unit === "metric"
                   ? "bg-[#C4613A] text-white"
                   : "bg-white text-[#57534e] hover:bg-[#FDF8F3]"
@@ -174,7 +174,7 @@ export function OnboardingStep2() {
             </button>
             <button
               onClick={() => unit === "metric" && switchToImperial()}
-              className={`px-3 py-1 text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer ${
+              className={`px-3 py-2 text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer ${
                 unit === "imperial"
                   ? "bg-[#C4613A] text-white"
                   : "bg-white text-[#57534e] hover:bg-[#FDF8F3]"

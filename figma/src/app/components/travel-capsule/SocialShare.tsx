@@ -107,7 +107,7 @@ export function SocialShareButton({ shareUrl: shareUrlProp, shareTitle: shareTit
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="absolute right-0 top-full mt-3 w-[300px] bg-white rounded-2xl border border-[#E8DDD4] p-6 z-50"
+            className="absolute right-0 sm:right-0 top-full mt-3 w-[min(300px,calc(100vw-32px))] bg-white rounded-2xl border border-[#E8DDD4] p-6 z-50"
             style={{ boxShadow: "0 12px 40px rgba(0,0,0,.12)" }}
           >
             <h4 className="text-[18px] text-[#292524] not-italic mb-1" style={{ fontFamily: displayFont }}>

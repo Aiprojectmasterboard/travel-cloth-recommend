@@ -448,14 +448,14 @@ export function OnboardingStep3() {
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleReupload}
-                    className="px-3 py-1.5 rounded-lg text-[13px] font-medium bg-[#C4613A] text-white hover:bg-[#a8502f] transition-colors cursor-pointer"
+                    className="px-4 py-3 rounded-lg text-[13px] font-medium bg-[#C4613A] text-white hover:bg-[#a8502f] transition-colors cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     Re-upload Photo
                   </button>
                   <button
                     onClick={handleUseDefault}
-                    className="px-3 py-1.5 rounded-lg text-[13px] font-medium border border-[#E8DDD4] text-[#57534e] hover:bg-[#F5EFE6] transition-colors cursor-pointer"
+                    className="px-4 py-3 rounded-lg text-[13px] font-medium border border-[#E8DDD4] text-[#57534e] hover:bg-[#F5EFE6] transition-colors cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     Continue with default look

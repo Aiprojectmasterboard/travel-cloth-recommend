@@ -635,7 +635,7 @@ export function MyPage() {
                                   const plan = order?.plan || purchasedPlan || "standard";
                                   navigate(`/dashboard/${plan}`);
                                 }}
-                                className="h-[32px] px-4 bg-[#C4613A] text-white rounded-lg text-[11px] uppercase tracking-[0.06em] hover:bg-[#A84A25] transition-colors cursor-pointer flex items-center gap-1.5"
+                                className="h-[44px] px-4 bg-[#C4613A] text-white rounded-lg text-[11px] uppercase tracking-[0.06em] hover:bg-[#A84A25] transition-colors cursor-pointer flex items-center gap-1.5"
                                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
                               >
                                 <Icon name="visibility" size={14} className="text-white" />
@@ -652,7 +652,7 @@ export function MyPage() {
                                   const plan = order.plan || "standard";
                                   navigate(`/dashboard/${plan}`);
                                 }}
-                                className="h-[32px] px-4 bg-white border border-[#E8DDD4] text-[#57534e] rounded-lg text-[11px] uppercase tracking-[0.06em] hover:border-[#C4613A]/30 hover:text-[#C4613A] transition-colors cursor-pointer flex items-center gap-1.5"
+                                className="h-[44px] px-4 bg-white border border-[#E8DDD4] text-[#57534e] rounded-lg text-[11px] uppercase tracking-[0.06em] hover:border-[#C4613A]/30 hover:text-[#C4613A] transition-colors cursor-pointer flex items-center gap-1.5"
                                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
                               >
                                 <Icon name="picture_as_pdf" size={14} />

@@ -23,25 +23,92 @@
 
 ## Pages Deployment Status
 
-### Tenth QA Run 2026-03-07 (commit f0fed51 — full QA with detailed checks)
+### Fourteenth QA Run 2026-03-08 (post-BUG-004 + new commits)
 - Both domains FULLY DEPLOYED — all pages return valid HTML (SPA shell)
-- Worker /api/health: 200 OK with JSON {ok:true, timestamp:...}
-- /api/result/:tripId: 402 for unpaid trips (correct)
-- /api/share/:tripId: 404 for non-existent trips (correct)
-- /api/upload-photo: GET returns 404 (POST only — correct behavior)
-- SKIP_TURNSTILE: CONFIRMED REMOVED from wrangler.toml (fix from commit 15f730d)
-  NOTE: Still declared in Bindings type (index.ts line 33) — acceptable, just dead in prod
-- og-image.png: 200 OK at https://travelscapsule.com/og-image.png (PNG, ~66.6KB)
-- Static OG tags ARE in figma/index.html (og:title, og:image, twitter:card = summary_large_image)
-- Copyright footer: confirmed in LandingPage.tsx line 738 — "&copy; {year} Travel Capsule AI"
-- ImageWithFallback component: confirmed fixed (f0fed51), wraps in relative div, handles load/error states
+- Worker /api/health: 200 OK with JSON {ok:true, timestamp:2026-03-08T09:35:23.019Z, services:{gemini:true, claude:true, supabase:true, polar:true, r2:true, turnstile:true, resend:true}}
+- ALL 7 services reporting healthy
+- New commits verified: face detection warning (BUG-004), weather exact dates, outfit item sync, StandardDashboard teaser fix, unique outfit images per city
+- CONTACT_EMAIL in TermsPage.tsx and PrivacyPage.tsx is "netson94@gmail.com" (not hello@travelscapsule.com) — LOW SEVERITY (personal email in legal pages)
+
+## Pricing Model (Live — confirmed)
+- Standard plan: FREE during launch promo
+- Pro plan: $3.99 one-time
+- Annual plan: $9.99/yr
+- index.html JSON-LD now updated to match live prices ($0/$3.99/$9.99) — CONFIRMED IN FILE (lines 87-104)
+- CLAUDE.md price table ($5/$12/$29) is outdated; live prices are the promo prices
+
+## Teaser Pipeline Architecture (confirmed)
+- /api/preview returns immediately (no Gemini wait)
+- Frontend calls POST /api/teaser/generate as fire-and-forget (triggerTeaserGeneration())
+- Teaser generated synchronously in ~30-50s inside that long-running Worker request
+- Frontend polls GET /api/teaser/:tripId every 3s (max 25 polls = ~75s total)
+- Status flow: pending → ready (AI success) | fallback (Gemini failed, static image used)
+- On 'fallback' status: PreviewPage.tsx line 330-333 — sets teaserReady=true without updating polledTeaserUrl
+  (minor: fallback teaser_url from server not surfaced to UI, uses initialTeaserUrl instead — acceptable)
+- sessionStorage persistence of teaser_url confirmed at PreviewPage.tsx lines 319-326
+
+## Safety-Block Fallback (confirmed)
+- teaserAgent.ts generateWithRetry(): Phase 1 = with face, Phase 2 = without face (2 attempts)
+- Both phases use generateNanoBanana() targeting gemini-3.1-flash-image-preview
+
+## Turnstile Fix (confirmed)
+- WIDGET_SIZE = 'compact', Turnstile is ACTIVE in production
+
+## SEO / OG Tags
+- Static index.html (figma/index.html) has og:title, og:image, og:type, twitter:card = "summary_large_image"
+- These are present for crawlers before JS hydration
+- SEO component dynamically updates og:title/description per-page via document.head manipulation
+- WebFetch returns SPA shell — OG tags ARE in static HTML and confirmed by file read
+
+## Fallback Image Architecture
+- orchestrator.ts: getCityFallbackImage(city, gender) exported at line 872
+- index.ts line 594: uses getCityFallbackImage() in /api/preview fallbackTeaser — CONFIRMED
+- orchestrator.ts line 938: uses getCityFallbackImage() in runTeaserBackground catch block — CONFIRMED
+- PreviewPage.tsx: local getCityFallbackImg() is a simple generic fallback (not city-specific)
+
+## outfitGenerator.ts — City Coverage
+- FEMALE_OUTFITS: paris, rome, barcelona, tokyo, london, "new york", seoul, milan, bali, bangkok — ALL PRESENT
+- MALE_OUTFITS: paris, rome, barcelona, tokyo, london, "new york", seoul, milan, bali, bangkok — ALL PRESENT
+  (Confirmed at lines 87-141 for female, 155-210 for male)
+
+## routes.ts — Lazy Loading
+- Dashboard pages use React.lazy() — CONFIRMED at routes.ts lines 27-35
+- Comment: "Isolates TDZ/init errors so they don't crash the entire app"
+- LazyStandardDashboard, LazyProDashboard, LazyAnnualDashboard all lazy-loaded
+
+## ProDashboard — TDZ Fix
+- apiResultImages declared at line 102 BEFORE any useEffect that references it (lines 107-111)
+- Guard comment at lines 99-101 explains the TDZ issue
+- CONFIRMED SAFE
+
+## ErrorBoundary
+- figma/src/app/components/ErrorBoundary.tsx exists — full class component with retry/home buttons
+- Imported and wrapping <Outlet /> in RootLayout.tsx at lines 49+63
+- CONFIRMED PRESENT AND ACTIVE
+
+## StandardDashboard — Teaser Polling
+- pollTeaser() used to fill polledTeaser state (line 134-157 of StandardDashboard)
+- Max 20 polls (~60s total) at 3s intervals
+- Falls back to result?.teaser_url || preview?.teaser_url chain
 
 ## Known Issues (carry-forward)
-- CONTACT_EMAIL = "netson94@gmail.com" in TermsPage.tsx, PrivacyPage.tsx, ContactPage.tsx
-  ISSUE: Should be hello@travelscapsule.com for brand consistency — MEDIUM severity
-- JSON-LD schema.org and noscript show prices ($5, $12, $29) — may differ from live UI promo pricing
-  ISSUE: Prices in index.html noscript/JSON-LD not updated when promo pricing changes
-- POLAR_ENV = "sandbox" in polarCheckout.ts — dead variable, not a prod bug but code clarity concern
+- POLAR_ENV = "sandbox" in polarCheckout.ts — dead variable, not a prod bug
+- /api/test-teaser returns 404 — acceptable (diagnostic only, not in index.ts)
+- PreviewPage.tsx fallback branch (status='fallback'): sets teaserReady=true but does NOT
+  update polledTeaserUrl with the fallback teaser_url from server — low severity, UI still shows initialTeaserUrl
+
+## Open Issues (low severity)
+- CONTACT_EMAIL in TermsPage.tsx + PrivacyPage.tsx = "netson94@gmail.com" (personal email) — should be hello@travelscapsule.com for professionalism
+
+## RESOLVED Issues (from prior QA runs)
+- CONTACT_EMAIL previously "hello@travelscapsule.com" — reverted to personal email in current code (re-opened above)
+- index.html JSON-LD prices: NOW MATCH live UI ($0, $3.99, $9.99) — FIXED
+- ProDashboard TDZ bug: FIXED at line 102
+- BUG-004 default face injection: FIXED (effectiveFaceUrl = face_url || undefined)
+- Weather exact dates: FIXED (fromDate/toDate propagation to weatherAgent)
+- Outfit item sync: FIXED (capsule → style → imageGen pipeline order)
+- StandardDashboard teaser: FIXED (pollTeaser() + updatePreviewTeaser())
+- Unique outfit images: FIXED (usedCombos Set prevents duplicates)
 
 ## Frontend Architecture (Current)
 - Active frontend: figma/ directory (Vite+React, React Router v7)
@@ -53,29 +120,23 @@
 ## polarCheckout.ts Architecture (confirmed)
 - POLAR_ENV = "sandbox" at line 94 — ONLY used in commented-out stub functions
 - Live checkout path: createCheckoutSession → POST Worker /api/payment/checkout → Polar production API
-- confirmCheckoutSession() and getCheckoutSession() are MOCK stubs only (return hardcoded values)
-- The actual post-checkout flow is: Polar redirects to /checkout/success, CheckoutSuccess reads URL params
 
 ## Design System (Figma/Vite frontend)
 - Colors in theme.css: --tc-primary: #C4613A (NOT #b8552e from CLAUDE.md — CLAUDE.md is outdated)
 - --tc-dark: #1A1410, --tc-cream: #FDF8F3, --tc-gold: #D4AF37
 - Fonts: Playfair Display (display), DM Sans (body), JetBrains Mono (mono)
 - Material Symbols Outlined for icons
-- body element: font-family: var(--font-body) = DM Sans (correct for this frontend)
-- Note: CLAUDE.md spec says Plus Jakarta Sans — but Figma frontend uses DM Sans (intentional design change)
+- CLAUDE.md spec says Plus Jakarta Sans — but Figma frontend uses DM Sans (intentional design change)
 
 ## Onboarding Flow (confirmed)
-- Step 1: City search from cities.json (90+ cities including Bali confirmed at line 21)
+- Step 1: City search from cities.json (90+ cities), custom city via geocoding, Korean aliases
 - Step 2: Gender, Height, Weight (metric/imperial toggle)
 - Step 3: Style aesthetics selection + photo upload (optional)
 - Step 4: AI analysis loading screen → submits to /api/preview
-- Login is optional but gated at checkout for Standard (free) plan
+- Login is REQUIRED at step 4 before API call
 
-## Secrets Status (tenth QA run 2026-03-07)
-- SKIP_TURNSTILE: REMOVED from wrangler.toml — Turnstile is active in production
-- POLAR_ACCESS_TOKEN: CONFIRMED SET (Worker returns 402, not 500/503)
-- SUPABASE_SERVICE_ROLE_KEY: WORKING (Worker returns 402 for unpaid trips)
-- CLOUDFLARE_TURNSTILE_SECRET_KEY: assumed set (Worker doesn't 503 on preview calls)
+## Secrets Status (confirmed healthy via /api/health)
+- ALL 7 services: gemini, claude, supabase, polar, r2, turnstile, resend — ALL true
 
 ## DB Schema
 - polar_order_id UNIQUE constraint: CONFIRMED in migrations/001_initial_schema.sql line 121
@@ -83,29 +144,21 @@
 
 ## Worker API Routes (confirmed in index.ts)
 - GET /api/health
-- POST /api/preview
-- POST /api/preview/email
+- GET /api/debug/recent-trips, GET /api/test-gemini (diagnostic)
+- POST /api/preview, POST /api/preview/email
 - GET /api/preview/:tripId
-- POST /api/payment/checkout
-- POST /api/payment/webhook (HMAC-SHA256 verified)
-- POST /api/payment/upgrade
-- GET /api/result/:tripId
-- GET /api/share/:tripId
-- GET /api/trips/:tripId
-- POST /api/upload-photo
-- POST /api/account/delete
-- POST /api/regenerate
+- GET /api/teaser/:tripId, POST /api/teaser/generate
+- POST /api/payment/checkout, POST /api/payment/webhook, POST /api/payment/upgrade
+- GET /api/result/:tripId, GET /api/share/:tripId, GET /api/trips/:tripId
+- POST /api/upload-photo, POST /api/account/delete, POST /api/regenerate
 
 ## False Positives / Known Acceptable Behaviors
 - /api/share/:tripId returning 404 for valid UUID with no trip is CORRECT
 - /api/result/:tripId returning 402 for unpaid trip is CORRECT
-- /api/upload-photo returning 404 on GET is correct (POST only endpoint)
-- /api/payment/checkout returning 404 on GET is correct (POST only endpoint)
-- OG tags not visible in WebFetch output — they ARE in static index.html (confirmed by file read)
+- OG tags not visible in WebFetch output — they ARE in static index.html
 - WebFetch always returns landing page SPA shell for all SPA routes — not an error
 - POLAR_ENV = "sandbox" in polarCheckout.ts is a dead variable — not a production bug
-- SKIP_TURNSTILE still in Bindings type declaration — acceptable (no runtime effect since not in wrangler.toml)
-- "Stripe" mentions in figma/src/imports/api-endpoints.md — this is Polar's API docs file, not app code
+- "Stripe" mentions in figma/src/imports/api-endpoints.md — Polar's API docs file, not app code
 
 ## Security Checks (confirmed PASS)
 - No process.env in apps/worker/ — uses c.env throughout

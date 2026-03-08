@@ -58,7 +58,7 @@ export function ContactPage() {
               Email Support
             </span>
           </div>
-          <p className="text-[24px] text-[#1A1410] mt-4 mb-6 italic" style={{ fontFamily: "var(--font-display)" }}>
+          <p className="text-[18px] sm:text-[24px] text-[#1A1410] mt-4 mb-6 italic break-all" style={{ fontFamily: "var(--font-display)" }}>
             {SUPPORT_EMAIL}
           </p>
           <div className="flex flex-wrap gap-3">
