@@ -813,11 +813,10 @@ export async function runResult(
     }
 
     // c. Apply gender-based default face if user didn't upload a photo
-    const effectiveFaceUrl = faceUrl || (
-      userProfile.gender === 'male'
-        ? 'https://travel-cloth-recommend.pages.dev/defaults/default-male.png'
-        : 'https://travel-cloth-recommend.pages.dev/defaults/default-female.png'
-    );
+    // BUG-004 fix: Only use face_url if user actually uploaded a photo.
+    // Do NOT use default placeholder faces — they waste Gemini API time (~40s)
+    // and risk safety filter blocks with no benefit to the result.
+    const effectiveFaceUrl = faceUrl || undefined;
 
     // d. Generate images (Promise.allSettled internally — never throws)
     await imageGenAgent(

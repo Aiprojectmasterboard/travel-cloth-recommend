@@ -274,14 +274,14 @@ export function AnnualDashboard() {
   const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
 
   const getOutfitImage = (idx: number): string => {
-    // 1. Webhook pipeline images
-    if (apiImages.length > idx) return apiImages[idx].url;
+    // 1. Webhook pipeline images — match by city AND index
+    const apiImg = apiResultImages.find((img) => img.city.toLowerCase() === cityName.toLowerCase() && img.index === idx);
+    if (apiImg) return apiImg.url;
     // 2. Client-side generated images
     const aiKey = `${cityName}::outfit-${idx + 1}`;
     const aiUrl = aiImages.get(aiKey);
     if (aiUrl) return aiUrl;
-    // 3. Teaser image (personalized from preview) as fallback
-    if (teaserUrl) return teaserUrl;
+    // 3. Use local mock fallback (per-city images from outfitGenerator)
     return outfits[idx]?.image || IMG.tokyoMap;
   };
 

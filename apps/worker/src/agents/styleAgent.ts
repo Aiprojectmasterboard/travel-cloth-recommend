@@ -2,7 +2,7 @@
  * styleAgent.ts  (Pro plan only)
  *
  * Uses Claude API to generate NanoBanana-ready image prompts for each city.
- * Produces 2 prompts per city (max 6 total for a 3-city trip).
+ * Produces 4 prompts per city (max 12 total for a 3-city trip).
  *
  * Model: claude-sonnet-4-6
  */
@@ -55,7 +55,7 @@ const DEFAULT_NEGATIVE =
   'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, ' +
   '3d render, blurry, low quality, nsfw, watermark, text overlay, logo';
 
-const PROMPTS_PER_CITY = 2;
+const PROMPTS_PER_CITY = 4;
 const MAX_CITIES = 3;
 
 // ─── Profile Helpers ──────────────────────────────────────────────────────────
@@ -198,7 +198,7 @@ function buildImagePrefix(profile?: UserProfile): string {
 // ─── Main Exported Function ───────────────────────────────────────────────────
 
 /**
- * Generates 2 NanoBanana image prompts per city (up to 6 total).
+ * Generates 4 NanoBanana image prompts per city (up to 12 total).
  *
  * @param input.vibeResults         - Array of VibeResult from vibeAgent (one per city)
  * @param input.cities              - City names in the same order as vibeResults
@@ -262,7 +262,7 @@ export async function styleAgent(
   const capsuleOutfitBlock = activeCities.map((city, i) => {
     const cityOutfits = outfitsByCity[city.toLowerCase()] ?? [];
     if (cityOutfits.length === 0) return '';
-    // Pick first 2 outfits for 2 prompts
+    // Pick outfits for prompts (up to PROMPTS_PER_CITY per city)
     return cityOutfits.slice(0, PROMPTS_PER_CITY).map((o, j) =>
       `  Outfit ${j + 1} for ${city} (Day ${o.day}): ${o.items.join(', ')}`
     ).join('\n');
@@ -305,7 +305,7 @@ Rules for each prompt:
    - Camera angle: ${isInfant ? 'eye-level shot of the baby in the stroller, showing the full outfit and stroller' : 'full body shot showing the complete outfit from head to toe'}
    - End with: "fashion editorial photography, photorealistic, 4K, sharp focus"
 4. negative_prompt: include "blurry, low quality, cartoon, nsfw" plus any style-specific items to avoid
-5. Prompts for the same city must have different travel occasions (e.g. one for museum/culture, one for city walk/cafe)
+5. Each prompt for the same city MUST depict a completely different travel scenario, outfit style, and landmark. No two prompts should have similar compositions.
 ${hasOutfitRef ? '6. CRITICAL: Each prompt MUST depict EXACTLY the items listed in the pre-assigned outfit. Do NOT substitute, swap, or add items. The image must match the item breakdown shown to the user.' : ''}
 
 Climate clothing guide:

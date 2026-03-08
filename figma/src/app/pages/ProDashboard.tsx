@@ -334,20 +334,16 @@ export function ProDashboard() {
   const currentSet = citySets[activeCity] || citySets[0];
   if (!currentSet) return null;
 
-  // Get image for outfit: API images > AI generated > teaser (personalized) > mock
+  // Get image for outfit: API images (by city+index) > AI generated > local mock
   const getOutfitImage = (cityName: string, idx: number, fallback: string): string => {
-    // 1. Check webhook-pipeline images (result.images[])
+    // 1. Check webhook-pipeline images (result.images[]) — match by city AND index
     const apiImg = apiResultImages.find((img) => img.city.toLowerCase() === cityName.toLowerCase() && img.index === idx);
     if (apiImg) return apiImg.url;
-    // Also check by sequential index if city has no match (single-city trips)
-    const apiByIdx = apiResultImages[idx];
-    if (apiByIdx) return apiByIdx.url;
     // 2. Check client-side generated images
     const aiKey = `${cityName}::outfit-${idx + 1}`;
     const aiUrl = aiImages.get(aiKey);
     if (aiUrl) return aiUrl;
-    // 3. Use teaser image (personalized from preview) as better fallback than mock
-    if (teaserUrl) return teaserUrl;
+    // 3. Use local mock fallback (per-city images from outfitGenerator)
     return fallback;
   };
 

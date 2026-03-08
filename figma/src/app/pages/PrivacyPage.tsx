@@ -4,7 +4,7 @@ import { Icon } from "../components/travel-capsule";
 import { SEO } from "../components/SEO";
 
 const EFFECTIVE_DATE = "March 1, 2026";
-const CONTACT_EMAIL = "hello@travelscapsule.com";
+const CONTACT_EMAIL = "netson94@gmail.com";
 
 export function PrivacyPage() {
   const navigate = useNavigate();

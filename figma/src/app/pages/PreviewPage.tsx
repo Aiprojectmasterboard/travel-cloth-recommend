@@ -270,14 +270,28 @@ export function PreviewPage() {
   const { t, displayFont, bodyFont, lang } = useLang();
   const { isLoggedIn, user, setShowLoginModal, setLoginModalContext } = useAuth();
 
-  const city = data.cities[0]?.city || "Paris";
-  const country = data.cities[0]?.country || "";
+  // ─── Multi-city tab state ────────────────────────────────────────────────
+  const [activeCityIdx, setActiveCityIdx] = useState(0);
+  const cityCount = data.cities.length;
+  const hasMultipleCities = cityCount > 1;
+
+  // Derive per-city data based on active tab
+  const activeCity = data.cities[activeCityIdx] || data.cities[0];
+  const city = activeCity?.city || "Paris";
+  const country = activeCity?.country || "";
   const aestheticLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : "Classic, Minimalist";
 
+  // Match vibe/weather data to active city (API returns arrays with city field)
+  const allVibes = preview?.vibes || [];
+  const allWeather = preview?.weather || [];
+
+  const activeVibe = allVibes.find((v) => v.city?.toLowerCase() === city.toLowerCase()) || allVibes[activeCityIdx] || allVibes[0];
+  const activeWeather = allWeather.find((w) => w.city?.toLowerCase() === city.toLowerCase()) || allWeather[activeCityIdx] || allWeather[0];
+
   // Real data from AI preview — fall back to city-specific or onboarding image
-  const cityFallback = data.cities[0]?.imageUrl || getCityFallbackImg(city);
+  const cityFallback = activeCity?.imageUrl || getCityFallbackImg(city);
   const initialTeaserUrl = preview?.teaser_url || cityFallback;
-  const moodLabel = preview?.mood_label || `${city} \u2014 Style Analysis`;
+  const moodLabel = activeVibe?.mood_label || preview?.mood_label || `${city} \u2014 Style Analysis`;
 
   // Poll for AI-generated teaser image + trigger generation via dedicated endpoint
   const [polledTeaserUrl, setPolledTeaserUrl] = useState<string | null>(null);
@@ -351,31 +365,26 @@ export function PreviewPage() {
 
   // All 4 slots use the same teaser image — slot 0 clear, slots 1-3 CSS-blurred
   // Per spec: "[1][2][3] 동일 이미지 + CSS blur(8px) + tint overlay + lock icon"
-  const vibes = preview?.vibes || [];
-  const weatherData = preview?.weather || [];
   const capsuleCount = preview?.capsule?.count || 9;
   const capsulePrinciples = preview?.capsule?.principles || [];
 
-  // Weather display from real data
-  const primaryWeather = weatherData[0];
-  const weatherDisplay = primaryWeather
-    ? `${Math.round(primaryWeather.temperature_day_avg)}\u00B0C, ${Math.round(primaryWeather.precipitation_prob * 100)}% rain`
+  // Weather display from real data — per active city
+  const weatherDisplay = activeWeather
+    ? `${Math.round(activeWeather.temperature_day_avg)}\u00B0C, ${Math.round(activeWeather.precipitation_prob * 100)}% rain`
     : t("preview.processing");
 
-  // Vibe color palette
-  const vibeColors = vibes[0]?.color_palette || ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"];
-  const vibeTags = vibes[0]?.vibe_tags || [];
+  // Vibe color palette — per active city
+  const vibeColors = activeVibe?.color_palette || ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"];
+  const vibeTags = activeVibe?.vibe_tags || [];
 
   const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [showCityLimitModal, setShowCityLimitModal] = useState(false);
   const [lightboxOpen, setLightboxOpen] = useState(false);
 
-  const cityCount = data.cities.length;
-
-  // Duration display: "Aug 15 - Aug 20 (5 nights)"
-  const fromDate = data.cities[0]?.fromDate || "";
-  const toDate = data.cities[0]?.toDate || "";
+  // Duration display: "Aug 15 - Aug 20 (5 nights)" — per active city
+  const fromDate = activeCity?.fromDate || "";
+  const toDate = activeCity?.toDate || "";
   const nightCount = fromDate && toDate
     ? Math.max(1, Math.round((new Date(toDate).getTime() - new Date(fromDate).getTime()) / 86400000))
     : 7;
@@ -500,7 +509,16 @@ export function PreviewPage() {
                 Select Pro Plan ($3.99)
               </button>
               <button
-                onClick={() => { setShowCityLimitModal(false); doCheckout("standard"); }}
+                onClick={() => {
+                  setShowCityLimitModal(false);
+                  // Standard is free — navigate or show login (no Polar checkout)
+                  if (isLoggedIn) {
+                    navigate("/dashboard/standard");
+                  } else {
+                    setLoginModalContext("onboarding_gate");
+                    setShowLoginModal(true);
+                  }
+                }}
                 className="h-[52px] w-full border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.08em] rounded-none hover:bg-[#FDF8F3] transition-colors cursor-pointer"
                 style={{ fontFamily: bodyFont, fontWeight: 600 }}
               >
@@ -535,9 +553,53 @@ export function PreviewPage() {
         </div>
       </header>
 
+      {/* ─── Multi-city tabs ─────────────────────────────────────────────── */}
+      {hasMultipleCities && (
+        <div className="border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.6)" }}>
+          <div className="mx-auto px-6 overflow-x-auto scrollbar-hide" style={{ maxWidth: 1200 }}>
+            <div className="flex items-center gap-1 py-3 min-w-max">
+              {data.cities.map((c, idx) => {
+                const isActive = idx === activeCityIdx;
+                const cityVibe = allVibes.find((v) => v.city?.toLowerCase() === c.city.toLowerCase()) || allVibes[idx];
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => setActiveCityIdx(idx)}
+                    className={`flex items-center gap-2.5 px-4 py-2.5 rounded-full transition-all duration-200 cursor-pointer whitespace-nowrap ${
+                      isActive
+                        ? "bg-[#1A1410] text-white shadow-md"
+                        : "bg-white/80 text-[#57534e] hover:bg-white hover:text-[#292524] border border-[#E8DDD4]"
+                    }`}
+                  >
+                    {c.imageUrl && (
+                      <img
+                        src={c.imageUrl}
+                        alt={c.city}
+                        className="w-6 h-6 rounded-full object-cover flex-shrink-0"
+                      />
+                    )}
+                    <span className="text-[13px]" style={{ fontFamily: bodyFont, fontWeight: isActive ? 600 : 500 }}>
+                      {c.city}
+                    </span>
+                    {cityVibe && (
+                      <span
+                        className={`text-[10px] ${isActive ? "text-white/50" : "text-[#57534e]/40"}`}
+                        style={{ fontFamily: "var(--font-mono)" }}
+                      >
+                        {cityVibe.mood_name || ""}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto px-6 py-12" style={{ maxWidth: 1200 }}>
         <span className="text-[10px] uppercase tracking-[0.15em] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-          {t("preview.step")}
+          {hasMultipleCities ? `${city} \u2014 ${t("preview.step")}` : t("preview.step")}
         </span>
 
         <h1 className="mt-4 text-[#292524] italic whitespace-pre-line break-words" style={{ fontSize: "clamp(40px, 5vw, 72px)", fontFamily: displayFont, lineHeight: 1.05 }}>
@@ -743,7 +805,7 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
             {[
-              { labelKey: "preview.destination", value: country ? `${city}, ${country}` : city },
+              { labelKey: "preview.destination", value: hasMultipleCities ? `${city} + ${cityCount - 1} more` : (country ? `${city}, ${country}` : city) },
               { labelKey: "preview.duration", value: durationValue },
               { labelKey: "preview.aesthetic", value: aestheticLabel },
               { labelKey: "preview.weather", value: weatherDisplay },
@@ -785,14 +847,14 @@ export function PreviewPage() {
           </div>
         )}
 
-        {/* Avoid Note from Vibe */}
-        {vibes[0]?.avoid_note && (
+        {/* Avoid Note from Vibe — per active city */}
+        {activeVibe?.avoid_note && (
           <div className="mt-6 p-4 bg-[#FEF3C7] border border-[#FCD34D]/30 rounded-xl">
             <div className="flex items-center gap-2 mb-2">
               <Icon name="info" size={16} className="text-[#D97706]" />
               <span className="text-[11px] uppercase tracking-[0.1em] text-[#D97706]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("preview.styleTip")}</span>
             </div>
-            <p className="text-[14px] text-[#92400E]" style={{ fontFamily: bodyFont }}>{vibes[0].avoid_note}</p>
+            <p className="text-[14px] text-[#92400E]" style={{ fontFamily: bodyFont }}>{activeVibe.avoid_note}</p>
           </div>
         )}
 
