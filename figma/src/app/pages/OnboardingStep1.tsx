@@ -496,6 +496,12 @@ export function OnboardingStep1() {
             setError(t("onboarding1.noDestinationError"));
             return;
           }
+          // Validate that every city has both fromDate and toDate
+          const missingDates = data.cities.some((c) => !c.fromDate || !c.toDate);
+          if (missingDates) {
+            setError(t("onboarding1.missingDatesError"));
+            return;
+          }
           setError("");
           GA.onboardingStep(1);
           navigate("/onboarding/2");
