@@ -1766,16 +1766,25 @@ app.post('/api/regenerate', async (c) => {
     // If no existing prompt is found we fall back to a generic travel prompt.
     const tripRes = await supabase(
       c.env,
-      `/trips?id=eq.${trip_id}&select=vibe_data,cities,month&limit=1`
+      `/trips?id=eq.${trip_id}&select=vibe_data,cities,month,gender,height_cm,weight_kg,aesthetics&limit=1`
     );
     const tripRows = (await tripRes.json()) as Array<{
       vibe_data: unknown;
       cities: unknown;
       month: number;
+      gender: string | null;
+      height_cm: unknown;
+      weight_kg: unknown;
+      aesthetics: unknown;
     }>;
 
     let existingPrompt: string | null = null;
     let existingMood = 'travel-style';
+    // User profile for prompt construction
+    let regenGender = 'female';
+    let regenHeightCm: number | undefined;
+    let regenWeightKg: number | undefined;
+    let regenAesthetics: string[] = [];
 
     if (tripRows.length > 0) {
       const tripRow = tripRows[0];
@@ -1790,7 +1799,32 @@ app.post('/api/regenerate', async (c) => {
       if (cityVibe) {
         existingMood = (cityVibe.mood_label as string) ?? (cityVibe.mood_name as string) ?? existingMood;
       }
+      // Extract user profile from trip
+      if (tripRow.gender === 'male' || tripRow.gender === 'female' || tripRow.gender === 'non-binary') {
+        regenGender = tripRow.gender;
+      }
+      const ht = Number(tripRow.height_cm);
+      if (ht > 0 && ht < 300) regenHeightCm = ht;
+      const wt = Number(tripRow.weight_kg);
+      if (wt > 0 && wt < 500) regenWeightKg = wt;
+      if (Array.isArray(tripRow.aesthetics)) {
+        regenAesthetics = tripRow.aesthetics.filter((a): a is string => typeof a === 'string');
+      }
     }
+
+    // Build user profile descriptor for the prompt
+    const regenModelDirective = regenGender === 'male' ? 'Male model' : regenGender === 'non-binary' ? 'Androgynous model' : 'Female model';
+    const regenHeightDesc = (regenHeightCm && regenHeightCm >= 175) ? 'tall figure' : (regenHeightCm && regenHeightCm <= 160) ? 'petite figure' : 'average height';
+    const regenBmiNote = (() => {
+      if (!regenHeightCm || !regenWeightKg) return '';
+      const bmi = regenWeightKg / ((regenHeightCm / 100) ** 2);
+      if (bmi < 18.5) return 'slender build';
+      if (bmi < 25) return 'slim build';
+      if (bmi < 30) return 'athletic build';
+      return 'full-figured silhouette';
+    })();
+    const regenProfilePrefix = [regenModelDirective, regenHeightDesc, regenBmiNote].filter(Boolean).join(', ');
+    const regenAestheticStyle = regenAesthetics.length > 0 ? regenAesthetics.slice(0, 3).join(', ') + ' style' : '';
 
     // Also look up the most recent successful full-gen job prompt for this city
     const promptRes = await supabase(
@@ -1803,13 +1837,16 @@ app.post('/api/regenerate', async (c) => {
     }
 
     // Build a StylePrompts-compatible object for imageGenAgent
-    // If no stored prompt, fall back to a generic style prompt for the city
+    // Always include user profile in the prompt (gender, body type, aesthetics)
     const finalPrompt =
-      existingPrompt ??
-      `High-quality travel fashion editorial photograph. Location: ${cityTrimmed}. ` +
-      `Outfit style: ${existingMood}. Realistic photography, natural lighting, ` +
-      `full-body shot, stylish travel attire appropriate for the destination. ` +
-      `Professional fashion photography quality.`;
+      existingPrompt
+        // If existing prompt lacks user profile info, prepend it
+        ? (existingPrompt.toLowerCase().includes(regenGender) ? existingPrompt : `${regenProfilePrefix}. ${existingPrompt}`)
+        : `${regenProfilePrefix}, stylish travel outfit in ${cityTrimmed}. ` +
+          `Outfit style: ${existingMood}. ` +
+          (regenAestheticStyle ? `${regenAestheticStyle}. ` : '') +
+          `${cityTrimmed} street backdrop, professional fashion editorial photography, ` +
+          `natural lighting, sharp focus, photorealistic, full-body shot.`;
 
     const stylePrompt = {
       city: cityTrimmed,

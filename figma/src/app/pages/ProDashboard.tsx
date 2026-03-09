@@ -23,7 +23,7 @@ import {
   type CityOutfitSet,
   type PackingItem,
 } from "../services/outfitGenerator";
-import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage, type GridImage } from "../lib/api";
+import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type DailyForecast, type VibeData, type ResultImage, type GridImage } from "../lib/api";
 import { exportDashboardPdf } from "../services/exportDashboardPdf";
 import { SEO } from "../components/SEO";
 
@@ -119,7 +119,7 @@ export function ProDashboard() {
   const { isLoggedIn, setShowSignupPrompt, purchasedPlan } = useAuth();
   const { data: onboarding } = useOnboarding();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [pdfExporting, setPdfExporting] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
@@ -259,7 +259,9 @@ export function ProDashboard() {
   // IMPORTANT: teaserUrl must be declared BEFORE citySets useMemo (TDZ prevention)
   const teaserUrl = result?.teaser_url || preview?.teaser_url || "";
 
-  const citySets = useMemo<CityOutfitSet[]>(() => {
+  const dateLocale = lang === "ko" ? "ko-KR" : lang === "ja" ? "ja-JP" : lang === "zh" ? "zh-CN" : lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-US";
+
+  const citySets = useMemo<(CityOutfitSet & { dailyForecast: DailyForecast[] })[]>(() => {
     return cities.slice(0, 5).map((c, ci) => {
       const key = c.city.toLowerCase();
       const outfits = generateCityOutfits(profile, c, 4);
@@ -268,7 +270,7 @@ export function ProDashboard() {
       return {
         city: c.city,
         country: c.country,
-        dates: `${new Date(c.fromDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} \u2013 ${new Date(c.toDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+        dates: `${new Date(c.fromDate).toLocaleDateString(dateLocale, { month: "short", day: "numeric" })} \u2013 ${new Date(c.toDate).toLocaleDateString(dateLocale, { month: "short", day: "numeric" })}`,
         heroImg: CITY_HEROES[key] || (teaserUrl ? teaserUrl : CITY_HEROES.paris),
         weather: {
           temp: weatherInfo ? Math.round(weatherInfo.temperature_day_avg) : 15,
@@ -276,12 +278,13 @@ export function ProDashboard() {
           wind: 12,
           condition: weatherInfo?.climate_band || "mild",
         },
+        dailyForecast: weatherInfo?.daily_forecast || [],
         outfits,
         colorPalette: vibeData?.color_palette || ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"],
         activities: vibeData?.vibe_tags || ["City Walk", "Cultural Visit", "Dining"],
       };
     });
-  }, [cities, profile, apiVibes, apiWeather, teaserUrl]);
+  }, [cities, profile, apiVibes, apiWeather, teaserUrl, dateLocale]);
 
   const allOutfits = useMemo(() => citySets.flatMap((cs) => cs.outfits), [citySets]);
   const packing: PackingItem[] = useMemo(() => derivePacking(allOutfits), [allOutfits]);
@@ -794,7 +797,7 @@ export function ProDashboard() {
                 </div>
               </div>
 
-              {/* Weather per city */}
+              {/* Weather per city — with daily breakdown */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
                 <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.weatherForecast")}</h3>
                 <div className="space-y-4">
@@ -802,10 +805,35 @@ export function ProDashboard() {
                     <div key={cs.city} className="py-3 border-b border-[#EFE8DF] last:border-0">
                       <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{cs.city}</span>
                       <span className="text-[11px] text-[#57534e] block mb-2" style={{ fontFamily: "var(--font-body)" }}>{cs.dates} · {cs.weather.condition}</span>
-                      <div className="flex items-center gap-4 text-[12px]" style={{ fontFamily: "var(--font-mono)" }}>
+                      <div className="flex items-center gap-4 text-[12px] mb-2" style={{ fontFamily: "var(--font-mono)" }}>
                         <span className="flex items-center gap-1 text-[#292524]"><Icon name="thermostat" size={14} className="text-[#C4613A]" />{cs.weather.temp}°C</span>
                         <span className="flex items-center gap-1 text-[#57534e]"><Icon name="water_drop" size={14} />{cs.weather.rain}%</span>
                       </div>
+                      {/* Daily forecast breakdown */}
+                      {cs.dailyForecast.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          <span className="text-[10px] uppercase tracking-[0.1em] text-[#C4613A] block mb-1" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("dashboard.dailyBreakdown")}</span>
+                          {cs.dailyForecast.map((df) => {
+                            // daily_forecast date is last year's date — shift to current travel year for display
+                            const d = new Date(df.date + "T00:00:00");
+                            d.setFullYear(d.getFullYear() + 1);
+                            const dayLabel = d.toLocaleDateString(dateLocale, { month: "short", day: "numeric", weekday: "short" });
+                            return (
+                              <div key={df.date} className="flex items-center justify-between text-[11px] py-1 border-b border-[#EFE8DF]/50 last:border-0" style={{ fontFamily: "var(--font-mono)" }}>
+                                <span className="text-[#57534e] min-w-[80px]">{dayLabel}</span>
+                                <span className="flex items-center gap-1 text-[#292524]">
+                                  <Icon name="thermostat" size={12} className="text-[#C4613A]" />
+                                  {Math.round(df.temperature_max)}° / {Math.round(df.temperature_min)}°
+                                </span>
+                                <span className="flex items-center gap-1 text-[#57534e]">
+                                  <Icon name="water_drop" size={12} />
+                                  {df.precipitation_mm > 0 ? `${df.precipitation_mm.toFixed(1)}mm` : "0mm"}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
