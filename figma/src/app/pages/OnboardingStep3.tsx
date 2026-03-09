@@ -314,7 +314,7 @@ export function OnboardingStep3() {
           {AESTHETICS.map((a) => (
             <AestheticCard
               key={a.label}
-              label={a.label}
+              label={t(`aesthetic.${a.label}`) || a.label}
               imageUrl={a.img}
               selected={data.aesthetics.includes(a.label)}
               onClick={() => toggleAesthetic(a.label)}

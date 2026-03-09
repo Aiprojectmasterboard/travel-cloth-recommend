@@ -138,7 +138,7 @@ export function OnboardingStep4() {
   const genderLabel = data.gender
     ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1)
     : t("onboarding4.notSpecified");
-  const styleLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : t("onboarding4.notSelected");
+  const styleLabel = data.aesthetics.length > 0 ? data.aesthetics.map((a) => t(`aesthetic.${a}`) || a).join(", ") : t("onboarding4.notSelected");
 
   const ctaLabel = isLoggedIn ? t("auth.analyzeMyTrip") : t("auth.signUpAndAnalyze");
 

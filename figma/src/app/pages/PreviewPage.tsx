@@ -279,7 +279,9 @@ export function PreviewPage() {
   const activeCity = data.cities[activeCityIdx] || data.cities[0];
   const city = activeCity?.city || "Paris";
   const country = activeCity?.country || "";
-  const aestheticLabel = data.aesthetics.length > 0 ? data.aesthetics.join(", ") : t("preview.defaultAesthetic");
+  const aestheticLabel = data.aesthetics.length > 0
+    ? data.aesthetics.map((a) => t(`aesthetic.${a}`) || a).join(", ")
+    : t("preview.defaultAesthetic");
 
   // Match vibe/weather data to active city (API returns arrays with city field)
   const allVibes = preview?.vibes || [];
