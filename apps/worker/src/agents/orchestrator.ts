@@ -990,6 +990,14 @@ export async function runTeaserBackground(
     }
 
     console.log(`[runTeaserBackground] ${result.images.length}/4 teasers saved for trip ${trip_id}`);
+
+    // Privacy cleanup: delete user-uploaded face photo after teaser generation.
+    // Standard plan users never trigger runResult(), so cleanup must happen here.
+    if (face_url) {
+      await cleanupFace(trip_id, face_url, env).catch((err) => {
+        console.error('[runTeaserBackground] face cleanup failed:', (err as Error).message);
+      });
+    }
   } catch (err) {
     const teaserError = (err as Error).message;
     const fallbackUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
@@ -1004,6 +1012,13 @@ export async function runTeaserBackground(
       status: 'failed_fallback',
       image_url: fallbackUrl,
     });
+
+    // Privacy cleanup even on failure
+    if (face_url) {
+      await cleanupFace(trip_id, face_url, env).catch((cleanupErr) => {
+        console.error('[runTeaserBackground] face cleanup failed:', (cleanupErr as Error).message);
+      });
+    }
   }
 }
 
