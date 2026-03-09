@@ -991,19 +991,47 @@ export async function runTeaserBackground(
 
     console.log(`[runTeaserBackground] ${result.images.length}/4 teasers saved for trip ${trip_id}`);
 
-    // Privacy cleanup: delete user-uploaded face photo after teaser generation.
-    // Standard plan users never trigger runResult(), so cleanup must happen here.
-    if (face_url) {
-      await cleanupFace(trip_id, face_url, env).catch((err) => {
-        console.error('[runTeaserBackground] face cleanup failed:', (err as Error).message);
-      });
-    }
+    // NOTE: Do NOT cleanup face_url here — user may upgrade to Pro/Annual later,
+    // which needs face_url for Identity Engine in runResult().
+    // Face cleanup happens in runResult() (paid) or fulfillmentAgent (scheduled).
   } catch (err) {
     const teaserError = (err as Error).message;
-    const fallbackUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
     console.error(`[runTeaserBackground] FAILED for trip ${trip_id}:`, teaserError);
 
-    // Insert single fallback job so frontend doesn't poll forever
+    // ── Last-resort retry: generate WITHOUT face reference ──────────────────
+    // If Identity Engine caused the failure, a plain text-to-image may succeed.
+    try {
+      console.log(`[runTeaserBackground] Last-resort retry (no face reference) for trip ${trip_id}`);
+      const retryResult = await teaserAgentMultiple(
+        {
+          tripId: trip_id,
+          vibeResult,
+          faceUrl: undefined,  // no face reference — use default model
+          userProfile,
+          count: 1,
+        },
+        env
+      );
+      if (retryResult.images.length > 0) {
+        for (const img of retryResult.images) {
+          await insertTeaserJob(env, {
+            trip_id,
+            city: vibeResult.city ?? '',
+            mood: img.mood,
+            prompt: `${vibeResult.mood_label} — ${img.mood} (retry without face)`,
+            status: 'completed',
+            image_url: img.image_url,
+          });
+        }
+        console.log(`[runTeaserBackground] Last-resort succeeded for trip ${trip_id}`);
+        return;
+      }
+    } catch (retryErr) {
+      console.error(`[runTeaserBackground] Last-resort also failed for trip ${trip_id}:`, (retryErr as Error).message);
+    }
+
+    // All AI generation failed — insert static fallback so frontend doesn't poll forever
+    const fallbackUrl = fallbackTeaser || getCityFallbackImage(vibeResult.city ?? '', gender);
     await insertTeaserJob(env, {
       trip_id,
       city: vibeResult.city ?? '',
@@ -1013,12 +1041,7 @@ export async function runTeaserBackground(
       image_url: fallbackUrl,
     });
 
-    // Privacy cleanup even on failure
-    if (face_url) {
-      await cleanupFace(trip_id, face_url, env).catch((cleanupErr) => {
-        console.error('[runTeaserBackground] face cleanup failed:', (cleanupErr as Error).message);
-      });
-    }
+    // NOTE: Do NOT cleanup face_url here — user may upgrade to Pro/Annual.
   }
 }
 

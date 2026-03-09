@@ -122,8 +122,8 @@ export async function generateImage(
     if (!res.ok) {
       const text = await res.text();
       const errMsg = `OpenAI HTTP ${res.status}: ${text.slice(0, 300)}`;
-      // If model not found or access denied, try fallback model
-      if ((res.status === 404 || res.status === 403 || res.status === 400) && model === MODEL_PRIMARY) {
+      // On ANY error with primary model, try fallback model before giving up
+      if (model === MODEL_PRIMARY) {
         console.warn(`[openaiImage] ${MODEL_PRIMARY} failed (${res.status}), trying ${MODEL_FALLBACK}...`);
         lastError = new Error(errMsg);
         continue;
