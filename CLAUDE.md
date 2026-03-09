@@ -384,6 +384,29 @@ data:    JetBrains Mono
 - **수정**: `PROMPTS_PER_CITY = 4`로 변경 + 프롬프트 다양성 규칙 강화
 - **규칙**: `PROMPTS_PER_CITY`는 대시보드 슬롯 수와 항상 일치해야 함 (현재 4)
 
+### BUG-014: /api/regenerate 사용자 프로필 미반영 [2026-03-09]
+- **파일**: `apps/worker/src/index.ts` → `POST /api/regenerate`
+- **증상**: 남성 185cm/89kg/Streetwear인데 여성 모델 이미지 생성
+- **원인**: 재생성 프롬프트에 사용자 성별/체형/스타일 정보가 전혀 포함되지 않음. trips 테이블에서 `vibe_data, cities, month`만 조회하고 `gender, height_cm, weight_kg, aesthetics` 미조회
+- **수정**:
+  1. trips SELECT에 `gender, height_cm, weight_kg, aesthetics` 추가
+  2. 프롬프트에 `modelDirective + heightDesc + bmiNote + aestheticStyle` 포함
+  3. 기존 프롬프트에 성별 정보가 없으면 프로필 프리픽스를 앞에 추가
+- **규칙**: **모든 이미지 생성 엔드포인트**는 반드시 사용자 프로필(성별, 체형, 스타일)을 프롬프트에 포함해야 함. 프롬프트에 "Male/Female model"이 없으면 버그.
+
+### BUG-015: 프론트엔드 하드코딩 영어 [2026-03-09]
+- **파일**: `PreviewPage.tsx`, `ProDashboard.tsx`, `AnnualDashboard.tsx`, `StandardDashboard.tsx`, `OnboardingStep3.tsx`
+- **증상**: 한국어 설정인데 aesthetic("Streetwear"), 날짜("Mar 12"), 활동명("Arrival") 등이 영어로 표시
+- **원인**:
+  1. aesthetic 라벨: 영어 키로 저장되어 번역 없이 그대로 표시
+  2. 날짜: `toLocaleDateString("en-US", ...)` 하드코딩
+  3. StandardDashboard 폴백 활동명: 영어 하드코딩
+- **수정**:
+  1. `aesthetic.{label}` i18n 키 6개 x 6개 언어 추가
+  2. `dateLocale` 변수로 사용자 언어 → locale 매핑 (`ko → ko-KR` 등)
+  3. StandardDashboard 활동명 `t("dashboard.activity.xxx")` 사용
+- **규칙**: **사용자에게 표시되는 모든 텍스트**는 `t()` 함수 또는 i18n 키 사용 필수. 하드코딩 문자열은 디버그 로그에만 허용.
+
 ---
 
 ## 코딩 규칙 — 재발 방지 체크리스트
@@ -486,6 +509,34 @@ images.map((img) => {
 - `/api/result/:tripId`는 order가 없으면 402 반환 → **Standard에서 호출 금지**
 - Standard 데이터: `preview` (TripContext) + teaser 폴링으로만 구성
 
+### 이미지 생성 프로필 규칙 (모든 이미지 생성 경로)
+```
+필수 체크: 이미지 생성하는 모든 엔드포인트/에이전트에서 사용자 프로필 확인
+1. /api/generate          — trips 테이블 미조회, body에서 직접 수신
+2. /api/regenerate        — trips 테이블에서 gender, height_cm, weight_kg, aesthetics 조회 필수
+3. runResult → styleAgentGrid  — orchestrator에서 userProfile 전달
+4. runTeaserBackground → teaserAgent — user_profile 전달
+```
+- **모든 이미지 프롬프트에 반드시 포함**: 성별(Male/Female/Androgynous model), 체형(tall/petite/average), 빌드(slim/athletic/regular), 스타일(aesthetic)
+- 새 이미지 생성 엔드포인트 추가 시 반드시 trips 테이블에서 프로필 조회
+- 프롬프트에 "model" 키워드 없으면 버그로 간주
+
+### i18n 하드코딩 방지 규칙 (모든 프론트엔드)
+```typescript
+// ❌ 절대 금지 — 영어 문자열 하드코딩
+const label = "Arrival";
+const date = d.toLocaleDateString("en-US", { month: "short" });
+
+// ✅ 올바른 방법 — i18n 키 + locale 매핑
+const label = t("dashboard.activity.arrival");
+const dateLocale = lang === "ko" ? "ko-KR" : lang === "ja" ? "ja-JP" : ...;
+const date = d.toLocaleDateString(dateLocale, { month: "short" });
+```
+- 사용자에게 표시되는 **모든 텍스트**는 `t()` 함수 사용 필수 (디버그 로그 제외)
+- `toLocaleDateString()` 호출 시 반드시 `dateLocale` 변수 사용 (`"en-US"` 하드코딩 금지)
+- 새 UI 텍스트 추가 시 6개 언어 모두에 번역 키 추가 (en, ko, ja, zh, fr, es)
+- aesthetic, 활동명 등 선택값도 i18n 키로 매핑 (`t("aesthetic.Streetwear")` 패턴)
+
 ---
 
 ## 완료된 작업
@@ -518,3 +569,7 @@ images.map((img) => {
 26. 전 대시보드 daily_plan 기반 아이템 표시 (임의 슬라이싱 제거)
 27. BUG-004 재발 방지 (기본 얼굴 이미지 주입 제거)
 28. 연락처 이메일 netson94@gmail.com 통일
+29. /api/regenerate 사용자 프로필(성별/체형/스타일) 프롬프트 반영
+30. ProDashboard 일별 날씨(daily_forecast) 사이드바 렌더링
+31. 전체 프론트엔드 i18n 감사 (aesthetic, 날짜 locale, 활동명 번역)
+32. AnnualDashboard 날짜 locale 하드코딩(en-US) → 사용자 언어 매핑

@@ -135,7 +135,8 @@ function GridQuadrant({
 export function AnnualDashboard() {
   const navigate = useNavigate();
   const { data: onboarding } = useOnboarding();
-  const { t } = useLang();
+  const { t, lang } = useLang();
+  const dateLocale = lang === "ko" ? "ko-KR" : lang === "ja" ? "ja-JP" : lang === "zh" ? "zh-CN" : lang === "fr" ? "fr-FR" : lang === "es" ? "es-ES" : "en-US";
   const { purchasedPlan } = useAuth();
   const { result, preview, tripId, loadResult, loading: tripLoading } = useTrip();
   const [pdfExporting, setPdfExporting] = useState(false);
@@ -465,7 +466,7 @@ export function AnnualDashboard() {
                   </span>
                   <span className="text-white/80 text-[14px]" style={{ fontFamily: "var(--font-body)" }}>
                     {primaryCity?.fromDate && primaryCity?.toDate
-                      ? `${new Date(primaryCity.fromDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })} \u2013 ${new Date(primaryCity.toDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`
+                      ? `${new Date(primaryCity.fromDate).toLocaleDateString(dateLocale, { month: "short", day: "numeric" })} \u2013 ${new Date(primaryCity.toDate).toLocaleDateString(dateLocale, { month: "short", day: "numeric" })}`
                       : "Oct 10 \u2013 31, 2026"}
                   </span>
                 </div>

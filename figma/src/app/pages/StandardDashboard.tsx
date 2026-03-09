@@ -171,12 +171,12 @@ export function StandardDashboard() {
   const vibeColors = primaryVibe?.color_palette || ["#8B7355", "#C4A882", "#4A5568", "#D4C5B2"];
 
   const dayPlanData = apiDailyPlan.length > 0
-    ? apiDailyPlan.map((d) => ({ day: d.day, activity: d.note?.split(" ").slice(0, 2).join(" ") || `Day ${d.day}` }))
+    ? apiDailyPlan.map((d) => ({ day: d.day, activity: d.note?.split(" ").slice(0, 2).join(" ") || `${t("preview.dayLook").replace("{n}", String(d.day))}` }))
     : [
-        { day: 1, activity: "Arrival" }, { day: 2, activity: "Explore" },
-        { day: 3, activity: "Museums" }, { day: 4, activity: "Shopping" },
-        { day: 5, activity: "Local Life" }, { day: 6, activity: "Day Trip" },
-        { day: 7, activity: "Departure" },
+        { day: 1, activity: t("dashboard.activity.arrival") }, { day: 2, activity: t("dashboard.activity.explore") },
+        { day: 3, activity: t("dashboard.activity.museums") }, { day: 4, activity: t("dashboard.activity.shopping") },
+        { day: 5, activity: t("dashboard.activity.localLife") }, { day: 6, activity: t("dashboard.activity.dayTrip") },
+        { day: 7, activity: t("dashboard.activity.departure") },
       ];
 
   const displayItems = hasRealData
