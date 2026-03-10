@@ -816,7 +816,30 @@ export async function runResult(
       }
 
       // c. Generate 1 grid image per city (1024x1024, medium quality, parallel)
-      await imageGenAgentGrid({ gridPrompts, tripId, faceUrl }, env);
+      const gridResults = await imageGenAgentGrid({ gridPrompts, tripId, faceUrl }, env);
+
+      // d. Update generation_jobs with completed image URLs
+      for (const gr of gridResults) {
+        if (gr.success && gr.image_url) {
+          try {
+            await sbPatch(
+              env,
+              `/generation_jobs?trip_id=eq.${tripId}&city=eq.${encodeURIComponent(gr.city)}&mood=eq.grid`,
+              { status: 'completed', image_url: gr.image_url }
+            );
+          } catch (err) {
+            console.warn(`[runResult] Failed to update grid job for ${gr.city}:`, (err as Error).message);
+          }
+        } else {
+          try {
+            await sbPatch(
+              env,
+              `/generation_jobs?trip_id=eq.${tripId}&city=eq.${encodeURIComponent(gr.city)}&mood=eq.grid`,
+              { status: 'failed' }
+            );
+          } catch { /* non-fatal */ }
+        }
+      }
     }
 
     // d. Privacy cleanup: delete user-uploaded face AFTER image generation completes
