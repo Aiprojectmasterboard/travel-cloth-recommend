@@ -24,7 +24,7 @@ import {
   type PackingItem,
 } from "../services/outfitGenerator";
 import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type DailyForecast, type VibeData, type ResultImage, type GridImage } from "../lib/api";
-import { exportDashboardPdf } from "../services/exportDashboardPdf";
+import { exportDashboardPdf, shareAsImage, downloadQuadrantImage } from "../services/exportDashboardPdf";
 import { SEO } from "../components/SEO";
 
 async function downloadImage(url: string, filename: string) {
@@ -91,7 +91,7 @@ function GridQuadrant({
   className?: string;
   alt?: string;
 }) {
-  // Map quadrant to object-position for a 200%/200% scaled image
+  // Map quadrant to background-position for precise 50%/50% crop without distortion
   const positions: Record<number, string> = {
     0: "0% 0%",
     1: "100% 0%",
@@ -99,14 +99,17 @@ function GridQuadrant({
     3: "100% 100%",
   };
   return (
-    <div className={`overflow-hidden ${className ?? ""}`}>
-      <img
-        src={imageUrl}
-        alt={alt ?? `Outfit ${quadrant + 1}`}
-        className="w-[200%] h-[200%] object-cover"
-        style={{ objectPosition: positions[quadrant] }}
-      />
-    </div>
+    <div
+      className={`overflow-hidden ${className ?? ""}`}
+      role="img"
+      aria-label={alt ?? `Outfit ${quadrant + 1}`}
+      style={{
+        backgroundImage: `url(${imageUrl})`,
+        backgroundSize: "200% 200%",
+        backgroundPosition: positions[quadrant],
+        backgroundRepeat: "no-repeat",
+      }}
+    />
   );
 }
 
@@ -127,30 +130,7 @@ export function ProDashboard() {
     if (!purchasedPlan) navigate("/preview", { replace: true });
   }, [purchasedPlan, navigate]);
 
-  useEffect(() => {
-    if (tripId && !result && !tripLoading) loadResult(tripId);
-  }, [tripId, result, tripLoading, loadResult]);
-
-  // ─── IMPORTANT: Declare apiResultImages BEFORE any useEffect that references it (TDZ prevention).
-  const apiResultImages: ResultImage[] = result?.images || [];
-  const apiGridImages: GridImage[] = result?.grid_images || [];
-  const hasApiImages = apiResultImages.length > 0 || apiGridImages.length > 0;
-
-  // Re-poll for images if result loaded but pipeline still generating
-  useEffect(() => {
-    if (!tripId || !result || hasApiImages || tripLoading) return;
-    const timer = setTimeout(() => loadResult(tripId), 15000);
-    return () => clearTimeout(timer);
-  }, [tripId, result, hasApiImages, tripLoading, loadResult]);
-
-  useEffect(() => {
-    if (!isLoggedIn) {
-      const timer = setTimeout(() => setShowSignupPrompt(true), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [isLoggedIn, setShowSignupPrompt]);
-
-  // ─── AI Pipeline Trigger (runs full capsule+style+imageGen pipeline synchronously) ───
+  // ─── AI Pipeline Trigger state (declared BEFORE useEffects that reference it — TDZ prevention) ───
   const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
   const pipelineTriggered = useRef(false);
 
@@ -158,6 +138,30 @@ export function ProDashboard() {
   const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
   interface AiItem { name: string; category: string; desc: string; essential: boolean; }
   const [aiOutfitItems] = useState<Record<string, AiItem[]>>({});
+
+  // Load result only if already completed (page refresh case) — pipeline trigger handles initial load
+  useEffect(() => {
+    if (tripId && !result && !tripLoading && genStatus === "idle") loadResult(tripId);
+  }, [tripId, result, tripLoading, genStatus, loadResult]);
+
+  // ─── IMPORTANT: Declare apiResultImages BEFORE any useEffect that references it (TDZ prevention).
+  const apiResultImages: ResultImage[] = result?.images || [];
+  const apiGridImages: GridImage[] = result?.grid_images || [];
+  const hasApiImages = apiResultImages.length > 0 || apiGridImages.length > 0;
+
+  // Re-poll for images if pipeline done but images not yet in result
+  useEffect(() => {
+    if (!tripId || !result || hasApiImages || tripLoading || genStatus === "generating") return;
+    const timer = setTimeout(() => loadResult(tripId), 10000);
+    return () => clearTimeout(timer);
+  }, [tripId, result, hasApiImages, tripLoading, genStatus, loadResult]);
+
+  useEffect(() => {
+    if (!isLoggedIn) {
+      const timer = setTimeout(() => setShowSignupPrompt(true), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [isLoggedIn, setShowSignupPrompt]);
 
   useEffect(() => {
     if (hasApiImages) {
@@ -173,10 +177,16 @@ export function ProDashboard() {
         setGenStatus("generating");
         console.log("[ProDashboard] Triggering server pipeline for trip", tripId);
 
+        // Pipeline takes 60-90s — use a 3-minute timeout to keep the connection alive
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 180_000);
+
         const res = await fetch(`${WORKER_URL}/api/trigger-pipeline/${tripId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
 
         if (cancelled) return;
 
@@ -188,9 +198,10 @@ export function ProDashboard() {
           return;
         }
 
-        // Pipeline completed — reload result data to get capsule + images
+        // Pipeline completed — small delay to let DB writes commit, then reload
         console.log("[ProDashboard] Pipeline completed, reloading result...");
         if (!cancelled) {
+          await new Promise((r) => setTimeout(r, 2000)); // wait for DB writes to commit
           await loadResult(tripId);
           setGenStatus("done");
         }
@@ -324,6 +335,17 @@ export function ProDashboard() {
     }
   }, [pdfExporting, cities]);
 
+  const [sharing, setSharing] = useState(false);
+  const handleShareAsImage = useCallback(async () => {
+    if (!mainRef.current || sharing) return;
+    setSharing(true);
+    try {
+      await shareAsImage(mainRef.current, t("dashboard.multiCityStyleGuide"));
+    } finally {
+      setSharing(false);
+    }
+  }, [sharing, t]);
+
   // AI packing list
   const aiPackingList = useMemo<Array<{ name: string; category: string; desc: string; essential: boolean; cities: string[] }>>(() => {
     if (hasRealData) {
@@ -430,17 +452,31 @@ export function ProDashboard() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:block"><PlanBadge label={t("upgrade.proPlan")} className="bg-[#C4613A]/10 text-[#C4613A]" /></span>
-            <SocialShareButton />
             <button
-              onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)}
+              onClick={handleShareAsImage}
+              disabled={sharing}
+              className="no-print h-[44px] px-3 sm:px-4 border border-[#E8DDD4] bg-white text-[#57534e] rounded-full text-[11px] uppercase tracking-[0.08em] hover:border-[#C4613A]/30 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+              aria-label={t("dashboard.share")}
+            >
+              {sharing ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="share" size={16} className="text-[#57534e]" />}
+              <span className="hidden sm:inline">{t("dashboard.share")}</span>
+            </button>
+            <button
+              onClick={() => {
+                const subject = encodeURIComponent(t("dashboard.emailSubject"));
+                const body = encodeURIComponent(`${t("dashboard.emailBody")}\n\n${window.location.href}`);
+                window.open(`mailto:?subject=${subject}&body=${body}`);
+              }}
               className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer"
+              aria-label={t("dashboard.sendEmail")}
             >
               <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
             <button
               onClick={handleExportPdf}
               disabled={pdfExporting}
-              className="no-print h-[36px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              className="no-print h-[44px] px-2 sm:px-4 border border-[#C4613A]/30 bg-[#C4613A]/5 text-[#C4613A] rounded-full text-[11px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/15 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
               style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
             >
               {pdfExporting ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="download" size={14} className="text-[#C4613A]" />}
@@ -470,6 +506,21 @@ export function ProDashboard() {
               <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(apiGridImages.length || apiResultImages.length || aiImages.size))}
             </span>
           )}
+          {genStatus === "error" && !hasApiImages && (
+            <div className="w-full mt-2 flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <Icon name="error" size={18} className="text-red-500 flex-shrink-0" />
+              <span className="text-[13px] text-red-700 flex-1" style={{ fontFamily: "var(--font-body)" }}>
+                {t("dashboard.generationError")}
+              </span>
+              <button
+                onClick={() => { pipelineTriggered.current = false; setGenStatus("idle"); }}
+                className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-[11px] uppercase tracking-[0.08em] hover:bg-red-200 transition-colors cursor-pointer flex-shrink-0"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+              >
+                {t("dashboard.retry")}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* City tabs */}
@@ -492,8 +543,22 @@ export function ProDashboard() {
       {/* Main */}
       <div className="mx-auto px-4 sm:px-6 pt-8 pb-16" style={{ maxWidth: "var(--max-w)" }}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Left */}
-          <div className="lg:col-span-8 space-y-10 order-last lg:order-none">
+          {/* Mobile-only profile card — shown above grid on mobile, hidden on desktop (sidebar has it) */}
+          <div className="lg:hidden order-1">
+            <ProfileBadge
+              gender={profile.gender}
+              height={profile.height}
+              weight={profile.weight}
+              silhouette={profile.silhouette}
+              aesthetics={profile.aesthetics}
+              photo={profile.photo}
+              faceUrl={onboarding.faceUrl}
+              bodyFitLabel={bodyFitLabel}
+            />
+          </div>
+
+          {/* Left — main content: grid + daily breakdown */}
+          <div className="lg:col-span-8 space-y-10 order-2 lg:order-none">
 
             {/* ─── 2x2 Grid Image Section ─── */}
             <div>
@@ -548,7 +613,7 @@ export function ProDashboard() {
                     <img
                       src={gridImageUrl}
                       alt={`${currentSet.city} 4-outfit grid`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-[#EFE8DF]"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                     <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
@@ -629,7 +694,7 @@ export function ProDashboard() {
                     >
                       <div className="flex flex-col sm:flex-row">
                         {/* Quadrant cropped image (or single slot fallback) */}
-                        <div className="relative w-full sm:w-[160px] lg:w-[200px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
+                        <div className="relative w-full sm:w-[200px] lg:w-[240px] flex-shrink-0" style={{ aspectRatio: "1/1" }}>
                           {gridImageUrl ? (
                             <GridQuadrant
                               imageUrl={gridImageUrl}
@@ -645,14 +710,20 @@ export function ProDashboard() {
                             />
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none" />
-                          <div className="absolute bottom-3 left-3">
-                            <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>
-                              {t("dashboard.day")} {dayPlan.day}
-                            </span>
-                            {gridImageUrl && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[8px] uppercase tracking-[0.08em] mt-1" style={{ fontFamily: "var(--font-mono)" }}>
-                                <Icon name="crop" size={8} className="text-white" /> {t("dashboard.quadrant")} {quadrant + 1}
+                          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+                            <div>
+                              <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>
+                                {t("dashboard.day")} {dayPlan.day}
                               </span>
+                            </div>
+                            {gridImageUrl && (
+                              <button
+                                onClick={() => downloadQuadrantImage(gridImageUrl, quadrant, `capsule-${currentSet.city.toLowerCase()}-day${dayPlan.day}.jpg`)}
+                                className="no-print w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                                title={t("dashboard.downloadImage")}
+                              >
+                                <Icon name="download" size={14} className="text-white" />
+                              </button>
                             )}
                           </div>
                         </div>
@@ -728,18 +799,21 @@ export function ProDashboard() {
           </div>
 
           {/* Right sidebar */}
-          <aside className="lg:col-span-4 order-first lg:order-none">
+          <aside className="lg:col-span-4 order-3 lg:order-none">
             <div className="lg:sticky lg:top-[88px] space-y-6">
-              <ProfileBadge
-                gender={profile.gender}
-                height={profile.height}
-                weight={profile.weight}
-                silhouette={profile.silhouette}
-                aesthetics={profile.aesthetics}
-                photo={profile.photo}
-                faceUrl={onboarding.faceUrl}
-                bodyFitLabel={bodyFitLabel}
-              />
+              {/* Profile badge — hidden on mobile (shown above grid instead) */}
+              <div className="hidden lg:block">
+                <ProfileBadge
+                  gender={profile.gender}
+                  height={profile.height}
+                  weight={profile.weight}
+                  silhouette={profile.silhouette}
+                  aesthetics={profile.aesthetics}
+                  photo={profile.photo}
+                  faceUrl={onboarding.faceUrl}
+                  bodyFitLabel={bodyFitLabel}
+                />
+              </div>
 
               {/* Multi-City Packing */}
               <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>

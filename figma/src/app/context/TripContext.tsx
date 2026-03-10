@@ -162,20 +162,21 @@ export function TripProvider({ children }: { children: ReactNode }) {
         const result = await fetchResult(tripId);
 
         // Track best result seen so far (most complete data)
-        if (result.teaser_url || result.images?.length > 0 || result.capsule?.items?.length > 0) {
+        if (result.teaser_url || result.images?.length > 0 || result.grid_images?.length > 0 || result.capsule?.items?.length > 0) {
           bestResult = result;
         }
 
         // Wait for meaningful data, not just teaser_url
         const isPaidImagePlan = result.plan === "pro" || result.plan === "annual";
-        const hasFullImages = result.images?.length > 0;
+        const hasFullImages = (result.images?.length ?? 0) > 0 || (result.grid_images?.length ?? 0) > 0;
         const hasCapsule = result.capsule?.items?.length > 0;
 
         // Ready conditions:
-        // - Pro/Annual: need images[] OR capsule items (images may still be generating)
+        // - Pro/Annual: need images[] OR grid_images[] (both count as "has images")
+        //   After 20 polls (~60s), accept capsule-only so user isn't stuck forever
         // - Standard: prefer capsule items (real AI data), accept teaser-only after 8 polls
         const isReady = isPaidImagePlan
-          ? hasFullImages || (hasCapsule && i >= 10) // After 10 polls, accept capsule-only
+          ? hasFullImages || (hasCapsule && i >= 20)
           : hasCapsule || hasFullImages || (!!result.teaser_url && i >= 8);
 
         if (isReady) {

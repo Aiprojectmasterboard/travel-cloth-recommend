@@ -26,7 +26,7 @@ import {
   type PackingItem,
 } from "../services/outfitGenerator";
 import { WORKER_URL, regenerateOutfit, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type ResultImage, type GridImage } from "../lib/api";
-import { exportDashboardPdf } from "../services/exportDashboardPdf";
+import { exportDashboardPdf, shareAsImage, downloadQuadrantImage } from "../services/exportDashboardPdf";
 import { SEO } from "../components/SEO";
 
 async function downloadImage(url: string, filename: string) {
@@ -121,14 +121,17 @@ function GridQuadrant({
     3: "100% 100%",
   };
   return (
-    <div className={`overflow-hidden ${className ?? ""}`}>
-      <img
-        src={imageUrl}
-        alt={alt ?? `Outfit ${quadrant + 1}`}
-        className="w-[200%] h-[200%] object-cover"
-        style={{ objectPosition: positions[quadrant] }}
-      />
-    </div>
+    <div
+      className={`overflow-hidden ${className ?? ""}`}
+      role="img"
+      aria-label={alt ?? `Outfit ${quadrant + 1}`}
+      style={{
+        backgroundImage: `url(${imageUrl})`,
+        backgroundSize: "200% 200%",
+        backgroundPosition: positions[quadrant],
+        backgroundRepeat: "no-repeat",
+      }}
+    />
   );
 }
 
@@ -160,6 +163,17 @@ export function AnnualDashboard() {
     }
   }, [pdfExporting]);
 
+  const [sharing, setSharing] = useState(false);
+  const handleShareAsImage = useCallback(async () => {
+    if (!mainRef.current || sharing) return;
+    setSharing(true);
+    try {
+      await shareAsImage(mainRef.current, t("dashboard.multiCityStyleGuide"));
+    } finally {
+      setSharing(false);
+    }
+  }, [sharing, t]);
+
   const handleRegenerate = useCallback(async () => {
     if (regenUsed || regenLoading) return;
     setRegenLoading(true);
@@ -186,28 +200,29 @@ export function AnnualDashboard() {
     if (!purchasedPlan) navigate("/preview", { replace: true });
   }, [purchasedPlan, navigate]);
 
+  // ─── AI Pipeline Trigger state (declared BEFORE useEffects that reference it — TDZ prevention) ───
+  const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
+  const pipelineTriggered = useRef(false);
+
+  // Dummy state kept for compatibility with rendering logic below
+  const aiImages = new Map<string, string>();
+
+  // Load result only if already completed (page refresh case) — pipeline trigger handles initial load
   useEffect(() => {
-    if (tripId && !result && !tripLoading) loadResult(tripId);
-  }, [tripId, result, tripLoading, loadResult]);
+    if (tripId && !result && !tripLoading && genStatus === "idle") loadResult(tripId);
+  }, [tripId, result, tripLoading, genStatus, loadResult]);
 
   // ─── IMPORTANT: Declare apiResultImages BEFORE useEffect that references it (TDZ prevention).
   const apiResultImages: ResultImage[] = result?.images || [];
   const apiGridImages: GridImage[] = result?.grid_images || [];
   const hasApiImages = apiResultImages.length > 0 || apiGridImages.length > 0;
 
-  // Re-poll for images if result loaded but has no full images yet
+  // Re-poll for images if pipeline done but images not yet in result
   useEffect(() => {
-    if (!tripId || !result || hasApiImages || tripLoading) return;
-    const timer = setTimeout(() => loadResult(tripId), 15000);
+    if (!tripId || !result || hasApiImages || tripLoading || genStatus === "generating") return;
+    const timer = setTimeout(() => loadResult(tripId), 10000);
     return () => clearTimeout(timer);
-  }, [tripId, result, hasApiImages, tripLoading, loadResult]);
-
-  // ─── AI Pipeline Trigger (runs full capsule+style+imageGen pipeline synchronously) ───
-  const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
-  const pipelineTriggered = useRef(false);
-
-  // Dummy state kept for compatibility with rendering logic below
-  const aiImages = new Map<string, string>();
+  }, [tripId, result, hasApiImages, tripLoading, genStatus, loadResult]);
 
   useEffect(() => {
     if (hasApiImages) { setGenStatus("done"); return; }
@@ -220,10 +235,16 @@ export function AnnualDashboard() {
         setGenStatus("generating");
         console.log("[AnnualDashboard] Triggering server pipeline for trip", tripId);
 
+        // Pipeline takes 60-90s — use a 3-minute timeout to keep the connection alive
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 180_000);
+
         const res = await fetch(`${WORKER_URL}/api/trigger-pipeline/${tripId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
         });
+        clearTimeout(timeout);
         if (cancelled) return;
 
         const data = await res.json() as { ok: boolean; already_completed?: boolean; error?: string };
@@ -235,6 +256,7 @@ export function AnnualDashboard() {
 
         console.log("[AnnualDashboard] Pipeline completed, reloading result...");
         if (!cancelled) {
+          await new Promise((r) => setTimeout(r, 2000)); // wait for DB writes to commit
           await loadResult(tripId);
           setGenStatus("done");
         }
@@ -379,21 +401,35 @@ export function AnnualDashboard() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:block"><AnnualBadge /></span>
-            <SocialShareButton />
+            <button
+              onClick={handleShareAsImage}
+              disabled={sharing}
+              className="no-print h-[44px] px-3 sm:px-4 border border-[#E8DDD4] bg-white text-[#57534e] rounded-full text-[11px] uppercase tracking-[0.08em] hover:border-[#C4613A]/30 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+              aria-label={t("dashboard.share")}
+            >
+              {sharing ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="share" size={16} className="text-[#57534e]" />}
+              <span className="hidden sm:inline">{t("dashboard.share")}</span>
+            </button>
+            <button
+              onClick={() => {
+                const subject = encodeURIComponent(t("dashboard.emailSubject"));
+                const body = encodeURIComponent(`${t("dashboard.emailBody")}\n\n${window.location.href}`);
+                window.open(`mailto:?subject=${subject}&body=${body}`);
+              }}
+              className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#D4AF37]/30 transition-colors cursor-pointer"
+              aria-label={t("dashboard.sendEmail")}
+            >
+              <Icon name="mail" size={16} className="text-[#57534e]" />
+            </button>
             <button
               onClick={handleExportPdf}
               disabled={pdfExporting}
-              className="no-print hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e] hover:border-[#C4613A]/30 transition-colors cursor-pointer disabled:opacity-50"
+              className="no-print hidden sm:inline-flex items-center gap-1.5 h-[44px] px-3 bg-white border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e] hover:border-[#C4613A]/30 transition-colors cursor-pointer disabled:opacity-50"
               style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
             >
               {pdfExporting ? <span className="w-3.5 h-3.5 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="picture_as_pdf" size={14} className="text-[#C4613A]" />}
               {pdfExporting ? t("dashboard.exporting") : t("dashboard.savePdf")}
-            </button>
-            <button
-              onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)}
-              className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#D4AF37]/30 transition-colors cursor-pointer"
-            >
-              <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
             <button
               onClick={() => navigate("/onboarding/1")}
@@ -427,6 +463,21 @@ export function AnnualDashboard() {
               <Icon name="check_circle" size={14} className="text-green-600" /> {t("dashboard.aiImagesReady").replace("{n}", String(apiGridImages.length || apiResultImages.length || aiImages.size))}
             </span>
           )}
+          {genStatus === "error" && !hasApiImages && (
+            <div className="w-full mt-2 flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+              <Icon name="error" size={18} className="text-red-500 flex-shrink-0" />
+              <span className="text-[13px] text-red-700 flex-1" style={{ fontFamily: "var(--font-body)" }}>
+                {t("dashboard.generationError")}
+              </span>
+              <button
+                onClick={() => { pipelineTriggered.current = false; setGenStatus("idle"); }}
+                className="px-3 py-1.5 bg-red-100 text-red-700 rounded-lg text-[11px] uppercase tracking-[0.08em] hover:bg-red-200 transition-colors cursor-pointer flex-shrink-0"
+                style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+              >
+                {t("dashboard.retry")}
+              </button>
+            </div>
+          )}
         </div>
         <div className="mt-5 max-w-[400px]">
           <TripUsageBar used={4} total={12} renewMonth="Jan 2027" />
@@ -436,8 +487,22 @@ export function AnnualDashboard() {
       {/* Main */}
       <div className="mx-auto px-4 sm:px-6 pt-6 pb-8" style={{ maxWidth: "var(--max-w)" }}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          {/* Mobile-only profile card */}
+          <div className="lg:hidden order-1">
+            <ProfileBadge
+              gender={profile.gender}
+              height={profile.height}
+              weight={profile.weight}
+              silhouette={profile.silhouette}
+              aesthetics={profile.aesthetics}
+              photo={profile.photo}
+              faceUrl={onboarding.faceUrl}
+              bodyFitLabel={bodyFitLabel}
+            />
+          </div>
+
           {/* Left */}
-          <div className="lg:col-span-8 space-y-8 order-last lg:order-none">
+          <div className="lg:col-span-8 space-y-8 order-2 lg:order-none">
 
             {/* Hero banner with city + regen button */}
             <div className="relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/9]">
@@ -507,7 +572,7 @@ export function AnnualDashboard() {
                     <img
                       src={gridImageUrl}
                       alt={`${cityName} 4-outfit grid`}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain bg-[#EFE8DF]"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
                     <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
@@ -585,7 +650,7 @@ export function AnnualDashboard() {
                     >
                       <div className="flex flex-col sm:flex-row">
                         {/* Quadrant cropped image */}
-                        <div className="relative w-full sm:w-[160px] lg:w-[200px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
+                        <div className="relative w-full sm:w-[200px] lg:w-[240px] flex-shrink-0" style={{ aspectRatio: "1/1" }}>
                           {gridImageUrl ? (
                             <GridQuadrant
                               imageUrl={gridImageUrl}
@@ -601,14 +666,20 @@ export function AnnualDashboard() {
                             />
                           )}
                           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none" />
-                          <div className="absolute bottom-3 left-3">
-                            <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>
-                              {t("dashboard.day")} {dayPlan.day}
-                            </span>
-                            {gridImageUrl && (
-                              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[8px] uppercase tracking-[0.08em] mt-1" style={{ fontFamily: "var(--font-mono)" }}>
-                                <Icon name="crop" size={8} className="text-white" /> {t("dashboard.quadrant")} {quadrant + 1}
+                          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
+                            <div>
+                              <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>
+                                {t("dashboard.day")} {dayPlan.day}
                               </span>
+                            </div>
+                            {gridImageUrl && (
+                              <button
+                                onClick={() => downloadQuadrantImage(gridImageUrl, quadrant, `capsule-${cityName.toLowerCase()}-day${dayPlan.day}.jpg`)}
+                                className="no-print w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                                title={t("dashboard.downloadImage")}
+                              >
+                                <Icon name="download" size={14} className="text-white" />
+                              </button>
                             )}
                           </div>
                         </div>
@@ -681,17 +752,20 @@ export function AnnualDashboard() {
           </div>
 
           {/* Right */}
-          <div className="lg:col-span-4 space-y-6 order-first lg:order-none">
-            <ProfileBadge
-              gender={profile.gender}
-              height={profile.height}
-              weight={profile.weight}
-              silhouette={profile.silhouette}
-              aesthetics={profile.aesthetics}
-              photo={profile.photo}
-              faceUrl={onboarding.faceUrl}
-              bodyFitLabel={bodyFitLabel}
-            />
+          <div className="lg:col-span-4 space-y-6 order-3 lg:order-none">
+            {/* Profile badge — hidden on mobile (shown above grid instead) */}
+            <div className="hidden lg:block">
+              <ProfileBadge
+                gender={profile.gender}
+                height={profile.height}
+                weight={profile.weight}
+                silhouette={profile.silhouette}
+                aesthetics={profile.aesthetics}
+                photo={profile.photo}
+                faceUrl={onboarding.faceUrl}
+                bodyFitLabel={bodyFitLabel}
+              />
+            </div>
 
             {/* Weather */}
             <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>

@@ -31,7 +31,7 @@ import {
   type PackingItem,
 } from "../services/outfitGenerator";
 import { pollTeaser, type CapsuleItem, type DayPlan, type WeatherData, type VibeData, type DailyForecast } from "../lib/api";
-import { exportDashboardPdf } from "../services/exportDashboardPdf";
+import { exportDashboardPdf, shareAsImage } from "../services/exportDashboardPdf";
 import { createCheckoutSession } from "../services/polarCheckout";
 import { GA } from "../lib/analytics";
 import { SEO } from "../components/SEO";
@@ -200,6 +200,17 @@ export function StandardDashboard() {
     }
   }, [pdfExporting, cityName]);
 
+  const [sharing, setSharing] = useState(false);
+  const handleShareAsImage = useCallback(async () => {
+    if (!mainRef.current || sharing) return;
+    setSharing(true);
+    try {
+      await shareAsImage(mainRef.current, t("dashboard.multiCityStyleGuide"));
+    } finally {
+      setSharing(false);
+    }
+  }, [sharing, t]);
+
   const handleUpgradeToPro = useCallback(async () => {
     GA.planSelected("pro");
     GA.checkoutStart("pro");
@@ -266,17 +277,31 @@ export function StandardDashboard() {
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             <span className="hidden sm:block"><PlanBadge label={`Standard · ${t("pricing.promoFree")}`} /></span>
-            <SocialShareButton />
             <button
-              onClick={() => window.open(`mailto:?subject=My Travel Capsule AI Style Guide&body=Check out my travel capsule wardrobe: ${window.location.href}`)}
+              onClick={handleShareAsImage}
+              disabled={sharing}
+              className="no-print h-[44px] px-3 sm:px-4 border border-[#E8DDD4] bg-white text-[#57534e] rounded-full text-[11px] uppercase tracking-[0.08em] hover:border-[#C4613A]/30 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
+              aria-label={t("dashboard.share")}
+            >
+              {sharing ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="share" size={16} className="text-[#57534e]" />}
+              <span className="hidden sm:inline">{t("dashboard.share")}</span>
+            </button>
+            <button
+              onClick={() => {
+                const subject = encodeURIComponent(t("dashboard.emailSubject"));
+                const body = encodeURIComponent(`${t("dashboard.emailBody")}\n\n${window.location.href}`);
+                window.open(`mailto:?subject=${subject}&body=${body}`);
+              }}
               className="no-print hidden sm:flex w-11 h-11 rounded-full bg-white border border-[#E8DDD4] items-center justify-center hover:border-[#C4613A]/30 transition-colors cursor-pointer"
+              aria-label={t("dashboard.sendEmail")}
             >
               <Icon name="mail" size={16} className="text-[#57534e]" />
             </button>
             <button
               onClick={handleExportPdf}
               disabled={pdfExporting}
-              className="no-print h-[36px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
+              className="no-print h-[44px] px-3 sm:px-4 bg-[#C4613A]/10 text-[#C4613A] rounded-full text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/20 transition-colors cursor-pointer flex items-center gap-2 disabled:opacity-50"
               style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}
             >
               {pdfExporting
@@ -316,7 +341,7 @@ export function StandardDashboard() {
 
               <div className="flex flex-col sm:flex-row gap-6">
                 {/* Outfit image */}
-                <div className="relative rounded-2xl overflow-hidden w-full sm:w-auto sm:max-w-[320px] flex-shrink-0" style={{ aspectRatio: "3/4" }}>
+                <div className="relative rounded-2xl overflow-hidden w-full sm:w-auto sm:max-w-[320px] flex-shrink-0 bg-[#EFE8DF]" style={{ aspectRatio: "3/4" }}>
                   {teaserLoading ? (
                     <>
                       <div
@@ -337,7 +362,7 @@ export function StandardDashboard() {
                       <ImageWithFallback
                         src={teaserUrl || FALLBACK_HERO}
                         alt={`${cityName} AI outfit`}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                       <div className="absolute top-3 left-3 right-3 flex items-start justify-between">

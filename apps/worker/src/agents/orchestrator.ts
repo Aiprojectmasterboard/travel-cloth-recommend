@@ -773,72 +773,101 @@ export async function runResult(
       items: d.outfit,
     }));
 
-    // a. Generate 1 combined 2x2 grid prompt per city
+    // a. Generate 1 combined 2x2 grid prompt per city (with 1 retry on failure)
     let gridPrompts: StyleGridPrompt[] = [];
-    try {
-      gridPrompts = await styleAgentGrid(
-        {
-          vibeResults: finalVibes,
-          cities: cities.map((c) => c.name),
-          weather: finalWeather,
-          userProfile,
-          outfitDescriptions,
-          capsuleItems: capsuleItems.map((i) => ({ name: i.name, category: i.category })),
-        },
-        env
-      );
-    } catch (err) {
-      console.error('[runResult] styleAgentGrid failed:', (err as Error).message);
-      // gridPrompts stays empty — no images will be generated (non-fatal)
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        gridPrompts = await styleAgentGrid(
+          {
+            vibeResults: finalVibes,
+            cities: cities.map((c) => c.name),
+            weather: finalWeather,
+            userProfile,
+            outfitDescriptions,
+            capsuleItems: capsuleItems.map((i) => ({ name: i.name, category: i.category })),
+          },
+          env
+        );
+        if (gridPrompts.length > 0) break; // success
+        console.warn(`[runResult] styleAgentGrid returned 0 prompts (attempt ${attempt + 1})`);
+      } catch (err) {
+        console.error(`[runResult] styleAgentGrid failed (attempt ${attempt + 1}):`, (err as Error).message);
+        if (attempt === 0) {
+          await new Promise((r) => setTimeout(r, 2000)); // wait 2s before retry
+        }
+      }
     }
 
-    // b. Insert 1 generation_job row per city (not per outfit)
-    if (gridPrompts.length > 0) {
-      const jobInsertRows = gridPrompts.map((gp) => ({
-        trip_id: tripId,
-        city: gp.city,
-        mood: 'grid',
-        prompt: gp.prompt,
-        status: 'pending',
-        job_type: 'full',
-      }));
+    // If styleAgentGrid completely failed after retries, throw to let caller know
+    if (gridPrompts.length === 0) {
+      console.error('[runResult] styleAgentGrid failed after 2 attempts — no grid prompts generated');
+      // Don't silently continue — throw so trigger-pipeline returns 500 and dashboard shows error
+      throw new Error('styleAgentGrid failed: no grid prompts generated after 2 attempts');
+    }
 
-      try {
-        const insertRes = await sbFetch(env, '/generation_jobs', {
-          method: 'POST',
-          body: JSON.stringify(jobInsertRows),
-        });
-        if (!insertRes.ok) {
-          console.warn('[runResult] generation_jobs insert returned non-OK:', insertRes.status);
-        }
-      } catch (err) {
-        console.warn('[runResult] Failed to insert generation_jobs:', (err as Error).message);
+    // b. Clean up any stale grid jobs from a previous failed attempt, then insert fresh ones
+    try {
+      await sbFetch(env, `/generation_jobs?trip_id=eq.${tripId}&mood=eq.grid`, { method: 'DELETE' });
+    } catch { /* non-fatal: old rows may not exist */ }
+
+    const jobInsertRows = gridPrompts.map((gp) => ({
+      trip_id: tripId,
+      city: gp.city,
+      mood: 'grid',
+      prompt: gp.prompt,
+      status: 'pending',
+      job_type: 'full',
+    }));
+
+    try {
+      const insertRes = await sbFetch(env, '/generation_jobs', {
+        method: 'POST',
+        body: JSON.stringify(jobInsertRows),
+      });
+      if (!insertRes.ok) {
+        console.error('[runResult] generation_jobs insert failed:', insertRes.status, await insertRes.text().catch(() => ''));
       }
+    } catch (err) {
+      console.error('[runResult] Failed to insert generation_jobs:', (err as Error).message);
+    }
 
-      // c. Generate 1 grid image per city (1024x1024, medium quality, parallel)
-      const gridResults = await imageGenAgentGrid({ gridPrompts, tripId, faceUrl }, env);
+    // c. Generate 1 grid image per city (1024x1024, medium quality, parallel)
+    const gridResults = await imageGenAgentGrid({ gridPrompts, tripId, faceUrl }, env);
 
-      // d. Update generation_jobs with completed image URLs
-      for (const gr of gridResults) {
-        if (gr.success && gr.image_url) {
+    // d. Update generation_jobs with completed image URLs
+    for (const gr of gridResults) {
+      if (gr.success && gr.image_url) {
+        try {
+          await sbPatch(
+            env,
+            `/generation_jobs?trip_id=eq.${tripId}&city=eq.${encodeURIComponent(gr.city)}&mood=eq.grid`,
+            { status: 'completed', image_url: gr.image_url }
+          );
+        } catch (err) {
+          console.warn(`[runResult] Failed to update grid job for ${gr.city}:`, (err as Error).message);
+          // Fallback: try inserting a new completed row directly
           try {
-            await sbPatch(
-              env,
-              `/generation_jobs?trip_id=eq.${tripId}&city=eq.${encodeURIComponent(gr.city)}&mood=eq.grid`,
-              { status: 'completed', image_url: gr.image_url }
-            );
-          } catch (err) {
-            console.warn(`[runResult] Failed to update grid job for ${gr.city}:`, (err as Error).message);
-          }
-        } else {
-          try {
-            await sbPatch(
-              env,
-              `/generation_jobs?trip_id=eq.${tripId}&city=eq.${encodeURIComponent(gr.city)}&mood=eq.grid`,
-              { status: 'failed' }
-            );
-          } catch { /* non-fatal */ }
+            await sbFetch(env, '/generation_jobs', {
+              method: 'POST',
+              body: JSON.stringify({
+                trip_id: tripId,
+                city: gr.city,
+                mood: 'grid',
+                status: 'completed',
+                image_url: gr.image_url,
+                job_type: 'full',
+              }),
+            });
+          } catch { /* last resort failed */ }
         }
+      } else {
+        try {
+          await sbPatch(
+            env,
+            `/generation_jobs?trip_id=eq.${tripId}&city=eq.${encodeURIComponent(gr.city)}&mood=eq.grid`,
+            { status: 'failed' }
+          );
+        } catch { /* non-fatal */ }
       }
     }
 

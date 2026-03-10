@@ -249,11 +249,20 @@ app.post('/api/trigger-pipeline/:tripId', async (c) => {
   }
   const plan = (orders[0].plan || 'pro') as PlanType;
 
-  // 2. Idempotency: skip if capsule_results already exist
+  // 2. Idempotency: skip only if BOTH capsule_results AND images exist
+  //    (partial state from a previous failed run should be re-run)
   const capsuleRes = await supabase(c.env, `/capsule_results?trip_id=eq.${tripId}&limit=1`);
   const capsules = (await capsuleRes.json()) as Array<{ id: string }>;
-  if (capsules.length > 0) {
+  const imgCheckRes = await supabase(c.env, `/generation_jobs?trip_id=eq.${tripId}&status=eq.completed&limit=1`);
+  const completedImgs = (await imgCheckRes.json()) as Array<{ id: string }>;
+  if (capsules.length > 0 && completedImgs.length > 0) {
     return c.json({ ok: true, already_completed: true });
+  }
+
+  // Clean up partial state from a previous failed attempt
+  if (capsules.length > 0 && completedImgs.length === 0) {
+    console.log(`[trigger-pipeline] Cleaning up partial capsule_results for trip ${tripId}`);
+    await supabase(c.env, `/capsule_results?trip_id=eq.${tripId}`, { method: 'DELETE' });
   }
 
   // 3. Check trip isn't already being processed by another request
@@ -267,7 +276,12 @@ app.post('/api/trigger-pipeline/:tripId', async (c) => {
   const emailRes = await supabase(c.env, `/orders?trip_id=eq.${tripId}&limit=1&select=id`);
   const userEmail = ''; // email is optional for pipeline
 
-  // 5. Run the pipeline synchronously
+  // 5. Mark trip as processing and run the pipeline synchronously
+  await supabase(c.env, `/trips?id=eq.${tripId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'processing' }),
+  });
+
   try {
     console.log(`[trigger-pipeline] Starting ${plan} pipeline for trip ${tripId}`);
     await runResult(tripId, plan, userEmail, c.env);
@@ -1049,11 +1063,11 @@ app.post('/api/payment/webhook', async (c) => {
       return c.json({ error: 'Failed to record order' }, 500);
     }
 
-    // Mark trip as processing (and set user_id if available from checkout metadata)
+    // Mark trip as paid — pipeline will be triggered by dashboard via /api/trigger-pipeline
     await supabase(c.env, `/trips?id=eq.${tripId}`, {
       method: 'PATCH',
       body: JSON.stringify({
-        status: 'processing',
+        status: 'paid',
         ...(metaUserId ? { user_id: metaUserId } : {}),
       }),
     });
@@ -1075,45 +1089,11 @@ app.post('/api/payment/webhook', async (c) => {
       }
     }
 
-    // Run result pipeline in the background — auto-refund on failure
-    c.executionCtx.waitUntil(
-      runResult(tripId, plan, userEmail, c.env).catch(async (err: Error) => {
-        console.error(`[Webhook] runResult failed for trip ${tripId}:`, err.message);
-        await supabase(c.env, `/trips?id=eq.${tripId}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ status: 'failed' }),
-        });
-
-        // Auto-refund: if service fails, refund the customer via Polar API
-        try {
-          console.log(`[Webhook] Initiating auto-refund for order ${polarOrderId}`);
-          const refundRes = await fetch(`https://api.polar.sh/v1/refunds/`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${c.env.POLAR_ACCESS_TOKEN}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              order_id: polarOrderId,
-              reason: 'service_not_rendered',
-              comment: `Auto-refund: AI generation failed for trip ${tripId}`,
-            }),
-            signal: AbortSignal.timeout(15_000),
-          });
-          if (refundRes.ok) {
-            console.log(`[Webhook] Refund successful for order ${polarOrderId}`);
-            await supabase(c.env, `/orders?polar_order_id=eq.${encodeURIComponent(polarOrderId)}`, {
-              method: 'PATCH',
-              body: JSON.stringify({ status: 'refunded' }),
-            });
-          } else {
-            console.error(`[Webhook] Refund failed (${refundRes.status}):`, await refundRes.text());
-          }
-        } catch (refundErr) {
-          console.error(`[Webhook] Refund request failed:`, (refundErr as Error).message);
-        }
-      })
-    );
+    // NOTE: Do NOT run runResult() in waitUntil() — the full AI pipeline takes
+    // 60-90s which exceeds Cloudflare's ~30s background task limit. Instead, mark
+    // the trip as 'paid' and let the dashboard's /api/trigger-pipeline endpoint
+    // run the pipeline synchronously over a long-lived HTTP connection.
+    console.log(`[Webhook] Order recorded for trip ${tripId}, plan=${plan}. Dashboard will trigger pipeline.`);
   }
 
   // ── subscription.active — handles annual subscription renewals ──────────
