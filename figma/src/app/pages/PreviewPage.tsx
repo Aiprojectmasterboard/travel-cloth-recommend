@@ -7,11 +7,64 @@ import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
-import { getOutfitImages } from "../services/outfitGenerator";
 import { GA } from "../lib/analytics";
 import { SEO } from "../components/SEO";
 
-const GENERIC_FALLBACK = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
+/* ── City landmark photos (Unsplash, royalty-free) ───────────────────── */
+const CITY_PHOTOS: Record<string, string> = {
+  // Asia
+  tokyo:      "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200&q=80&fit=crop",
+  seoul:      "https://images.unsplash.com/photo-1534274988757-a28bf1a57c17?w=1200&q=80&fit=crop",
+  osaka:      "https://images.unsplash.com/photo-1590559899731-a382839e5549?w=1200&q=80&fit=crop",
+  kyoto:      "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200&q=80&fit=crop",
+  bangkok:    "https://images.unsplash.com/photo-1508009603885-50cf7c579365?w=1200&q=80&fit=crop",
+  singapore:  "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=1200&q=80&fit=crop",
+  "hong kong":"https://images.unsplash.com/photo-1536599018102-9f803c140fc1?w=1200&q=80&fit=crop",
+  bali:       "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&q=80&fit=crop",
+  taipei:     "https://images.unsplash.com/photo-1470004914212-05527e49370b?w=1200&q=80&fit=crop",
+  hanoi:      "https://images.unsplash.com/photo-1583417319070-4a69db38a482?w=1200&q=80&fit=crop",
+  // Europe
+  paris:      "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=1200&q=80&fit=crop",
+  rome:       "https://images.unsplash.com/photo-1552832230-c0197dd311b5?w=1200&q=80&fit=crop",
+  barcelona:  "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=1200&q=80&fit=crop",
+  london:     "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=1200&q=80&fit=crop",
+  milan:      "https://images.unsplash.com/photo-1520440229-6469a149ac59?w=1200&q=80&fit=crop",
+  amsterdam:  "https://images.unsplash.com/photo-1534351590666-13e3e96b5017?w=1200&q=80&fit=crop",
+  prague:     "https://images.unsplash.com/photo-1519677100203-a0e668c92439?w=1200&q=80&fit=crop",
+  vienna:     "https://images.unsplash.com/photo-1516550893923-42d28e5677af?w=1200&q=80&fit=crop",
+  lisbon:     "https://images.unsplash.com/photo-1585208798174-6cedd86e019a?w=1200&q=80&fit=crop",
+  athens:     "https://images.unsplash.com/photo-1555993539-1732b0258235?w=1200&q=80&fit=crop",
+  // Americas
+  "new york": "https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?w=1200&q=80&fit=crop",
+  "los angeles":"https://images.unsplash.com/photo-1534190239940-9ba8944ea261?w=1200&q=80&fit=crop",
+  miami:      "https://images.unsplash.com/photo-1535498730771-e735b998cd64?w=1200&q=80&fit=crop",
+  "mexico city":"https://images.unsplash.com/photo-1585464231875-d9ef1f5ad396?w=1200&q=80&fit=crop",
+  "buenos aires":"https://images.unsplash.com/photo-1589909202802-8f4aadce1849?w=1200&q=80&fit=crop",
+  // Middle East & Africa
+  dubai:      "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=1200&q=80&fit=crop",
+  istanbul:   "https://images.unsplash.com/photo-1524231757912-21f4fe3a7200?w=1200&q=80&fit=crop",
+  marrakech:  "https://images.unsplash.com/photo-1597211684565-dca64d72c5ac?w=1200&q=80&fit=crop",
+  // Oceania
+  sydney:     "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=1200&q=80&fit=crop",
+  melbourne:  "https://images.unsplash.com/photo-1514395462725-fb4566210144?w=1200&q=80&fit=crop",
+};
+
+/** Generic atmospheric travel photos for unmapped cities */
+const GENERIC_PHOTOS = [
+  "https://images.unsplash.com/photo-1488646953014-85cb44e25828?w=1200&q=80&fit=crop",
+  "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&q=80&fit=crop",
+  "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?w=1200&q=80&fit=crop",
+  "https://images.unsplash.com/photo-1500835556837-99ac94a94552?w=1200&q=80&fit=crop",
+];
+
+function getCityPhoto(city: string): string {
+  const key = city.toLowerCase().trim();
+  if (CITY_PHOTOS[key]) return CITY_PHOTOS[key];
+  // Stable hash so same city always gets same generic photo
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = (hash * 31 + key.charCodeAt(i)) | 0;
+  return GENERIC_PHOTOS[Math.abs(hash) % GENERIC_PHOTOS.length];
+}
 
 /** Format a date string as "Mon DD" using locale-aware short month */
 function fmtShort(dateStr: string, locale: string): string {
@@ -49,11 +102,8 @@ export function PreviewPage() {
 
   const moodLabel = activeVibe?.mood_label || preview?.mood_label || t("preview.defaultMood").replace("{city}", city);
 
-  // Sample images: use pre-curated city-specific outfit photos (no AI generation cost)
-  const gender = data.gender || "female";
-  const sampleImages = getOutfitImages(gender, city);
-  // Hero image: first sample image for the active city
-  const heroImage = sampleImages[0] || GENERIC_FALLBACK;
+  // City landmark/travel photo for the active city (no AI generation)
+  const cityPhoto = getCityPhoto(city);
 
   const capsuleCount = preview?.capsule?.count || 9;
   const capsulePrinciples = preview?.capsule?.principles || [];
@@ -224,13 +274,12 @@ export function PreviewPage() {
           {t("preview.body")}
         </p>
 
-        {/* Preview Card — Hero image (blurred sample) */}
+        {/* Preview Card — City landmark photo */}
         <div className="mt-10 relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9]">
           <ImageWithFallback
-            src={heroImage}
-            alt="Trip preview"
+            src={cityPhoto}
+            alt={city}
             className="w-full h-full object-cover"
-            style={{ filter: "blur(18px) brightness(0.7) saturate(1.3)", transform: "scale(1.15)" }}
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
           <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-[360px] p-4 sm:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(20px)" }}>
@@ -282,19 +331,18 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((idx) => {
-              const imgSrc = sampleImages[idx % sampleImages.length] || GENERIC_FALLBACK;
-              // Each slot gets unique blur/color treatment so they look like different images
+              // Each slot uses the city photo with unique blur/tint so they look distinct
               const blurStyles: React.CSSProperties[] = [
-                { filter: "blur(16px) brightness(0.6) saturate(1.3)", transform: "scale(1.3)" },
-                { filter: "blur(14px) brightness(0.55) hue-rotate(40deg) saturate(1.4) contrast(1.1)", transform: "scale(1.4) scaleX(-1) translateY(-8%)" },
-                { filter: "blur(16px) brightness(0.5) sepia(0.4) saturate(1.6) hue-rotate(-15deg)", transform: "scale(1.5) rotate(5deg) translateX(10%)" },
-                { filter: "blur(13px) brightness(0.45) hue-rotate(-50deg) contrast(1.2) saturate(1.3)", transform: "scale(1.45) scaleX(-1) rotate(-4deg) translateY(10%)" },
+                { filter: "blur(14px) brightness(0.65) saturate(1.3)", transform: "scale(1.25)" },
+                { filter: "blur(12px) brightness(0.6) hue-rotate(30deg) saturate(1.2)", transform: "scale(1.3) scaleX(-1)" },
+                { filter: "blur(14px) brightness(0.55) sepia(0.3) saturate(1.4)", transform: "scale(1.35) rotate(3deg)" },
+                { filter: "blur(12px) brightness(0.5) hue-rotate(-40deg) contrast(1.1)", transform: "scale(1.3) scaleX(-1) rotate(-3deg)" },
               ];
               return (
                 <div key={idx}>
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
                     <ImageWithFallback
-                      src={imgSrc}
+                      src={cityPhoto}
                       alt={`Outfit preview ${idx + 1}`}
                       className="w-full h-full object-cover"
                       style={blurStyles[idx]}
