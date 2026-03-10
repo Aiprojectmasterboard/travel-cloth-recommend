@@ -52,8 +52,6 @@ export function PreviewPage() {
   // Sample images: use pre-curated city-specific outfit photos (no AI generation cost)
   const gender = data.gender || "female";
   const sampleImages = getOutfitImages(gender, city);
-            setTeaserReady(true);
-            return;
   // Hero image: first sample image for the active city
   const heroImage = sampleImages[0] || GENERIC_FALLBACK;
 
