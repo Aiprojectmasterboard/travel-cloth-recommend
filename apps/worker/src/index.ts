@@ -226,6 +226,30 @@ app.onError((err, c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// DEBUG: Synchronous runResult trigger (temporary — remove after fixing)
+// ─────────────────────────────────────────────────────────────────────────────
+
+app.post('/api/debug/run-result/:tripId', async (c) => {
+  const tripId = c.req.param('tripId');
+  const plan = ((c.req.query('plan') as string) || 'pro') as PlanType;
+  const email = (c.req.query('email') as string) || 'debug@test.com';
+
+  try {
+    console.log(`[DEBUG] Triggering runResult synchronously for trip ${tripId}, plan=${plan}`);
+    await runResult(tripId, plan, email, c.env);
+    return c.json({ ok: true, message: `runResult completed for ${tripId}` });
+  } catch (err) {
+    const error = err as Error;
+    console.error(`[DEBUG] runResult error:`, error.message, error.stack);
+    return c.json({
+      ok: false,
+      error: error.message,
+      stack: error.stack,
+    }, 500);
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // 1. GET /api/health
 // ─────────────────────────────────────────────────────────────────────────────
 
