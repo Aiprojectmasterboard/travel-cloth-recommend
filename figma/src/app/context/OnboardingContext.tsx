@@ -11,11 +11,16 @@ export interface CityEntry {
   lon?: number;
 }
 
+export type Silhouette = "petite" | "standard" | "tall" | "plus" | "";
+
 export interface OnboardingData {
   cities: CityEntry[];
   gender: string;
+  /** @deprecated Use silhouette instead */
   height: string;
+  /** @deprecated Use silhouette instead */
   weight: string;
+  silhouette: Silhouette;
   aesthetics: string[];
   /** Base64 data-URL of user's uploaded reference photo — NOT persisted (too large) */
   photo: string;
@@ -40,11 +45,26 @@ const DEFAULT_DATA: OnboardingData = {
   gender: "",
   height: "",
   weight: "",
+  silhouette: "",
   aesthetics: [],
   photo: "",
   photoName: "",
   faceUrl: "",
 };
+
+/**
+ * Map silhouette to approximate height_cm / weight_kg for backward-compatible API calls.
+ * Keeps all Worker agent prompt logic (heightDesc, bmiNote) working unchanged.
+ */
+export function silhouetteToBodyMetrics(s: Silhouette): { height_cm?: number; weight_kg?: number } {
+  switch (s) {
+    case "petite":   return { height_cm: 158, weight_kg: 50 };
+    case "standard": return { height_cm: 170, weight_kg: 65 };
+    case "tall":     return { height_cm: 183, weight_kg: 75 };
+    case "plus":     return { height_cm: 170, weight_kg: 95 };
+    default:         return {};
+  }
+}
 
 function readStoredOnboarding(): OnboardingData {
   try {

@@ -51,14 +51,6 @@
 import { WORKER_URL } from '../lib/api'
 
 export const POLAR_PRODUCTS = {
-  standard: {
-    /** Replace with your Polar product ID */
-    productId: "YOUR_STANDARD_PRODUCT_ID",
-    name: "Standard Capsule",
-    type: "one_time" as const,
-    price: 0,         // cents (Free)
-    currency: "usd",
-  },
   pro: {
     /** Replace with your Polar product ID */
     productId: "YOUR_PRO_PRODUCT_ID",
@@ -402,7 +394,7 @@ export async function listCustomerOrders(
  */
 export function getDashboardRoute(plan: PlanKey): string {
   switch (plan) {
-    case "standard": return "/dashboard/standard";
+    case "standard": return "/dashboard/pro"; // Standard plan removed — redirect to Pro
     case "pro": return "/dashboard/pro";
     case "annual": return "/dashboard/annual";
   }

@@ -6,6 +6,7 @@ interface ProfileBadgeProps {
   gender: string;
   height: string;
   weight: string;
+  silhouette?: string;
   aesthetics: string[];
   photo: string;
   /** R2 CDN URL of uploaded face photo — survives payment redirect */
@@ -17,7 +18,7 @@ interface ProfileBadgeProps {
  * Displays the user's profile summary that was used for AI outfit generation.
  * Shows gender, body info, aesthetics, and photo status.
  */
-export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUrl, bodyFitLabel }: ProfileBadgeProps) {
+export function ProfileBadge({ gender, height, weight, silhouette, aesthetics, photo, faceUrl, bodyFitLabel }: ProfileBadgeProps) {
   const { t } = useLang();
   const hasPhoto = !!(photo || faceUrl);
   const genderIcon = gender === "male" ? "male" : gender === "non-binary" ? "transgender" : "female";
@@ -60,26 +61,26 @@ export function ProfileBadge({ gender, height, weight, aesthetics, photo, faceUr
           </span>
         </div>
 
-        {/* Height */}
-        {height && (
+        {/* Silhouette */}
+        {silhouette && (
+          <div className="flex items-center justify-between">
+            <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
+              <Icon name="accessibility_new" size={14} className="text-[#57534e]" /> {t("dashboard.silhouette")}
+            </span>
+            <span className="text-[12px] text-[#292524] capitalize" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+              {t(`onboarding2.silhouette${silhouette.charAt(0).toUpperCase() + silhouette.slice(1)}`)}
+            </span>
+          </div>
+        )}
+
+        {/* Legacy height (backward compat) */}
+        {!silhouette && height && (
           <div className="flex items-center justify-between">
             <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
               <Icon name="straighten" size={14} className="text-[#57534e]" /> {t("dashboard.height")}
             </span>
             <span className="text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
               {height} cm
-            </span>
-          </div>
-        )}
-
-        {/* Weight */}
-        {weight && (
-          <div className="flex items-center justify-between">
-            <span className="text-[12px] text-[#57534e] flex items-center gap-1.5" style={{ fontFamily: "var(--font-body)" }}>
-              <Icon name="fitness_center" size={14} className="text-[#57534e]" /> {t("dashboard.weight")}
-            </span>
-            <span className="text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-              {weight} kg
             </span>
           </div>
         )}

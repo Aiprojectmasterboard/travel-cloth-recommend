@@ -142,22 +142,15 @@ export function buildWebAppSchema() {
     offers: [
       {
         "@type": "Offer",
-        name: "Standard Plan",
-        price: "5.00",
-        priceCurrency: "USD",
-        description: "1 clear outfit image + 3 unlocked, capsule list, daily plan",
-      },
-      {
-        "@type": "Offer",
         name: "Pro Plan",
-        price: "12.00",
+        price: "3.99",
         priceCurrency: "USD",
         description: "4-6 AI-generated outfit images per city, high-res, 1 regeneration",
       },
       {
         "@type": "Offer",
         name: "Annual Plan",
-        price: "29.00",
+        price: "9.99",
         priceCurrency: "USD",
         description: "Full Pro features, up to 12 trips per year",
       },

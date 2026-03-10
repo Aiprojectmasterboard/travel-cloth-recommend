@@ -573,35 +573,9 @@ app.post('/api/preview', async (c) => {
       c.env
     );
 
-    // Fire teaser generation in background via waitUntil()
-    // This runs AFTER the HTTP response is sent — no wall-clock timeout issue.
-    // Gemini takes ~30-40s which exceeds Workers' response deadline but
-    // waitUntil() allows up to 30s (paid) / 15min (Durable Objects) after response.
-    if (preview.vibes?.[0] && c.env.OPENAI_API_KEY) {
-      c.executionCtx.waitUntil(
-        runTeaserBackground(
-          {
-            trip_id: tripId,
-            vibeResult: preview.vibes[0],
-            face_url,
-            gender: safeGender || 'female',
-            user_profile: {
-              gender: safeGender,
-              height_cm: safeHeightCm,
-              weight_kg: safeWeightKg,
-              aesthetics: safeAesthetics,
-            },
-            fallbackTeaser: preview.teaser_url || getCityFallbackImage(preview.vibes[0].city ?? '', safeGender || 'female'),
-          },
-          c.env
-        ).catch((err) => {
-          // Must catch — uncaught errors in waitUntil() crash silently
-          console.error(`[waitUntil] runTeaserBackground failed for trip ${tripId}:`, (err as Error).message);
-        })
-      );
-    } else if (!c.env.OPENAI_API_KEY) {
-      console.error('[POST /api/preview] OPENAI_API_KEY not configured — skipping teaser generation');
-    }
+    // Teaser generation DISABLED — PreviewPage now uses pre-curated sample images
+    // (no AI image cost for free previews). AI images are generated only after payment.
+    // Teaser endpoints (/api/teaser/generate, /api/teaser/:tripId) are kept for backward compat.
 
     return c.json(preview);
   } catch (err) {

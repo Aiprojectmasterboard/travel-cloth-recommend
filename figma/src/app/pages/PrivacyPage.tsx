@@ -55,7 +55,7 @@ export function PrivacyPage() {
             <SubSection label="Information you provide">
               <ul>
                 <li><strong>Destination & travel month</strong> — Required to generate weather and style analysis. Up to 5 cities per trip.</li>
-                <li><strong>Style preferences</strong> — Gender, aesthetics, height, and weight (all optional). Used only to personalize outfit suggestions.</li>
+                <li><strong>Style preferences</strong> — Gender, aesthetics, and body type/silhouette (all optional). Used only to personalize outfit suggestions.</li>
                 <li><strong>Reference photo</strong> — Entirely optional. If provided, used solely to inform AI-generated outfit imagery.</li>
                 <li><strong>Email address</strong> — Only if you choose to receive your mood card by email. We do not create accounts or require sign-in.</li>
               </ul>

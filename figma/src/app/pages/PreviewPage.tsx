@@ -1,245 +1,16 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router";
-import { Icon, BtnSecondary, BtnDark, CheckItem, LanguageSelector } from "../components/travel-capsule";
+import { Icon, BtnDark, CheckItem, LanguageSelector } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useOnboarding } from "../context/OnboardingContext";
 import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import { useAuth } from "../context/AuthContext";
 import { createCheckoutSession, type PlanKey } from "../services/polarCheckout";
-import { pollTeaser, triggerTeaserGeneration } from "../lib/api";
+import { getOutfitImages } from "../services/outfitGenerator";
 import { GA } from "../lib/analytics";
 import { SEO } from "../components/SEO";
 
-// ─── Image Lightbox with Branding + Share ─────────────────────────────────────
-
-function ImageLightbox({
-  src,
-  moodLabel,
-  onClose,
-}: {
-  src: string;
-  moodLabel: string;
-  onClose: () => void;
-}) {
-  const { t, displayFont, bodyFont } = useLang();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [linkCopied, setLinkCopied] = useState(false);
-
-  const shareUrl = typeof window !== "undefined" ? `${window.location.origin}?utm_source=share&utm_medium=image` : "";
-  const shareText = t("lightbox.shareText") + ` ${shareUrl}`;
-
-  /** Draw branded image on canvas and return blob */
-  const renderBrandedImage = useCallback(async (): Promise<Blob | null> => {
-    const img = new Image();
-    img.crossOrigin = "anonymous";
-    img.src = src;
-    await new Promise<void>((resolve, reject) => {
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Image load failed"));
-    });
-
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
-
-    const w = img.naturalWidth || 1080;
-    const h = img.naturalHeight || 1440;
-    canvas.width = w;
-    canvas.height = h;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return null;
-
-    // Draw original image
-    ctx.drawImage(img, 0, 0, w, h);
-
-    // Bottom gradient overlay for branding
-    const grad = ctx.createLinearGradient(0, h * 0.82, 0, h);
-    grad.addColorStop(0, "rgba(0,0,0,0)");
-    grad.addColorStop(0.4, "rgba(0,0,0,0.4)");
-    grad.addColorStop(1, "rgba(0,0,0,0.7)");
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, h * 0.82, w, h * 0.18);
-
-    // Brand text
-    const fontSize = Math.max(16, Math.round(w * 0.028));
-    ctx.font = `600 ${fontSize}px "DM Sans", "Plus Jakarta Sans", sans-serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.95)";
-    ctx.textBaseline = "bottom";
-
-    // Luggage icon substitute: ✈ + brand name
-    const brandText = "Travel Capsule AI";
-    ctx.fillText(`✈  ${brandText}`, w * 0.04, h * 0.96);
-
-    // Mood label (smaller)
-    const moodSize = Math.max(12, Math.round(w * 0.02));
-    ctx.font = `italic 300 ${moodSize}px "Playfair Display", serif`;
-    ctx.fillStyle = "rgba(255,255,255,0.75)";
-    ctx.fillText(moodLabel, w * 0.04, h * 0.96 - fontSize * 1.4);
-
-    // travelscapsule.com URL (right side)
-    const urlSize = Math.max(11, Math.round(w * 0.018));
-    ctx.font = `500 ${urlSize}px "JetBrains Mono", monospace`;
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
-    ctx.textAlign = "right";
-    ctx.fillText("travelscapsule.com", w * 0.96, h * 0.96);
-    ctx.textAlign = "left";
-
-    return new Promise((resolve) => canvas.toBlob(resolve, "image/png", 1));
-  }, [src, moodLabel]);
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      const blob = await renderBrandedImage();
-      if (!blob) throw new Error("Failed to render");
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `travel-capsule-${Date.now()}.png`;
-      a.click();
-      URL.revokeObjectURL(url);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      console.error("Save failed:", err);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleNativeShare = async () => {
-    try {
-      const blob = await renderBrandedImage();
-      if (blob && navigator.share && navigator.canShare) {
-        const file = new File([blob], "travel-capsule-outfit.png", { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], text: t("lightbox.shareText"), url: shareUrl });
-          return;
-        }
-      }
-      // Fallback: share without image
-      if (navigator.share) {
-        await navigator.share({ text: t("lightbox.shareText"), url: shareUrl });
-      }
-    } catch {
-      // User cancelled or not supported — ignore
-    }
-  };
-
-  const socialLinks = [
-    { name: "X", icon: "X", url: `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}` },
-    { name: "Facebook", icon: "FB", url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=${encodeURIComponent(t("lightbox.shareText"))}` },
-    { name: "Reddit", icon: "Re", url: `https://www.reddit.com/submit?url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(t("lightbox.shareText"))}` },
-  ];
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch { /* ignore */ }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center"
-      style={{ backgroundColor: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}
-      onClick={onClose}
-    >
-      {/* Hidden canvas for rendering branded image */}
-      <canvas ref={canvasRef} className="hidden" />
-
-      <div
-        className="relative w-full max-w-[520px] mx-4 flex flex-col items-center"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute -top-12 right-0 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer z-10"
-          aria-label={t("lightbox.close")}
-        >
-          <Icon name="close" size={22} className="text-white" />
-        </button>
-
-        {/* Image with branding overlay */}
-        <div className="relative w-full rounded-2xl overflow-hidden" style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
-          <img src={src} alt="AI outfit" className="w-full h-auto block" />
-          {/* Brand watermark overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 sm:p-6" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 60%, transparent 100%)" }}>
-            <p className="text-white/70 text-[12px] sm:text-[14px] italic mb-1" style={{ fontFamily: displayFont }}>{moodLabel}</p>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Icon name="luggage" size={16} className="text-white/90" />
-                <span className="text-white/90 text-[13px] sm:text-[15px]" style={{ fontFamily: bodyFont, fontWeight: 600 }}>Travel Capsule AI</span>
-              </div>
-              <span className="text-white/40 text-[10px]" style={{ fontFamily: "var(--font-mono)" }}>travelscapsule.com</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="mt-5 w-full flex flex-col gap-3">
-          {/* Save button */}
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="h-[48px] w-full bg-white text-[#1A1410] rounded-xl flex items-center justify-center gap-2 hover:bg-white/90 transition-colors cursor-pointer disabled:opacity-60"
-            style={{ fontFamily: bodyFont, fontWeight: 600 }}
-          >
-            <Icon name={saved ? "check_circle" : "download"} size={20} className={saved ? "text-green-600" : "text-[#1A1410]"} filled={saved} />
-            <span className="text-[14px]">{saving ? "..." : saved ? t("lightbox.saved") : t("lightbox.saveImage")}</span>
-          </button>
-
-          {/* Social share row */}
-          <div className="flex items-center gap-2">
-            {/* Native share (mobile) */}
-            {"share" in navigator && (
-              <button
-                onClick={handleNativeShare}
-                className="flex-1 h-[44px] bg-[#C4613A] text-white rounded-xl flex items-center justify-center gap-2 hover:bg-[#A84A25] transition-colors cursor-pointer"
-                style={{ fontFamily: bodyFont, fontWeight: 600 }}
-              >
-                <Icon name="share" size={18} className="text-white" />
-                <span className="text-[13px]">{t("lightbox.shareOn")}</span>
-              </button>
-            )}
-
-            {/* Social platform buttons */}
-            {socialLinks.map((s) => (
-              <a
-                key={s.name}
-                href={s.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="h-[44px] w-[44px] flex-shrink-0 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors"
-                title={`${t("lightbox.shareOn")} ${s.name}`}
-              >
-                <span className="text-white text-[13px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{s.icon}</span>
-              </a>
-            ))}
-
-            {/* Copy link */}
-            <button
-              onClick={handleCopyLink}
-              className="h-[44px] w-[44px] flex-shrink-0 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors cursor-pointer"
-              title={t("lightbox.copyLink")}
-            >
-              <Icon name={linkCopied ? "check" : "link"} size={18} className={linkCopied ? "text-green-400" : "text-white"} />
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* Fallback: generic travel image (source.unsplash.com is deprecated) */
-function getCityFallbackImg(_cityName: string): string {
-  return GENERIC_FALLBACK;
-}
 const GENERIC_FALLBACK = "https://images.unsplash.com/photo-1488646953014-85cb44e25828?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=1080";
 
 /** Format a date string as "Mon DD" using locale-aware short month */
@@ -249,24 +20,10 @@ function fmtShort(dateStr: string, locale: string): string {
   return d.toLocaleDateString(locale, { month: "short", day: "numeric" });
 }
 
-async function downloadImage(url: string, filename: string) {
-  try {
-    const res = await fetch(url, { mode: "cors" });
-    const blob = await res.blob();
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(a.href);
-  } catch {
-    window.open(url, "_blank");
-  }
-}
-
 export function PreviewPage() {
   const navigate = useNavigate();
   const { data } = useOnboarding();
-  const { preview, tripId, loading: tripLoading, error: tripError, updatePreviewTeaser } = useTrip();
+  const { preview, tripId, loading: tripLoading, error: tripError } = useTrip();
   const { t, displayFont, bodyFont, lang } = useLang();
   const { isLoggedIn, user, setShowLoginModal, setLoginModalContext } = useAuth();
 
@@ -290,83 +47,16 @@ export function PreviewPage() {
   const activeVibe = allVibes.find((v) => v.city?.toLowerCase() === city.toLowerCase()) || allVibes[activeCityIdx] || allVibes[0];
   const activeWeather = allWeather.find((w) => w.city?.toLowerCase() === city.toLowerCase()) || allWeather[activeCityIdx] || allWeather[0];
 
-  // Real data from AI preview — fall back to city-specific or onboarding image
-  const cityFallback = activeCity?.imageUrl || getCityFallbackImg(city);
-  const initialTeaserUrl = preview?.teaser_url || cityFallback;
   const moodLabel = activeVibe?.mood_label || preview?.mood_label || t("preview.defaultMood").replace("{city}", city);
 
-  // Poll for AI-generated teaser image + trigger generation via dedicated endpoint
-  const [polledTeaserUrl, setPolledTeaserUrl] = useState<string | null>(null);
-  const [teaserReady, setTeaserReady] = useState(false);
-  const [teaserProgress, setTeaserProgress] = useState(0); // 0-100 for progress UX
-  const triggerSentRef = useRef(false);
-
-  useEffect(() => {
-    if (!tripId || teaserReady) return;
-
-    // Check if the initial teaser_url is already an AI-generated R2 image (not a fallback)
-    if (initialTeaserUrl && initialTeaserUrl.includes('/temp/')) {
-      setTeaserReady(true);
-      return;
-    }
-
-    // Fire-and-forget: trigger teaser generation via dedicated endpoint
-    // This is more reliable than waitUntil() which may have platform time limits
-    if (!triggerSentRef.current) {
-      triggerSentRef.current = true;
-      triggerTeaserGeneration(tripId);
-    }
-
-    let cancelled = false;
-    let attempts = 0;
-    const MAX_POLLS = 25; // ~75s total (3s intervals) — enough for Gemini ~40s + overhead
-
-    const poll = async () => {
-      // Wait 5s before first poll to give Gemini time to start
-      await new Promise((r) => setTimeout(r, 5000));
-
-      while (!cancelled && attempts < MAX_POLLS) {
-        attempts++;
-        // Progressive UX: smoothly increase progress bar during generation
-        if (!cancelled) setTeaserProgress(Math.min(90, Math.round((attempts / MAX_POLLS) * 100)));
-        try {
-          const result = await pollTeaser(tripId);
-          if (cancelled) return;
-          if (result.status === 'ready' && result.teaser_url) {
-            setTeaserProgress(100);
-            setPolledTeaserUrl(result.teaser_url);
-            setTeaserReady(true);
-            // Persist to TripContext + sessionStorage so StandardDashboard gets it
-            updatePreviewTeaser(result.teaser_url);
-            return;
-          }
-          if (result.status === 'fallback') {
-            // Fallback means Gemini failed — use server-provided city-specific fallback
-            setTeaserProgress(100);
-            if (result.teaser_url) {
-              setPolledTeaserUrl(result.teaser_url);
-              updatePreviewTeaser(result.teaser_url);
-            }
+  // Sample images: use pre-curated city-specific outfit photos (no AI generation cost)
+  const gender = data.gender || "female";
+  const sampleImages = getOutfitImages(gender, city);
             setTeaserReady(true);
             return;
-          }
-        } catch {
-          // Ignore polling errors — keep trying
-        }
-        await new Promise((r) => setTimeout(r, 3000));
-      }
-      // After max polls, stop trying
-      setTeaserReady(true);
-    };
+  // Hero image: first sample image for the active city
+  const heroImage = sampleImages[0] || GENERIC_FALLBACK;
 
-    poll();
-    return () => { cancelled = true; };
-  }, [tripId, teaserReady, initialTeaserUrl]);
-
-  const teaserUrl = polledTeaserUrl || initialTeaserUrl;
-
-  // All 4 slots use the same teaser image — slot 0 clear, slots 1-3 CSS-blurred
-  // Per spec: "[1][2][3] 동일 이미지 + CSS blur(8px) + tint overlay + lock icon"
   const capsuleCount = preview?.capsule?.count || 9;
   const capsulePrinciples = preview?.capsule?.principles || [];
 
@@ -381,8 +71,6 @@ export function PreviewPage() {
 
   const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null);
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
-  const [showCityLimitModal, setShowCityLimitModal] = useState(false);
-  const [lightboxOpen, setLightboxOpen] = useState(false);
 
   // Duration display: "Aug 15 - Aug 20 (5 nights)" — per active city
   const fromDate = activeCity?.fromDate || "";
@@ -427,19 +115,6 @@ export function PreviewPage() {
   };
 
   const handleCheckout = (plan: PlanKey) => {
-    if (plan === "standard") {
-      if (cityCount > 1) {
-        setShowCityLimitModal(true);
-        return;
-      }
-      if (isLoggedIn) {
-        navigate("/dashboard/standard");
-        return;
-      }
-      setLoginModalContext("onboarding_gate");
-      setShowLoginModal(true);
-      return;
-    }
     doCheckout(plan);
   };
 
@@ -470,66 +145,6 @@ export function PreviewPage() {
   return (
     <div className="min-h-screen bg-[#FDF8F3]">
       <SEO title={t("preview.seoTitle")} description={t("preview.seoDescription")} noindex={true} />
-      {/* Image Lightbox */}
-      {lightboxOpen && teaserUrl && (
-        <ImageLightbox
-          src={teaserUrl}
-          moodLabel={moodLabel}
-          onClose={() => setLightboxOpen(false)}
-        />
-      )}
-
-      {/* City limit modal — Standard plan only supports 1 city */}
-      {showCityLimitModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ backgroundColor: "rgba(26,20,16,0.6)", backdropFilter: "blur(4px)" }}
-          onClick={() => setShowCityLimitModal(false)}
-        >
-          <div
-            className="bg-white rounded-2xl p-8 max-w-[420px] w-full"
-            style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-[#FEF3C7] flex items-center justify-center flex-shrink-0">
-                <Icon name="warning" size={22} className="text-[#D97706]" />
-              </div>
-              <h3 className="text-[20px] text-[#292524]" style={{ fontFamily: displayFont }}>
-                {t("preview.cityLimitTitle")}
-              </h3>
-            </div>
-            <p className="text-[15px] text-[#57534e] leading-relaxed mb-6" style={{ fontFamily: bodyFont }}>
-              {t("preview.cityLimitBody").replace("{n}", String(cityCount))}
-            </p>
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => { setShowCityLimitModal(false); doCheckout("pro"); }}
-                className="h-[52px] w-full bg-[#C4613A] text-white text-[13px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#A84A25] transition-colors cursor-pointer"
-                style={{ fontFamily: bodyFont, fontWeight: 600 }}
-              >
-                {t("preview.cityLimitUpgrade")}
-              </button>
-              <button
-                onClick={() => {
-                  setShowCityLimitModal(false);
-                  // Standard is free — navigate or show login (no Polar checkout)
-                  if (isLoggedIn) {
-                    navigate("/dashboard/standard");
-                  } else {
-                    setLoginModalContext("onboarding_gate");
-                    setShowLoginModal(true);
-                  }
-                }}
-                className="h-[52px] w-full border border-[#E8DDD4] text-[#57534e] text-[13px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#FDF8F3] transition-colors cursor-pointer"
-                style={{ fontFamily: bodyFont, fontWeight: 600 }}
-              >
-                {t("preview.cityLimitContinue")}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Header */}
       <header className="sticky top-0 z-50 w-full border-b border-[#E8DDD4]/50" style={{ backgroundColor: "rgba(253,248,243,0.8)", backdropFilter: "blur(16px)" }}>
@@ -611,49 +226,14 @@ export function PreviewPage() {
           {t("preview.body")}
         </p>
 
-        {/* Preview Card — Real AI Teaser */}
+        {/* Preview Card — Hero image (blurred sample) */}
         <div className="mt-10 relative rounded-2xl overflow-hidden aspect-[4/3] sm:aspect-[16/9] md:aspect-[21/9]">
-          {!teaserReady ? (
-            /* Loading state: blurred gradient + shimmer animation */
-            <>
-              <div
-                className="w-full h-full animate-pulse"
-                style={{
-                  background: `linear-gradient(135deg, ${vibeColors[0] || '#8B7355'}40, ${vibeColors[1] || '#C4A882'}30, ${vibeColors[2] || '#4A5568'}40)`,
-                  filter: 'blur(0px)',
-                }}
-              />
-              {/* Shimmer sweep */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    background: 'linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%)',
-                    animation: 'shimmer 2s infinite',
-                  }}
-                />
-              </div>
-              <style>{`@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
-              {/* Centered loading indicator with dark pill for visibility */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3">
-                <div className="w-12 h-12 rounded-full border-3 border-[#1A1410]/20 border-t-[#C4613A] animate-spin" style={{ borderWidth: 3 }} />
-                <div className="px-5 py-2.5 rounded-full bg-[#1A1410]/80 backdrop-blur-sm">
-                  <span className="text-[12px] text-white uppercase tracking-[0.15em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                    {teaserProgress < 20 ? t("preview.progressAnalyzing") :
-                     teaserProgress < 50 ? t("preview.progressGenerating") :
-                     teaserProgress < 80 ? t("preview.progressStyling") :
-                     t("preview.progressAlmost")}
-                  </span>
-                </div>
-                <span className="text-[11px] text-[#1A1410]/60" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
-                  {teaserProgress}%
-                </span>
-              </div>
-            </>
-          ) : (
-            /* Ready state: show the actual image */
-            <ImageWithFallback src={teaserUrl} alt="Trip preview" className="w-full h-full object-cover" />
-          )}
+          <ImageWithFallback
+            src={heroImage}
+            alt="Trip preview"
+            className="w-full h-full object-cover"
+            style={{ filter: "blur(18px) brightness(0.7) saturate(1.3)", transform: "scale(1.15)" }}
+          />
           <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-black/20" />
           <div className="absolute bottom-4 left-4 right-4 sm:right-auto sm:w-[360px] p-4 sm:p-6 rounded-2xl" style={{ background: "rgba(255,255,255,0.2)", backdropFilter: "blur(20px)" }}>
             <div className="flex items-center gap-3 mb-4">
@@ -689,7 +269,7 @@ export function PreviewPage() {
           </div>
         )}
 
-        {/* AI Outfit Preview — Teaser Grid (1 real + 3 blurred) */}
+        {/* AI Outfit Preview — All blurred sample images */}
         <div className="mt-12">
           <div className="flex items-end justify-between mb-6">
             <h2 className="text-[#292524]" style={{ fontSize: "clamp(24px, 3vw, 36px)", fontFamily: displayFont }}>
@@ -704,74 +284,32 @@ export function PreviewPage() {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[0, 1, 2, 3].map((idx) => {
-              const isUnlocked = idx === 0 && teaserReady && !!(polledTeaserUrl || preview?.teaser_url);
-              const imgSrc = teaserUrl;
-              const isSlot0Loading = idx === 0 && !teaserReady;
-              // Each locked slot gets a unique CSS treatment so they look like different images
-              const lockedStyles: React.CSSProperties[] = [
-                {},
-                { filter: "blur(14px) brightness(0.55) hue-rotate(40deg) saturate(1.4) contrast(1.1)", transform: "scale(1.4) scaleX(-1) translateY(-8%)", objectPosition: "20% 0%" },
-                { filter: "blur(16px) brightness(0.5) sepia(0.4) saturate(1.6) hue-rotate(-15deg)", transform: "scale(1.5) rotate(5deg) translateX(10%)", objectPosition: "80% 100%" },
-                { filter: "blur(13px) brightness(0.45) hue-rotate(-50deg) contrast(1.2) saturate(1.3)", transform: "scale(1.45) scaleX(-1) rotate(-4deg) translateY(10%)", objectPosition: "50% 30%" },
+              const imgSrc = sampleImages[idx % sampleImages.length] || GENERIC_FALLBACK;
+              // Each slot gets unique blur/color treatment so they look like different images
+              const blurStyles: React.CSSProperties[] = [
+                { filter: "blur(16px) brightness(0.6) saturate(1.3)", transform: "scale(1.3)" },
+                { filter: "blur(14px) brightness(0.55) hue-rotate(40deg) saturate(1.4) contrast(1.1)", transform: "scale(1.4) scaleX(-1) translateY(-8%)" },
+                { filter: "blur(16px) brightness(0.5) sepia(0.4) saturate(1.6) hue-rotate(-15deg)", transform: "scale(1.5) rotate(5deg) translateX(10%)" },
+                { filter: "blur(13px) brightness(0.45) hue-rotate(-50deg) contrast(1.2) saturate(1.3)", transform: "scale(1.45) scaleX(-1) rotate(-4deg) translateY(10%)" },
               ];
               return (
-                <div
-                  key={idx}
-                  className="group"
-                  onClick={isUnlocked ? () => setLightboxOpen(true) : undefined}
-                  style={isUnlocked ? { cursor: "pointer" } : undefined}
-                >
+                <div key={idx}>
                   <div className="relative rounded-xl overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                    {isSlot0Loading ? (
-                      /* Slot 0 loading: gradient shimmer instead of fallback image */
-                      <div className="w-full h-full animate-pulse" style={{
-                        background: `linear-gradient(135deg, ${vibeColors[0] || '#8B7355'}50, ${vibeColors[1] || '#C4A882'}40, ${vibeColors[2] || '#4A5568'}50)`,
-                      }} />
-                    ) : (
-                      <ImageWithFallback
-                        src={imgSrc}
-                        alt={`Outfit ${idx + 1}`}
-                        className={`w-full h-full object-cover transition-transform duration-500 ${isUnlocked ? "group-hover:scale-105" : ""}`}
-                        style={isUnlocked ? { transform: "scale(1)" } : lockedStyles[idx]}
-                      />
-                    )}
+                    <ImageWithFallback
+                      src={imgSrc}
+                      alt={`Outfit preview ${idx + 1}`}
+                      className="w-full h-full object-cover"
+                      style={blurStyles[idx]}
+                    />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                    {!isUnlocked && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
-                        <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center">
-                          <span className="material-symbols-outlined text-white" style={{ fontSize: 22 }}>lock</span>
-                        </div>
-                        <span className="text-white/80 text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                          {t("preview.unlock")}
-                        </span>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+                      <div className="w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-white" style={{ fontSize: 22 }}>lock</span>
                       </div>
-                    )}
-                    {isUnlocked && (
-                      <>
-                        <div className="absolute top-2 left-2">
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/90 text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                            <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("examples.aiGenerated")}
-                          </span>
-                        </div>
-                        <div className="absolute top-2 right-2 flex gap-1.5">
-                          {/* Download button */}
-                          <button
-                            onClick={(e) => { e.stopPropagation(); downloadImage(imgSrc, `travel-capsule-look-${idx + 1}.png`); }}
-                            className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer"
-                            title={t("dashboard.downloadImage")}
-                          >
-                            <Icon name="download" size={16} className="text-white" />
-                          </button>
-                          {/* Expand button */}
-                          <button
-                            onClick={() => setLightboxOpen(true)}
-                            className="w-8 h-8 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center hover:bg-black/60 transition-colors cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <Icon name="open_in_full" size={16} className="text-white" />
-                          </button>
-                        </div>
-                      </>
-                    )}
+                      <span className="text-white/80 text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                        {t("preview.unlock")}
+                      </span>
+                    </div>
                     <div className="absolute bottom-3 left-3 right-3">
                       <span className="text-white/70 text-[10px] uppercase tracking-[0.1em] block" style={{ fontFamily: "var(--font-mono)" }}>
                         {t("preview.dayLook").replace("{n}", String(idx + 1))}
@@ -784,7 +322,7 @@ export function PreviewPage() {
           </div>
           <div className="mt-5 flex items-center justify-between px-1">
             <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>
-              4 {t("preview.looksWaiting")}
+              {t("preview.sampleNote")}
             </span>
             <button
               onClick={() => document.getElementById("pricing-section")?.scrollIntoView({ behavior: "smooth" })}
@@ -883,30 +421,7 @@ export function PreviewPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
-            {/* Standard */}
-            <div className="relative flex flex-col p-5 sm:p-8 bg-white border border-[#C4613A]/10 rounded-2xl mt-4">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-[#C4613A] to-[#e0734a] text-white text-[10px] uppercase tracking-[0.12em] rounded-full animate-pulse" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                {t("pricing.promoBadge")}
-              </span>
-              <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>Standard</h3>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-[24px] text-[#57534e] line-through opacity-60" style={{ fontFamily: displayFont, fontWeight: 500 }}>{t("pricing.originalPrice")}</span>
-                <span className="text-[36px] sm:text-[48px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>{t("pricing.promoFree")}</span>
-              </div>
-              <span className="text-[12px] text-[#C4613A] mt-1 block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("pricing.promoNote")}</span>
-              <div className="mt-6 flex flex-col gap-3 flex-1">
-                {[1,2,3,4,5].map((n) => (
-                  <CheckItem key={n} label={t(`pricing.standard.features.${n}`)} />
-                ))}
-              </div>
-              <div className="mt-8">
-                <BtnSecondary onClick={() => handleCheckout("standard")} className="w-full">
-                  {t("pricing.standard.cta")}
-                </BtnSecondary>
-              </div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px] mx-auto">
             {/* Pro */}
             <div className="relative flex flex-col p-5 sm:p-8 bg-[#C4613A] text-white rounded-2xl mt-4" style={{ boxShadow: "0 4px 16px rgba(196,97,58,.25)" }}>
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#1A1410] text-white text-[10px] uppercase tracking-[0.12em] rounded-full" style={{ fontFamily: bodyFont, fontWeight: 600 }}>

@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { supabase } from "../lib/supabase";
 import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
+/** "standard" kept for backward compat with existing DB records, but no longer offered */
 export type PlanKey = "standard" | "pro" | "annual";
 
 export interface User {

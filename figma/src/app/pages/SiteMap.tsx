@@ -14,7 +14,7 @@ const PAGES = [
     section: "Onboarding Flow",
     routes: [
       { path: "/onboarding/1", label: "Step 1 — Destinations", desc: "City search, date selection", icon: "flight_takeoff" },
-      { path: "/onboarding/2", label: "Step 2 — Body Profile", desc: "Gender, height, weight, size", icon: "person" },
+      { path: "/onboarding/2", label: "Step 2 — Body Profile", desc: "Gender, silhouette, body type", icon: "person" },
       { path: "/onboarding/3", label: "Step 3 — Aesthetic & Photo", desc: "Style selection, photo upload", icon: "palette" },
       { path: "/onboarding/4", label: "Step 4 — Preferences", desc: "Budget, packing style, priorities", icon: "tune" },
     ],
@@ -23,13 +23,12 @@ const PAGES = [
     section: "Preview & Checkout",
     routes: [
       { path: "/preview", label: "Preview & Pricing", desc: "AI preview, plan comparison, Polar checkout", icon: "preview" },
-      { path: "/checkout/success?plan=standard", label: "Checkout Success", desc: "Payment verification, redirect", icon: "check_circle" },
+      { path: "/checkout/success?plan=pro", label: "Checkout Success", desc: "Payment verification, redirect", icon: "check_circle" },
     ],
   },
   {
     section: "Dashboards",
     routes: [
-      { path: "/dashboard/standard", label: "Standard Dashboard (Free)", desc: "1 city, 4 outfits, packing list", icon: "dashboard" },
       { path: "/dashboard/pro", label: "Pro Dashboard ($3.99)", desc: "Multi-city, weather, activities", icon: "star" },
       { path: "/dashboard/annual", label: "Annual Dashboard ($9.99/yr)", desc: "Style DNA, VIP, trip history", icon: "workspace_premium" },
     ],

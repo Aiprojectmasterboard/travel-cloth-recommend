@@ -269,12 +269,13 @@ export function AnnualDashboard() {
 
   // Use onboarding data first; fall back to API result profile (survives page refresh)
   const profile = useMemo(() => {
-    const hasOnboardingProfile = onboarding.gender || onboarding.height || onboarding.weight;
+    const hasOnboardingProfile = onboarding.gender || onboarding.silhouette || onboarding.height || onboarding.weight;
     if (hasOnboardingProfile) return buildProfile(onboarding);
     return buildProfile({
       gender: result?.gender || onboarding.gender || "female",
       height: result?.height_cm ? String(result.height_cm) : onboarding.height,
       weight: result?.weight_kg ? String(result.weight_kg) : onboarding.weight,
+      silhouette: onboarding.silhouette || undefined,
       aesthetics: result?.aesthetics?.length ? result.aesthetics : onboarding.aesthetics,
       photo: onboarding.photo,
     });
@@ -698,6 +699,7 @@ export function AnnualDashboard() {
               gender={profile.gender}
               height={profile.height}
               weight={profile.weight}
+              silhouette={profile.silhouette}
               aesthetics={profile.aesthetics}
               photo={profile.photo}
               faceUrl={onboarding.faceUrl}

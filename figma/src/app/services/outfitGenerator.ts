@@ -18,8 +18,9 @@
 
 export interface UserProfile {
   gender: string;        // "male" | "female" | "non-binary"
-  height: string;        // cm
-  weight: string;        // kg
+  height: string;        // cm (legacy)
+  weight: string;        // kg (legacy)
+  silhouette?: string;   // "petite" | "standard" | "tall" | "plus"
   aesthetics: string[];  // ["Casual","Minimalist", ...]
   photo: string;         // base64 data-URL or ""
 }
@@ -669,7 +670,7 @@ function comboFingerprint(items: PoolItem[]): string {
   return items.map(i => i.name).sort().join("|");
 }
 
-function getOutfitImages(gender: string, cityKey: string): string[] {
+export function getOutfitImages(gender: string, cityKey: string): string[] {
   const pool = gender === "male" ? MALE_OUTFITS : FEMALE_OUTFITS;
   const key = cityKey.toLowerCase() as keyof typeof pool;
   return pool[key] || pool._default;
@@ -917,6 +918,7 @@ export function buildProfile(data: {
   gender: string;
   height: string;
   weight: string;
+  silhouette?: string;
   aesthetics: string[];
   photo: string;
 }): UserProfile {
@@ -924,6 +926,7 @@ export function buildProfile(data: {
     gender: data.gender || "female",
     height: data.height,
     weight: data.weight,
+    silhouette: data.silhouette,
     aesthetics: data.aesthetics,
     photo: data.photo,
   };

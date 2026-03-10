@@ -7,7 +7,7 @@ import {
   type PreviewRequest,
 } from "../lib/api";
 import { getTurnstileToken } from "../lib/turnstile";
-import { useOnboarding } from "./OnboardingContext";
+import { useOnboarding, silhouetteToBodyMetrics } from "./OnboardingContext";
 import { useLang } from "./LanguageContext";
 
 // ─── State ─────────────────────────────────────────────────────────────────
@@ -92,8 +92,13 @@ export function TripProvider({ children }: { children: ReactNode }) {
       const firstFrom = onboarding.cities[0]?.fromDate;
       const month = firstFrom ? new Date(firstFrom).getMonth() + 1 : new Date().getMonth() + 1;
 
-      const ht = parseFloat(onboarding.height);
-      const wt = parseFloat(onboarding.weight);
+      // Map silhouette → height_cm / weight_kg (backward compat with Worker)
+      const bodyMetrics = silhouetteToBodyMetrics(onboarding.silhouette);
+      // Legacy fallback: if user has old height/weight data, use it
+      const legacyHt = parseFloat(onboarding.height);
+      const legacyWt = parseFloat(onboarding.weight);
+      const ht = bodyMetrics.height_cm ?? (!isNaN(legacyHt) && legacyHt > 0 ? legacyHt : NaN);
+      const wt = bodyMetrics.weight_kg ?? (!isNaN(legacyWt) && legacyWt > 0 ? legacyWt : NaN);
 
       // Get Turnstile token (compact challenge)
       let turnstileToken: string | undefined;

@@ -24,9 +24,6 @@ import { SharePage } from "./pages/SharePage";
 //   1. Isolates TDZ/init errors so they don't crash the entire app
 //   2. Reduces initial bundle size (~30% of total code is dashboard-only)
 //   3. Code-splits dashboard chunks for faster landing page load
-const LazyStandardDashboard = React.lazy(() =>
-  import("./pages/StandardDashboard").then((m) => ({ default: m.StandardDashboard }))
-);
 const LazyProDashboard = React.lazy(() =>
   import("./pages/ProDashboard").then((m) => ({ default: m.ProDashboard }))
 );
@@ -47,7 +44,6 @@ export const router = createBrowserRouter([
       { path: "onboarding/4", Component: OnboardingStep4 },
       { path: "preview", Component: PreviewPage },
       { path: "checkout/success", Component: CheckoutSuccess },
-      { path: "dashboard/standard", Component: LazyStandardDashboard },
       { path: "dashboard/pro", Component: LazyProDashboard },
       { path: "dashboard/annual", Component: LazyAnnualDashboard },
       { path: "share/:tripId", Component: SharePage },

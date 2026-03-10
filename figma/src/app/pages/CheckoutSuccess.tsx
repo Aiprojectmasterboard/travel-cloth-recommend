@@ -124,7 +124,7 @@ export function CheckoutSuccess() {
     } catch { return null; }
   })();
 
-  const plan = (searchParams.get("plan") || sessionStorage.getItem("tc_pending_plan") || pendingCheckout?.plan || "standard") as PlanKey;
+  const plan = (searchParams.get("plan") || sessionStorage.getItem("tc_pending_plan") || pendingCheckout?.plan || "pro") as PlanKey;
   const tripId = searchParams.get("tripId") || ctxTripId || pendingCheckout?.tripId || "";
   const checkoutId = searchParams.get("checkout_id") || pendingCheckout?.checkoutId || "";
 
@@ -282,10 +282,10 @@ export function CheckoutSuccess() {
               </div>
               <div className="text-left">
                 <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  {plan === "standard" ? "Standard Plan \u2014 Free" : plan === "pro" ? "Pro Plan \u2014 $3.99" : "Annual Plan \u2014 $9.99/yr"}
+                  {plan === "pro" ? "Pro Plan \u2014 $3.99" : "Annual Plan \u2014 $9.99/yr"}
                 </span>
                 <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-                  {plan === "standard" ? "AI outfit + capsule list + daily plan" : plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regen" : "12 trips/yr, priority AI, 1 regen, VIP concierge"}
+                  {plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regen" : "12 trips/yr, priority AI, 1 regen, VIP concierge"}
                 </span>
               </div>
             </div>

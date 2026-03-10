@@ -1,9 +1,9 @@
 import wardrobeImg from "../../assets/94873ae744f2a797c5c10269a41b6763829932a2.png";
-import React, { useState } from "react";
+import React from "react";
 import { useNavigate } from "react-router";
 import { OnboardingLayout } from "../components/travel-capsule/OnboardingLayout";
-import { ProgressBar, BtnPrimary, BtnSecondary, Icon, TCInput } from "../components/travel-capsule";
-import { useOnboarding } from "../context/OnboardingContext";
+import { ProgressBar, BtnPrimary, BtnSecondary, Icon } from "../components/travel-capsule";
+import { useOnboarding, type Silhouette } from "../context/OnboardingContext";
 import { GA } from "../lib/analytics";
 import { useLang } from "../context/LanguageContext";
 import { SEO } from "../components/SEO";
@@ -14,84 +14,68 @@ const GENDERS = [
   { value: "non-binary", labelKey: "onboarding2.genderNonBinary", icon: "transgender" },
 ];
 
-/** Convert cm to { ft, in } */
-function cmToFtIn(cm: number): { ft: number; inches: number } {
-  const totalInches = cm / 2.54;
-  return { ft: Math.floor(totalInches / 12), inches: Math.round(totalInches % 12) };
-}
-/** Convert ft + inches to cm */
-function ftInToCm(ft: number, inches: number): number {
-  return Math.round((ft * 12 + inches) * 2.54);
-}
-/** Convert kg to lbs */
-function kgToLb(kg: number): number {
-  return Math.round(kg * 2.2046);
-}
-/** Convert lbs to kg */
-function lbToKg(lb: number): number {
-  return Math.round(lb / 2.2046);
+const SILHOUETTES: { value: Silhouette; labelKey: string }[] = [
+  { value: "petite", labelKey: "onboarding2.silhouettePetite" },
+  { value: "standard", labelKey: "onboarding2.silhouetteStandard" },
+  { value: "tall", labelKey: "onboarding2.silhouetteTall" },
+  { value: "plus", labelKey: "onboarding2.silhouettePlus" },
+];
+
+/** Stick-figure SVG icons for each silhouette type */
+function SilhouetteIcon({ type, selected }: { type: Silhouette; selected: boolean }) {
+  const color = selected ? "#C4613A" : "#78716c";
+  const size = 48;
+  switch (type) {
+    case "petite":
+      return (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="10" r="4" stroke={color} strokeWidth="2" />
+          <line x1="24" y1="14" x2="24" y2="30" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="18" y1="20" x2="30" y2="20" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="19" y2="40" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="29" y2="40" stroke={color} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case "standard":
+      return (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="8" r="4" stroke={color} strokeWidth="2" />
+          <line x1="24" y1="12" x2="24" y2="30" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="16" y1="20" x2="32" y2="20" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="18" y2="42" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="30" y2="42" stroke={color} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case "tall":
+      return (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="6" r="4" stroke={color} strokeWidth="2" />
+          <line x1="24" y1="10" x2="24" y2="30" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="15" y1="19" x2="33" y2="19" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="17" y2="44" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="31" y2="44" stroke={color} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    case "plus":
+      return (
+        <svg width={size} height={size} viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="8" r="4" stroke={color} strokeWidth="2" />
+          <line x1="24" y1="12" x2="24" y2="30" stroke={color} strokeWidth="2.5" strokeLinecap="round" />
+          <line x1="15" y1="20" x2="33" y2="20" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <ellipse cx="24" cy="24" rx="7" ry="5" stroke={color} strokeWidth="1.5" />
+          <line x1="24" y1="30" x2="18" y2="42" stroke={color} strokeWidth="2" strokeLinecap="round" />
+          <line x1="24" y1="30" x2="30" y2="42" stroke={color} strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }
 
 export function OnboardingStep2() {
   const navigate = useNavigate();
   const { data, setData } = useOnboarding();
   const { t } = useLang();
-  const [unit, setUnit] = useState<"metric" | "imperial">("metric");
-
-  // Imperial display state (derived from metric values on switch)
-  const [impFt, setImpFt] = useState("");
-  const [impIn, setImpIn] = useState("");
-  const [impLb, setImpLb] = useState("");
-
-  function switchToImperial() {
-    const cm = parseFloat(data.height);
-    const kg = parseFloat(data.weight);
-    if (!isNaN(cm) && cm > 0) {
-      const { ft, inches } = cmToFtIn(cm);
-      setImpFt(String(ft));
-      setImpIn(String(inches));
-    } else {
-      setImpFt("");
-      setImpIn("");
-    }
-    if (!isNaN(kg) && kg > 0) {
-      setImpLb(String(kgToLb(kg)));
-    } else {
-      setImpLb("");
-    }
-    setUnit("imperial");
-  }
-
-  function switchToMetric() {
-    const ft = parseInt(impFt, 10);
-    const inches = parseInt(impIn, 10);
-    const lb = parseFloat(impLb);
-    if (!isNaN(ft) && !isNaN(inches)) {
-      setData((prev) => ({ ...prev, height: String(ftInToCm(ft || 0, inches || 0)) }));
-    }
-    if (!isNaN(lb) && lb > 0) {
-      setData((prev) => ({ ...prev, weight: String(lbToKg(lb)) }));
-    }
-    setUnit("metric");
-  }
-
-  function handleImpFtChange(v: string) {
-    setImpFt(v);
-    const ft = parseInt(v, 10);
-    const inches = parseInt(impIn, 10) || 0;
-    if (!isNaN(ft)) setData((prev) => ({ ...prev, height: String(ftInToCm(ft, inches)) }));
-  }
-  function handleImpInChange(v: string) {
-    setImpIn(v);
-    const ft = parseInt(impFt, 10) || 0;
-    const inches = parseInt(v, 10);
-    if (!isNaN(inches)) setData((prev) => ({ ...prev, height: String(ftInToCm(ft, inches)) }));
-  }
-  function handleImpLbChange(v: string) {
-    setImpLb(v);
-    const lb = parseFloat(v);
-    if (!isNaN(lb) && lb > 0) setData((prev) => ({ ...prev, weight: String(lbToKg(lb)) }));
-  }
 
   return (
     <>
@@ -152,87 +136,43 @@ export function OnboardingStep2() {
         </div>
       </div>
 
-      {/* Body Info */}
+      {/* Silhouette Selection */}
       <div className="mt-10">
-        <div className="flex items-center justify-between mb-1">
-          <label
-            className="text-[11px] uppercase tracking-[0.12em] text-[#57534e]"
-            style={{ fontFamily: "var(--font-mono)" }}
-          >
-            {t("onboarding2.bodyInfo")}
-          </label>
-          {/* Unit toggle */}
-          <div className="flex items-center gap-0 rounded-lg border border-[#E8DDD4] overflow-hidden">
-            <button
-              onClick={() => unit === "imperial" && switchToMetric()}
-              className={`px-3 py-2 text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer ${
-                unit === "metric"
-                  ? "bg-[#C4613A] text-white"
-                  : "bg-white text-[#57534e] hover:bg-[#FDF8F3]"
-              }`}
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              CM / KG
-            </button>
-            <button
-              onClick={() => unit === "metric" && switchToImperial()}
-              className={`px-3 py-2 text-[11px] uppercase tracking-[0.08em] transition-colors cursor-pointer ${
-                unit === "imperial"
-                  ? "bg-[#C4613A] text-white"
-                  : "bg-white text-[#57534e] hover:bg-[#FDF8F3]"
-              }`}
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              FT / LB
-            </button>
-          </div>
-        </div>
+        <label
+          className="text-[11px] uppercase tracking-[0.12em] text-[#57534e] block mb-1"
+          style={{ fontFamily: "var(--font-mono)" }}
+        >
+          {t("onboarding2.silhouette")}
+        </label>
         <span className="text-[12px] text-[#57534e]/60 block mb-4" style={{ fontFamily: "var(--font-body)" }}>
-          {t("onboarding2.bodyInfoHint")}
+          {t("onboarding2.silhouetteHint")}
         </span>
-
-        {unit === "metric" ? (
-          <div className="grid grid-cols-2 gap-4">
-            <TCInput
-              label={t("onboarding2.heightCm")}
-              placeholder="175"
-              type="number"
-              value={data.height}
-              onChange={(e) => setData((prev) => ({ ...prev, height: e.target.value }))}
-            />
-            <TCInput
-              label={t("onboarding2.weightKg")}
-              placeholder="70"
-              type="number"
-              value={data.weight}
-              onChange={(e) => setData((prev) => ({ ...prev, weight: e.target.value }))}
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-3">
-            <TCInput
-              label={t("onboarding2.heightFt")}
-              placeholder="5"
-              type="number"
-              value={impFt}
-              onChange={(e) => handleImpFtChange(e.target.value)}
-            />
-            <TCInput
-              label={t("onboarding2.heightIn")}
-              placeholder="9"
-              type="number"
-              value={impIn}
-              onChange={(e) => handleImpInChange(e.target.value)}
-            />
-            <TCInput
-              label={t("onboarding2.weightLb")}
-              placeholder="154"
-              type="number"
-              value={impLb}
-              onChange={(e) => handleImpLbChange(e.target.value)}
-            />
-          </div>
-        )}
+        <div className="grid grid-cols-4 gap-3">
+          {SILHOUETTES.map((s) => {
+            const selected = data.silhouette === s.value;
+            return (
+              <button
+                key={s.value}
+                onClick={() => setData((prev) => ({ ...prev, silhouette: s.value }))}
+                className={`
+                  flex flex-col items-center gap-2 py-4 px-2 rounded-xl border-2 transition-all cursor-pointer
+                  ${selected
+                    ? "border-[#C4613A] bg-[#C4613A]/5"
+                    : "border-[#E8DDD4] bg-white hover:border-[#C4613A]/30"
+                  }
+                `}
+              >
+                <SilhouetteIcon type={s.value} selected={selected} />
+                <span
+                  className={`text-[13px] ${selected ? "text-[#C4613A]" : "text-[#292524]"}`}
+                  style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                >
+                  {t(s.labelKey)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* Navigation */}

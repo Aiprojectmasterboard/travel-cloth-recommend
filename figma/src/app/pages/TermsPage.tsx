@@ -67,16 +67,6 @@ export function TermsPage() {
           <Section title="Plans & Pricing">
             <div className="space-y-4">
               <PlanBox
-                name="Standard — Free"
-                type="One-time purchase"
-                items={[
-                  "1 AI outfit image (full resolution) + 3 unlocked previews",
-                  "Full capsule wardrobe item list",
-                  "Day-by-day outfit plan",
-                  "No expiry on results",
-                ]}
-              />
-              <PlanBox
                 name="Pro — $3.99"
                 type="One-time purchase"
                 items={[

@@ -665,29 +665,7 @@ export function LandingPage() {
               {t("pricing.title")}
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-[1000px] mx-auto">
-            {/* Standard */}
-            <div className="relative flex flex-col p-8 bg-white border border-[#C4613A]/10 rounded-2xl">
-              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-[#C4613A] to-[#e0734a] text-white text-[10px] uppercase tracking-[0.12em] rounded-full animate-pulse" style={{ fontFamily: bodyFont, fontWeight: 600 }}>{t("pricing.promoBadge")}</span>
-              <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: displayFont }}>Standard</h3>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-[24px] text-[#57534e] line-through opacity-60" style={{ fontFamily: displayFont, fontWeight: 500 }}>{t("pricing.originalPrice")}</span>
-                <span className="text-[48px] text-[#C4613A]" style={{ fontFamily: displayFont, fontWeight: 700 }}>{t("pricing.promoFree")}</span>
-              </div>
-              <span className="text-[12px] text-[#C4613A] mt-1 block" style={{ fontFamily: bodyFont, fontWeight: 500 }}>{t("pricing.promoNote")}</span>
-              <div className="mt-6 flex flex-col gap-3 flex-1">
-                {[1,2,3,4,5].map((n) => (
-                  <div key={n} className="flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[#C4613A]" style={{ fontSize: 20, fontVariationSettings: "'FILL' 1" }}>check_circle</span>
-                    <span className="text-[14px] text-[#57534e]" style={{ fontFamily: bodyFont }}>{t(`pricing.standard.features.${n}`)}</span>
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => navigate("/onboarding/1")} className="mt-8 h-[56px] w-full bg-white border-2 border-[#C4613A] text-[#C4613A] text-[14px] uppercase tracking-[0.08em] rounded-xl hover:bg-[#C4613A] hover:text-white transition-all cursor-pointer" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
-                {t("pricing.standard.cta")}
-              </button>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-[800px] mx-auto">
             {/* Pro */}
             <div className="relative flex flex-col p-8 bg-[#C4613A] text-white rounded-2xl" style={{ boxShadow: "0 4px 16px rgba(196,97,58,.25)" }}>
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-[#1A1410] text-white text-[10px] uppercase tracking-[0.12em] rounded-full" style={{ fontFamily: bodyFont, fontWeight: 600 }}>
