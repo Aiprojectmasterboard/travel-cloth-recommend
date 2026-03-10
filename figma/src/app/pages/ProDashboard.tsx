@@ -13,7 +13,7 @@ import {
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
-import { useOnboarding, silhouetteToBodyMetrics } from "../context/OnboardingContext";
+import { useOnboarding } from "../context/OnboardingContext";
 import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import {
@@ -150,78 +150,61 @@ export function ProDashboard() {
     }
   }, [isLoggedIn, setShowSignupPrompt]);
 
-  // ─── AI Image Generation (client-side fallback when webhook pipeline hasn't completed) ───
-  const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
+  // ─── AI Pipeline Trigger (runs full capsule+style+imageGen pipeline synchronously) ───
   const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
-  const generationStarted = useRef(false);
+  const pipelineTriggered = useRef(false);
 
+  // State for regenerated images (regenerate replaces a single city grid image)
+  const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
   interface AiItem { name: string; category: string; desc: string; essential: boolean; }
-  const [aiOutfitItems, setAiOutfitItems] = useState<Record<string, AiItem[]>>({});
+  const [aiOutfitItems] = useState<Record<string, AiItem[]>>({});
 
   useEffect(() => {
     if (hasApiImages) {
       setGenStatus("done");
       return;
     }
-    if (generationStarted.current) return;
-    generationStarted.current = true;
+    if (pipelineTriggered.current || !tripId) return;
+    pipelineTriggered.current = true;
 
     let cancelled = false;
-    async function generateImages() {
+    async function triggerPipeline() {
       try {
         setGenStatus("generating");
-        const face_url = onboarding.faceUrl || undefined;
-        const resolvedCities =
-          onboarding.cities.length > 0
-            ? onboarding.cities.map((c) => ({ city: c.city, country: c.country }))
-            : result?.cities?.length
-            ? result.cities.map((c) => ({ city: c.name, country: c.country }))
-            : [{ city: "Paris", country: "France" }];
+        console.log("[ProDashboard] Triggering server pipeline for trip", tripId);
 
-        const silMetrics = silhouetteToBodyMetrics(onboarding.silhouette);
-        const ht = silMetrics.height_cm || parseFloat(onboarding.height) || result?.height_cm || 0;
-        const wt = silMetrics.weight_kg || parseFloat(onboarding.weight) || result?.weight_kg || 0;
-
-        const res = await fetch(`${WORKER_URL}/api/generate`, {
+        const res = await fetch(`${WORKER_URL}/api/trigger-pipeline/${tripId}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            cities: resolvedCities,
-            gender: onboarding.gender || result?.gender || "female",
-            height_cm: ht > 0 ? ht : undefined,
-            weight_kg: wt > 0 ? wt : undefined,
-            aesthetics: onboarding.aesthetics?.length ? onboarding.aesthetics : result?.aesthetics ?? [],
-            face_url,
-            count_per_city: 4,
-          }),
         });
-        if (cancelled) return;
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const data = (await res.json()) as {
-          images: Array<{ city: string; mood: string; image_url?: string; success: boolean }>;
-          outfitItems?: Record<string, AiItem[]>;
-        };
-        const newMap = new Map<string, string>();
-        for (const img of data.images) {
-          if (img.success && img.image_url) newMap.set(`${img.city}::${img.mood}`, img.image_url);
+        if (cancelled) return;
+
+        const data = await res.json() as { ok: boolean; already_completed?: boolean; error?: string };
+
+        if (!res.ok) {
+          console.error("[ProDashboard] Pipeline failed:", data.error);
+          setGenStatus("error");
+          return;
         }
+
+        // Pipeline completed — reload result data to get capsule + images
+        console.log("[ProDashboard] Pipeline completed, reloading result...");
         if (!cancelled) {
-          setAiImages(newMap);
-          if (data.outfitItems) setAiOutfitItems(data.outfitItems);
+          await loadResult(tripId);
           setGenStatus("done");
         }
       } catch (err) {
         if (!cancelled) {
-          console.error("[ProDashboard] Generation error:", err);
+          console.error("[ProDashboard] Pipeline trigger error:", err);
           setGenStatus("error");
         }
       }
     }
-    generateImages();
+    triggerPipeline();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasApiImages]);
+  }, [hasApiImages, tripId]);
 
   // ─── Data sources ───
   const apiWeather: WeatherData[] = result?.weather || preview?.weather || [];
@@ -431,7 +414,7 @@ export function ProDashboard() {
 
   const gridImageUrl = getGridImageUrl(currentSet.city);
   const isGeneratingImages = genStatus === "generating";
-  const imagesReady = (genStatus === "done" && aiImages.size > 0) || hasApiImages;
+  const imagesReady = genStatus === "done" || hasApiImages;
 
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">

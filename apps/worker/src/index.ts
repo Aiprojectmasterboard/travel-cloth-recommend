@@ -226,26 +226,63 @@ app.onError((err, c) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// DEBUG: Synchronous runResult trigger (temporary — remove after fixing)
+// POST /api/trigger-pipeline/:tripId — Client-triggered pipeline execution
 // ─────────────────────────────────────────────────────────────────────────────
+// The Polar webhook's waitUntil(runResult()) hits Cloudflare's background task
+// wall-time limit (~30s) before the full AI pipeline completes (~60-90s).
+// This endpoint lets the dashboard trigger the pipeline synchronously, keeping
+// the HTTP connection alive so the Worker doesn't get killed.
+// Idempotency: skips if capsule_results already exist for this trip.
 
-app.post('/api/debug/run-result/:tripId', async (c) => {
+app.post('/api/trigger-pipeline/:tripId', async (c) => {
   const tripId = c.req.param('tripId');
-  const plan = ((c.req.query('plan') as string) || 'pro') as PlanType;
-  const email = (c.req.query('email') as string) || 'debug@test.com';
 
+  if (!isValidUUID(tripId)) {
+    return c.json({ error: 'Invalid trip_id' }, 400);
+  }
+
+  // 1. Verify this trip has a paid order
+  const orderRes = await supabase(c.env, `/orders?trip_id=eq.${tripId}&status=eq.paid&limit=1`);
+  const orders = (await orderRes.json()) as Array<{ plan: string; id: string }>;
+  if (orders.length === 0) {
+    return c.json({ error: 'No paid order found for this trip' }, 402);
+  }
+  const plan = (orders[0].plan || 'pro') as PlanType;
+
+  // 2. Idempotency: skip if capsule_results already exist
+  const capsuleRes = await supabase(c.env, `/capsule_results?trip_id=eq.${tripId}&limit=1`);
+  const capsules = (await capsuleRes.json()) as Array<{ id: string }>;
+  if (capsules.length > 0) {
+    return c.json({ ok: true, already_completed: true });
+  }
+
+  // 3. Check trip isn't already being processed by another request
+  const tripRes = await supabase(c.env, `/trips?id=eq.${tripId}&limit=1`);
+  const trips = (await tripRes.json()) as Array<{ status: string }>;
+  if (trips.length === 0) {
+    return c.json({ error: 'Trip not found' }, 404);
+  }
+
+  // 4. Get user email from order or trip
+  const emailRes = await supabase(c.env, `/orders?trip_id=eq.${tripId}&limit=1&select=id`);
+  const userEmail = ''; // email is optional for pipeline
+
+  // 5. Run the pipeline synchronously
   try {
-    console.log(`[DEBUG] Triggering runResult synchronously for trip ${tripId}, plan=${plan}`);
-    await runResult(tripId, plan, email, c.env);
-    return c.json({ ok: true, message: `runResult completed for ${tripId}` });
+    console.log(`[trigger-pipeline] Starting ${plan} pipeline for trip ${tripId}`);
+    await runResult(tripId, plan, userEmail, c.env);
+    return c.json({ ok: true, message: `Pipeline completed for ${tripId}` });
   } catch (err) {
     const error = err as Error;
-    console.error(`[DEBUG] runResult error:`, error.message, error.stack);
-    return c.json({
-      ok: false,
-      error: error.message,
-      stack: error.stack,
-    }, 500);
+    console.error(`[trigger-pipeline] Pipeline failed for trip ${tripId}:`, error.message);
+
+    // Mark trip as failed
+    await supabase(c.env, `/trips?id=eq.${tripId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'failed' }),
+    });
+
+    return c.json({ ok: false, error: error.message }, 500);
   }
 });
 
