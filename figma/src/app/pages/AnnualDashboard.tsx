@@ -14,7 +14,7 @@ import {
   SizeChip,
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
-import { useOnboarding } from "../context/OnboardingContext";
+import { useOnboarding, silhouetteToBodyMetrics } from "../context/OnboardingContext";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
@@ -224,8 +224,9 @@ export function AnnualDashboard() {
             ? result.cities.map((c: { name: string; country: string }) => ({ city: c.name, country: c.country }))
             : [{ city: "Tokyo", country: "Japan" }];
 
-        const ht = parseFloat(onboarding.height) || result?.height_cm || 0;
-        const wt = parseFloat(onboarding.weight) || result?.weight_kg || 0;
+        const silMetrics = silhouetteToBodyMetrics(onboarding.silhouette);
+        const ht = silMetrics.height_cm || parseFloat(onboarding.height) || result?.height_cm || 0;
+        const wt = silMetrics.weight_kg || parseFloat(onboarding.weight) || result?.weight_kg || 0;
 
         const res = await fetch(`${WORKER_URL}/api/generate`, {
           method: "POST",

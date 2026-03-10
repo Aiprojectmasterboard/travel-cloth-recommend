@@ -13,7 +13,7 @@ import {
 } from "../components/travel-capsule";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { useAuth } from "../context/AuthContext";
-import { useOnboarding } from "../context/OnboardingContext";
+import { useOnboarding, silhouetteToBodyMetrics } from "../context/OnboardingContext";
 import { useTrip } from "../context/TripContext";
 import { useLang } from "../context/LanguageContext";
 import {
@@ -178,8 +178,9 @@ export function ProDashboard() {
             ? result.cities.map((c) => ({ city: c.name, country: c.country }))
             : [{ city: "Paris", country: "France" }];
 
-        const ht = parseFloat(onboarding.height) || result?.height_cm || 0;
-        const wt = parseFloat(onboarding.weight) || result?.weight_kg || 0;
+        const silMetrics = silhouetteToBodyMetrics(onboarding.silhouette);
+        const ht = silMetrics.height_cm || parseFloat(onboarding.height) || result?.height_cm || 0;
+        const wt = silMetrics.weight_kg || parseFloat(onboarding.weight) || result?.weight_kg || 0;
 
         const res = await fetch(`${WORKER_URL}/api/generate`, {
           method: "POST",

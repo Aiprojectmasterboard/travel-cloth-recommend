@@ -922,10 +922,23 @@ export function buildProfile(data: {
   aesthetics: string[];
   photo: string;
 }): UserProfile {
+  // When silhouette is set but height/weight are empty, derive from silhouette
+  let height = data.height;
+  let weight = data.weight;
+  if (data.silhouette && (!height || height === "0")) {
+    const metrics: Record<string, { h: string; w: string }> = {
+      petite:   { h: "158", w: "50" },
+      standard: { h: "170", w: "65" },
+      tall:     { h: "183", w: "75" },
+      plus:     { h: "170", w: "95" },
+    };
+    const m = metrics[data.silhouette];
+    if (m) { height = m.h; weight = m.w; }
+  }
   return {
     gender: data.gender || "female",
-    height: data.height,
-    weight: data.weight,
+    height,
+    weight,
     silhouette: data.silhouette,
     aesthetics: data.aesthetics,
     photo: data.photo,
