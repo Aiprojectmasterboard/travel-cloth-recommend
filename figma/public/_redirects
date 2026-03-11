@@ -1,1 +1,5 @@
+# 301 redirect: pages.dev → custom domain (SEO canonical)
+https://travel-cloth-recommend.pages.dev/* https://travelscapsule.com/:splat 301
+
+# SPA fallback — must be last
 /* /index.html 200

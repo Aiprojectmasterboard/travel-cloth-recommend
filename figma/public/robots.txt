@@ -1,5 +1,5 @@
 # Travel Capsule AI — https://travelscapsule.com
-# Last updated: 2026-03-07
+# Last updated: 2026-03-11
 
 User-agent: *
 Allow: /
@@ -30,11 +30,3 @@ Allow: /*.svg$
 
 # Sitemaps
 Sitemap: https://travelscapsule.com/sitemap.xml
-
-# Crawl-delay for polite crawling
-Crawl-delay: 1
-
-# Google-specific
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 0

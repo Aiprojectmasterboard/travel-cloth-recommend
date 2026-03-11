@@ -1,1 +1,25 @@
-{"name":"Travel Capsule AI","short_name":"TravelCapsule","icons":[{"src":"/android-chrome-192x192.png","sizes":"192x192","type":"image/png"},{"src":"/android-chrome-512x512.png","sizes":"512x512","type":"image/png"}],"theme_color":"#ffffff","background_color":"#ffffff","display":"standalone"}
+{
+  "name": "Travel Capsule AI",
+  "short_name": "TravelCapsule",
+  "description": "AI-powered travel outfit planner for 100+ cities worldwide",
+  "start_url": "/",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/android-chrome-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#C4613A",
+  "background_color": "#FDF8F3",
+  "display": "standalone",
+  "orientation": "portrait",
+  "lang": "en",
+  "categories": ["lifestyle", "travel", "shopping"]
+}

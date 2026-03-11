@@ -1,0 +1,26 @@
+# Security & SEO headers for all pages
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: SAMEORIGIN
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+
+# Cache static assets aggressively (Vite hashed filenames)
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Cache images
+/examples/*
+  Cache-Control: public, max-age=604800
+
+# Don't cache HTML (SPA shell — always fresh)
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
+
+# Sitemap & robots
+/sitemap.xml
+  Cache-Control: public, max-age=86400
+  Content-Type: application/xml
+
+/robots.txt
+  Cache-Control: public, max-age=86400
