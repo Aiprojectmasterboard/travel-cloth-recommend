@@ -40,7 +40,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy figma/dist --project-name=travel-cloth-recommend --commit-dirty=true
+          command: pages deploy figma/dist --project-name=travel-cloth-recommend --commit-dirty=true --functions-dir=figma/functions
 
   deploy-worker:
     name: Deploy Cloudflare Worker + Secrets
