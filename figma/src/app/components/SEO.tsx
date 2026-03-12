@@ -164,12 +164,9 @@ export function buildWebAppSchema() {
       "Capsule wardrobe packing list",
       "Multi-city trip planning",
     ],
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "1240",
-      bestRating: "5",
-    },
+    screenshot: `${SITE_URL}/og-image.png`,
+    softwareVersion: "1.0",
+    datePublished: "2026-03-01",
   };
 }
 
