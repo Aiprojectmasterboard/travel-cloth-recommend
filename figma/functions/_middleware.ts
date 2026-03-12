@@ -1,7 +1,8 @@
 /**
  * Cloudflare Pages Functions Middleware
- * Injects per-route <title>, <meta description>, <canonical>, OG tags
- * so that Google bot sees unique content per page BEFORE JS executes.
+ * 1. SPA fallback: serves index.html for non-static routes (replaces _redirects)
+ * 2. Injects per-route <title>, <meta description>, <canonical>, OG tags
+ *    so Google bot sees unique content per page BEFORE JS executes.
  */
 
 interface RouteMetadata {
@@ -71,31 +72,51 @@ const ROUTE_META: Record<string, RouteMetadata> = {
   },
 };
 
-export const onRequest: PagesFunction = async (context) => {
-  const response = await context.next();
+// Static file extensions — pass through directly, no SPA fallback
+const STATIC_EXT = /\.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?|ttf|eot|webp|webmanifest|xml|txt|json|map)$/i;
 
-  // Only modify HTML responses (not JS, CSS, images, etc.)
+export const onRequest: PagesFunction = async (context) => {
+  const url = new URL(context.request.url);
+  const pathname = url.pathname;
+
+  // Static assets: pass through directly
+  if (STATIC_EXT.test(pathname)) {
+    return context.next();
+  }
+
+  // Try serving the original path first
+  let response = await context.next();
+
+  // SPA fallback: if the path returns 404, serve index.html instead
+  if (response.status === 404) {
+    const indexUrl = new URL("/index.html", context.request.url);
+    const indexRequest = new Request(indexUrl.toString(), context.request);
+    response = await context.env.ASSETS.fetch(indexRequest);
+  }
+
+  // Only modify HTML responses
   const contentType = response.headers.get("content-type") || "";
   if (!contentType.includes("text/html")) {
     return response;
   }
 
-  const url = new URL(context.request.url);
-  const pathname = url.pathname.replace(/\/$/, "") || "/";
+  const normalizedPath = pathname.replace(/\/$/, "") || "/";
 
-  // Dynamic routes: /share/:tripId
-  let meta = ROUTE_META[pathname];
-  if (!meta && pathname.startsWith("/share/")) {
+  // Match route metadata
+  let meta = ROUTE_META[normalizedPath];
+  if (!meta && normalizedPath.startsWith("/share/")) {
     meta = {
       title: "My AI Travel Capsule — See My Outfit Plan | Travel Capsule AI",
       description:
         "Check out my AI-generated travel capsule wardrobe! Weather-adapted outfits, city vibe styling, and a complete packing list — all created by AI.",
-      canonical: `${SITE_URL}${pathname}`,
+      canonical: `${SITE_URL}${normalizedPath}`,
       ogTitle: "My AI Travel Capsule Wardrobe",
       ogDescription:
         "AI created a personalized travel wardrobe for my trip. See the outfits, packing list, and daily plan!",
     };
   }
+
+  // No meta for this route — return unmodified HTML
   if (!meta) {
     return response;
   }
