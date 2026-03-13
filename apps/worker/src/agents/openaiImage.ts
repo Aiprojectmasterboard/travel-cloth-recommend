@@ -101,13 +101,18 @@ export async function generateImage(
 
   let lastError: Error | null = null;
   for (const model of models) {
-    const body = {
+    // gpt-image-1.5 always returns b64_json (no response_format param needed).
+    // gpt-image-1 (fallback) requires explicit response_format to get b64_json.
+    const body: Record<string, unknown> = {
       model,
       prompt,
       n: 1,
       size,
       quality,
     };
+    if (model === MODEL_FALLBACK) {
+      body.response_format = 'b64_json';
+    }
 
     const res = await fetch(OPENAI_GENERATIONS_URL, {
       method: 'POST',
@@ -134,15 +139,34 @@ export async function generateImage(
     const data = (await res.json()) as OpenAIImageResponse;
 
     if (data.error) {
+      if (model === MODEL_PRIMARY) {
+        console.warn(`[openaiImage] ${MODEL_PRIMARY} returned error: ${data.error.message}, trying ${MODEL_FALLBACK}...`);
+        lastError = new Error(`OpenAI API error: ${data.error.message}`);
+        continue;
+      }
       throw new Error(`OpenAI API error: ${data.error.message}`);
     }
 
-    const imageData = data.data?.[0]?.b64_json;
-    if (!imageData) {
-      throw new Error('OpenAI returned no image data');
+    // Prefer b64_json; fall back to url if b64_json is absent (should not happen
+    // after setting response_format, but guards against API contract changes).
+    const imageItem = data.data?.[0];
+    if (imageItem?.b64_json) {
+      return b64ToArrayBuffer(imageItem.b64_json);
+    }
+    if (imageItem?.url) {
+      // Fetch the image URL and return the raw bytes
+      const imgRes = await fetch(imageItem.url, { signal: AbortSignal.timeout(60_000) });
+      if (!imgRes.ok) throw new Error(`Failed to fetch image URL: HTTP ${imgRes.status}`);
+      return imgRes.arrayBuffer();
     }
 
-    return b64ToArrayBuffer(imageData);
+    const errMsg = 'OpenAI returned no image data (neither b64_json nor url)';
+    if (model === MODEL_PRIMARY) {
+      console.warn(`[openaiImage] ${errMsg}, trying ${MODEL_FALLBACK}...`);
+      lastError = new Error(errMsg);
+      continue;
+    }
+    throw new Error(errMsg);
   }
 
   throw lastError ?? new Error('Image generation failed after all model attempts');

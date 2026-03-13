@@ -153,7 +153,7 @@ export function OnboardingStep2() {
             return (
               <button
                 key={s.value}
-                onClick={() => setData((prev) => ({ ...prev, silhouette: s.value }))}
+                onClick={() => setData((prev) => ({ ...prev, silhouette: s.value, height: "", weight: "" }))}
                 className={`
                   flex flex-col items-center gap-2 py-4 px-2 rounded-xl border-2 transition-all cursor-pointer
                   ${selected

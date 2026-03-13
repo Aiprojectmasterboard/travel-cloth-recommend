@@ -771,6 +771,26 @@ export async function runResult(
     } as Awaited<ReturnType<typeof capsuleAgent>>;
   }
 
+  // ── 3b. Persist capsule_results NOW — before image generation ──────────────
+  // This ensures capsule data is always saved even if the image pipeline fails.
+  // A second attempt to save (if image gen succeeds) is fine — capsule_results
+  // has a unique constraint on trip_id that we handle with upsert on conflict.
+  try {
+    await sbFetch(env, '/capsule_results', {
+      method: 'POST',
+      headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify({
+        trip_id: tripId,
+        ...(capsule.plan !== 'free' ? capsule : {}),
+        plan: capsule.plan,
+      }),
+    });
+    console.log(`[runResult] capsule_results saved for trip ${tripId}`);
+  } catch (err) {
+    console.error('[runResult] Failed to save capsule_results (early):', (err as Error).message);
+    // Non-fatal — continue with image generation
+  }
+
   // ── 4. Plan-specific image pipeline ──────────────────────────────────────
 
   if (plan === 'pro' || plan === 'annual') {
@@ -820,72 +840,134 @@ export async function runResult(
       }
     }
 
-    // If styleAgent completely failed after retries, throw so the dashboard surfaces the error
-    if (stylePrompts.length === 0) {
-      console.error('[runResult] styleAgent failed after 2 attempts — no prompts generated');
-      throw new Error('styleAgent failed: no prompts generated after 2 attempts');
-    }
-
     // b. Clean up any stale full-image jobs from a previous failed attempt
     try {
       await sbFetch(env, `/generation_jobs?trip_id=eq.${tripId}&job_type=eq.full`, { method: 'DELETE' });
     } catch { /* non-fatal: old rows may not exist */ }
 
-    // c. Generate 4 individual images per city (all in parallel)
-    console.log(`[runResult] Generating ${stylePrompts.length} individual outfit images...`);
-    try {
-      const imageResults = await imageGenAgent(
-        { prompts: stylePrompts, tripId, faceUrl },
-        env
-      );
-
-      // d. Save completed results to generation_jobs (per-image rows, per-city index 0–3)
-      for (const result of imageResults.results) {
-        if (result.success) {
+    if (stylePrompts.length === 0) {
+      // styleAgent failed after retries — insert per-city fallback images so the
+      // dashboard renders something rather than empty slots or a failed trip.
+      console.error('[runResult] styleAgent failed after 2 attempts — inserting city fallback images');
+      for (const city of cities) {
+        for (let i = 0; i < 4; i++) {
           try {
             await sbFetch(env, '/generation_jobs', {
               method: 'POST',
               body: JSON.stringify({
                 trip_id: tripId,
-                city: result.city,
-                mood: result.mood,
+                city: city.name,
+                mood: `fallback-${i}`,
                 status: 'completed',
-                image_url: result.image_url,
+                image_url: getCityFallbackImage(city.name, userProfile.gender),
                 job_type: 'full',
               }),
             });
-          } catch (err) {
-            console.warn(`[runResult] Failed to record job for ${result.city}/${result.mood}:`, (err as Error).message);
+          } catch (insertErr) {
+            console.warn(`[runResult] Failed to insert fallback job for ${city.name}/${i}:`, (insertErr as Error).message);
           }
         }
       }
+    } else {
+      // c. Generate 4 individual images per city (all in parallel)
+      console.log(`[runResult] Generating ${stylePrompts.length} individual outfit images...`);
+      try {
+        const imageResults = await imageGenAgent(
+          { prompts: stylePrompts, tripId, faceUrl },
+          env
+        );
 
-      console.log(`[runResult] Image generation complete: ${imageResults.succeeded} succeeded, ${imageResults.failed} failed`);
-    } finally {
-      // e. Privacy cleanup: delete user-uploaded face AFTER image generation (even on error)
-      if (faceUrl) {
-        await cleanupFace(tripId, faceUrl, env).catch((err) => {
-          console.error('[runResult] Face cleanup failed:', (err as Error).message);
-        });
+        // d. Save completed results to generation_jobs (per-image rows, per-city index 0–3)
+        // Track which cities have at least 1 successful image for fallback insertion
+        const citiesWithImages = new Set<string>();
+        for (const result of imageResults.results) {
+          if (result.success) {
+            citiesWithImages.add(result.city.toLowerCase());
+            try {
+              await sbFetch(env, '/generation_jobs', {
+                method: 'POST',
+                body: JSON.stringify({
+                  trip_id: tripId,
+                  city: result.city,
+                  mood: result.mood,
+                  status: 'completed',
+                  image_url: result.image_url,
+                  job_type: 'full',
+                }),
+              });
+            } catch (err) {
+              console.warn(`[runResult] Failed to record job for ${result.city}/${result.mood}:`, (err as Error).message);
+            }
+          }
+        }
+
+        // e. For any city that had ALL images fail, insert fallback images so the
+        //    dashboard never shows empty slots.
+        for (const city of cities) {
+          if (!citiesWithImages.has(city.name.toLowerCase())) {
+            console.warn(`[runResult] All images failed for ${city.name} — inserting city fallback`);
+            for (let i = 0; i < 4; i++) {
+              try {
+                await sbFetch(env, '/generation_jobs', {
+                  method: 'POST',
+                  body: JSON.stringify({
+                    trip_id: tripId,
+                    city: city.name,
+                    mood: `fallback-${i}`,
+                    status: 'completed',
+                    image_url: getCityFallbackImage(city.name, userProfile.gender),
+                    job_type: 'full',
+                  }),
+                });
+              } catch (insertErr) {
+                console.warn(`[runResult] Failed to insert fallback for ${city.name}/${i}:`, (insertErr as Error).message);
+              }
+            }
+          }
+        }
+
+        console.log(`[runResult] Image generation complete: ${imageResults.succeeded} succeeded, ${imageResults.failed} failed`);
+      } catch (imageErr) {
+        // imageGenAgent itself threw (network error, etc.) — insert fallbacks for all cities
+        console.error('[runResult] imageGenAgent threw — inserting city fallbacks:', (imageErr as Error).message);
+        for (const city of cities) {
+          for (let i = 0; i < 4; i++) {
+            try {
+              await sbFetch(env, '/generation_jobs', {
+                method: 'POST',
+                body: JSON.stringify({
+                  trip_id: tripId,
+                  city: city.name,
+                  mood: `fallback-${i}`,
+                  status: 'completed',
+                  image_url: getCityFallbackImage(city.name, userProfile.gender),
+                  job_type: 'full',
+                }),
+              });
+            } catch (insertErr) {
+              console.warn(`[runResult] Failed to insert fallback for ${city.name}/${i}:`, (insertErr as Error).message);
+            }
+          }
+        }
+      } finally {
+        // f. Privacy cleanup: delete user-uploaded face AFTER image generation (even on error)
+        if (faceUrl) {
+          await cleanupFace(tripId, faceUrl, env).catch((err) => {
+            console.error('[runResult] Face cleanup failed:', (err as Error).message);
+          });
+        }
       }
+    }
+
+    // Face cleanup when styleAgent failed (face not consumed by imageGenAgent)
+    if (stylePrompts.length === 0 && faceUrl) {
+      await cleanupFace(tripId, faceUrl, env).catch((err) => {
+        console.error('[runResult] Face cleanup (post-styleAgent-failure) failed:', (err as Error).message);
+      });
     }
   } else {
     // Standard plan: teaser is already completed — no further image generation.
     // Face cleanup is handled by fulfillmentAgent below.
-  }
-
-  // Save capsule_results
-  try {
-    await sbFetch(env, '/capsule_results', {
-      method: 'POST',
-      body: JSON.stringify({
-        trip_id: tripId,
-        ...(capsule.plan !== 'free' ? capsule : {}),
-        plan: capsule.plan,
-      }),
-    });
-  } catch (err) {
-    console.error('[runResult] Failed to save capsule_results:', (err as Error).message);
   }
 
   // ── 5. Fulfillment (email + face cleanup + temp R2 cleanup) ──────────────
@@ -943,15 +1025,11 @@ const DEFAULT_MODEL_IMAGES = {
 /**
  * Returns the effective face URL for image generation.
  * - If user uploaded a photo → use their photo
- * - If no photo → use default model image based on gender
- * - For non-binary → randomly pick male or female model
+ * - If no photo → return undefined (BUG-004: never inject default model images;
+ *   injecting placeholder photos triggers safety filters and wastes 40s per attempt)
  */
-export function getEffectiveFaceUrl(userFaceUrl: string | undefined, gender: string): string {
-  if (userFaceUrl) return userFaceUrl;
-  if (gender === 'male') return DEFAULT_MODEL_IMAGES.male;
-  if (gender === 'female') return DEFAULT_MODEL_IMAGES.female;
-  // non-binary / unknown → random pick
-  return Math.random() < 0.5 ? DEFAULT_MODEL_IMAGES.male : DEFAULT_MODEL_IMAGES.female;
+export function getEffectiveFaceUrl(userFaceUrl: string | undefined, _gender: string): string | undefined {
+  return userFaceUrl ?? undefined;
 }
 
 // ─── runTeaserBackground ──────────────────────────────────────────────────────

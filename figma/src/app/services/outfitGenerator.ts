@@ -584,14 +584,28 @@ function isInfantProfile(profile: UserProfile): boolean {
 }
 
 function buildBodyFitLabel(profile: UserProfile): string {
-  const h = parseInt(profile.height) || 0;
-  const w = parseInt(profile.weight) || 0;
   const gender = profile.gender || "female";
   const gLabel = gender === "male" ? "Male" : gender === "non-binary" ? "Non-binary" : "Female";
+  const aesthetic = profile.aesthetics[0] || "Classic";
 
-  if (isInfantProfile(profile)) return `Baby · ${h}cm · ${w}kg · Stroller outfit`;
+  if (isInfantProfile(profile)) {
+    const h = parseInt(profile.height) || 0;
+    const w = parseInt(profile.weight) || 0;
+    return `Baby · ${h}cm · ${w}kg · Stroller outfit`;
+  }
 
-  if (!h && !w) return `Styled for ${gLabel} · ${profile.aesthetics[0] || "Classic"} preference`;
+  // When silhouette is set, always show silhouette label — never derived height/weight
+  // This prevents stale localStorage height/weight from leaking into the display label
+  if (profile.silhouette) {
+    const silLabel = profile.silhouette.charAt(0).toUpperCase() + profile.silhouette.slice(1);
+    return `Tailored for ${gLabel} · ${silLabel} · ${aesthetic}`;
+  }
+
+  // Legacy path: user explicitly entered height/weight (no silhouette)
+  const h = parseInt(profile.height) || 0;
+  const w = parseInt(profile.weight) || 0;
+
+  if (!h && !w) return `Styled for ${gLabel} · ${aesthetic} preference`;
 
   const bmi = w / ((h / 100) ** 2);
   let build = "average";
@@ -922,10 +936,13 @@ export function buildProfile(data: {
   aesthetics: string[];
   photo: string;
 }): UserProfile {
-  // When silhouette is set but height/weight are empty, derive from silhouette
+  // When silhouette is set, ALWAYS derive height/weight from silhouette mapping.
+  // This prevents stale height/weight values from a previous session (stored in
+  // localStorage tc_onboarding_backup) from overriding the current silhouette selection.
+  // height/weight fields on OnboardingData are @deprecated; silhouette is the primary input.
   let height = data.height;
   let weight = data.weight;
-  if (data.silhouette && (!height || height === "0")) {
+  if (data.silhouette) {
     const metrics: Record<string, { h: string; w: string }> = {
       petite:   { h: "158", w: "50" },
       standard: { h: "170", w: "65" },
