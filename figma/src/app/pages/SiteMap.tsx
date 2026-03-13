@@ -36,7 +36,7 @@ const PAGES = [
   {
     section: "Examples (Public Showcase)",
     routes: [
-      { path: "/examples/pro", label: "Pro Example", desc: "Showcase: 170cm/50kg supermodel, Paris·Rome·Barcelona", icon: "visibility" },
+      { path: "/examples/pro", label: "Pro Example", desc: "Showcase: Petite silhouette, Paris capsule wardrobe", icon: "visibility" },
       { path: "/examples/annual", label: "Annual Example", desc: "Showcase: Tokyo capsule, Style DNA, past trips", icon: "visibility" },
     ],
   },

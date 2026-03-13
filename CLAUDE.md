@@ -21,9 +21,9 @@ AI가 날씨·도시 바이브 분석 → 무드 네이밍 → 티저 이미지 
 
 | 플랜 | 가격 | 내용 | 제한 |
 |------|------|------|------|
-| Standard | Free | 이미지 1장 선명 + 3장 블러 해제, 캡슐 리스트, 데일리 플랜 | 없음 |
-| Pro | $3.99 | 전 도시 4~6장 실제 생성, 고화질, 1회 재생성 | 없음 |
-| Annual | $9.99/년 | Pro 혜택 전체 + 연 12회 제한 | 서버사이드 12회 체크 필수 |
+| Standard | ~~Free~~ **DEPRECATED** | Pro로 리다이렉트 (`polarCheckout.ts` getDashboardRoute) | DB에는 존재하나 실질적 미사용 |
+| Pro | $3.99 (일회성) | 도시당 4개 AI 코디 (2x2 그리드), Ultra Hi-Res, 1회 재생성, 최대 3개 도시 | 없음 |
+| Annual | $9.99/년 (구독) | Pro 전체 + 연 12회 제한 + Priority AI + VIP Concierge + Style DNA | 서버사이드 12회 체크 필수 |
 
 > Annual 12회 초과 시 → 429 반환 + 업그레이드 유도. 프론트 단독 검증 절대 금지.
 
@@ -537,6 +537,66 @@ const date = d.toLocaleDateString(dateLocale, { month: "short" });
 - 새 UI 텍스트 추가 시 6개 언어 모두에 번역 키 추가 (en, ko, ja, zh, fr, es)
 - aesthetic, 활동명 등 선택값도 i18n 키로 매핑 (`t("aesthetic.Streetwear")` 패턴)
 
+### 스타일링 품질 규칙 (capsuleAgent + styleAgent)
+
+#### Trip Styling Brief (capsuleAgent)
+- 모든 유료 캡슐은 `styling_brief` 포함: `base_neutrals` (2-3색), `accent_color` (1색), `jewelry_tone`, `silhouette_goal`
+- 아이템 선택 시 색상 팔레트 일관성 유지
+- `styling_brief`는 `styleAgentGrid`에 전달되어 이미지 프롬프트에 반영
+
+#### 아이템 반복 제한 규칙
+```
+bottoms: 각 하의 최대 총 여행일수의 50%
+outerwear: 각 아우터 최대 50%
+inner tops (knit/sweater): 각 이너 최대 50%
+T-shirts/short-sleeve: 각 티셔츠 최대 25%
+shoes: 각 신발 최대 50%
+accessories: 제한 없음
+동일 전체 조합: 절대 반복 금지
+```
+- 수정 우선순위: 1) 상의 변경 → 2) 하의 변경 → 3) 액세서리 추가
+
+#### 3색 규칙
+- 각 코디 최대 3색: dominant + secondary + (optional) accent
+- accent_color는 전체 코디의 30-40%에만 등장 (매일 X)
+
+#### Third Piece 원칙
+- 모든 코디에 반드시 포함: 레이어 피스(블레이저/코트/카디건/베스트) OR 마감 액세서리(벨트/스카프/가방/주얼리)
+
+#### Rule of Thirds 비율
+- 시각적 분할 1/3 또는 2/3 지점: 턱인/하프턱, 크롭 아우터 + 하이웨이스트, 벨트, 오픈 코트
+
+#### 비 오는 날 규칙
+- 강수 확률 >40% → 반드시 방수 레이어 + 우산 포함
+- styleAgent: 우산 손에 든 모습, 젖은 도로 반사, 흐린 분위기 조명
+
+#### 이미지 프롬프트 규칙 (styleAgent)
+- positive: 스타일 디렉션 + 풀바디 프레이밍 + 현실적 비율 + 아이템 스펙 + 스타일링 디렉션(턱/오픈/레이어링) + 조명 + 랜드마크 배경(살짝 블러/보케)
+- negative: extra limbs, deformed hands, twisted anatomy, low-res, text/logos, messy layering, mismatched shoes, incorrect weather props
+- 랜드마크: 같은 도시 내 쿼드런트마다 다른 랜드마크 필수
+- 브랜드 로고 0, 텍스트 오버레이 0
+
+#### capsuleAgent 아이템 필수 필드
+```typescript
+interface CapsuleItem {
+  name: string;           // 구체적 명칭
+  category: string;       // top, bottom, outerwear, shoes, dress/jumpsuit, accessory
+  color: string;          // 주 색상
+  material?: string;      // 소재 (linen, wool blend, cotton 등)
+  fit?: string;           // 핏 (relaxed, tailored, oversized, slim)
+  formality?: string;     // casual, smart-casual, dressy
+  water_resistant?: boolean;
+  why: string;
+  versatility_score: number;
+}
+```
+
+#### 최소 4룩 보장 규칙 (MIN_DAILY_PLAN_PER_CITY=4)
+- 대시보드 2x2 그리드에 맞춰 도시당 최소 4개 daily_plan 엔트리
+- 1-3일 여행: 실제 일수 + 보너스 룩 (morning casual, evening dressy 등)
+- 보너스 룩은 fractional day number 사용 (1.5, 2.5 등)
+- `padDailyPlanToMinimum()` 안전장치가 GPT 응답 후 보정
+
 ---
 
 ## 완료된 작업
@@ -573,3 +633,11 @@ const date = d.toLocaleDateString(dateLocale, { month: "short" });
 30. ProDashboard 일별 날씨(daily_forecast) 사이드바 렌더링
 31. 전체 프론트엔드 i18n 감사 (aesthetic, 날짜 locale, 활동명 번역)
 32. AnnualDashboard 날짜 locale 하드코딩(en-US) → 사용자 언어 매핑
+33. capsuleAgent 최소 4룩 보장 (MIN_DAILY_PLAN_PER_CITY=4, padDailyPlanToMinimum 안전장치)
+34. 3개 대시보드 ExampleProPage/ExampleAnnualPage 디자인 매칭 리디자인
+35. StandardDashboard 2x2 그리드 (1장 선명 + 3장 블러+잠금)
+36. 대시보드 사이드바: 프로필 → 패킹리스트 → 날씨 → 스타일통계 → CTA 순서 통일
+37. 스타일링 품질 시스템: Trip Styling Brief + 3색 규칙 + Third Piece + Rule of Thirds
+38. capsuleAgent 아이템 확장 필드 (color, material, fit, formality, water_resistant)
+39. styleAgent 강화: 스타일링 디렉션, 비/랜드마크 처리, 향상된 negative prompt
+40. styleAgentGrid에 stylingBrief 전달 (색상 팔레트 일관성)

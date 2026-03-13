@@ -68,8 +68,11 @@ interface StyleGridResponse {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DEFAULT_NEGATIVE =
+  'extra limbs, deformed hands, twisted anatomy, incorrect proportions, ' +
   'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, ' +
-  '3d render, blurry, low quality, nsfw, watermark, text overlay, logo';
+  '3d render, blurry, low quality, low resolution, nsfw, watermark, text overlay, logo, brand logos, ' +
+  'messy layering, mismatched shoes, incorrect weather props, wrinkled clothes, ' +
+  'generic tourist clothing, cropped body, missing feet, cut off legs';
 
 const PROMPTS_PER_CITY = 4;
 const MAX_CITIES = 3;
@@ -176,7 +179,7 @@ export async function styleAgent(
     cities: string[];
     weather?: WeatherResult[];
     userProfile?: UserProfile;
-    outfitDescriptions?: Array<{ day: number; city: string; items: string[] }>;
+    outfitDescriptions?: Array<{ day: number; city: string; items: string[]; styling_directions?: string[]; color_story?: string }>;
     capsuleItems?: Array<{ name: string; category: string }>;
   },
   env: Bindings
@@ -207,19 +210,26 @@ export async function styleAgent(
     : '';
 
   // Build capsule outfit reference block
-  const outfitsByCity: Record<string, Array<{ day: number; items: string[] }>> = {};
+  const outfitsByCity: Record<string, Array<{ day: number; items: string[]; styling_directions?: string[]; color_story?: string }>> = {};
   for (const od of outfitDescriptions) {
     const key = od.city.toLowerCase();
     if (!outfitsByCity[key]) outfitsByCity[key] = [];
-    outfitsByCity[key].push({ day: od.day, items: od.items });
+    outfitsByCity[key].push({ day: od.day, items: od.items, styling_directions: od.styling_directions, color_story: od.color_story });
   }
 
   const capsuleOutfitBlock = activeCities.map((city) => {
     const cityOutfits = outfitsByCity[city.toLowerCase()] ?? [];
     if (cityOutfits.length === 0) return '';
-    return cityOutfits.slice(0, PROMPTS_PER_CITY).map((o, j) =>
-      `  Outfit ${j + 1} for ${city} (Day ${o.day}): ${o.items.join(', ')}`
-    ).join('\n');
+    return cityOutfits.slice(0, PROMPTS_PER_CITY).map((o, j) => {
+      const base = `  Outfit ${j + 1} for ${city} (Day ${o.day}): ${o.items.join(', ')}`;
+      const stylingDir = o.styling_directions?.length
+        ? `\n    Styling: ${o.styling_directions.join('; ')}`
+        : '';
+      const colorStory = o.color_story
+        ? `\n    Color story: ${o.color_story}`
+        : '';
+      return base + stylingDir + colorStory;
+    }).join('\n');
   }).filter(Boolean).join('\n');
 
   const capsuleItemList = capsuleItems.length > 0
@@ -228,13 +238,14 @@ export async function styleAgent(
 
   const isInfant = isInfantProfile(userProfile);
   const systemPrompt =
-    'You are a professional fashion stylist and AI image director for TravelCapsule, ' +
-    'an AI travel preparation platform. ' +
+    'You are a world-class fashion stylist and AI image director for TravelCapsule — ' +
+    'think Elin Kling directing a PORTER travel editorial shoot. ' +
     'Your task is to write precise, vivid gpt-image-1.5 image generation prompts ' +
     'for luxury travel editorial photography. ' +
     'Images must look like: luxury travel editorial, fashion week street style, ' +
-    'professional stylist curated fashion. ' +
+    'professionally styled with intentional proportions and color harmony. ' +
     'Each prompt must be photorealistic and capture the unique spirit of the destination. ' +
+    'ZERO brand logos, ZERO text overlays. ' +
     (isInfant
       ? 'IMPORTANT: The subject is a baby/infant who cannot walk. Every prompt MUST show the baby ' +
         'lying comfortably in a stylish stroller/pram, wearing cute weather-appropriate baby clothing. ' +
@@ -326,8 +337,9 @@ export async function styleAgentGrid(
     cities: string[];
     weather?: WeatherResult[];
     userProfile?: UserProfile;
-    outfitDescriptions?: Array<{ day: number; city: string; items: string[] }>;
-    capsuleItems?: Array<{ name: string; category: string }>;
+    outfitDescriptions?: Array<{ day: number; city: string; items: string[]; styling_directions?: string[]; color_story?: string }>;
+    capsuleItems?: Array<{ name: string; category: string; color?: string; material?: string; fit?: string }>;
+    stylingBrief?: { base_neutrals?: string[]; accent_color?: string; jewelry_tone?: string; silhouette_goal?: string };
   },
   env: Bindings
 ): Promise<StyleGridPrompt[]> {
@@ -338,6 +350,7 @@ export async function styleAgentGrid(
     userProfile,
     outfitDescriptions = [],
     capsuleItems = [],
+    stylingBrief,
   } = input;
 
   const activeCities = cities.slice(0, MAX_CITIES);
@@ -371,14 +384,38 @@ export async function styleAgentGrid(
   const outfitRefBlock = activeCities.map((city) => {
     const cityOutfits = outfitsByCity[city.toLowerCase()] ?? [];
     if (cityOutfits.length === 0) return '';
-    const lines = cityOutfits.slice(0, 4).map((o, j) =>
-      `  Quadrant ${j + 1} for ${city} (Day ${o.day}): ${o.items.join(', ')}`
-    );
+    const lines = cityOutfits.slice(0, 4).map((o, j) => {
+      const base = `  Quadrant ${j + 1} for ${city} (Day ${o.day}): ${o.items.join(', ')}`;
+      const stylingDir = (o as any).styling_directions?.length
+        ? `\n    Styling: ${(o as any).styling_directions.join('; ')}`
+        : '';
+      const colorStory = (o as any).color_story
+        ? `\n    Color story: ${(o as any).color_story}`
+        : '';
+      return base + stylingDir + colorStory;
+    });
     return lines.join('\n');
   }).filter(Boolean).join('\n');
 
+  // Enhanced item list with color/material/fit for better prompt accuracy
   const capsuleItemList = capsuleItems.length > 0
-    ? `\nCapsule wardrobe items (use ONLY these items in prompts):\n${capsuleItems.map((i) => `  - ${i.name} (${i.category})`).join('\n')}\n`
+    ? `\nCapsule wardrobe items (use ONLY these items — describe them with their exact color, material, and fit):\n${capsuleItems.map((i) => {
+        const details = [i.category];
+        if ('color' in i && i.color) details.push(i.color);
+        if ('material' in i && i.material) details.push(i.material);
+        if ('fit' in i && i.fit) details.push(`${i.fit} fit`);
+        return `  - ${i.name} (${details.join(', ')})`;
+      }).join('\n')}\n`
+    : '';
+
+  // Build styling brief context for the prompt
+  const stylingBriefBlock = stylingBrief
+    ? `\nTrip Styling Brief (cohesive visual identity — MUST be reflected in all quadrants):
+  - Color palette: base neutrals [${stylingBrief.base_neutrals?.join(', ') ?? 'black, cream'}] + accent [${stylingBrief.accent_color ?? 'terracotta'}]
+  - Jewelry tone: ${stylingBrief.jewelry_tone ?? 'gold'}
+  - Silhouette goal: ${stylingBrief.silhouette_goal ?? 'balanced proportions'}
+  - Each outfit should use at most 3 colors (dominant + secondary + optional accent)
+  - The accent color should appear in 1-2 quadrants (not all)\n`
     : '';
 
   const hasOutfitRef = outfitRefBlock.length > 0;
@@ -387,15 +424,17 @@ export async function styleAgentGrid(
   const modelDesc = imagePrefix || 'A fashion model, ';
 
   const systemPrompt =
-    'You are a professional fashion stylist and AI image director for TravelCapsule, ' +
-    'an AI travel preparation platform. ' +
+    'You are a world-class fashion stylist and AI image director for TravelCapsule — ' +
+    'think Elin Kling directing a PORTER travel editorial shoot. ' +
     'Your task is to write a single, precise gpt-image-1.5 image generation prompt per city. ' +
     'Each prompt must describe a 2x2 editorial grid photo where each quadrant shows a ' +
     'different outfit at a different city landmark. The panels are divided by thin white lines. ' +
     'Images must look like: luxury travel editorial, fashion week street style, ' +
-    'professional stylist curated fashion. ' +
+    'professionally styled with intentional proportions and color harmony. ' +
     'Each panel MUST show: same traveler, different outfit, full body head-to-toe, ' +
-    'destination landmark background. Landmarks must NOT repeat within the same grid. ' +
+    'destination landmark background (slightly blurred/bokeh — present but not distracting). ' +
+    'Landmarks must NOT repeat within the same grid. ' +
+    'ZERO brand logos, ZERO text overlays in the image. ' +
     (isInfant
       ? 'IMPORTANT: The subject is a baby/infant who cannot walk. Every quadrant MUST show the baby ' +
         'lying comfortably in a stylish stroller/pram, wearing cute weather-appropriate baby clothing. '
@@ -405,38 +444,55 @@ export async function styleAgentGrid(
       : '') +
     'Always respond with valid JSON only — no markdown fences, no extra text.';
 
+  // Detect rain days for rain-specific prompt instructions
+  const rainCities = activeCities.filter((_, i) => {
+    const wx = weather[i];
+    return wx && wx.precipitation_prob > 0.4;
+  });
+  const rainDayNote = rainCities.length > 0
+    ? `\nRAIN DAY RULES (cities with >40% rain: ${rainCities.join(', ')}):
+- At least 1 quadrant for rainy cities MUST show: umbrella held in hand, wet pavement reflections, overcast/rainy mood lighting
+- The model should wear the waterproof/rain items from the capsule in that quadrant
+- Background landmark should have a moody, atmospheric rain feel (glistening streets, cloudy sky)\n`
+    : '';
+
   const userPrompt = `Generate exactly 1 fashion editorial GRID image prompt for EACH of the following cities (${activeCities.length} prompts total):
 
 ${cityBlocks}
-${profileBlock ? `\n${profileBlock}\n` : ''}${capsuleItemList}${hasOutfitRef ? `\nPre-assigned outfits per quadrant (MUST match exactly):\n${outfitRefBlock}\n` : ''}
+${profileBlock ? `\n${profileBlock}\n` : ''}${stylingBriefBlock}${capsuleItemList}${hasOutfitRef ? `\nPre-assigned outfits per quadrant (MUST match exactly):\n${outfitRefBlock}\n` : ''}
 Rules for each grid prompt:
 1. The prompt must describe a "professional 2x2 fashion editorial grid photo" with "four separate panels arranged in a grid, each clearly divided by thin white lines"
 2. Each quadrant (top-left, top-right, bottom-left, bottom-right) must describe:
-   - ${modelDesc}wearing [EXACT outfit items from pre-assigned list above] — include specific colors, materials, styles
-   - A SPECIFIC famous landmark or iconic location in the city — each quadrant MUST use a DIFFERENT landmark (e.g. London: Big Ben, Tower Bridge, Buckingham Palace, Covent Garden)
-   - Landmarks must NOT repeat within the same grid
-   - Lighting style (golden hour / soft overcast / neon-lit evening / bright midday)
-   - Full body shot showing complete outfit from head to toe — entire body visible
-3. End every prompt with: "Luxury travel editorial photography, photorealistic, 4K, sharp focus, consistent model appearance across all four panels."
+   - ${modelDesc}wearing [EXACT outfit items from pre-assigned list above] — include specific colors, materials, fit, and styles
+   - STYLING DIRECTIONS for each outfit (CRITICAL for editorial quality):
+     * How garments are worn: tucked/half-tucked/untucked, sleeves rolled/down, buttons open/closed, layering state (coat open revealing top)
+     * "Rule of thirds" proportions: ensure visual break at 1/3 or 2/3 of body (use tuck, cropped outer, high-waisted bottom, belt, open coat)
+     * "Third piece" must be visible: blazer/coat/scarf/bag/belt/jewelry that elevates the look
+   - A SPECIFIC famous landmark or iconic location in the city as background — each quadrant MUST use a DIFFERENT landmark
+   - Background should be present but NOT distracting — slight bokeh/depth blur on the landmark
+   - Lighting style (golden hour / soft overcast / neon-lit evening / bright midday) — vary across quadrants
+   - Camera angle: ${isInfant ? 'eye-level shot of the baby in the stroller' : 'full body shot, complete outfit from head to toe, entire body and feet visible, fashion editorial framing'}
+3. End every prompt with: "Luxury travel editorial photography, styled by a professional fashion editor, photorealistic, 4K, sharp focus, natural posing, consistent model appearance across all four panels."
 4. The same model must appear in all four quadrants — consistent hair, face, physique
-5. Style must look like luxury travel editorial or fashion week street style — avoid generic outfits or low-fashion tourist clothing
-6. negative_prompt: always include "blurry, low quality, cartoon, nsfw, collage grid lines missing, merged panels, generic tourist clothing, cropped body"
+5. Style must look like a PORTER or Vogue travel editorial — intentional, curated, elevated. Avoid generic outfits or low-fashion tourist clothing.
+6. negative_prompt: MUST include ALL of: "extra limbs, deformed hands, twisted anatomy, blurry, low quality, cartoon, nsfw, collage grid lines missing, merged panels, generic tourist clothing, cropped body, missing feet, brand logos, text overlay, messy layering, mismatched shoes, incorrect weather props, wrinkled clothes"
 7. For "outfits" array: list each quadrant's mood (2-3 word label) and the exact item names used
 ${hasOutfitRef ? '8. CRITICAL: Each quadrant MUST depict EXACTLY the pre-assigned outfit items. Do NOT substitute or add items.' : ''}
-
+${rainDayNote}
 Climate clothing guide (apply per weather data):
 - cold (<10°C): heavy coats, thermal layers, knits, waterproof boots
 - mild (10–18°C): trench coat, light knitwear, ankle boots
 - warm (18–26°C): light layers, breathable fabrics, sandals or loafers
 - hot (>26°C): linen, minimal layers, sun hat, sandals
+- rainy: waterproof jacket/trench, rain boots or rubber-sole shoes, umbrella as a prop in hand
 
 Respond ONLY with this JSON:
 {
   "grids": [
     {
       "city": "CityName",
-      "prompt": "A professional 2x2 fashion editorial grid photo. Four separate panels arranged in a grid, each clearly divided by thin white lines.\\n\\nTop-left panel: ${modelDesc}wearing [outfit 1], at [landmark 1], [lighting], full body shot.\\nTop-right panel: ${modelDesc}wearing [outfit 2], at [landmark 2], [lighting], full body shot.\\nBottom-left panel: ${modelDesc}wearing [outfit 3], at [landmark 3], [lighting], full body shot.\\nBottom-right panel: ${modelDesc}wearing [outfit 4], at [landmark 4], [lighting], full body shot.\\n\\nFashion editorial photography, photorealistic, 4K, sharp focus, consistent model appearance across all four panels.",
-      "negative_prompt": "blurry, low quality, cartoon, nsfw, collage grid lines missing, merged panels, ...",
+      "prompt": "A professional 2x2 fashion editorial grid photo, styled by a top fashion editor. Four separate panels arranged in a grid, each clearly divided by thin white lines.\\n\\nTop-left panel: ${modelDesc}wearing [outfit 1 with color/material details], [styling direction: tucked/open/layered], at [landmark 1, slightly blurred background], [lighting], full body shot showing head to toe.\\nTop-right panel: ...\\nBottom-left panel: ...\\nBottom-right panel: ...\\n\\nLuxury travel editorial photography, photorealistic, 4K, sharp focus, natural posing, consistent model appearance across all four panels.",
+      "negative_prompt": "extra limbs, deformed hands, twisted anatomy, blurry, low quality, cartoon, nsfw, collage grid lines missing, merged panels, generic tourist clothing, cropped body, missing feet, brand logos, text overlay, messy layering, mismatched shoes",
       "outfits": [
         { "quadrant": 1, "mood": "morning-exploration", "items": ["item1", "item2"] },
         { "quadrant": 2, "mood": "museum-visit", "items": ["item1", "item2"] },

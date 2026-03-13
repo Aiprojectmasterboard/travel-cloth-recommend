@@ -209,8 +209,8 @@ export function LandingPage() {
                         <span className="text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>May 12-18</span>
                       </div>
                       <div className="bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 flex items-center gap-1.5">
-                        <Icon name="height" size={12} className="text-[#C4613A]" />
-                        <span className="text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>170cm · 58kg</span>
+                        <Icon name="accessibility_new" size={12} className="text-[#C4613A]" />
+                        <span className="text-[10px] text-[#292524]" style={{ fontFamily: bodyFont, fontWeight: 500 }}>Petite</span>
                       </div>
                       <div className="bg-white/90 backdrop-blur-sm rounded-lg px-2.5 py-1 flex items-center gap-1.5">
                         <Icon name="face" size={12} className="text-[#C4613A]" />
@@ -519,7 +519,7 @@ export function LandingPage() {
                         {t("section.examples.pro.title")}
                       </span>
                       <span className="text-white/75 text-[12px] mt-1 block" style={{ fontFamily: bodyFont }}>
-                        Female · 170cm · Slim build
+                        Female · Petite silhouette
                       </span>
                     </div>
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center group-hover:bg-[#C4613A] transition-colors duration-300">
@@ -598,7 +598,7 @@ export function LandingPage() {
                         {t("section.examples.annual.title")}
                       </span>
                       <span className="text-white/75 text-[12px] mt-1 block" style={{ fontFamily: bodyFont }}>
-                        Male · 185cm · Regular build
+                        Male · Tall silhouette
                       </span>
                     </div>
                     <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/15 backdrop-blur-sm flex items-center justify-center group-hover:bg-[#D4AF37] transition-colors duration-300">

@@ -753,6 +753,7 @@ export async function runResult(
     console.error('[runResult] Capsule agent failed — using fallback:', (err as Error).message);
     capsule = {
       plan,
+      styling_brief: { base_neutrals: ['black', 'cream'], accent_color: 'terracotta', jewelry_tone: 'gold', silhouette_goal: 'balanced proportions' },
       items: [],
       daily_plan: [],
     } as Awaited<ReturnType<typeof capsuleAgent>>;
@@ -767,10 +768,12 @@ export async function runResult(
     const capsuleItems = paidCapsule.items ?? [];
 
     // Build outfit descriptions keyed by day index (for styleAgentGrid)
-    const outfitDescriptions: Array<{ day: number; city: string; items: string[] }> = dailyOutfits.map((d) => ({
+    const outfitDescriptions = dailyOutfits.map((d) => ({
       day: d.day,
       city: d.city,
       items: d.outfit,
+      styling_directions: (d as any).styling_directions ?? [],
+      color_story: (d as any).color_story ?? '',
     }));
 
     // a. Generate 1 combined 2x2 grid prompt per city (with 1 retry on failure)
@@ -784,7 +787,8 @@ export async function runResult(
             weather: finalWeather,
             userProfile,
             outfitDescriptions,
-            capsuleItems: capsuleItems.map((i) => ({ name: i.name, category: i.category })),
+            capsuleItems: capsuleItems.map((i) => ({ name: i.name, category: i.category, color: (i as any).color, material: (i as any).material, fit: (i as any).fit })),
+            stylingBrief: (paidCapsule as any).styling_brief,
           },
           env
         );

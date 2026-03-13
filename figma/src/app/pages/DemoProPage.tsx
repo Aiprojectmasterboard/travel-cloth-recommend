@@ -34,8 +34,9 @@ const BUSAN_HERO =
 /* ─── Hardcoded profile & city ─── */
 const DEMO_PROFILE_DATA = {
   gender: "male",
-  height: "180",
-  weight: "75",
+  height: "",
+  weight: "",
+  silhouette: "tall" as const,
   aesthetics: ["Casual"],
   photo: "",
 };

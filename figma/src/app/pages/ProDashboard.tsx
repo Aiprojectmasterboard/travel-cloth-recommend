@@ -438,6 +438,14 @@ export function ProDashboard() {
   const isGeneratingImages = genStatus === "generating";
   const imagesReady = genStatus === "done" || hasApiImages;
 
+  // ─── Expanded accordion state for outfit cards ───
+  const [expandedOutfit, setExpandedOutfit] = useState(0);
+
+  // Reset expanded outfit when city tab changes
+  useEffect(() => {
+    setExpandedOutfit(0);
+  }, [activeCity]);
+
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
       <SEO title="Your Travel Capsule — Pro" description="Your premium AI-generated travel outfits with full gallery and capsule wardrobe." noindex={true} />
@@ -488,6 +496,11 @@ export function ProDashboard() {
 
       {/* Title */}
       <div className="mx-auto px-4 sm:px-6 pt-10 pb-2" style={{ maxWidth: "var(--max-w)" }}>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+            <Icon name="auto_awesome" size={10} className="text-[#C4613A]" filled /> {t("dashboard.aiGenerated")}
+          </span>
+        </div>
         <h1 className="text-[#292524] italic" style={{ fontSize: "clamp(32px, 3.5vw, 48px)", fontFamily: "var(--font-display)", lineHeight: 1.1 }}>
           {t("dashboard.multiCityStyleGuide")}
         </h1>
@@ -543,140 +556,144 @@ export function ProDashboard() {
       {/* Main */}
       <div className="mx-auto px-4 sm:px-6 pt-8 pb-16" style={{ maxWidth: "var(--max-w)" }}>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Mobile-only profile card — shown above grid on mobile, hidden on desktop (sidebar has it) */}
-          <div className="lg:hidden order-1">
-            <ProfileBadge
-              gender={profile.gender}
-              height={profile.height}
-              weight={profile.weight}
-              silhouette={profile.silhouette}
-              aesthetics={profile.aesthetics}
-              photo={profile.photo}
-              faceUrl={onboarding.faceUrl}
-              bodyFitLabel={bodyFitLabel}
-            />
-          </div>
 
-          {/* Left — main content: grid + daily breakdown */}
-          <div className="lg:col-span-8 space-y-10 order-2 lg:order-none">
+          {/* Left — main content */}
+          <div className="lg:col-span-8 space-y-10">
 
-            {/* ─── 2x2 Grid Image Section ─── */}
+            {/* ─── 2×2 Outfit Image Grid Hero ─── */}
+            <div className="relative rounded-2xl overflow-hidden bg-[#1A1410]">
+              {isGeneratingImages && !gridImageUrl ? (
+                /* Generating state: animated skeleton 2x2 */
+                <div className="grid grid-cols-2 gap-[2px]" style={{ animation: "shimmer 2s ease-in-out infinite" }}>
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="relative bg-[#EFE8DF]/80 flex flex-col items-center justify-center gap-2" style={{ aspectRatio: "3/4" }}>
+                      <span className="w-8 h-8 border-2 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" style={{ animationDelay: `${i * 0.2}s` }} />
+                      <span className="text-[10px] text-[#a8a29e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                        {t("dashboard.day")} {i + 1}
+                      </span>
+                    </div>
+                  ))}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none col-span-2 row-span-2">
+                    <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 text-center">
+                      <p className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("dashboard.generatingOutfits")}</p>
+                      <p className="text-[11px] text-[#a8a29e] mt-1" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.generatingTime")}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : gridImageUrl ? (
+                /* API grid image: show full 1:1 image split into 4 quadrants */
+                <>
+                  <div className="grid grid-cols-2 gap-[2px]">
+                    {[0, 1, 2, 3].map((q) => (
+                      <div key={q} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                        <GridQuadrant
+                          imageUrl={gridImageUrl}
+                          quadrant={q as 0 | 1 | 2 | 3}
+                          className="w-full h-full hover:scale-105 transition-transform duration-500"
+                          alt={`${currentSet.city} Day ${q + 1} outfit`}
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                        <div className="absolute bottom-0 left-0 right-0 p-3">
+                          <span className="text-white/55 text-[8px] sm:text-[9px] uppercase tracking-[0.14em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.day")} {q + 1}</span>
+                          {(hasRealData ? activeCityDays[q] : currentSet.outfits[q]) && (
+                            <span className="text-white text-[12px] sm:text-[14px] leading-tight block" style={{ fontFamily: "var(--font-display)" }}>
+                              {hasRealData
+                                ? activeCityDays[q]?.note?.split(" ").slice(0, 3).join(" ") || currentSet.outfits[q]?.subtitle
+                                : currentSet.outfits[q]?.subtitle}
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => downloadQuadrantImage(gridImageUrl, q as 0 | 1 | 2 | 3, `capsule-${currentSet.city.toLowerCase()}-day${q + 1}.jpg`)}
+                          className="no-print absolute top-2 right-2 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                          title={t("dashboard.downloadImage")}
+                        >
+                          <Icon name="download" size={13} className="text-white" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Overlay badges */}
+                  <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                      <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.aiGenerated")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                      {currentSet.city}, {currentSet.country}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-3 right-3">
+                    <span className="px-3 py-1 rounded-full bg-[#C4613A]/90 text-white text-[10px]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                      {currentSet.dates} · {currentSet.outfits.length} {t("dashboard.looks")}
+                    </span>
+                  </div>
+                </>
+              ) : (
+                /* Fallback: 2×2 individual outfit images */
+                <>
+                  <div className="grid grid-cols-2 gap-[2px]">
+                    {currentSet.outfits.slice(0, 4).map((outfit, i) => {
+                      const imgSrc = getSingleOutfitImage(currentSet.city, i, outfit.image);
+                      return (
+                        <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
+                          <ImageWithFallback src={imgSrc} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                          <div className="absolute bottom-0 left-0 right-0 p-3">
+                            <span className="text-white/55 text-[8px] sm:text-[9px] uppercase tracking-[0.14em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.day")} {outfit.day}</span>
+                            <span className="text-white text-[12px] sm:text-[15px] leading-tight block" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Overlay badges */}
+                  <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                      <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.aiGenerated")}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                      {currentSet.city}, {currentSet.country}
+                    </span>
+                  </div>
+                  <div className="absolute bottom-3 right-3">
+                    <span className="px-3 py-1 rounded-full bg-[#C4613A]/90 text-white text-[10px]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                      {currentSet.dates} · {currentSet.outfits.length} {t("dashboard.looks")}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* ─── Outfit Accordion Cards ─── */}
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
-                  <em>{t("dashboard.yourCapsule").replace("{city}", currentSet.city)}</em>
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-[22px] sm:text-[26px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>
+                  {currentSet.city} {t("examples.pro.outfitsLabel")}
                 </h2>
                 <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-[0.12em] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>
+                    {currentSet.outfits.length} {t("dashboard.looks")}
+                  </span>
                   {!regenUsed && (
                     <button
                       onClick={handleRegenerate}
                       disabled={regenLoading}
                       className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-full border border-[#C4613A]/30 text-[#C4613A] text-[12px] uppercase tracking-[0.08em] hover:bg-[#C4613A]/5 transition-colors cursor-pointer disabled:opacity-50"
                       style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}
+                      aria-label={t("dashboard.regenerate")}
                     >
                       {regenLoading ? <span className="w-4 h-4 border-2 border-[#C4613A]/30 border-t-[#C4613A] rounded-full animate-spin" /> : <Icon name="refresh" size={16} />}
-                      {regenLoading ? t("dashboard.generating") : `${t("dashboard.regenerate")} (1 ${t("dashboard.left")})`}
+                      <span className="hidden sm:inline">{regenLoading ? t("dashboard.generating") : `${t("dashboard.regenerate")} (1 ${t("dashboard.left")})`}</span>
                     </button>
-                  )}
-                  {regenError && (
-                    <span className="text-[11px] text-red-500" style={{ fontFamily: "var(--font-body)" }}>{regenError}</span>
                   )}
                 </div>
               </div>
-
-              {/* Grid image — full 2x2 AI-generated image at top */}
-              <div className="relative rounded-2xl overflow-hidden w-full" style={{ aspectRatio: "1/1", boxShadow: "0 4px 24px rgba(0,0,0,.10)" }}>
-                {isGeneratingImages && !gridImageUrl ? (
-                  /* Generating state: show placeholder 2x2 grid */
-                  <div className="w-full h-full bg-gradient-to-br from-[#EFE8DF] via-[#F5EFE6] to-[#EFE8DF]" style={{ animation: "shimmer 2s ease-in-out infinite" }}>
-                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-1 p-1">
-                      {[0, 1, 2, 3].map((i) => (
-                        <div key={i} className="bg-[#EFE8DF]/80 rounded-lg flex flex-col items-center justify-center gap-2">
-                          <span className="w-8 h-8 border-2 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" style={{ animationDelay: `${i * 0.2}s` }} />
-                          <span className="text-[10px] text-[#a8a29e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                            {t("dashboard.day")} {i + 1}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 text-center">
-                        <p className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("dashboard.generatingOutfits")}</p>
-                        <p className="text-[11px] text-[#a8a29e] mt-1" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.generatingTime")}</p>
-                        <p className="text-[10px] text-[#a8a29e]/70 mt-0.5" style={{ fontFamily: "var(--font-body)" }}>{t("dashboard.generatingSubtext")}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : gridImageUrl ? (
-                  /* Grid image available: show full image */
-                  <>
-                    <img
-                      src={gridImageUrl}
-                      alt={`${currentSet.city} 4-outfit grid`}
-                      className="w-full h-full object-contain bg-[#EFE8DF]"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-                    <div className="absolute top-3 left-3 right-3 flex items-start justify-between">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-black/30 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                        <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.nAiOutfits").replace("{n}", "4")} · {currentSet.city}
-                      </span>
-                      <button
-                        onClick={() => downloadImage(gridImageUrl, `capsule-${currentSet.city.toLowerCase()}-grid.jpg`)}
-                        className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
-                        title={t("dashboard.downloadImage")}
-                      >
-                        <Icon name="download" size={16} className="text-white" />
-                      </button>
-                    </div>
-                    {/* Quadrant labels overlay on the grid */}
-                    <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 pointer-events-none">
-                      {[1, 2, 3, 4].map((day) => {
-                        const positions = [
-                          "items-end justify-start pb-3 pl-3",
-                          "items-end justify-end pb-3 pr-3",
-                          "items-end justify-start pb-3 pl-3",
-                          "items-end justify-end pb-3 pr-3",
-                        ];
-                        return (
-                          <div key={day} className={`flex ${positions[day - 1]}`}>
-                            <span className="text-white/80 text-[10px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>
-                              {t("dashboard.day")} {day}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </>
-                ) : (
-                  /* Fallback: show 2x2 mock outfit thumbnails */
-                  <div className="w-full h-full grid grid-cols-2 grid-rows-2 gap-1 bg-[#EFE8DF]">
-                    {currentSet.outfits.slice(0, 4).map((outfit, i) => {
-                      const imgSrc = getSingleOutfitImage(currentSet.city, i, outfit.image);
-                      return (
-                        <div key={outfit.id} className="relative overflow-hidden">
-                          <ImageWithFallback src={imgSrc} alt={outfit.title} className="w-full h-full object-cover" />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                          <div className="absolute bottom-2 left-2">
-                            <span className="text-white/80 text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)", textShadow: "0 1px 4px rgba(0,0,0,.6)" }}>
-                              {t("dashboard.day")} {outfit.day}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* ─── Daily Breakdown (quadrant cropping) ─── */}
-            <div>
-              <h2 className="text-[24px] text-[#292524] mb-6" style={{ fontFamily: "var(--font-display)" }}>
-                {t("dashboard.dailyBreakdown")}
-              </h2>
+              {regenError && (
+                <p className="mb-3 text-[12px] text-red-500" style={{ fontFamily: "var(--font-body)" }}>{regenError}</p>
+              )}
 
               <div className="space-y-4">
-                {(hasRealData ? activeCityDays : currentSet.outfits.slice(0, 4).map((o, i) => ({
+                {(hasRealData ? activeCityDays : currentSet.outfits.slice(0, 4).map((o, _i) => ({
                   day: o.day,
                   city: currentSet.city,
                   outfit: o.items.map((it) => it.name),
@@ -685,112 +702,157 @@ export function ProDashboard() {
                   const quadrant = dayToQuadrant(dayIdx);
                   const outfitItems = hasRealData ? resolveOutfitItems(dayPlan as DayPlan) : [];
                   const mockOutfit = currentSet.outfits[dayIdx];
+                  const isExpanded = expandedOutfit === dayIdx;
+
+                  // Image to show in the accordion detail view
+                  const detailImgSrc = gridImageUrl
+                    ? null // will use GridQuadrant
+                    : getSingleOutfitImage(currentSet.city, dayIdx, mockOutfit?.image || currentSet.heroImg);
 
                   return (
                     <div
                       key={dayPlan.day}
-                      className="bg-white rounded-2xl border border-[#E8DDD4] overflow-hidden"
-                      style={{ boxShadow: "0 2px 12px rgba(0,0,0,.04)" }}
+                      className="bg-white rounded-2xl border border-[#ebdacc] overflow-hidden transition-shadow"
+                      style={{ boxShadow: isExpanded ? "0 4px 24px rgba(196,97,58,.10)" : "0 2px 12px rgba(0,0,0,.04)" }}
                     >
-                      <div className="flex flex-col sm:flex-row">
-                        {/* Quadrant cropped image (or single slot fallback) */}
-                        <div className="relative w-full sm:w-[200px] lg:w-[240px] flex-shrink-0" style={{ aspectRatio: "1/1" }}>
-                          {gridImageUrl ? (
-                            <GridQuadrant
-                              imageUrl={gridImageUrl}
-                              quadrant={quadrant}
-                              className="w-full h-full rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none"
-                              alt={`Day ${dayPlan.day} outfit`}
-                            />
-                          ) : (
-                            <ImageWithFallback
-                              src={getSingleOutfitImage(currentSet.city, dayIdx, mockOutfit?.image || currentSet.heroImg)}
-                              alt={`Day ${dayPlan.day} outfit`}
-                              className="w-full h-full object-cover rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none"
-                            />
-                          )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent rounded-t-2xl sm:rounded-l-2xl sm:rounded-tr-none" />
-                          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
-                            <div>
-                              <span className="text-white/70 text-[10px] uppercase tracking-[0.12em] block" style={{ fontFamily: "var(--font-mono)" }}>
-                                {t("dashboard.day")} {dayPlan.day}
-                              </span>
-                            </div>
-                            {gridImageUrl && (
-                              <button
-                                onClick={() => downloadQuadrantImage(gridImageUrl, quadrant, `capsule-${currentSet.city.toLowerCase()}-day${dayPlan.day}.jpg`)}
-                                className="no-print w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
-                                title={t("dashboard.downloadImage")}
-                              >
-                                <Icon name="download" size={14} className="text-white" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Outfit items breakdown */}
-                        <div className="flex-1 p-5">
-                          <div className="flex items-center gap-3 mb-4">
-                            <span className="w-8 h-8 rounded-full bg-[#C4613A]/10 flex items-center justify-center text-[12px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
-                              {dayPlan.day}
+                      {/* Accordion header */}
+                      <button
+                        onClick={() => setExpandedOutfit(isExpanded ? -1 : dayIdx)}
+                        className="w-full flex items-center justify-between p-4 sm:p-5 cursor-pointer hover:bg-[#FDF8F3]/60 transition-colors"
+                        aria-expanded={isExpanded}
+                      >
+                        <div className="flex items-center gap-3 sm:gap-4 text-left">
+                          <span className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#C4613A]/10 flex-shrink-0 flex items-center justify-center text-[13px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                            {dayPlan.day}
+                          </span>
+                          <div>
+                            <span className="text-[16px] sm:text-[18px] text-[#292524] block leading-snug" style={{ fontFamily: "var(--font-display)" }}>
+                              {hasRealData
+                                ? dayPlan.note?.split(" ").slice(0, 5).join(" ") || `${t("dashboard.day")} ${dayPlan.day} ${t("dashboard.outfit")}`
+                                : mockOutfit?.title || `${t("dashboard.day")} ${dayPlan.day}`}
                             </span>
-                            <div>
-                              <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>
-                                {hasRealData ? dayPlan.note?.split(" ").slice(0, 4).join(" ") || `${t("dashboard.day")} ${dayPlan.day} ${t("dashboard.outfit")}` : mockOutfit?.title || `${t("dashboard.day")} ${dayPlan.day}`}
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              <span className="text-[12px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-body)" }}>
+                                {hasRealData ? currentSet.outfits[dayIdx]?.subtitle || currentSet.activities[dayIdx % currentSet.activities.length] || "" : mockOutfit?.subtitle || ""}
                               </span>
-                              <span className="text-[10px] uppercase tracking-[0.1em] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                                {t("dashboard.outfitBreakdown")}
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-[#C4613A]/8 text-[#C4613A] text-[9px]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
+                                {hasRealData ? 95 : mockOutfit?.aiConfidence || 92}{t("examples.pro.match")}
                               </span>
                             </div>
                           </div>
-
-                          <div className="space-y-2">
-                            {hasRealData ? (
-                              outfitItems.length > 0 ? outfitItems.map((item, i) => {
-                                const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
-                                return (
-                                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                                    <div className="w-10 h-10 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
-                                      <Icon name={iconName} size={18} className="text-[#57534e]" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-2 flex-wrap">
-                                        <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                        <SizeChip size={sizeLabel} />
-                                      </div>
-                                      {item.why && <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>}
-                                    </div>
-                                  </div>
-                                );
-                              }) : (
-                                // No matched items — show placeholder rather than wrong city's items
-                                <p className="text-[13px] text-[#a8a29e] py-2" style={{ fontFamily: "var(--font-body)" }}>
-                                  {t("dashboard.outfitDetailsLoading")}
-                                </p>
-                              )
-                            ) : (
-                              mockOutfit?.items.map((item) => (
-                                <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                                  <ImageWithFallback src={item.img} alt={item.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
-                                      <SizeChip size={item.recommendedSize} />
-                                    </div>
-                                    <span className="text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
-                                  </div>
-                                </div>
-                              ))
-                            )}
-                          </div>
-
-                          {hasRealData && dayPlan.note && (
-                            <p className="mt-4 text-[13px] text-[#57534e] italic leading-relaxed pl-3 border-l-2 border-[#C4613A]/30" style={{ fontFamily: "var(--font-display)" }}>
-                              {dayPlan.note}
-                            </p>
-                          )}
                         </div>
-                      </div>
+                        <Icon name={isExpanded ? "expand_less" : "expand_more"} size={22} className="text-[#8A7B6E] flex-shrink-0 ml-2" />
+                      </button>
+
+                      {/* Expanded detail */}
+                      {isExpanded && (
+                        <div className="px-4 sm:px-5 pb-6 border-t border-[#EFE8DF]">
+                          <div className="mt-5 grid grid-cols-1 sm:grid-cols-[240px_1fr] gap-5 sm:gap-6">
+                            {/* Outfit image (left) */}
+                            <div className="relative rounded-xl overflow-hidden self-start" style={{ aspectRatio: "3/4" }}>
+                              {gridImageUrl ? (
+                                <GridQuadrant
+                                  imageUrl={gridImageUrl}
+                                  quadrant={quadrant}
+                                  className="w-full h-full"
+                                  alt={`Day ${dayPlan.day} outfit`}
+                                />
+                              ) : (
+                                <ImageWithFallback
+                                  src={detailImgSrc || currentSet.heroImg}
+                                  alt={hasRealData ? `${t("dashboard.day")} ${dayPlan.day}` : mockOutfit?.title || `Day ${dayPlan.day}`}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/45 to-transparent" />
+                              <div className="absolute top-3 left-3">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
+                                  <Icon name="auto_awesome" size={9} className="text-white" filled /> AI
+                                </span>
+                              </div>
+                              <div className="absolute bottom-3 left-3">
+                                <div className="flex gap-1.5">
+                                  {currentSet.colorPalette.map((color) => (
+                                    <div key={color} className="w-5 h-5 rounded-full border-2 border-white/60" style={{ backgroundColor: color }} />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Right: stylist note + breakdown + activities */}
+                            <div className="min-w-0">
+                              {/* Stylist note */}
+                              {(hasRealData ? dayPlan.note : mockOutfit?.note) && (
+                                <div className="bg-[#FDF8F3] rounded-xl p-4 mb-4 border-l-[3px] border-[#C4613A]">
+                                  <span className="text-[9px] uppercase tracking-[0.12em] text-[#C4613A] block mb-1.5" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                                    {t("examples.pro.stylistNote")}
+                                  </span>
+                                  <p className="text-[13px] sm:text-[14px] text-[#292524] leading-relaxed" style={{ fontFamily: "var(--font-display)", fontStyle: "italic" }}>
+                                    "{hasRealData ? dayPlan.note : mockOutfit?.note}"
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Outfit breakdown */}
+                              <span className="text-[9px] uppercase tracking-[0.12em] text-[#8A7B6E] block mb-3" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                                {t("examples.pro.outfitBreakdown")}
+                              </span>
+                              <div className="space-y-2">
+                                {hasRealData ? (
+                                  outfitItems.length > 0 ? outfitItems.map((item, ii) => {
+                                    const iconName = CAT_ICON[item.category?.toLowerCase()] ?? "checkroom";
+                                    return (
+                                      <div key={ii} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                        <div className="w-11 h-11 rounded-lg bg-[#EFE8DF] flex items-center justify-center flex-shrink-0">
+                                          <Icon name={iconName} size={18} className="text-[#57534e]" />
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="text-[13px] text-[#292524] leading-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                            <SizeChip size={sizeLabel} />
+                                          </div>
+                                          {item.why && <span className="text-[11px] text-[#8A7B6E] block mt-0.5 leading-snug" style={{ fontFamily: "var(--font-body)" }}>{item.why}</span>}
+                                        </div>
+                                        <span className="flex-shrink-0 text-[9px] uppercase tracking-[0.08em] text-[#8A7B6E] hidden sm:block" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
+                                      </div>
+                                    );
+                                  }) : (
+                                    <p className="text-[13px] text-[#a8a29e] py-2" style={{ fontFamily: "var(--font-body)" }}>
+                                      {t("dashboard.outfitDetailsLoading")}
+                                    </p>
+                                  )
+                                ) : (
+                                  mockOutfit?.items.map((item) => (
+                                    <div key={item.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                                      <ImageWithFallback src={item.img} alt={item.name} className="w-11 h-11 rounded-lg object-cover flex-shrink-0" />
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                          <span className="text-[13px] text-[#292524] leading-tight" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{item.name}</span>
+                                          <SizeChip size={item.recommendedSize} />
+                                        </div>
+                                        <span className="text-[11px] text-[#8A7B6E] block mt-0.5 leading-snug" style={{ fontFamily: "var(--font-body)" }}>{item.desc}</span>
+                                      </div>
+                                      <span className="flex-shrink-0 text-[9px] uppercase tracking-[0.08em] text-[#8A7B6E] hidden sm:block" style={{ fontFamily: "var(--font-mono)" }}>{item.category}</span>
+                                    </div>
+                                  ))
+                                )}
+                              </div>
+
+                              {/* Activities */}
+                              <div className="mt-4 pt-3 border-t border-[#EFE8DF]">
+                                <span className="text-[9px] uppercase tracking-[0.12em] text-[#8A7B6E] block mb-2" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                                  {t("examples.pro.activities")}
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {currentSet.activities.map((a) => (
+                                    <span key={a} className="px-2.5 py-1 bg-[#FDF8F3] border border-[#E8DDD4] rounded-full text-[11px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{a}</span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -799,45 +861,75 @@ export function ProDashboard() {
           </div>
 
           {/* Right sidebar */}
-          <aside className="lg:col-span-4 order-3 lg:order-none">
-            <div className="lg:sticky lg:top-[88px] space-y-6">
-              {/* Profile badge — hidden on mobile (shown above grid instead) */}
-              <div className="hidden lg:block">
-                <ProfileBadge
-                  gender={profile.gender}
-                  height={profile.height}
-                  weight={profile.weight}
-                  silhouette={profile.silhouette}
-                  aesthetics={profile.aesthetics}
-                  photo={profile.photo}
-                  faceUrl={onboarding.faceUrl}
-                  bodyFitLabel={bodyFitLabel}
-                />
+          <aside className="lg:col-span-4 order-first lg:order-none">
+            <div className="lg:sticky lg:top-[120px] space-y-5">
+
+              {/* Profile card */}
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-full bg-[#C4613A]/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                    {onboarding.faceUrl ? (
+                      <ImageWithFallback src={onboarding.faceUrl} alt="Profile" className="w-full h-full object-cover" />
+                    ) : (
+                      <Icon name="person" size={22} className="text-[#C4613A]" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>{t("examples.pro.profile")}</span>
+                    <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>
+                      {profile.gender ? `${profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)} · ` : ""}{profile.silhouette ? `${t(`onboarding2.silhouette${profile.silhouette.charAt(0).toUpperCase() + profile.silhouette.slice(1)}`)}` : ""}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center mb-3">
+                  {[
+                    { label: t("dashboard.silhouette"), value: profile.silhouette ? t(`onboarding2.silhouette${profile.silhouette.charAt(0).toUpperCase() + profile.silhouette.slice(1)}`) : "—" },
+                    { label: t("examples.pro.profileSize"), value: sizeLabel },
+                    { label: t("examples.pro.profileAesthetic"), value: profile.aesthetics?.[0] || "Classic" },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-[#FDF8F3] rounded-lg p-2.5">
+                      <span className="text-[10px] text-[#8A7B6E] block" style={{ fontFamily: "var(--font-mono)" }}>{label}</span>
+                      <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{value}</span>
+                    </div>
+                  ))}
+                </div>
+                {profile.aesthetics && profile.aesthetics.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5">
+                    {profile.aesthetics.slice(0, 3).map((a) => (
+                      <span key={a} className="px-2 py-0.5 rounded-full bg-[#C4613A]/8 border border-[#C4613A]/20 text-[10px] text-[#C4613A]" style={{ fontFamily: "var(--font-mono)" }}>{a}</span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Multi-City Packing */}
-              <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-[18px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.multiCityPacking")}</h3>
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[17px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.multiCityPacking")}</h3>
                   <span className={`px-2 py-0.5 rounded-full text-[9px] uppercase tracking-[0.1em] ${hasRealData ? "bg-[#C4613A]/10 text-[#C4613A]" : "bg-[#EFE8DF] text-[#57534e]"}`} style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
                     {hasRealData ? t("dashboard.aiCurated") : t("dashboard.autoDerived")}
                   </span>
                 </div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
-                  {(aiPackingList.length > 0 ? aiPackingList : packing).slice(0, 15).map((item, i) => {
+                <p className="text-[11px] text-[#8A7B6E] mb-3" style={{ fontFamily: "var(--font-body)" }}>
+                  {(aiPackingList.length || packing.length)} {t("examples.pro.uniqueItems")} · {citySets.length * 4} {t("dashboard.looks")}
+                </p>
+                <div className="space-y-1.5 max-h-[320px] overflow-y-auto pr-1">
+                  {(aiPackingList.length > 0 ? aiPackingList : packing).slice(0, 18).map((item, i) => {
                     const isAi = aiPackingList.length > 0;
                     const CAT_ICN: Record<string, string> = { top: "checkroom", bottom: "layers", outerwear: "dry_cleaning", footwear: "footprint", accessory: "watch" };
                     if (isAi) {
                       const ai = item as typeof aiPackingList[number];
                       return (
-                        <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                          <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${ai.essential ? "bg-[#C4613A]/10" : "bg-[#EFE8DF]"}`}>
-                            <Icon name={CAT_ICN[ai.category] ?? "checkroom"} size={18} className={ai.essential ? "text-[#C4613A]" : "text-[#57534e]"} />
+                        <div key={i} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                          <div className={`w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0 ${ai.essential ? "bg-[#C4613A]/10" : "bg-[#EFE8DF]"}`}>
+                            <Icon name={CAT_ICN[ai.category] ?? "checkroom"} size={16} className={ai.essential ? "text-[#C4613A]" : "text-[#57534e]"} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-[13px] text-[#292524] truncate block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{ai.name}</span>
-                            <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
-                              {ai.cities.length > 1 ? t("dashboard.nCities").replace("{n}", String(ai.cities.length)) : ai.cities[0]}
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[12px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{ai.name}</span>
+                            </div>
+                            <span className="text-[10px] text-[#8A7B6E] truncate block" style={{ fontFamily: "var(--font-mono)" }}>
+                              ×{ai.cities.length} {ai.cities.length > 1 ? t("dashboard.looks") : t("dashboard.looks")} · {ai.cities.length > 1 ? t("dashboard.nCities").replace("{n}", String(ai.cities.length)) : ai.cities[0]}
                             </span>
                           </div>
                         </div>
@@ -845,11 +937,16 @@ export function ProDashboard() {
                     }
                     const mock = item as PackingItem;
                     return (
-                      <div key={mock.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
-                        <ImageWithFallback src={mock.img} alt={mock.name} className="w-10 h-10 rounded-lg object-cover flex-shrink-0" />
+                      <div key={mock.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-[#EFE8DF]/50 transition-colors">
+                        <ImageWithFallback src={mock.img} alt={mock.name} className="w-9 h-9 rounded-md object-cover flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <span className="text-[13px] text-[#292524] truncate block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{mock.name}</span>
-                          <span className="text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.usedInLooks").replace("{n}", String(mock.usageCount))}</span>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[12px] text-[#292524] truncate" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{mock.name}</span>
+                            <SizeChip size={sizeLabel} />
+                          </div>
+                          <span className="text-[10px] text-[#8A7B6E] truncate block" style={{ fontFamily: "var(--font-mono)" }}>
+                            ×{mock.usageCount} {mock.usageCount > 1 ? t("dashboard.looks") : t("dashboard.looks")}
+                          </span>
                         </div>
                       </div>
                     );
@@ -857,24 +954,29 @@ export function ProDashboard() {
                 </div>
               </div>
 
-              {/* Weather per city — with daily breakdown */}
-              <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-5" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.weatherForecast")}</h3>
-                <div className="space-y-4">
+              {/* Weather per city */}
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <h3 className="text-[17px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.weatherForecast")}</h3>
+                <div className="space-y-3">
                   {citySets.map((cs) => (
-                    <div key={cs.city} className="py-3 border-b border-[#EFE8DF] last:border-0">
-                      <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-body)", fontWeight: 500 }}>{cs.city}</span>
-                      <span className="text-[11px] text-[#57534e] block mb-2" style={{ fontFamily: "var(--font-body)" }}>{cs.dates} · {cs.weather.condition}</span>
-                      <div className="flex items-center gap-4 text-[12px] mb-2" style={{ fontFamily: "var(--font-mono)" }}>
-                        <span className="flex items-center gap-1 text-[#292524]"><Icon name="thermostat" size={14} className="text-[#C4613A]" />{cs.weather.temp}°C</span>
-                        <span className="flex items-center gap-1 text-[#57534e]"><Icon name="water_drop" size={14} />{cs.weather.rain}%</span>
+                    <div key={cs.city} className="rounded-lg bg-[#FDF8F3] p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div>
+                          <span className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{cs.city}</span>
+                          <span className="text-[11px] text-[#8A7B6E] block" style={{ fontFamily: "var(--font-body)" }}>{cs.dates}</span>
+                        </div>
+                        <span className="text-[11px] text-[#57534e] text-right max-w-[100px] leading-tight" style={{ fontFamily: "var(--font-body)" }}>{cs.weather.condition}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-[11px]" style={{ fontFamily: "var(--font-mono)" }}>
+                        <span className="flex items-center gap-0.5 text-[#292524] font-semibold"><Icon name="thermostat" size={13} className="text-[#C4613A]" />{cs.weather.temp}°C</span>
+                        <span className="flex items-center gap-0.5 text-[#57534e]"><Icon name="water_drop" size={13} />{cs.weather.rain}%</span>
+                        <span className="flex items-center gap-0.5 text-[#57534e]"><Icon name="air" size={13} />{cs.weather.wind}km/h</span>
                       </div>
                       {/* Daily forecast breakdown */}
                       {cs.dailyForecast.length > 0 && (
                         <div className="mt-2 space-y-1">
                           <span className="text-[10px] uppercase tracking-[0.1em] text-[#C4613A] block mb-1" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("dashboard.dailyBreakdown")}</span>
                           {cs.dailyForecast.map((df) => {
-                            // daily_forecast date is last year's date — shift to current travel year for display
                             const d = new Date(df.date + "T00:00:00");
                             d.setFullYear(d.getFullYear() + 1);
                             const dayLabel = d.toLocaleDateString(dateLocale, { month: "short", day: "numeric", weekday: "short" });
@@ -900,25 +1002,42 @@ export function ProDashboard() {
               </div>
 
               {/* Stats */}
-              <div className="bg-white rounded-xl p-6 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
-                <h3 className="text-[18px] text-[#292524] mb-4" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.capsuleStats")}</h3>
-                <div className="space-y-3">
+              <div className="bg-white rounded-xl p-5 border border-[#E8DDD4]" style={{ boxShadow: "0 2px 12px rgba(0,0,0,.06)" }}>
+                <h3 className="text-[17px] text-[#292524] mb-3" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.capsuleStats")}</h3>
+                <div className="space-y-2">
                   {[
                     { icon: "public", label: t("dashboard.cities"), value: `${citySets.length}` },
-                    { icon: "grid_view", label: t("dashboard.gridOutfits"), value: `${citySets.length * 4} ${t("dashboard.looks")}` },
-                    { icon: "checkroom", label: t("dashboard.packingItems"), value: `${aiPackingList.length || packing.length} ${t("dashboard.pieces")}` },
+                    { icon: "style", label: t("examples.pro.statOutfits"), value: `${citySets.length * 4} ${t("dashboard.looks")}` },
+                    { icon: "checkroom", label: t("dashboard.packingItems"), value: `${aiPackingList.length || packing.length} ${t("examples.pro.pieces")}` },
+                    { icon: "hd", label: t("examples.pro.statQuality"), value: t("examples.pro.statQualityVal") },
                     { icon: "refresh", label: t("dashboard.regenerations"), value: regenUsed ? `0 ${t("dashboard.left")}` : `1 ${t("dashboard.left")}` },
                   ].map((stat) => (
                     <div key={stat.label} className="flex items-center justify-between py-2 border-b border-[#EFE8DF] last:border-0">
                       <div className="flex items-center gap-2">
-                        <Icon name={stat.icon} size={16} className="text-[#C4613A]" />
-                        <span className="text-[13px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{stat.label}</span>
+                        <Icon name={stat.icon} size={15} className="text-[#C4613A]" />
+                        <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{stat.label}</span>
                       </div>
-                      <span className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>{stat.value}</span>
+                      <span className="text-[12px] text-[#292524]" style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>{stat.value}</span>
                     </div>
                   ))}
                 </div>
               </div>
+
+              {/* CTA gradient box */}
+              <div className="rounded-xl p-5 text-white" style={{ background: "linear-gradient(135deg, #C4613A 0%, #a84d2e 100%)" }}>
+                <div className="flex items-center gap-2 mb-2">
+                  <Icon name="auto_awesome" size={16} className="text-white/70" filled />
+                  <h3 className="text-[17px] text-white" style={{ fontFamily: "var(--font-display)" }}>{t("examples.pro.ctaTitle")}</h3>
+                </div>
+                <p className="text-[12px] text-white/80 mb-4 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
+                  {t("examples.pro.ctaBody")}
+                </p>
+                <SocialShareButton />
+                <p className="text-[10px] text-white/60 text-center mt-3" style={{ fontFamily: "var(--font-mono)" }}>
+                  {t("examples.pro.freePreview")}
+                </p>
+              </div>
+
             </div>
           </aside>
         </div>

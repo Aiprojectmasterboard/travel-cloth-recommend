@@ -16,7 +16,7 @@ import { SEO, buildBreadcrumbSchema } from "../components/SEO";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE ANNUAL PAGE                                        */
-/*  Showcases what a 185cm / 75kg male would receive           */
+/*  Showcases what a Tall silhouette male would receive         */
 /*  as an Annual member ($29/yr). Standalone page.            */
 /* ═══════════════════════════════════════════════════════════ */
 
@@ -76,7 +76,7 @@ const ANNUAL_OUTFIT_IMGS = [
   "/examples/annual-outfit-4.png",
 ];
 
-/* ─── Persona: 185cm / 75kg male → BMI 21.9 (regular build) → L, EU 43 ─── */
+/* ─── Persona: Tall silhouette male → L, EU 43 ─── */
 
 interface ExItem {
   id: string;
@@ -505,10 +505,9 @@ export function ExampleAnnualPage() {
                   <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.annual.persona")}</span>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-center mb-3">
+              <div className="grid grid-cols-3 gap-2 text-center mb-3">
                 {[
-                  { label: t("examples.pro.profileHeight"), value: "185cm" },
-                  { label: t("examples.pro.profileWeight"), value: "75kg" },
+                  { label: t("dashboard.silhouette"), value: t("onboarding2.silhouetteTall") },
                   { label: t("examples.pro.profileSize"), value: "L / EU 43" },
                   { label: t("examples.pro.profileAesthetic"), value: "Casual" },
                 ].map(({ label, value }) => (

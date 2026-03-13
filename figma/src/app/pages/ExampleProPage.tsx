@@ -13,7 +13,7 @@ import { SEO, buildBreadcrumbSchema } from "../components/SEO";
 
 /* ═══════════════════════════════════════════════════════════ */
 /*  EXAMPLE PRO PAGE                                          */
-/*  Showcases what a 170cm / 45kg female traveler would         */
+/*  Showcases what a Petite silhouette female traveler would     */
 /*  receive after purchasing the Pro plan ($3.99 one-time).    */
 /*  This is a STANDALONE page — not the actual dashboard.     */
 /* ═══════════════════════════════════════════════════════════ */
@@ -73,8 +73,8 @@ const PRO_OUTFIT_IMGS = [
   "/examples/pro-outfit-4.png",
 ];
 
-/* ─── Persona: 170cm / 45kg female traveler ─── */
-/* BMI = 15.6 → S clothing, EU 41 shoes */
+/* ─── Persona: Petite silhouette female traveler ─── */
+/* S clothing, EU 37 shoes */
 
 interface ExampleItem {
   id: string;
@@ -465,10 +465,9 @@ export function ExampleProPage() {
                     <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>{t("examples.pro.persona")}</span>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-center mb-3">
+                <div className="grid grid-cols-3 gap-2 text-center mb-3">
                   {[
-                    { label: t("examples.pro.profileHeight"), value: "170cm" },
-                    { label: t("examples.pro.profileWeight"), value: "45kg" },
+                    { label: t("dashboard.silhouette"), value: t("onboarding2.silhouettePetite") },
                     { label: t("examples.pro.profileSize"), value: "S / EU 37" },
                     { label: t("examples.pro.profileAesthetic"), value: "Classic" },
                   ].map(({ label, value }) => (
