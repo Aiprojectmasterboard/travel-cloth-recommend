@@ -18,6 +18,13 @@ export function SocialShareButton({ shareUrl: shareUrlProp, shareTitle: shareTit
   const buildShareUrl = (): string => {
     if (shareUrlProp) return shareUrlProp;
     if (typeof window === "undefined") return "";
+    // Try to build trip-specific share URL from sessionStorage
+    try {
+      const stored = sessionStorage.getItem("tc_trip_id");
+      if (stored) {
+        return `${window.location.origin}/share/${stored}?utm_source=share&utm_medium=social&utm_campaign=capsule`;
+      }
+    } catch { /* sessionStorage unavailable */ }
     const base = window.location.origin;
     return `${base}/?utm_source=share&utm_medium=direct&utm_campaign=capsule`;
   };

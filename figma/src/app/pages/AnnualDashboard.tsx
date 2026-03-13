@@ -877,7 +877,7 @@ export function AnnualDashboard() {
                       <Icon name="person" size={22} className="text-[#D4AF37]" />
                     </div>
                     <div className="min-w-0">
-                      <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>{t("examples.annual.profile")}</span>
+                      <span className="text-[16px] text-[#292524] block" style={{ fontFamily: displayFont }}>{t("dashboard.yourProfile")}</span>
                       <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>
                         {profile.gender ? `${profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)} · ` : ""}{profile.silhouette ? `${t(`onboarding2.silhouette${profile.silhouette.charAt(0).toUpperCase() + profile.silhouette.slice(1)}`)}` : ""}
                       </span>

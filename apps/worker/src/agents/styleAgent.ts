@@ -68,11 +68,12 @@ interface StyleGridResponse {
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DEFAULT_NEGATIVE =
-  'extra limbs, deformed hands, twisted anatomy, incorrect proportions, ' +
+  'text, watermark, logo, brand name, lowres, blurry, bad anatomy, deformed hands, ' +
+  'extra fingers, extra limbs, duplicate people, mismatched shoes, wrong outfit colors, ' +
+  'messy layering, distracting background, background dominating subject, ' +
+  'generic tourist clothing, cropped body, missing feet, cut off legs, ' +
   'nudity, revealing clothes, cartoon, illustration, anime, painting, sketch, drawing, ' +
-  '3d render, blurry, low quality, low resolution, nsfw, watermark, text overlay, logo, brand logos, ' +
-  'messy layering, mismatched shoes, incorrect weather props, wrinkled clothes, ' +
-  'generic tourist clothing, cropped body, missing feet, cut off legs';
+  '3d render, low quality, low resolution, nsfw, twisted anatomy, incorrect proportions';
 
 const PROMPTS_PER_CITY = 4;
 const MAX_CITIES = 3;
@@ -180,16 +181,17 @@ export async function styleAgent(
     weather?: WeatherResult[];
     userProfile?: UserProfile;
     outfitDescriptions?: Array<{ day: number; city: string; items: string[]; styling_directions?: string[]; color_story?: string }>;
-    capsuleItems?: Array<{ name: string; category: string }>;
+    capsuleItems?: Array<{ name: string; category: string; color?: string; material?: string; fit?: string }>;
+    stylingBrief?: { base_neutrals?: string[]; accent_color?: string; jewelry_tone?: string; silhouette_goal?: string };
   },
   env: Bindings
 ): Promise<StylePrompts[]> {
-  const { vibeResults, cities, weather = [], userProfile, outfitDescriptions = [], capsuleItems = [] } = input;
+  const { vibeResults, cities, weather = [], userProfile, outfitDescriptions = [], capsuleItems = [], stylingBrief } = input;
 
   const activeCities = cities.slice(0, MAX_CITIES);
   const activeVibes = vibeResults.slice(0, MAX_CITIES);
 
-  // Build per-city context block
+  // Build per-city context block with rain detection
   const cityBlocks = activeCities.map((city, i) => {
     const vibe = activeVibes[i];
     const wx = weather[i];
@@ -205,11 +207,7 @@ export async function styleAgent(
   const profileBlock = buildProfileBlock(userProfile);
   const imagePrefix  = buildImagePrefix(userProfile);
 
-  const aestheticRule = userProfile && userProfile.aesthetics.length > 0
-    ? `   - Incorporate the user's style preferences (${userProfile.aesthetics.join(', ')}) into clothing choices`
-    : '';
-
-  // Build capsule outfit reference block
+  // Build capsule outfit reference block (with styling_directions and color_story)
   const outfitsByCity: Record<string, Array<{ day: number; items: string[]; styling_directions?: string[]; color_story?: string }>> = {};
   for (const od of outfitDescriptions) {
     const key = od.city.toLowerCase();
@@ -223,7 +221,7 @@ export async function styleAgent(
     return cityOutfits.slice(0, PROMPTS_PER_CITY).map((o, j) => {
       const base = `  Outfit ${j + 1} for ${city} (Day ${o.day}): ${o.items.join(', ')}`;
       const stylingDir = o.styling_directions?.length
-        ? `\n    Styling: ${o.styling_directions.join('; ')}`
+        ? `\n    Styling directions: ${o.styling_directions.join('; ')}`
         : '';
       const colorStory = o.color_story
         ? `\n    Color story: ${o.color_story}`
@@ -232,58 +230,91 @@ export async function styleAgent(
     }).join('\n');
   }).filter(Boolean).join('\n');
 
+  // Enhanced item list with color/material/fit for better prompt accuracy
   const capsuleItemList = capsuleItems.length > 0
-    ? `\nCapsule wardrobe items (use ONLY these items in prompts):\n${capsuleItems.map((i) => `  - ${i.name} (${i.category})`).join('\n')}\n`
+    ? `\nCapsule wardrobe items (use ONLY these items — describe with exact color, material, and fit):\n${capsuleItems.map((i) => {
+        const details = [i.category];
+        if (i.color) details.push(i.color);
+        if (i.material) details.push(i.material);
+        if (i.fit) details.push(`${i.fit} fit`);
+        return `  - ${i.name} (${details.join(', ')})`;
+      }).join('\n')}\n`
     : '';
 
+  // Build styling brief block (same pattern as styleAgentGrid)
+  const stylingBriefBlock = stylingBrief
+    ? `\nTrip Styling Brief (MUST be reflected in ALL prompts for cohesive visual identity):
+  - Color palette: base neutrals [${stylingBrief.base_neutrals?.join(', ') ?? 'black, cream'}] + accent [${stylingBrief.accent_color ?? 'terracotta'}]
+  - Jewelry tone: ${stylingBrief.jewelry_tone ?? 'gold'}
+  - Silhouette goal: ${stylingBrief.silhouette_goal ?? 'balanced proportions'}
+  - Each outfit uses at most 3 colors (dominant + secondary + optional accent)
+  - The accent color appears in 1-2 prompts per city (not all)\n`
+    : '';
+
+  // Detect rain cities for weather overrides
+  const rainCities = new Set(
+    activeCities.filter((_, i) => {
+      const wx = weather[i];
+      return wx && wx.precipitation_prob > 0.4;
+    })
+  );
+
   const isInfant = isInfantProfile(userProfile);
+
   const systemPrompt =
     'You are a world-class fashion stylist and AI image director for TravelCapsule — ' +
     'think Elin Kling directing a PORTER travel editorial shoot. ' +
     'Your task is to write precise, vivid gpt-image-1.5 image generation prompts ' +
-    'for luxury travel editorial photography. ' +
-    'Images must look like: luxury travel editorial, fashion week street style, ' +
-    'professionally styled with intentional proportions and color harmony. ' +
-    'Each prompt must be photorealistic and capture the unique spirit of the destination. ' +
+    'for luxury travel fashion editorial photography. ' +
+    'Each prompt MUST follow a strict section-based format: ' +
+    '[STYLE], [SUBJECT], [OUTFIT_SPEC], [STYLING_DIRECTIONS], [COMPOSITION], [LIGHTING], [BACKGROUND], [WEATHER_OVERRIDES], [NEGATIVE]. ' +
+    'Images must look like: instagram travel street style editorial, polished premium realistic photography. ' +
+    'Full-body portrait, 4:5 vertical framing, subject centered, shallow depth of field, background bokeh. ' +
     'ZERO brand logos, ZERO text overlays. ' +
     (isInfant
       ? 'IMPORTANT: The subject is a baby/infant who cannot walk. Every prompt MUST show the baby ' +
         'lying comfortably in a stylish stroller/pram, wearing cute weather-appropriate baby clothing. ' +
         'The stroller should be positioned near the landmark. The scene should look warm and adorable. '
       : userProfile
-      ? 'You must also honour the provided user profile — model directive, figure description, ' +
+      ? 'You must honour the provided user profile — model directive, figure description, ' +
         'and aesthetic preferences must be reflected in every prompt. '
       : '') +
+    'Each prompt for the same city MUST use a DIFFERENT iconic landmark in the [BACKGROUND] section — ' +
+    'landmarks must never repeat within the same city. ' +
     'Always respond with valid JSON only — no markdown fences, no extra text.';
 
   const hasOutfitRef = capsuleOutfitBlock.length > 0;
+  const subjectDesc = imagePrefix || 'A fashion model, ';
 
-  const userPrompt = `Generate exactly ${PROMPTS_PER_CITY} fashion editorial image prompts for EACH of the following cities (${activeCities.length * PROMPTS_PER_CITY} prompts total):
+  const userPrompt = `Generate exactly ${PROMPTS_PER_CITY} fashion editorial image prompts for EACH of the following cities (${activeCities.length * PROMPTS_PER_CITY} prompts total).
 
 ${cityBlocks}
-${profileBlock ? `\n${profileBlock}\n` : ''}${capsuleItemList}${hasOutfitRef ? `\nPre-assigned outfits (MUST match these exactly — describe the exact items including their color and style):\n${capsuleOutfitBlock}\n` : ''}
-Rules for each prompt:
-1. mood: 2-3 word English label for the travel occasion (e.g. "city-exploration", "museum-visit", "cafe-afternoon", "evening-stroll")
-2. Each prompt MUST begin with: "${imagePrefix || 'A fashion model, '}" followed by the outfit description
-3. Each prompt must specify:
-   - ${hasOutfitRef ? 'The EXACT clothing items from the pre-assigned outfit above — describe each item with its specific color, material, and style' : 'Specific clothing items appropriate for the climate, city vibe, AND the travel occasion'}${aestheticRule ? `\n${aestheticRule}` : ''}
-   - A SPECIFIC famous landmark or iconic location in that city as background (e.g. Eiffel Tower, Louvre Museum, Champs-Élysées)
-   - Each prompt MUST use a DIFFERENT landmark — landmarks must NOT repeat within the same city
-   - The person must be standing naturally in front of or near the landmark
-   - Lighting style (golden hour, soft overcast, neon-lit evening, bright midday, etc.)
-   - Camera angle: ${isInfant ? 'eye-level shot of the baby in the stroller, showing the full outfit and stroller' : 'full body shot showing the complete outfit from head to toe — entire body visible'}
-   - End with: "luxury travel editorial photography, photorealistic, 4K, sharp focus"
-4. negative_prompt: include "blurry, low quality, cartoon, nsfw, generic tourist clothing, cropped body" plus any style-specific items to avoid
-5. Each prompt for the same city MUST depict a completely different travel scenario, outfit style, and landmark. No two prompts should have similar compositions.
-6. Style MUST look like luxury travel editorial or fashion week street style — avoid generic outfits or low-fashion tourist clothing.
-${hasOutfitRef ? '7. CRITICAL: Each prompt MUST depict EXACTLY the items listed in the pre-assigned outfit. Do NOT substitute, swap, or add items. The image must match the item breakdown shown to the user.' : ''}
+${profileBlock ? `\n${profileBlock}\n` : ''}${stylingBriefBlock}${capsuleItemList}${hasOutfitRef ? `\nPre-assigned outfits (MUST match these exactly — describe each item with specific color, material, and styling state):\n${capsuleOutfitBlock}\n` : ''}
+Each generated prompt MUST follow this EXACT section order:
 
-Climate clothing guide:
+[STYLE] {city_mood from vibe data}, instagram travel street style editorial, polished premium realistic photography
+[SUBJECT] full-body portrait, realistic proportions, single person, ${isInfant ? 'a cute baby in a stylish stroller' : subjectDesc.replace(/, $/, '')}, natural confident pose
+[OUTFIT_SPEC] ${hasOutfitRef ? 'EXACT items from pre-assigned outfit above — describe each item with its specific color, material, fit, and state (open/closed/tucked/rolled)' : 'specific clothing items appropriate for the climate and city vibe — each item named with color, material, and fit'}
+[STYLING_DIRECTIONS] 3-color max rule (dominant + secondary + optional accent only); third piece mandatory (blazer/coat/scarf/bag/belt/jewelry elevating the look); rule-of-thirds proportion (shirt tucked/half-tucked, sleeves rolled, coat open revealing inner layer, belt defining waist, OR cropped outer + high-waisted bottom); clean editorial layering — no messiness
+[COMPOSITION] eye-level shot, full-body in frame, 4:5 vertical portrait, subject centered at 1/3 axis, entire figure head-to-toe visible including feet, shallow depth of field, background softly blurred (bokeh)
+[LIGHTING] {choose based on weather and time: golden hour warm glow / soft overcast diffused light / neon-lit evening ambiance / bright midday sunlight / moody atmospheric rain light}
+[BACKGROUND] {city_name}, iconic landmark: {specific landmark — e.g. Eiffel Tower / Shibuya Crossing / Colosseum / Park Güell} — landmark recognizable but not dominant, travel editorial mood — each prompt in the same city MUST use a DIFFERENT landmark
+[WEATHER_OVERRIDES] ${rainCities.size > 0 ? `for rain cities (${[...rainCities].join(', ')}): model holds umbrella in one hand, wet pavement reflections visible, overcast moody lighting, model wears waterproof/rain-appropriate items from capsule` : 'clear day — no weather overrides needed'}
+[NEGATIVE] text, watermark, logo, brand name, lowres, blurry, bad anatomy, deformed hands, extra fingers, extra limbs, duplicate people, mismatched shoes, wrong outfit colors, messy layering, distracting background, background dominating subject, generic tourist clothing, cropped body, missing feet, cut off legs
+
+Rules:
+1. mood: 2-3 word English label for the travel occasion (e.g. "city-exploration", "museum-visit", "cafe-afternoon", "evening-stroll")
+2. Each prompt MUST start with the [STYLE] section tag and follow all 9 sections in order
+3. Each prompt for the same city MUST depict a completely different travel scenario, landmark, and lighting — no two prompts should share a landmark or similar composition
+4. Style MUST look like luxury travel editorial — intentional, curated, elevated; avoid generic outfits or tourist clothing
+${hasOutfitRef ? '5. CRITICAL: [OUTFIT_SPEC] MUST depict EXACTLY the pre-assigned items. Do NOT substitute, swap, or add items. The image must match the breakdown shown to the user.' : ''}
+
+Climate clothing guide (apply in [OUTFIT_SPEC]):
 - cold (<10°C): heavy coats, thermal layers, knits, waterproof boots
 - mild (10–18°C): trench coat, light knitwear, ankle boots
 - warm (18–26°C): light layers, breathable fabrics, sandals or loafers
 - hot (>26°C): linen, minimal layers, sun hat, sandals
-- rainy: waterproof jacket, rain boots, umbrella as prop
+- rainy (>40% prob): waterproof jacket/trench, rain boots or rubber-sole shoes, umbrella in [WEATHER_OVERRIDES]
 
 Respond ONLY with this JSON:
 {

@@ -446,8 +446,12 @@ export function ProDashboard() {
     setExpandedOutfit(0);
   }, [activeCity]);
 
+  // Shimmer keyframe for skeleton animation
+  const shimmerStyle = `@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`;
+
   return (
     <div ref={mainRef} data-pdf-root className="min-h-screen bg-[#FDF8F3]">
+      <style>{shimmerStyle}</style>
       <SEO title="Your Travel Capsule — Pro" description="Your premium AI-generated travel outfits with full gallery and capsule wardrobe." noindex={true} />
       <SignupPrompt />
 
@@ -562,21 +566,52 @@ export function ProDashboard() {
 
             {/* ─── 2×2 Outfit Image Grid Hero ─── */}
             <div className="relative rounded-2xl overflow-hidden bg-[#1A1410]">
-              {isGeneratingImages && !gridImageUrl ? (
-                /* Generating state: animated skeleton 2x2 */
-                <div className="grid grid-cols-2 gap-[2px]" style={{ animation: "shimmer 2s ease-in-out infinite" }}>
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="relative bg-[#EFE8DF]/80 flex flex-col items-center justify-center gap-2" style={{ aspectRatio: "3/4" }}>
-                      <span className="w-8 h-8 border-2 border-[#C4613A]/20 border-t-[#C4613A] rounded-full animate-spin" style={{ animationDelay: `${i * 0.2}s` }} />
-                      <span className="text-[10px] text-[#a8a29e] uppercase tracking-[0.1em]" style={{ fontFamily: "var(--font-mono)" }}>
-                        {t("dashboard.day")} {i + 1}
-                      </span>
-                    </div>
-                  ))}
-                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none col-span-2 row-span-2">
-                    <div className="bg-white/80 backdrop-blur-sm rounded-xl px-5 py-3 text-center">
-                      <p className="text-[13px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>{t("dashboard.generatingOutfits")}</p>
-                      <p className="text-[11px] text-[#a8a29e] mt-1" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.generatingTime")}</p>
+              {isGeneratingImages && !hasApiImages ? (
+                /* Generating state: polished shimmer skeleton 2x2 */
+                <div className="relative">
+                  <div className="grid grid-cols-2 gap-[2px]">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div
+                        key={i}
+                        className="relative bg-gradient-to-br from-[#EFE8DF] to-[#F5EFE6] flex flex-col items-center justify-center gap-3 overflow-hidden"
+                        style={{ aspectRatio: "3/4" }}
+                      >
+                        {/* Shimmer sweep overlay */}
+                        <div
+                          className="absolute inset-0"
+                          style={{
+                            background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
+                            animation: "shimmer 1.8s ease-in-out infinite",
+                            animationDelay: `${i * 0.15}s`,
+                          }}
+                        />
+                        <div className="relative z-10 flex flex-col items-center gap-2">
+                          <span
+                            className="w-10 h-10 border-[2.5px] border-[#C4613A]/15 border-t-[#C4613A] rounded-full animate-spin"
+                            style={{ animationDelay: `${i * 0.2}s` }}
+                          />
+                          <span
+                            className="text-[9px] text-[#a8a29e] uppercase tracking-[0.12em]"
+                            style={{ fontFamily: "var(--font-mono)" }}
+                          >
+                            {t("dashboard.day")} {i + 1}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Center info overlay */}
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="bg-white/90 backdrop-blur-md rounded-2xl px-6 py-4 text-center shadow-lg">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Icon name="auto_awesome" size={16} className="text-[#C4613A]" filled />
+                        <p className="text-[14px] text-[#292524]" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
+                          {t("dashboard.generatingOutfits")}
+                        </p>
+                      </div>
+                      <p className="text-[11px] text-[#a8a29e]" style={{ fontFamily: "var(--font-mono)" }}>
+                        {t("dashboard.generatingTime")}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -629,28 +664,55 @@ export function ProDashboard() {
                   </div>
                 </>
               ) : (
-                /* Fallback: 2×2 individual outfit images */
+                /* Primary display: 2×2 individual outfit images (API or mock fallback) */
                 <>
                   <div className="grid grid-cols-2 gap-[2px]">
                     {currentSet.outfits.slice(0, 4).map((outfit, i) => {
                       const imgSrc = getSingleOutfitImage(currentSet.city, i, outfit.image);
+                      const isApiImage = !!apiResultImages.find(
+                        (img) => img.city.toLowerCase() === currentSet.city.toLowerCase() && img.index === i
+                          && (img as ResultImage & { type?: string }).type !== "grid"
+                      ) || !!aiImages.get(`${currentSet.city}::outfit-${i + 1}`);
+                      const dayLabel = hasRealData
+                        ? (activeCityDays[i]?.note?.split(" ").slice(0, 3).join(" ") || outfit.subtitle)
+                        : outfit.subtitle;
                       return (
                         <div key={outfit.id} className="relative overflow-hidden" style={{ aspectRatio: "3/4" }}>
-                          <ImageWithFallback src={imgSrc} alt={outfit.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+                          <ImageWithFallback
+                            src={imgSrc}
+                            alt={outfit.title}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+                          />
                           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                           <div className="absolute bottom-0 left-0 right-0 p-3">
-                            <span className="text-white/55 text-[8px] sm:text-[9px] uppercase tracking-[0.14em] block" style={{ fontFamily: "var(--font-mono)" }}>{t("dashboard.day")} {outfit.day}</span>
-                            <span className="text-white text-[12px] sm:text-[15px] leading-tight block" style={{ fontFamily: "var(--font-display)" }}>{outfit.subtitle}</span>
+                            <span className="text-white/55 text-[8px] sm:text-[9px] uppercase tracking-[0.14em] block" style={{ fontFamily: "var(--font-mono)" }}>
+                              {t("dashboard.day")} {outfit.day}
+                            </span>
+                            <span className="text-white text-[12px] sm:text-[15px] leading-tight block" style={{ fontFamily: "var(--font-display)" }}>
+                              {dayLabel}
+                            </span>
                           </div>
+                          {/* Per-image download button — only for real (API/AI) images */}
+                          {isApiImage && (
+                            <button
+                              onClick={() => downloadImage(imgSrc, `capsule-${currentSet.city.toLowerCase()}-day${i + 1}.jpg`)}
+                              className="no-print absolute top-2 right-2 w-7 h-7 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center hover:bg-white/40 transition-colors cursor-pointer"
+                              title={t("dashboard.downloadImage")}
+                            >
+                              <Icon name="download" size={13} className="text-white" />
+                            </button>
+                          )}
                         </div>
                       );
                     })}
                   </div>
                   {/* Overlay badges */}
                   <div className="absolute top-3 left-3 flex gap-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
-                      <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.aiGenerated")}
-                    </span>
+                    {hasApiImages && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
+                        <Icon name="auto_awesome" size={10} className="text-white" filled /> {t("dashboard.aiGenerated")}
+                      </span>
+                    )}
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-sm text-white text-[9px] uppercase tracking-[0.12em]" style={{ fontFamily: "var(--font-mono)" }}>
                       {currentSet.city}, {currentSet.country}
                     </span>
@@ -875,7 +937,7 @@ export function ProDashboard() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>{t("examples.pro.profile")}</span>
+                    <span className="text-[16px] text-[#292524] block" style={{ fontFamily: "var(--font-display)" }}>{t("dashboard.yourProfile")}</span>
                     <span className="text-[11px] text-[#8A7B6E]" style={{ fontFamily: "var(--font-mono)" }}>
                       {profile.gender ? `${profile.gender.charAt(0).toUpperCase() + profile.gender.slice(1)} · ` : ""}{profile.silhouette ? `${t(`onboarding2.silhouette${profile.silhouette.charAt(0).toUpperCase() + profile.silhouette.slice(1)}`)}` : ""}
                     </span>
@@ -1032,7 +1094,7 @@ export function ProDashboard() {
                 <p className="text-[12px] text-white/80 mb-4 leading-relaxed" style={{ fontFamily: "var(--font-body)" }}>
                   {t("examples.pro.ctaBody")}
                 </p>
-                <SocialShareButton />
+                <SocialShareButton shareUrl={tripId ? `https://travelscapsule.com/share/${tripId}?utm_source=share&utm_medium=social&utm_campaign=capsule` : undefined} shareTitle={t("dashboard.multiCityStyleGuide")} />
                 <p className="text-[10px] text-white/60 text-center mt-3" style={{ fontFamily: "var(--font-mono)" }}>
                   {t("examples.pro.freePreview")}
                 </p>
