@@ -393,6 +393,18 @@ function getDefaultAvoid(lang: string): string {
   return defaults[lang] || 'Pack versatile pieces that mix and match.';
 }
 
+/** Localized weather fallback style hint */
+function getLocalizedStyleHint(lang: string): string {
+  const hints: Record<string, string> = {
+    ko: '다양한 날씨에 대비해 믹스 앤 매치 가능한 레이어를 챙기세요.',
+    ja: '変わりやすい天候に備えて、重ね着できるアイテムを持参してください。',
+    zh: '准备可搭配的分层单品，应对多变天气。',
+    fr: 'Emportez des couches polyvalentes pour des conditions variées.',
+    es: 'Lleva capas versátiles para condiciones mixtas.',
+  };
+  return hints[lang] || 'Pack versatile layers for mixed conditions.';
+}
+
 /** Capsule principles localized by language */
 function getCapsulePrinciples(
   lang: string,
@@ -548,6 +560,7 @@ export async function runPreview(
       : `${staticBase}/pro-outfit-1.png`;
 
     // ── 2. Weather — fast API call (~2s), uses exact travel dates when available ──
+    const weatherStyleHintFallback = getLocalizedStyleHint(lang);
     const weatherResults = await Promise.all(
       cities.map(async (city): Promise<WeatherResult> => {
         if (!city.lat || !city.lon) {
@@ -555,7 +568,7 @@ export async function runPreview(
             city: city.name, month,
             temperature_day_avg: 20, temperature_night_avg: 13,
             precipitation_prob: 0.3, climate_band: 'warm',
-            style_hint: 'Pack versatile layers for mixed conditions.',
+            style_hint: weatherStyleHintFallback,
           };
         }
         try {
@@ -573,7 +586,7 @@ export async function runPreview(
             city: city.name, month,
             temperature_day_avg: 20, temperature_night_avg: 13,
             precipitation_prob: 0.3, climate_band: 'warm',
-            style_hint: 'Pack versatile layers for mixed conditions.',
+            style_hint: weatherStyleHintFallback,
           };
         }
       })
