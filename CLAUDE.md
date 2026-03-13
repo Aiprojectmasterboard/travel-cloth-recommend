@@ -21,7 +21,6 @@ AI가 날씨·도시 바이브 분석 → 무드 네이밍 → 티저 이미지 
 
 | 플랜 | 가격 | 내용 | 제한 |
 |------|------|------|------|
-| Standard | ~~Free~~ **DEPRECATED** | Pro로 리다이렉트 (`polarCheckout.ts` getDashboardRoute) | DB에는 존재하나 실질적 미사용 |
 | Pro | $3.99 (일회성) | 도시당 4개 AI 코디 (2x2 그리드), Ultra Hi-Res, 1회 재생성, 최대 3개 도시 | 없음 |
 | Annual | $9.99/년 (구독) | Pro 전체 + 연 12회 제한 + Priority AI + VIP Concierge + Style DNA | 서버사이드 12회 체크 필수 |
 
@@ -63,7 +62,6 @@ travel-cloth-recom/
 │   │   │   ├── OnboardingStep3.tsx   ← 사진 업로드(선택)
 │   │   │   ├── OnboardingStep4.tsx   ← 최종 확인
 │   │   │   ├── PreviewPage.tsx       ← Free 결과 + 페이월
-│   │   │   ├── StandardDashboard.tsx ← Standard 플랜 대시보드
 │   │   │   ├── ProDashboard.tsx      ← Pro 플랜 대시보드
 │   │   │   ├── AnnualDashboard.tsx   ← Annual 플랜 대시보드
 │   │   │   ├── SharePage.tsx         ← 공유 페이지
@@ -130,27 +128,19 @@ travel-cloth-recom/
 ```
 [온보딩] 도시 + 사진(선택) 입력
     ↓
-[POST /api/preview] → runPreview() → 즉시 응답 (날씨+바이브+폴백URL)
-    ↓ waitUntil()
-[runTeaserBackground] → teaserAgent → gpt-image-1.5 이미지 생성 → R2 저장
-    ↓                     ↓ (실패 시)
-    ↓               getCityFallbackImage(city, gender)
-    ↓                     ↓
-    ↓               도시별 Unsplash 폴백 이미지 사용
+[POST /api/preview] → runPreview() → 즉시 응답 (날씨+바이브+캡슐 프리뷰)
+    ↓ (티저 생성 DISABLED — 무료 프리뷰에서 AI 이미지 비용 없음)
     ↓
-[generation_jobs INSERT] → status: completed | failed_fallback
-    ↓
-[프론트: PreviewPage] → pollTeaser() 3초 간격 (최대 25회 = 75초)
-    ↓ ready → polledTeaserUrl 설정
-    ↓ fallback → 서버 폴백 URL 사용
+[프론트: PreviewPage] → 도시별 Unsplash 랜드마크 사진 4장 모두 블러+잠금 표시
     ↓
 [결제] Polar checkout → webhook → runResult()
     ↓
-[Post-payment] imageGenAgent → gpt-image-1.5 → R2 → result images
+[Post-payment] capsuleAgent → styleAgent → imageGenAgent → gpt-image-1.5 → R2 → result images
 ```
 
 **핵심 규칙:**
-- teaserAgent: gpt-image-1.5로 1장 실제 생성. 나머지 3장은 CSS blur+tint overlay (프론트 처리)
+- PreviewPage: 4장 모두 블러+잠금 처리 (AI 이미지 생성 없음, 도시 랜드마크 사진 사용)
+- teaserAgent: 서버에서 DISABLED (비용 절감). 티저 엔드포인트는 하위 호환용으로만 유지
 - Identity Engine: 사용자 사진 업로드 시 /images/edits로 동일 인물 유지, 미업로드 시 기본 모델
 - gpt-image-1.5 실패 시 반드시 **도시별** 폴백 이미지 사용 (빈 문자열이나 파리 이미지 절대 금지)
 - waitUntil()에 반드시 `.catch()` 핸들러 필요 — 없으면 에러가 조용히 삼켜짐
@@ -165,7 +155,7 @@ gpt-image-1.5 이미지 생성 실패 시 사용. **3곳에 모두 일관되게 
 ### 1. Worker — `orchestrator.ts` → `CITY_FALLBACK_IMAGES`
 - 10개 도시 + _default, male/female 분리
 - `getCityFallbackImage(city, gender)` export 함수
-- runTeaserBackground catch + /api/preview fallbackTeaser에서 사용
+- Post-payment 이미지 생성 실패 시 + /api/result fallback에서 사용
 
 ### 2. Frontend — `outfitGenerator.ts` → `MALE_OUTFITS` / `FEMALE_OUTFITS`
 - 10개 도시: paris, rome, barcelona, tokyo, london, "new york", seoul, milan, bali, bangkok + _default
@@ -189,7 +179,6 @@ GET  /api/teaser/:tripId            ← 티저 폴링 (ready/pending/fallback)
 POST /api/preview/email             ← 이메일 캡처 + Resend
 POST /api/payment/checkout          ← Polar checkout
 POST /api/payment/webhook           ← HMAC-SHA256 검증 필수
-POST /api/payment/upgrade           ← Standard → Pro 업그레이드
 GET  /api/result/:tripId            ← 결제 후 결과
 POST /api/generate                  ← Pro 이미지 온디맨드 생성
 GET  /api/share/:tripId
@@ -305,21 +294,8 @@ data:    JetBrains Mono
 - **수정**: `status === 'ready'`일 때 sessionStorage 업데이트 로직 추가
 - **규칙**: 외부 리다이렉트(결제 등) 전에 반드시 sessionStorage에 최신 데이터 동기화
 
-### BUG-006: StandardDashboard 티저 URL 미전파 [2026-03-07]
-- **파일**: `PreviewPage.tsx`, `TripContext.tsx`, `StandardDashboard.tsx`
-- **증상**: PreviewPage에서 AI 티저 생성 확인 → Standard 플랜 선택 → 기본 이미지만 표시
-- **원인**:
-  1. PreviewPage 폴링 결과를 로컬 state에만 저장, TripContext/sessionStorage 미동기화
-  2. TripProvider는 마운트 시 sessionStorage에서 초기화 → 이후 재읽기 없음
-  3. Standard는 무료 플랜 → `loadResult()` 호출 시 항상 402 반환 → 데이터 미로드
-- **수정**:
-  1. `TripContext`에 `updatePreviewTeaser(url)` 메서드 추가 (state + sessionStorage 동시 갱신)
-  2. PreviewPage에서 폴링 성공 시 `updatePreviewTeaser()` 호출
-  3. StandardDashboard에서 `loadResult()` 제거 (무료 플랜은 order가 없으므로 402 필연)
-  4. StandardDashboard 티저 폴링: static fallback URL 감지 → 실제 AI 이미지 대기
-- **규칙**:
-  - TripContext 상태 변경 시 반드시 React state와 sessionStorage **동시** 갱신
-  - 무료 플랜(Standard)은 `/api/result/:tripId` 호출 금지 (402 반환 확정)
+### BUG-006: TripContext 상태 동기화 [2026-03-07] (RESOLVED — Standard 플랜 삭제됨)
+- **규칙**: TripContext 상태 변경 시 반드시 React state와 sessionStorage **동시** 갱신
 
 ### BUG-007: Pro 플랜 코디 이미지 ↔ 아이템 리스트 불일치 [2026-03-07]
 - **파일**: `orchestrator.ts`, `styleAgent.ts`, `ProDashboard.tsx`
@@ -370,8 +346,8 @@ data:    JetBrains Mono
 - **수정**: `apiDailyPlan.filter(d => d.city === cityName)` 도시 필터 후 인덱스 조회. 매칭 실패 시 빈 아이템이 나오되 다른 도시 데이터는 절대 표시 안함
 - **규칙**: daily_plan 조회 시 반드시 **도시명 필터** 적용 후 인덱스 접근. 글로벌 인덱스 접근 금지.
 
-### BUG-012: AnnualDashboard/StandardDashboard 임의 슬라이싱 [2026-03-08]
-- **파일**: `figma/src/app/pages/AnnualDashboard.tsx`, `StandardDashboard.tsx`
+### BUG-012: AnnualDashboard 임의 슬라이싱 [2026-03-08]
+- **파일**: `figma/src/app/pages/AnnualDashboard.tsx`
 - **증상**: 코디 이미지와 무관한 아이템 리스트 표시
 - **원인**: `apiCapsuleItems.slice(idx * 3, idx * 3 + 5)` — 임의 슬라이싱으로 아이템 선택
 - **수정**: `daily_plan[].outfit[]` 이름으로 capsule items 대소문자 무관 매칭
@@ -395,16 +371,14 @@ data:    JetBrains Mono
 - **규칙**: **모든 이미지 생성 엔드포인트**는 반드시 사용자 프로필(성별, 체형, 스타일)을 프롬프트에 포함해야 함. 프롬프트에 "Male/Female model"이 없으면 버그.
 
 ### BUG-015: 프론트엔드 하드코딩 영어 [2026-03-09]
-- **파일**: `PreviewPage.tsx`, `ProDashboard.tsx`, `AnnualDashboard.tsx`, `StandardDashboard.tsx`, `OnboardingStep3.tsx`
+- **파일**: `PreviewPage.tsx`, `ProDashboard.tsx`, `AnnualDashboard.tsx`, `OnboardingStep3.tsx`
 - **증상**: 한국어 설정인데 aesthetic("Streetwear"), 날짜("Mar 12"), 활동명("Arrival") 등이 영어로 표시
 - **원인**:
   1. aesthetic 라벨: 영어 키로 저장되어 번역 없이 그대로 표시
   2. 날짜: `toLocaleDateString("en-US", ...)` 하드코딩
-  3. StandardDashboard 폴백 활동명: 영어 하드코딩
 - **수정**:
   1. `aesthetic.{label}` i18n 키 6개 x 6개 언어 추가
   2. `dateLocale` 변수로 사용자 언어 → locale 매핑 (`ko → ko-KR` 등)
-  3. StandardDashboard 활동명 `t("dashboard.activity.xxx")` 사용
 - **규칙**: **사용자에게 표시되는 모든 텍스트**는 `t()` 함수 또는 i18n 키 사용 필수. 하드코딩 문자열은 디버그 로그에만 허용.
 
 ---
@@ -482,7 +456,7 @@ const items = dayPlan.outfit.map(name =>
   capsuleItems.find(c => c.name.toLowerCase() === name.toLowerCase())
 );
 ```
-- 이 규칙은 ProDashboard, AnnualDashboard, StandardDashboard **모두**에 적용
+- 이 규칙은 ProDashboard, AnnualDashboard **모두**에 적용
 
 ### 이미지 인덱스 규칙 (Worker + Dashboard)
 ```typescript
@@ -503,11 +477,6 @@ images.map((img) => {
 - AI(Claude/GPT) 응답에서 문자열 비교는 항상 `.toLowerCase()` 사용
 - 특히 `daily_plan[].outfit[]` ↔ `items[].name` 매칭에 필수
 - `Map<lowercase, canonical>` 패턴 권장
-
-### 무료 플랜(Standard) API 호출 규칙
-- Standard 플랜은 Polar 결제 없음 → `orders` 테이블에 레코드 없음
-- `/api/result/:tripId`는 order가 없으면 402 반환 → **Standard에서 호출 금지**
-- Standard 데이터: `preview` (TripContext) + teaser 폴링으로만 구성
 
 ### 이미지 생성 프로필 규칙 (모든 이미지 생성 경로)
 ```
@@ -652,7 +621,7 @@ styleAgent → imageGenAgent → 4장 개별 이미지 (1024x1536 portrait)
 5. i18n (6개 언어)
 6. 온보딩 4단계 + 90+ 도시 + 한국어 alias
 7. PreviewPage 티저 폴링 + sessionStorage 동기화
-8. 3개 대시보드 (Standard/Pro/Annual) + 프로필 fallback
+8. 2개 대시보드 (Pro/Annual) + 프로필 fallback
 9. ErrorBoundary + React.lazy() 코드 분할
 10. 도시별 폴백 이미지 시스템 (Worker + Frontend 3곳)
 11. TDZ 크래시 수정 + 방지 장치
@@ -661,7 +630,6 @@ styleAgent → imageGenAgent → 4장 개별 이미지 (1024x1536 portrait)
 14. R2 이미지 저장 + CDN
 15. CI/CD (GitHub Actions → Pages + Worker 자동 배포)
 16. TripContext updatePreviewTeaser() 상태 동기화
-17. Standard 플랜 티저 폴링 + loadResult 제거
 18. AI 파이프라인 순서 변경 (capsule → style → imageGen)
 19. Pro 코디 이미지 ↔ 아이템 매칭 (daily_plan 기반)
 20. 정확한 날짜 기반 날씨 쿼리 (Open-Meteo Archive API)
@@ -679,7 +647,6 @@ styleAgent → imageGenAgent → 4장 개별 이미지 (1024x1536 portrait)
 32. AnnualDashboard 날짜 locale 하드코딩(en-US) → 사용자 언어 매핑
 33. capsuleAgent 최소 4룩 보장 (MIN_DAILY_PLAN_PER_CITY=4, padDailyPlanToMinimum 안전장치)
 34. 3개 대시보드 ExampleProPage/ExampleAnnualPage 디자인 매칭 리디자인
-35. StandardDashboard 2x2 그리드 (1장 선명 + 3장 블러+잠금)
 36. 대시보드 사이드바: 프로필 → 패킹리스트 → 날씨 → 스타일통계 → CTA 순서 통일
 37. 스타일링 품질 시스템: Trip Styling Brief + 3색 규칙 + Third Piece + Rule of Thirds
 38. capsuleAgent 아이템 확장 필드 (color, material, fit, formality, water_resistant)

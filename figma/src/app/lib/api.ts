@@ -75,6 +75,11 @@ export interface VibeData {
 export interface CapsuleItem {
   name: string
   category: string
+  color?: string
+  material?: string
+  fit?: string
+  formality?: string
+  water_resistant?: boolean
   why: string
   versatility_score: number
 }
@@ -101,7 +106,6 @@ export interface ResultImage {
 
 export interface GrowthData {
   share_url: string
-  upgrade_token: string | null
   social_copies: { instagram: string; twitter: string; kakao: string }
 }
 
@@ -125,7 +129,7 @@ export interface GridImage {
 
 export interface ResultData {
   trip_id: string
-  plan: 'standard' | 'pro' | 'annual'
+  plan: 'pro' | 'annual'
   cities: Array<{ name: string; country: string; lat?: number; lon?: number; days?: number }>
   month: number
   weather: WeatherData[]

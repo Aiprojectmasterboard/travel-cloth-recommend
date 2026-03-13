@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { chatCompletionJSON } from './agents/openaiChat';
 import { runPreview, runResult, runTeaserBackground, getCityFallbackImage, getEffectiveFaceUrl } from './agents/orchestrator';
-import { generateUpgradeToken, verifyUpgradeToken } from './agents/growthAgent';
 import { imageGenAgent } from './agents/imageGenAgent';
 
 // ─── Environment Bindings ─────────────────────────────────────────────────────
@@ -27,7 +26,6 @@ export type Bindings = {
   R2_ACCOUNT_ID: string;
   R2_BUCKET_NAME: string;
   R2_PUBLIC_URL: string;
-  POLAR_PRODUCT_ID_STANDARD: string;
   POLAR_PRODUCT_ID_PRO: string;
   POLAR_PRODUCT_ID_ANNUAL: string;
   SKIP_TURNSTILE: string; // "true" for local dev only
@@ -36,7 +34,7 @@ export type Bindings = {
   R2: R2Bucket;
 };
 
-export type PlanType = 'standard' | 'pro' | 'annual';
+export type PlanType = 'pro' | 'annual';
 
 // ─── Supabase REST Helper ─────────────────────────────────────────────────────
 
@@ -159,9 +157,8 @@ function isValidEmail(v: string): boolean {
 // ─── Polar Product ID Picker ──────────────────────────────────────────────────
 
 function polarProductId(plan: PlanType, env: Bindings): string {
-  if (plan === 'pro') return env.POLAR_PRODUCT_ID_PRO;
   if (plan === 'annual') return env.POLAR_PRODUCT_ID_ANNUAL;
-  return env.POLAR_PRODUCT_ID_STANDARD;
+  return env.POLAR_PRODUCT_ID_PRO;
 }
 
 // ─── JWT Auth Helper ──────────────────────────────────────────────────────────
@@ -271,6 +268,9 @@ app.post('/api/trigger-pipeline/:tripId', async (c) => {
   const trips = (await tripRes.json()) as Array<{ status: string }>;
   if (trips.length === 0) {
     return c.json({ error: 'Trip not found' }, 404);
+  }
+  if (trips[0].status === 'processing') {
+    return c.json({ ok: true, already_processing: true, message: 'Pipeline already running' });
   }
 
   // 4. Get user email from order (for fulfillment email)
@@ -942,8 +942,8 @@ app.post('/api/payment/checkout', async (c) => {
   // trip_id is optional — auto-generate if not provided so the frontend
   // doesn't need to create a trip before initiating checkout.
   const resolvedTripId = (trip_id && isValidUUID(trip_id)) ? trip_id : crypto.randomUUID();
-  if (!plan || !['standard', 'pro', 'annual'].includes(plan)) {
-    return c.json({ error: 'plan must be standard | pro | annual' }, 400);
+  if (!plan || !['pro', 'annual'].includes(plan)) {
+    return c.json({ error: 'plan must be pro | annual' }, 400);
   }
   if (customer_email && !isValidEmail(customer_email)) {
     return c.json({ error: 'Invalid customer_email' }, 400);
@@ -1040,7 +1040,7 @@ app.post('/api/payment/webhook', async (c) => {
     // Polar stores checkout metadata on both data.metadata and data.checkout.metadata
     const meta = event.data.metadata ?? event.data.checkout?.metadata ?? {};
     const tripId = (meta.trip_id as string | undefined);
-    const plan = ((meta.plan as string | undefined) ?? 'standard') as PlanType;
+    const plan = ((meta.plan as string | undefined) ?? 'pro') as PlanType;
     const amount = event.data.net_amount ?? event.data.amount ?? 500;
     const userEmail = event.data.customer?.email ?? '';
 
@@ -1061,7 +1061,7 @@ app.post('/api/payment/webhook', async (c) => {
       return c.json({ received: true, idempotent: true });
     }
 
-    // Insert order record (include user_id if provided in checkout metadata)
+    // Insert order record (include user_id + customer_email if available)
     const orderRes = await supabase(c.env, '/orders', {
       method: 'POST',
       body: JSON.stringify({
@@ -1070,6 +1070,7 @@ app.post('/api/payment/webhook', async (c) => {
         status: 'paid',
         amount,
         plan,
+        ...(userEmail ? { customer_email: userEmail } : {}),
         ...(metaUserId ? { user_id: metaUserId } : {}),
       }),
     });
@@ -1086,23 +1087,6 @@ app.post('/api/payment/webhook', async (c) => {
         ...(metaUserId ? { user_id: metaUserId } : {}),
       }),
     });
-
-    // Standard plan: generate upgrade token and store on order
-    if (plan === 'standard') {
-      try {
-        const upgradeToken = await generateUpgradeToken(tripId, c.env);
-        await supabase(
-          c.env,
-          `/orders?polar_order_id=eq.${encodeURIComponent(polarOrderId)}`,
-          {
-            method: 'PATCH',
-            body: JSON.stringify({ upgrade_token: upgradeToken }),
-          }
-        );
-      } catch (err) {
-        console.error('[Webhook] Failed to generate upgrade token:', (err as Error).message);
-      }
-    }
 
     // NOTE: Do NOT run runResult() in waitUntil() — the full AI pipeline takes
     // 60-90s which exceeds Cloudflare's ~30s background task limit. Instead, mark
@@ -1173,92 +1157,12 @@ app.post('/api/payment/webhook', async (c) => {
   return c.json({ received: true });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// 6. POST /api/payment/upgrade
-// ─────────────────────────────────────────────────────────────────────────────
-// Upgrades a Standard purchase to Pro. Verifies the 3-minute upgrade token,
-// creates a Polar checkout for the $2 Pro upgrade price difference.
-
-app.post('/api/payment/upgrade', async (c) => {
-  let body: { trip_id?: string; upgrade_token?: string };
-  try {
-    body = await c.req.json();
-  } catch {
-    return c.json({ error: 'Invalid JSON body' }, 400);
-  }
-
-  const { trip_id, upgrade_token } = body;
-  if (!trip_id || !isValidUUID(trip_id)) {
-    return c.json({ error: 'Valid trip_id required' }, 400);
-  }
-  if (!upgrade_token || typeof upgrade_token !== 'string') {
-    return c.json({ error: 'upgrade_token required' }, 400);
-  }
-
-  // Verify the upgrade token (3-minute HMAC window)
-  const isValid = await verifyUpgradeToken(trip_id, upgrade_token, c.env);
-  if (!isValid) {
-    return c.json({ error: 'Invalid or expired upgrade token' }, 403);
-  }
-
-  // Verify Standard order exists
-  const orderRes = await supabase(
-    c.env,
-    `/orders?trip_id=eq.${trip_id}&plan=eq.standard&status=eq.paid&limit=1`
-  );
-  const orders = (await orderRes.json()) as Array<{ id: string; polar_order_id: string }>;
-  if (orders.length === 0) {
-    return c.json({ error: 'No paid standard order found for this trip' }, 404);
-  }
-
-  const standardOrder = orders[0];
-
-  // Create Polar checkout for Pro upgrade
-  const upgradeReqOrigin = c.req.header('origin') ?? 'https://travelscapsule.com';
-  const upgradeAllowed = ['https://travelscapsule.com', 'https://www.travelscapsule.com', 'https://travel-cloth-recommend.pages.dev'];
-  const upgradeBase = upgradeAllowed.includes(upgradeReqOrigin) ? upgradeReqOrigin : 'https://travelscapsule.com';
-  const upgradeReturnUrl = `${upgradeBase}/checkout/success?plan=pro&tripId=${trip_id}`;
-  const checkoutPayload = {
-    product_id: c.env.POLAR_PRODUCT_ID_PRO,
-    metadata: {
-      trip_id,
-      plan: 'pro',
-      upgrade_from: standardOrder.polar_order_id,
-    },
-    success_url: upgradeReturnUrl,
-  };
-
-  const polarRes = await fetch('https://api.polar.sh/v1/checkouts/', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${c.env.POLAR_ACCESS_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(checkoutPayload),
-    signal: AbortSignal.timeout(15_000),
-  });
-
-  if (!polarRes.ok) {
-    console.error('[POST /api/payment/upgrade] Polar error:', await polarRes.text());
-    return c.json({ error: 'Failed to create upgrade checkout' }, 502);
-  }
-
-  const session = (await polarRes.json()) as { url: string; id: string };
-
-  // Record upgrade_from reference on the standard order
-  await supabase(c.env, `/orders?id=eq.${standardOrder.id}`, {
-    method: 'PATCH',
-    body: JSON.stringify({ upgrade_initiated_at: new Date().toISOString() }),
-  });
-
-  return c.json({ checkout_url: session.url });
-});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 7. GET /api/trips/:tripId
 // ─────────────────────────────────────────────────────────────────────────────
 // Unified trip data for ResultClient. Requires paid order.
-// Returns trip + generation_jobs + capsule wardrobe + upgrade_token.
+// Returns trip + generation_jobs + capsule wardrobe.
 
 // ─────────────────────────────────────────────────────────────────────────────
 // GET /api/preview/:tripId
@@ -1401,7 +1305,7 @@ app.get('/api/trips/:tripId', async (c) => {
     status: trip.status,
     cities: trip.cities,
     month: trip.month,
-    plan: (order.plan as string) ?? 'standard',
+    plan: (order.plan as string) ?? 'pro',
     generation_jobs: jobRows,
     wardrobe_items: (capsule?.items as unknown[]) ?? [],
     daily_plan: (capsule?.daily_plan as unknown[]) ?? [],
@@ -1497,7 +1401,7 @@ app.get('/api/result/:tripId', async (c) => {
   return c.json({
     // Top-level fields expected by api.ts ResultData
     trip_id: tripId,
-    plan: (order.plan as string) ?? 'standard',
+    plan: (order.plan as string) ?? 'pro',
     cities: tripRow.cities,
     month: tripRow.month,
     weather,
@@ -1750,12 +1654,7 @@ app.post('/api/regenerate', async (c) => {
 
     const order = orders[0];
 
-    // ── 3. Standard plan is not eligible ──────────────────────────────────
-    if (order.plan === 'standard') {
-      return c.json({ error: 'plan_not_eligible' }, 403);
-    }
-
-    // ── 4. Check regen quota ───────────────────────────────────────────────
+    // ── 3. Check regen quota ───────────────────────────────────────────────
     // Both 'pro' and 'annual' allow exactly 1 regeneration per trip.
     // Regen jobs are identified by job_type='regen' (migration 005).
     //

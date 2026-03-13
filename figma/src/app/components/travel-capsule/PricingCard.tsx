@@ -3,7 +3,7 @@ import { BtnPrimary, BtnSecondary, BtnDark } from "./Buttons";
 import { CheckItem } from "./CheckItem";
 
 interface PricingCardProps {
-  variant: "standard" | "pro" | "annual";
+  variant: "pro" | "annual";
   title: string;
   price: string;
   period?: string;
@@ -79,22 +79,5 @@ export function PricingCard({ variant, title, price, period = "/month", features
     );
   }
 
-  // Standard
-  return (
-    <div className="flex flex-col p-8 bg-white border border-[#C4613A]/10 rounded-2xl">
-      <h3 className="not-italic text-[28px] text-[#292524]" style={{ fontFamily: "var(--font-display)" }}>{title}</h3>
-      <div className="mt-4 flex items-baseline gap-1">
-        <span className="text-[48px] text-[#292524]" style={{ fontFamily: "var(--font-display)", fontWeight: 700 }}>{price}</span>
-        <span className="text-[16px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>{period}</span>
-      </div>
-      <div className="mt-6 flex flex-col gap-3">
-        {features.map((f) => (
-          <CheckItem key={f} label={f} />
-        ))}
-      </div>
-      <div className="mt-8">
-        <BtnSecondary onClick={onSelect} className="w-full">Get Started</BtnSecondary>
-      </div>
-    </div>
-  );
+  return null;
 }

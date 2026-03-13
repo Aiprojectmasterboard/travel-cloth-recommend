@@ -4,6 +4,7 @@ import { Icon } from "../components/travel-capsule";
 import { getDashboardRoute, type PlanKey } from "../services/polarCheckout";
 import { useAuth } from "../context/AuthContext";
 import { useTrip } from "../context/TripContext";
+import { useLang } from "../context/LanguageContext";
 import { WORKER_URL } from "../lib/api";
 import { GA } from "../lib/analytics";
 import { SEO } from "../components/SEO";
@@ -19,17 +20,17 @@ import { SEO } from "../components/SEO";
  *   5. Once confirmed: grant plan access → load AI results → navigate to dashboard
  */
 
-/* ── Step definitions ─────────────────────────────────────────────── */
-const STEPS = [
-  { label: "Payment confirmed",      icon: "payment",      minPct: 0,  maxPct: 15 },
-  { label: "Analyzing weather...",    icon: "thermostat",   minPct: 15, maxPct: 30 },
-  { label: "Matching city vibes...",  icon: "palette",      minPct: 30, maxPct: 50 },
-  { label: "Consulting style AI...", icon: "auto_awesome",  minPct: 50, maxPct: 70 },
-  { label: "Generating outfits...",  icon: "checkroom",     minPct: 70, maxPct: 90 },
-  { label: "Finalizing capsule...",  icon: "celebration",   minPct: 90, maxPct: 100 },
-] as const;
-
 type Status = "verifying_payment" | "confirmed" | "loading_result" | "ready";
+
+/* ── Step icon list (icons only — labels come from t() at render time) ── */
+const STEP_ICONS = [
+  { icon: "payment",      minPct: 0,  maxPct: 15 },
+  { icon: "thermostat",   minPct: 15, maxPct: 30 },
+  { icon: "palette",      minPct: 30, maxPct: 50 },
+  { icon: "auto_awesome", minPct: 50, maxPct: 70 },
+  { icon: "checkroom",    minPct: 70, maxPct: 90 },
+  { icon: "celebration",  minPct: 90, maxPct: 100 },
+] as const;
 
 /* ── Map status → step range ──────────────────────────────────────── */
 function statusToStep(status: Status): { stepIndex: number; rangeMin: number; rangeMax: number } {
@@ -74,15 +75,16 @@ function CircularProgress({ progress }: { progress: number }) {
   );
 }
 
-/* ── Step checklist ────────────────────────────────────────────────── */
-function StepChecklist({ currentStep }: { currentStep: number }) {
+/* ── Step checklist (receives translated labels from parent) ──────── */
+function StepChecklist({ currentStep, stepLabels }: { currentStep: number; stepLabels: string[] }) {
   return (
     <div className="mt-8 space-y-3 text-left max-w-[320px] mx-auto">
-      {STEPS.map((step, i) => {
+      {STEP_ICONS.map((step, i) => {
         const isCompleted = i < currentStep;
         const isCurrent = i === currentStep;
+        const label = stepLabels[i] ?? "";
         return (
-          <div key={step.label} className="flex items-center gap-3" style={{ transition: "all 0.5s ease" }}>
+          <div key={step.icon + i} className="flex items-center gap-3" style={{ transition: "all 0.5s ease" }}>
             {isCompleted ? (
               <span className="material-symbols-outlined text-green-600 flex-shrink-0" style={{ fontSize: 22, fontVariationSettings: "'FILL' 1" }}>check_circle</span>
             ) : isCurrent ? (
@@ -94,7 +96,7 @@ function StepChecklist({ currentStep }: { currentStep: number }) {
               className={isCompleted ? "text-[14px] text-[#a8a29e] line-through" : isCurrent ? "text-[14px] text-[#C4613A]" : "text-[14px] text-[#a8a29e]"}
               style={{ fontFamily: "var(--font-body)", fontWeight: isCurrent ? 600 : 400, transition: "all 0.5s ease" }}
             >
-              {step.label}
+              {label}
             </span>
             <span
               className={`material-symbols-outlined ml-auto flex-shrink-0 ${isCompleted ? "text-[#a8a29e]" : isCurrent ? "text-[#C4613A]" : "text-[#D6D3D1]"}`}
@@ -115,6 +117,7 @@ export function CheckoutSuccess() {
   const [searchParams] = useSearchParams();
   const { setPurchasedPlan } = useAuth();
   const { tripId: ctxTripId, loadResult } = useTrip();
+  const { t } = useLang();
 
   // Read params from URL (set by Polar redirect) + sessionStorage fallbacks
   const pendingCheckout = (() => {
@@ -130,6 +133,16 @@ export function CheckoutSuccess() {
 
   const [status, setStatus] = useState<Status>("verifying_payment");
   const pollStarted = useRef(false);
+
+  /* ── Step labels (translated) ───────────────────────────────────── */
+  const stepLabels = [
+    t("checkout.step.paymentConfirmed"),
+    t("checkout.step.analyzingWeather"),
+    t("checkout.step.matchingVibes"),
+    t("checkout.step.consultingAI"),
+    t("checkout.step.generatingOutfits"),
+    t("checkout.step.finalizingCapsule"),
+  ];
 
   /* ── Progress state ────────────────────────────────────────────── */
   const [progress, setProgress] = useState(0);
@@ -154,8 +167,8 @@ export function CheckoutSuccess() {
         }
         const increment = status === "ready" ? 2 : 0.5;
         const next = Math.min(prev + increment, rangeMax);
-        for (let s = STEPS.length - 1; s >= 0; s--) {
-          if (next >= STEPS[s].minPct) {
+        for (let s = STEP_ICONS.length - 1; s >= 0; s--) {
+          if (next >= STEP_ICONS[s].minPct) {
             setCurrentStep(s);
             break;
           }
@@ -231,27 +244,21 @@ export function CheckoutSuccess() {
   /* ── Heading text based on status ──────────────────────────────── */
   const heading = (() => {
     switch (status) {
-      case "verifying_payment":
-        return "Verifying Payment...";
-      case "confirmed":
-        return "Payment Confirmed!";
-      case "loading_result":
-        return "Creating Your Capsule";
-      case "ready":
-        return "Your Capsule is Ready!";
+      case "verifying_payment": return t("checkout.heading.verifying");
+      case "confirmed":         return t("checkout.heading.confirmed");
+      case "loading_result":    return t("checkout.heading.loading");
+      case "ready":             return t("checkout.heading.ready");
     }
   })();
 
   const subtitle = (() => {
     switch (status) {
-      case "verifying_payment":
-        return "We're confirming your payment with Polar. This usually takes a few seconds.";
-      case "confirmed":
-        return `Your ${plan === "annual" ? "Annual membership" : `${plan.charAt(0).toUpperCase() + plan.slice(1)} plan`} is now active.`;
-      case "loading_result":
-        return "AI is creating your personalized capsule wardrobe.";
-      case "ready":
-        return "Redirecting to your personalized style dashboard...";
+      case "verifying_payment": return t("checkout.subtitle.verifying");
+      case "confirmed":         return plan === "annual"
+        ? t("checkout.subtitle.confirmed.annual")
+        : t("checkout.subtitle.confirmed.pro");
+      case "loading_result":    return t("checkout.subtitle.loading");
+      case "ready":             return t("checkout.subtitle.ready");
     }
   })();
 
@@ -282,20 +289,24 @@ export function CheckoutSuccess() {
               </div>
               <div className="text-left">
                 <span className="text-[14px] text-[#292524] block" style={{ fontFamily: "var(--font-body)", fontWeight: 600 }}>
-                  {plan === "pro" ? "Pro Plan \u2014 $3.99" : "Annual Plan \u2014 $9.99/yr"}
+                  {plan === "pro"
+                    ? t("checkout.plan.pro.label")
+                    : t("checkout.plan.annual.label")}
                 </span>
                 <span className="text-[12px] text-[#57534e]" style={{ fontFamily: "var(--font-body)" }}>
-                  {plan === "pro" ? "4-6 AI outfit images, hi-res, 1 regen" : "12 trips/yr, priority AI, 1 regen, VIP concierge"}
+                  {plan === "pro"
+                    ? t("checkout.plan.pro.desc")
+                    : t("checkout.plan.annual.desc")}
                 </span>
               </div>
             </div>
           </div>
         )}
 
-        <StepChecklist currentStep={currentStep} />
+        <StepChecklist currentStep={currentStep} stepLabels={stepLabels} />
 
         <p className="mt-6 text-[12px] text-[#78716c]" style={{ fontFamily: "var(--font-body)" }}>
-          {status === "ready" ? "Redirecting..." : "This usually takes a few seconds"}
+          {status === "ready" ? t("checkout.footer.redirecting") : t("checkout.footer.wait")}
         </p>
       </div>
 

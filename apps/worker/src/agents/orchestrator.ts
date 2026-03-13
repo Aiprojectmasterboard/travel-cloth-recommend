@@ -8,8 +8,8 @@
  *     → teaser (first city) → capsule free mode → generation_jobs INSERT → return PreviewResponse
  *
  *   runResult(tripId, plan, email, env) — post-payment pipeline:
- *     usage_records update → [pro/annual: styleAgent + imageGenAgent]
- *     → [standard: teaser unblur] → capsuleAgent paid → fulfillmentAgent → growthAgent
+ *     usage_records update → styleAgent + imageGenAgent
+ *     → capsuleAgent paid → fulfillmentAgent → growthAgent
  */
 
 import type { Bindings, PlanType } from '../index';
@@ -646,7 +646,6 @@ export async function runPreview(
 /**
  * Runs the post-payment pipeline after a Polar `order.paid` event.
  *
- * standard → unblur teaser + full capsule + email
  * pro/annual → style prompts + multi-image generation + full capsule + email
  */
 export async function runResult(
@@ -904,7 +903,6 @@ export async function runResult(
   // Persist growth data on trip row
   await sbPatch(env, `/trips?id=eq.${tripId}`, {
     share_url: growth.share_url,
-    upgrade_token: growth.upgrade_token ?? null,
     status: 'completed',
   });
 

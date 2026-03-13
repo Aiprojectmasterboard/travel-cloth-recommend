@@ -271,7 +271,7 @@ export function ProDashboard() {
         weather: {
           temp: weatherInfo ? Math.round(weatherInfo.temperature_day_avg) : 15,
           rain: weatherInfo ? Math.round(weatherInfo.precipitation_prob * 100) : 20,
-          wind: 12,
+          wind: weatherInfo ? Math.round((weatherInfo as WeatherData & { wind_speed_avg?: number }).wind_speed_avg ?? 12) : 12,
           condition: weatherInfo?.climate_band || "mild",
         },
         dailyForecast: weatherInfo?.daily_forecast || [],

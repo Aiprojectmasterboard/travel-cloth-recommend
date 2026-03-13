@@ -46,7 +46,7 @@ interface Trip {
 interface Order {
   id: string;
   trip_id: string;
-  plan: "standard" | "pro" | "annual";
+  plan: "pro" | "annual";
   amount: number;
   created_at: string;
 }
@@ -416,7 +416,6 @@ export function MyPage() {
                 <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.08em] ${
                   purchasedPlan === "annual" ? "bg-[#D4AF37]/15 text-[#B8941E]" :
                   purchasedPlan === "pro" ? "bg-[#C4613A]/10 text-[#C4613A]" :
-                  purchasedPlan === "standard" ? "bg-[#C4613A]/10 text-[#C4613A]" :
                   "bg-[#F5EFE6] text-[#57534e]"
                 }`} style={{ fontFamily: "var(--font-mono)", fontWeight: 600 }}>
                   <Icon name={purchasedPlan ? "verified" : "person"} size={14} filled />
@@ -632,7 +631,7 @@ export function MyPage() {
                             {trip.status === "completed" && (
                               <button
                                 onClick={() => {
-                                  const plan = order?.plan || purchasedPlan || "standard";
+                                  const plan = order?.plan || purchasedPlan || "pro";
                                   navigate(`/dashboard/${plan}`);
                                 }}
                                 className="h-[44px] px-4 bg-[#C4613A] text-white rounded-lg text-[11px] uppercase tracking-[0.06em] hover:bg-[#A84A25] transition-colors cursor-pointer flex items-center gap-1.5"
@@ -649,7 +648,7 @@ export function MyPage() {
                                   // Store trip data for the dashboard to pick up
                                   sessionStorage.setItem("tc_trip_id", trip.id);
                                   sessionStorage.setItem("tc_pending_plan", order.plan);
-                                  const plan = order.plan || "standard";
+                                  const plan = order.plan || "pro";
                                   navigate(`/dashboard/${plan}`);
                                 }}
                                 className="h-[44px] px-4 bg-white border border-[#E8DDD4] text-[#57534e] rounded-lg text-[11px] uppercase tracking-[0.06em] hover:border-[#C4613A]/30 hover:text-[#C4613A] transition-colors cursor-pointer flex items-center gap-1.5"

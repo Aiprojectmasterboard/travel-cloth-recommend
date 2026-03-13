@@ -2,8 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { supabase } from "../lib/supabase";
 import type { User as SupabaseUser, Session } from "@supabase/supabase-js";
 
-/** "standard" kept for backward compat with existing DB records, but no longer offered */
-export type PlanKey = "standard" | "pro" | "annual";
+export type PlanKey = "pro" | "annual";
 
 export interface User {
   id: string;
@@ -43,7 +42,7 @@ const PLAN_KEY = "tc_purchased_plan";
 function readStoredPlan(): PlanKey | null {
   try {
     const v = sessionStorage.getItem(PLAN_KEY);
-    if (v === "standard" || v === "pro" || v === "annual") return v;
+    if (v === "pro" || v === "annual") return v;
   } catch {}
   return null;
 }

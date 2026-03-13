@@ -19,7 +19,6 @@
  *     NOT organization-level OATs.
  *
  *  4. Product structure:
- *     - Standard (Free): one-time product → creates an Order
  *     - Pro ($3.99): one-time product → creates an Order
  *     - Annual ($9.99/yr): subscription product → creates a Subscription
  *
@@ -327,7 +326,7 @@ export async function cancelSubscription(
 }
 
 /**
- * List customer's orders (Standard/Pro purchases).
+ * List customer's orders (Pro purchases).
  * Uses Customer Access Token (NOT OAT).
  *
  * GET /v1/customer-portal/orders/
@@ -356,8 +355,8 @@ export async function listCustomerOrders(
  * PRODUCTION: Set up webhook endpoints in your Polar dashboard
  * to receive these events on your backend:
  *
- * 1. order.paid → Grant Standard/Pro access
- *    - Verify order.product_id matches POLAR_PRODUCTS.standard/pro
+ * 1. order.paid → Grant Pro access
+ *    - Verify order.product_id matches POLAR_PRODUCTS.pro
  *    - Create/update user record with plan access
  *    - Redirect to appropriate dashboard
  *
@@ -374,7 +373,7 @@ export async function listCustomerOrders(
  *    - Downgrade user to free tier
  *    - Revoke VIP benefits
  *
- * 5. order.refunded → Revoke Standard/Pro access
+ * 5. order.refunded → Revoke Pro access
  *    - Remove plan access
  *    - Redirect to pricing page
  *
@@ -394,7 +393,6 @@ export async function listCustomerOrders(
  */
 export function getDashboardRoute(plan: PlanKey): string {
   switch (plan) {
-    case "standard": return "/dashboard/pro"; // Standard plan removed — redirect to Pro
     case "pro": return "/dashboard/pro";
     case "annual": return "/dashboard/annual";
   }

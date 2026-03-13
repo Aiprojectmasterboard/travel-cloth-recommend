@@ -16,7 +16,7 @@ export { WeatherWidget } from "./WeatherWidget";
 export { StyleCodeCard } from "./StyleCodeCard";
 export { MoodCard } from "./MoodCard";
 export { QuoteCard } from "./QuoteCard";
-export { UpgradeBanner, ProUpsellCard, FloatingUpgradeBar } from "./UpgradeBanner";
+export { UpgradeBanner, FloatingUpgradeBar } from "./UpgradeBanner";
 export { TripUsageBar } from "./TripUsageBar";
 export { OnboardingLayout } from "./OnboardingLayout";
 export { LanguageSelector } from "./LanguageSelector";

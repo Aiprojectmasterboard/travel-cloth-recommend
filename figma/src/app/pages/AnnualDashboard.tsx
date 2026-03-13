@@ -155,16 +155,18 @@ export function AnnualDashboard() {
   const [regenLoading, setRegenLoading] = useState(false);
   const [regenError, setRegenError] = useState<string | null>(null);
   const [activeDayIdx, setActiveDayIdx] = useState(0);
+  // IMPORTANT: TDZ 방지 — activeCityIdx는 cityName 등 파생 const보다 먼저 선언
+  const [activeCityIdx, setActiveCityIdx] = useState(0);
   const [sharing, setSharing] = useState(false);
   const mainRef = useRef<HTMLDivElement>(null);
 
-  // Derive city names early — needed by handleRegenerate deps (avoid TDZ)
-  const primaryCity = onboarding.cities[0];
-  const cityName = result?.cities?.[0]?.name || primaryCity?.city || "Tokyo";
-  const countryName = result?.cities?.[0]?.country || primaryCity?.country || "Japan";
+  // All city names for route display — declared before derived city consts (TDZ prevention)
+  const allCityNames = result?.cities?.map((c) => c.name) || onboarding.cities.map((c) => c.city) || [];
 
-  // All city names for route display
-  const allCityNames = result?.cities?.map((c) => c.name) || onboarding.cities.map((c) => c.city) || [cityName];
+  // Derive city names for the ACTIVE city — needed by handleRegenerate deps (avoid TDZ)
+  const primaryCity = onboarding.cities[activeCityIdx] || onboarding.cities[0];
+  const cityName = result?.cities?.[activeCityIdx]?.name || primaryCity?.city || "Tokyo";
+  const countryName = result?.cities?.[activeCityIdx]?.country || primaryCity?.country || "Japan";
 
   const handleExportPdf = useCallback(async () => {
     if (!mainRef.current || pdfExporting) return;
@@ -193,6 +195,11 @@ export function AnnualDashboard() {
     try {
       const res = await regenerateOutfit(tripId || "", cityName);
       if (res.ok && res.image_url) {
+        setAiImages((prev) => {
+          const next = new Map(prev);
+          next.set(`${res.city}::grid`, res.image_url);
+          return next;
+        });
         setRegenUsed(true);
         if (tripId) loadResult(tripId);
       }
@@ -212,12 +219,17 @@ export function AnnualDashboard() {
     if (!purchasedPlan) navigate("/preview", { replace: true });
   }, [purchasedPlan, navigate]);
 
+  // Reset day selection when city tab changes
+  useEffect(() => {
+    setActiveDayIdx(0);
+  }, [activeCityIdx]);
+
   // ─── AI Pipeline Trigger state (declared BEFORE useEffects that reference it — TDZ prevention) ───
   const [genStatus, setGenStatus] = useState<"idle" | "generating" | "done" | "error">("idle");
   const pipelineTriggered = useRef(false);
 
-  // Dummy state kept for compatibility with rendering logic below
-  const aiImages = new Map<string, string>();
+  // State for regenerated images
+  const [aiImages, setAiImages] = useState<Map<string, string>>(new Map());
 
   // Load result only if already completed (page refresh case)
   useEffect(() => {
@@ -320,18 +332,23 @@ export function AnnualDashboard() {
     return "XL";
   })();
 
-  const primaryWeather = apiWeather[0];
-  const primaryVibe = apiVibes[0];
+  const primaryWeather = apiWeather.find((w) => (w as WeatherData & { city?: string }).city?.toLowerCase() === cityName.toLowerCase()) || apiWeather[activeCityIdx] || apiWeather[0];
+  const primaryVibe = apiVibes.find((v) => (v as VibeData & { city?: string }).city?.toLowerCase() === cityName.toLowerCase()) || apiVibes[activeCityIdx] || apiVibes[0];
   const moodLabel = primaryVibe?.mood_label || preview?.mood_label || `${cityName} Style`;
 
-  // Style DNA
+  // Style DNA — deterministic scores based on string hash (no Math.random for stability)
   const styleDNA = useMemo(() => {
     const aesthetics = profile.aesthetics;
     const all = ["Minimalist", "Classic", "Streetwear", "Casual", "Sporty", "Business"];
-    const scores = all.map((a) => ({
-      label: a,
-      percent: aesthetics.includes(a) ? 70 + Math.floor(Math.random() * 25) : 20 + Math.floor(Math.random() * 25),
-    }));
+    const scores = all.map((a, i) => {
+      // Simple deterministic seed from aesthetic name + index
+      const seed = a.split("").reduce((acc, ch) => acc + ch.charCodeAt(0), 0) + i * 7;
+      const pseudoRand = ((seed * 9301 + 49297) % 233280) / 233280;
+      return {
+        label: a,
+        percent: aesthetics.includes(a) ? 70 + Math.floor(pseudoRand * 25) : 20 + Math.floor(pseudoRand * 25),
+      };
+    });
     scores.sort((a, b) => b.percent - a.percent);
     return scores;
   }, [profile.aesthetics]);
@@ -502,7 +519,7 @@ export function AnnualDashboard() {
         <div className="mt-3">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#FDF8F3] border border-[#E8DDD4] text-[10px] text-[#57534e]" style={{ fontFamily: "var(--font-mono)" }}>
             <Icon name="auto_awesome" size={12} className="text-[#C4613A]" />
-            {bodyFitLabel ? `${hasRealData ? "95" : "92"}% AI Confidence · ${bodyFitLabel}` : `${hasRealData ? "95" : "92"}% AI Confidence`}
+            {bodyFitLabel ? `${hasRealData ? "95" : "92"}% ${t("dashboard.aiConfidence")} · ${bodyFitLabel}` : `${hasRealData ? "95" : "92"}% ${t("dashboard.aiConfidence")}`}
           </span>
         </div>
 
@@ -523,8 +540,36 @@ export function AnnualDashboard() {
         )}
 
         <div className="mt-5 max-w-[400px]">
-          <TripUsageBar used={4} total={12} renewMonth={new Date(new Date().getFullYear() + 1, 0).toLocaleDateString(dateLocale, { month: "short", year: "numeric" })} />
+          <TripUsageBar used={1} total={12} renewMonth={new Date(new Date().getFullYear() + 1, 0).toLocaleDateString(dateLocale, { month: "short", year: "numeric" })} />
         </div>
+
+        {/* City tab pills — only shown for multi-city trips */}
+        {allCityNames.length > 1 && (
+          <div className="mt-5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
+            <div className="flex items-center gap-2 min-w-max">
+              {allCityNames.map((name, i) => {
+                const cityEntry = onboarding.cities[i];
+                const dateLabel = cityEntry?.fromDate && cityEntry?.toDate
+                  ? `${new Date(cityEntry.fromDate).toLocaleDateString(dateLocale, { month: "short", day: "numeric" })} – ${new Date(cityEntry.toDate).toLocaleDateString(dateLocale, { month: "short", day: "numeric" })}`
+                  : null;
+                const isActive = activeCityIdx === i;
+                return (
+                  <button
+                    key={`city-tab-${i}`}
+                    onClick={() => setActiveCityIdx(i)}
+                    className={`inline-flex items-center gap-1.5 px-4 rounded-full text-[12px] uppercase tracking-[0.08em] transition-colors cursor-pointer border whitespace-nowrap ${isActive ? "bg-[#C4613A] text-white border-[#C4613A]" : "bg-white text-[#57534e] border-[#E8DDD4] hover:border-[#C4613A]/40"}`}
+                    style={{ fontFamily: bodyFont, fontWeight: 500, minHeight: "44px" }}
+                    aria-pressed={isActive}
+                    aria-label={name}
+                  >
+                    <Icon name="location_on" size={12} className={isActive ? "text-white" : "text-[#C4613A]"} />
+                    {name}{dateLabel ? ` · ${dateLabel}` : ""}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main */}
@@ -913,7 +958,7 @@ export function AnnualDashboard() {
                   <WeatherWidget
                     temp={primaryWeather ? Math.round(primaryWeather.temperature_day_avg) : 18}
                     rain={primaryWeather ? Math.round(primaryWeather.precipitation_prob * 100) : 38}
-                    wind={13}
+                    wind={primaryWeather ? Math.round((primaryWeather as WeatherData & { wind_speed_avg?: number }).wind_speed_avg ?? 12) : 12}
                     heatIndex={primaryWeather ? Math.round(primaryWeather.temperature_night_avg) : 16}
                   />
                 </div>

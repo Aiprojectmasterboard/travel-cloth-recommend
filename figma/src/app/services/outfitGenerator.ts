@@ -864,7 +864,7 @@ export function generateCityOutfits(
 export async function generateOutfitsFromAPI(
   profile: UserProfile,
   cities: CityInput[],
-  plan: 'standard' | 'pro',
+  plan: 'pro',
   tripId?: string
 ): Promise<GeneratedOutfit[]> {
   const { apiPost } = await import('../lib/api')
