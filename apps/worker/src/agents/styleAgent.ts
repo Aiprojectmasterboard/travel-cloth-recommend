@@ -328,7 +328,7 @@ Respond ONLY with this JSON:
     env.OPENAI_API_KEY,
     systemPrompt,
     userPrompt,
-    { maxTokens: 4096, reasoningEffort: 'medium' },
+    { maxTokens: 16384, reasoningEffort: 'low' },
   );
 
   if (!Array.isArray(parsed.prompts) || parsed.prompts.length === 0) {

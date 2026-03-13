@@ -469,7 +469,7 @@ Respond ONLY with:
       why: string; versatility_score: number;
     }>;
     daily_plan: Array<{ day: number; city: string; outfit: string[]; styling_directions?: string[]; color_story?: string; note: string }>;
-  }>(apiKey, systemPrompt, userPrompt, { maxTokens: 4096, reasoningEffort: 'medium' });
+  }>(apiKey, systemPrompt, userPrompt, { maxTokens: 8192, reasoningEffort: 'low' });
 
   if (!Array.isArray(parsed.items) || parsed.items.length === 0) {
     throw new Error('[capsuleAgent] GPT-5.4 returned no items');
