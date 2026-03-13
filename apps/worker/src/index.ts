@@ -1794,6 +1794,7 @@ app.post('/api/regenerate', async (c) => {
       {
         prompts: [stylePrompt],
         tripId: trip_id,
+        gender: regenGender,
       },
       c.env
     );
@@ -2049,7 +2050,7 @@ app.post('/api/generate', async (c) => {
     // Run image gen and item breakdowns in parallel; if image gen fails we
     // still return item breakdowns so the UI has something useful.
     const [imageResult, ...breakdownResults] = await Promise.all([
-      imageGenAgent({ prompts: stylePrompts, tripId: tempTripId, faceUrl: face_url }, c.env)
+      imageGenAgent({ prompts: stylePrompts, tripId: tempTripId, faceUrl: face_url, gender: safeGender }, c.env)
         .catch((err: Error) => {
           console.error('[POST /api/generate] imageGenAgent failed:', err.message);
           return { results: [] as Array<{ city: string; mood: string; success: boolean; image_url?: string; error?: string }>, succeeded: 0, failed: stylePrompts.length };

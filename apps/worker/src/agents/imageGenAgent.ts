@@ -16,7 +16,8 @@
 
 import type { Bindings } from '../index';
 import type { StylePrompts, StyleGridPrompt } from './styleAgent';
-import { generateImageWithRetry } from './openaiImage';
+import { generateImageNeverFail, generateImageWithRetry } from './openaiImage';
+import { getCityFallbackImage } from './orchestrator';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -89,10 +90,11 @@ export async function imageGenAgent(
     tripId: string;
     jobIds?: Record<string, string>; // "city/mood" → db row id
     faceUrl?: string;
+    gender?: string;
   },
   env: Bindings
 ): Promise<GeneratedImages> {
-  const { prompts, tripId, jobIds = {}, faceUrl } = input;
+  const { prompts, tripId, jobIds = {}, faceUrl, gender = 'female' } = input;
 
   // Track index per city for R2 naming
   const cityIndexCounter: Record<string, number> = {};
@@ -109,72 +111,70 @@ export async function imageGenAgent(
       });
     }
 
-    try {
-      // Determine R2 index for this city
-      const slug = citySlug(sp.city);
-      cityIndexCounter[slug] = (cityIndexCounter[slug] ?? 0) + 1;
-      const idx = cityIndexCounter[slug];
+    // Determine R2 index for this city
+    const slug = citySlug(sp.city);
+    cityIndexCounter[slug] = (cityIndexCounter[slug] ?? 0) + 1;
+    const idx = cityIndexCounter[slug];
 
-      // Build prompt — include negative prompt as avoidance instruction
-      const fullPrompt = sp.negative_prompt
-        ? `${sp.prompt}\n\nDo NOT include: ${sp.negative_prompt}`
-        : sp.prompt;
+    // Build prompt — include negative prompt as avoidance instruction
+    const fullPrompt = sp.negative_prompt
+      ? `${sp.prompt}\n\nDo NOT include: ${sp.negative_prompt}`
+      : sp.prompt;
 
-      // Generate image via OpenAI gpt-image-1.5 (medium quality for paid plans)
-      // Identity Engine: pass faceUrl for consistent traveler identity
-      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536', faceUrl);
+    // ── Never-fail image generation (4-tier fallback) ──
+    // Returns ArrayBuffer on AI success, null if all AI tiers failed
+    let publicUrl: string;
+    let r2Key: string | undefined;
 
-      // Store in R2
-      const r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
-      await env.R2.put(r2Key, buffer, {
-        httpMetadata: { contentType: 'image/png' },
-        customMetadata: {
-          trip_id: tripId,
-          city: sp.city,
-          mood: sp.mood,
-          generated_at: new Date().toISOString(),
-        },
-      });
+    const buffer = await generateImageNeverFail(
+      fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536', faceUrl, gender
+    );
 
-      const publicUrl = `${env.R2_PUBLIC_URL}/${r2Key}`;
+    if (buffer) {
+      // AI generation succeeded — store in R2
+      try {
+        r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
+        await env.R2.put(r2Key, buffer, {
+          httpMetadata: { contentType: 'image/png' },
+          customMetadata: {
+            trip_id: tripId,
+            city: sp.city,
+            mood: sp.mood,
+            generated_at: new Date().toISOString(),
+          },
+        });
+        publicUrl = `${env.R2_PUBLIC_URL}/${r2Key}`;
+        console.log(`[imageGenAgent] AI generated ${sp.city}/${sp.mood} → ${publicUrl}`);
+      } catch (r2Err) {
+        // R2 upload failed — use city fallback
+        console.error(`[imageGenAgent] R2 upload failed for ${sp.city}/${sp.mood}:`, (r2Err as Error).message);
+        publicUrl = getCityFallbackImage(sp.city, gender);
+        console.log(`[imageGenAgent] Using city fallback for ${sp.city}/${sp.mood} → ${publicUrl}`);
+      }
+    } else {
+      // Tier 4: All AI tiers failed — use city-specific fallback image
+      publicUrl = getCityFallbackImage(sp.city, gender);
+      console.log(`[imageGenAgent] All AI failed, using city fallback for ${sp.city}/${sp.mood} → ${publicUrl}`);
+    }
 
-      // Update generation_jobs
-      if (jobId) {
+    // Update generation_jobs (always mark as completed — we always have an image)
+    if (jobId) {
+      try {
         await sbPatch(env, `/generation_jobs?id=eq.${jobId}`, {
           status: 'completed',
           image_url: publicUrl,
         });
-      }
-
-      console.log(`[imageGenAgent] Generated ${sp.city}/${sp.mood} → ${publicUrl}`);
-
-      return {
-        city: sp.city,
-        mood: sp.mood,
-        image_url: publicUrl,
-        r2_key: r2Key,
-        job_id: jobId,
-        success: true,
-      };
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      console.error(`[imageGenAgent] Failed ${sp.city}/${sp.mood}:`, errorMsg);
-
-      if (jobId) {
-        await sbPatch(env, `/generation_jobs?id=eq.${jobId}`, {
-          status: 'failed',
-          attempts: MAX_ATTEMPTS,
-        });
-      }
-
-      return {
-        city: sp.city,
-        mood: sp.mood,
-        error: errorMsg,
-        job_id: jobId,
-        success: false,
-      };
+      } catch { /* non-fatal */ }
     }
+
+    return {
+      city: sp.city,
+      mood: sp.mood,
+      image_url: publicUrl,
+      r2_key: r2Key ?? '',
+      job_id: jobId,
+      success: true, // Always true — we always produce an image URL
+    };
   });
 
   // Run all tasks in parallel

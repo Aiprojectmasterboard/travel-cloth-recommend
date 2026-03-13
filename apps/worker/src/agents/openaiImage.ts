@@ -235,46 +235,87 @@ export async function generateImageWithReference(
   return b64ToArrayBuffer(imageData);
 }
 
-// ─── Smart Generation (auto-selects endpoint) ────────────────────────────────
+// ─── System Default Model Images ─────────────────────────────────────────────
+// These are professional model photos bundled with the app (deployed to Pages CDN).
+// Used as Tier 2 fallback when user didn't upload a photo or their photo fails.
 
-/**
- * Generates an image, automatically choosing the right endpoint:
- * - With referenceUrl → /images/edits (Identity Engine, preserves traveler)
- * - Without referenceUrl → /images/generations (default traveler model)
- *
- * Falls back to generations endpoint if edits fails (safety filter etc.).
- */
-export async function generateImageSmart(
+const DEFAULT_MODEL_URLS = {
+  male:   'https://travelscapsule.com/defaults/default-male.png',
+  female: 'https://travelscapsule.com/defaults/default-female.png',
+} as const;
+
+export function getDefaultModelUrl(gender: string): string {
+  return gender === 'male' ? DEFAULT_MODEL_URLS.male : DEFAULT_MODEL_URLS.female;
+}
+
+// ─── Never-Fail Image Generation (4-tier fallback) ───────────────────────────
+//
+// Tier 1: User photo  + /images/edits  (Identity Engine — user's face)
+// Tier 2: Default model + /images/edits  (system model photo — consistent look)
+// Tier 3: No photo    + /images/generations (text-to-image — no face reference)
+// Tier 4: Returns null → caller inserts city fallback image (always succeeds)
+//
+// Each tier has its own retry logic. The function NEVER throws — it returns
+// null only when all 3 AI tiers fail, letting the caller use a static fallback.
+
+export async function generateImageNeverFail(
   prompt: string,
   apiKey: string,
   quality: ImageQuality = 'low',
   size: ImageSize = '1024x1536',
-  referenceUrl?: string,
-): Promise<ArrayBuffer> {
-  if (referenceUrl) {
+  userPhotoUrl?: string,
+  gender: string = 'female',
+): Promise<ArrayBuffer | null> {
+
+  // ── Tier 1: User's uploaded photo + /images/edits ──
+  if (userPhotoUrl) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (attempt > 0) await sleep(BACKOFF_MS[0]);
+        console.log(`[openaiImage] Tier 1 (user photo) attempt ${attempt + 1}...`);
+        return await generateImageWithReference(prompt, userPhotoUrl, apiKey, quality, size);
+      } catch (err) {
+        console.warn(`[openaiImage] Tier 1 attempt ${attempt + 1} failed: ${(err as Error).message}`);
+      }
+    }
+    console.warn('[openaiImage] Tier 1 exhausted — falling through to Tier 2 (default model)');
+  }
+
+  // ── Tier 2: System default model photo + /images/edits ──
+  const defaultModelUrl = getDefaultModelUrl(gender);
+  for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      return await generateImageWithReference(prompt, referenceUrl, apiKey, quality, size);
+      if (attempt > 0) await sleep(BACKOFF_MS[0]);
+      console.log(`[openaiImage] Tier 2 (default ${gender} model) attempt ${attempt + 1}...`);
+      return await generateImageWithReference(prompt, defaultModelUrl, apiKey, quality, size);
     } catch (err) {
-      console.warn(
-        `[openaiImage] Identity Engine failed, falling back to generations: ${(err as Error).message}`
-      );
-      // Fall back to text-to-image generation without reference
+      console.warn(`[openaiImage] Tier 2 attempt ${attempt + 1} failed: ${(err as Error).message}`);
     }
   }
-  return generateImage(prompt, apiKey, quality, size);
+  console.warn('[openaiImage] Tier 2 exhausted — falling through to Tier 3 (text-to-image)');
+
+  // ── Tier 3: Pure text-to-image generation (no reference photo) ──
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      if (attempt > 0) await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
+      console.log(`[openaiImage] Tier 3 (text-to-image) attempt ${attempt + 1}...`);
+      return await generateImage(prompt, apiKey, quality, size);
+    } catch (err) {
+      console.warn(`[openaiImage] Tier 3 attempt ${attempt + 1} failed: ${(err as Error).message}`);
+    }
+  }
+
+  // ── Tier 4: All AI generation failed — return null ──
+  // Caller will insert a city-specific fallback image (Unsplash) — this always works.
+  console.error('[openaiImage] All 3 AI tiers failed — returning null for static fallback');
+  return null;
 }
 
-// ─── With Retry ───────────────────────────────────────────────────────────────
+// ─── Legacy: generateImageWithRetry (still used by teaserAgent) ──────────────
 
 /**
  * Generates image with exponential-backoff retry (3 attempts).
- * Supports Identity Engine via optional referenceUrl.
- *
- * @param prompt       - Text prompt for image generation
- * @param apiKey       - OpenAI API key
- * @param quality      - "low" for teasers, "medium" for paid plans
- * @param size         - Image dimensions. Defaults to "1024x1536" (portrait).
- * @param referenceUrl - Optional reference photo URL for Identity Engine
+ * Unlike generateImageNeverFail, this THROWS on failure (legacy behavior).
  */
 export async function generateImageWithRetry(
   prompt: string,
@@ -290,7 +331,15 @@ export async function generateImageWithRetry(
       await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
     }
     try {
-      return await generateImageSmart(prompt, apiKey, quality, size, referenceUrl);
+      // Tier 1: try with reference, Tier 2: try without
+      if (referenceUrl) {
+        try {
+          return await generateImageWithReference(prompt, referenceUrl, apiKey, quality, size);
+        } catch (err) {
+          console.warn(`[openaiImage] Reference failed, trying text-to-image: ${(err as Error).message}`);
+        }
+      }
+      return await generateImage(prompt, apiKey, quality, size);
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       console.warn(

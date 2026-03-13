@@ -873,7 +873,7 @@ export async function runResult(
       console.log(`[runResult] Generating ${stylePrompts.length} individual outfit images...`);
       try {
         const imageResults = await imageGenAgent(
-          { prompts: stylePrompts, tripId, faceUrl },
+          { prompts: stylePrompts, tripId, faceUrl, gender: userProfile.gender },
           env
         );
 
