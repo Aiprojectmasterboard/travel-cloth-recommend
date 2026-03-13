@@ -523,7 +523,7 @@ export function AnnualDashboard() {
         )}
 
         <div className="mt-5 max-w-[400px]">
-          <TripUsageBar used={4} total={12} renewMonth="Jan 2027" />
+          <TripUsageBar used={4} total={12} renewMonth={new Date(new Date().getFullYear() + 1, 0).toLocaleDateString(dateLocale, { month: "short", year: "numeric" })} />
         </div>
       </div>
 
@@ -625,7 +625,7 @@ export function AnnualDashboard() {
                       {allCityNames.length > 1 ? allCityNames.join(" → ") : `${cityName}, ${countryName}`}
                     </span>
                     <span className="text-white/70 text-[13px] block mt-0.5" style={{ fontFamily: bodyFont }}>
-                      {dateRangeLabel && `${dateRangeLabel} · `}{totalDays} {t("examples.annual.day")}s · {outfits.length} Looks · {uniqueItems} {t("examples.annual.items")}
+                      {dateRangeLabel && `${dateRangeLabel} · `}{totalDays} {t("examples.annual.day")}s · {outfits.length} {t("dashboard.looks")} · {uniqueItems} {t("examples.annual.items")}
                     </span>
                   </div>
                   {!regenUsed && (

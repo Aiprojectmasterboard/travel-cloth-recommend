@@ -272,9 +272,13 @@ app.post('/api/trigger-pipeline/:tripId', async (c) => {
     return c.json({ error: 'Trip not found' }, 404);
   }
 
-  // 4. Get user email from order or trip
-  const emailRes = await supabase(c.env, `/orders?trip_id=eq.${tripId}&limit=1&select=id`);
-  const userEmail = ''; // email is optional for pipeline
+  // 4. Get user email from order (for fulfillment email)
+  let userEmail = '';
+  try {
+    const emailRes = await supabase(c.env, `/orders?trip_id=eq.${tripId}&limit=1&select=customer_email`);
+    const emailRows = (await emailRes.json()) as Array<{ customer_email?: string }>;
+    userEmail = emailRows[0]?.customer_email ?? '';
+  } catch { /* email is optional for pipeline */ }
 
   // 5. Mark trip as processing and run the pipeline synchronously
   await supabase(c.env, `/trips?id=eq.${tripId}`, {

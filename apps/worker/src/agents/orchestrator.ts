@@ -834,37 +834,41 @@ export async function runResult(
 
     // c. Generate 4 individual images per city (all in parallel)
     console.log(`[runResult] Generating ${stylePrompts.length} individual outfit images...`);
-    const imageResults = await imageGenAgent(
-      { prompts: stylePrompts, tripId, faceUrl },
-      env
-    );
+    try {
+      const imageResults = await imageGenAgent(
+        { prompts: stylePrompts, tripId, faceUrl },
+        env
+      );
 
-    // d. Save completed results to generation_jobs (per-image rows, per-city index 0–3)
-    for (const result of imageResults.results) {
-      if (result.success) {
-        try {
-          await sbFetch(env, '/generation_jobs', {
-            method: 'POST',
-            body: JSON.stringify({
-              trip_id: tripId,
-              city: result.city,
-              mood: result.mood,
-              status: 'completed',
-              image_url: result.image_url,
-              job_type: 'full',
-            }),
-          });
-        } catch (err) {
-          console.warn(`[runResult] Failed to record job for ${result.city}/${result.mood}:`, (err as Error).message);
+      // d. Save completed results to generation_jobs (per-image rows, per-city index 0–3)
+      for (const result of imageResults.results) {
+        if (result.success) {
+          try {
+            await sbFetch(env, '/generation_jobs', {
+              method: 'POST',
+              body: JSON.stringify({
+                trip_id: tripId,
+                city: result.city,
+                mood: result.mood,
+                status: 'completed',
+                image_url: result.image_url,
+                job_type: 'full',
+              }),
+            });
+          } catch (err) {
+            console.warn(`[runResult] Failed to record job for ${result.city}/${result.mood}:`, (err as Error).message);
+          }
         }
       }
-    }
 
-    console.log(`[runResult] Image generation complete: ${imageResults.succeeded} succeeded, ${imageResults.failed} failed`);
-
-    // e. Privacy cleanup: delete user-uploaded face AFTER image generation completes
-    if (faceUrl) {
-      await cleanupFace(tripId, faceUrl, env);
+      console.log(`[runResult] Image generation complete: ${imageResults.succeeded} succeeded, ${imageResults.failed} failed`);
+    } finally {
+      // e. Privacy cleanup: delete user-uploaded face AFTER image generation (even on error)
+      if (faceUrl) {
+        await cleanupFace(tripId, faceUrl, env).catch((err) => {
+          console.error('[runResult] Face cleanup failed:', (err as Error).message);
+        });
+      }
     }
   } else {
     // Standard plan: teaser is already completed — no further image generation.

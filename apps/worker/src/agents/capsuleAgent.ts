@@ -207,6 +207,8 @@ function padDailyPlanToMinimum(
         day: lastDayNumber,
         city: cityName,
         outfit: finalOutfit.length >= 2 ? finalOutfit : allItemNames.slice(0, 3),
+        styling_directions: ['Relaxed alternative styling', 'Mix-and-match from capsule wardrobe'],
+        color_story: 'Neutral base with capsule accent color',
         note: `${label}: alternate styling for ${cityName}`,
       };
 
@@ -426,7 +428,7 @@ ${dailyPlanCountNote}
 
 ═══ STEP 3: DAILY PLAN ═══
 For each day: assign to a city, list 3–5 item names as the outfit, add a short activity note.
-- Include a "styling_direction" hint per outfit (e.g. "half-tuck the shirt, leave blazer unbuttoned, roll sleeves")
+- Include "styling_directions" (array) per outfit (e.g. ["half-tuck the shirt", "leave blazer unbuttoned", "roll sleeves"])
 - IMPORTANT: Every item name in daily_plan.outfit[] MUST exactly match an item name from the items[] array.
 
 Item fields:
@@ -452,7 +454,7 @@ Respond ONLY with:
     { "name": "...", "category": "...", "color": "...", "material": "...", "fit": "...", "formality": "...", "water_resistant": false, "why": "...", "versatility_score": 8 }
   ],
   "daily_plan": [
-    { "day": 1, "city": "...", "outfit": ["...", "..."], "note": "..." }
+    { "day": 1, "city": "...", "outfit": ["...", "..."], "styling_directions": ["half-tuck shirt", "blazer open"], "color_story": "Navy dominant, cream secondary, terracotta belt accent", "note": "..." }
   ]
 }`;
 
