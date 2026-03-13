@@ -542,7 +542,7 @@ const date = d.toLocaleDateString(dateLocale, { month: "short" });
 #### Trip Styling Brief (capsuleAgent)
 - 모든 유료 캡슐은 `styling_brief` 포함: `base_neutrals` (2-3색), `accent_color` (1색), `jewelry_tone`, `silhouette_goal`
 - 아이템 선택 시 색상 팔레트 일관성 유지
-- `styling_brief`는 `styleAgentGrid`에 전달되어 이미지 프롬프트에 반영
+- `styling_brief`는 `styleAgent`에 전달되어 이미지 프롬프트에 반영
 
 #### 아이템 반복 제한 규칙
 ```
@@ -597,6 +597,50 @@ interface CapsuleItem {
 - 보너스 룩은 fractional day number 사용 (1.5, 2.5 등)
 - `padDailyPlanToMinimum()` 안전장치가 GPT 응답 후 보정
 
+### 이미지 생성 방식 규칙 (개별 이미지 vs 그리드)
+```
+❌ 절대 금지 — 2x2 그리드 합성 이미지 (gpt-image-1.5가 안정적으로 생성 못함)
+styleAgentGrid → imageGenAgentGrid → 1장 합성 이미지
+
+✅ 올바른 방법 — 도시당 4개 개별 이미지
+styleAgent → imageGenAgent → 4장 개별 이미지 (1024x1536 portrait)
+```
+- gpt-image-1.5는 2x2 그리드 레이아웃을 안정적으로 생성하지 못함 → 개별 이미지 생성 후 프론트에서 2x2 배치
+- `styleAgentGrid`/`imageGenAgentGrid`는 레거시로 유지하되, `runResult()`에서 사용 금지
+
+### styleAgent 구조화 프롬프트 규칙
+- 모든 이미지 프롬프트는 9개 섹션 순서를 반드시 따름:
+  `[STYLE] → [SUBJECT] → [OUTFIT_SPEC] → [STYLING_DIRECTIONS] → [COMPOSITION] → [LIGHTING] → [BACKGROUND] → [WEATHER_OVERRIDES] → [NEGATIVE]`
+- `[STYLING_DIRECTIONS]`: 3-color rule + third piece + rule-of-thirds + capsule styling_directions 포함 필수
+- `[COMPOSITION]`: 4:5 vertical, full-body, feet visible, eye-level
+- `[BACKGROUND]`: 랜드마크 recognizable but not dominant, bokeh
+- capsuleAgent의 `styling_brief` (base_neutrals, accent_color)를 반드시 반영
+
+### SocialShareButton 공유 URL 규칙
+```typescript
+// ❌ 절대 금지 — 홈페이지 URL 공유
+<SocialShareButton />  // props 없이 사용 → 홈페이지 URL
+
+// ✅ 올바른 방법 — trip-specific share URL 전달
+<SocialShareButton
+  shareUrl={`https://travelscapsule.com/share/${tripId}?utm_source=share&utm_medium=social`}
+  shareTitle={t("dashboard.multiCityStyleGuide")}
+/>
+```
+- SocialShareButton을 대시보드에서 사용할 때 반드시 tripId 기반 share URL을 prop으로 전달
+- sessionStorage `tc_trip_id` 폴백은 보조 수단 — prop 전달이 우선
+
+### 대시보드 프로필 카드 규칙
+```typescript
+// ❌ 절대 금지 — Example 이름 사용
+{t("examples.pro.profile")}   // "Emily (example)"
+
+// ✅ 올바른 방법 — 사용자 프로필 라벨
+{t("dashboard.yourProfile")}   // "내 프로필" / "Your Profile"
+```
+- 실제 대시보드(Pro/Annual)의 프로필 카드에는 `t("dashboard.yourProfile")` 사용
+- `t("examples.pro.profile")`/`t("examples.annual.profile")`은 Example 페이지 전용
+
 ---
 
 ## 완료된 작업
@@ -641,3 +685,10 @@ interface CapsuleItem {
 38. capsuleAgent 아이템 확장 필드 (color, material, fit, formality, water_resistant)
 39. styleAgent 강화: 스타일링 디렉션, 비/랜드마크 처리, 향상된 negative prompt
 40. styleAgentGrid에 stylingBrief 전달 (색상 팔레트 일관성)
+41. 2x2 그리드 합성 → 4개 개별 이미지 전환 (orchestrator + imageGenAgent)
+42. styleAgent 구조화 프롬프트 (9-section template: STYLE~NEGATIVE)
+43. ProDashboard 프로필 "Emily (example)" → "Your Profile" (i18n 6개 언어)
+44. SocialShareButton tripId 기반 share URL 수정
+45. Google AdSense (ca-pub-8181981899493446) 추가
+46. ProDashboard 로딩 스켈레톤 shimmer 애니메이션 개선
+47. 개별 이미지 다운로드 버튼 추가
