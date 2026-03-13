@@ -31,6 +31,7 @@ export type Bindings = {
   POLAR_PRODUCT_ID_PRO: string;
   POLAR_PRODUCT_ID_ANNUAL: string;
   SKIP_TURNSTILE: string; // "true" for local dev only
+  DEBUG_SECRET?: string;  // Optional: protects /api/debug/* endpoints
   // R2 native binding (wrangler.toml [[r2_buckets]])
   R2: R2Bucket;
 };
@@ -222,7 +223,7 @@ app.onError((err, c) => {
   }
   const msg = err instanceof Error ? err.message : String(err);
   console.error('[onError]', msg);
-  return c.json({ error: 'Internal Server Error', detail: msg.slice(0, 200) }, 500);
+  return c.json({ error: 'Internal Server Error' }, 500);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -330,6 +331,11 @@ app.get('/api/health', (c) =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.get('/api/debug/recent-trips', async (c) => {
+  // Require debug token to prevent PII exposure
+  const token = c.req.header('x-debug-token') ?? c.req.query('token') ?? '';
+  if (!c.env.DEBUG_SECRET || token !== c.env.DEBUG_SECRET) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
   const res = await supabase(
     c.env,
     '/trips?order=created_at.desc&limit=5&select=id,status,cities,gender,height_cm,weight_kg,aesthetics,face_url,created_at'
@@ -352,6 +358,11 @@ app.get('/api/debug/recent-trips', async (c) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 app.get('/api/test-gemini', async (c) => {
+  // Require debug token to prevent unauthorized API calls
+  const token = c.req.header('x-debug-token') ?? c.req.query('token') ?? '';
+  if (!c.env.DEBUG_SECRET || token !== c.env.DEBUG_SECRET) {
+    return c.json({ error: 'Forbidden' }, 403);
+  }
   if (!c.env.NANOBANANA_API_KEY) {
     return c.json({ ok: false, error: 'NANOBANANA_API_KEY not configured' }, 500);
   }
@@ -2074,17 +2085,24 @@ app.post('/api/generate', async (c) => {
   };
 
   // Build minimal vibes from city + aesthetics (no Claude call needed)
+  // Keys are lowercase with spaces stripped (matches cityKey normalization below)
   const CITY_VIBES: Record<string, { mood: string; tags: string[] }> = {
-    paris:     { mood: 'Parisian Chic',    tags: ['sophisticated', 'effortless', 'layered'] },
-    tokyo:     { mood: 'Urban Minimal',    tags: ['clean', 'structured', 'functional'] },
-    rome:      { mood: 'Golden Hour',      tags: ['warm tones', 'relaxed elegance', 'Italian flair'] },
-    barcelona: { mood: 'Sun-Soaked Bold',  tags: ['colorful', 'vibrant', 'coastal'] },
-    milan:     { mood: 'Avant-Garde',      tags: ['sharp silhouettes', 'luxury', 'editorial'] },
-    london:    { mood: 'Understated Layer',tags: ['muted tones', 'functional chic', 'layered'] },
-    seoul:     { mood: 'Clean Contemporary', tags: ['minimal', 'oversized', 'monochrome'] },
-    bali:      { mood: 'Coastal Ease',     tags: ['breezy', 'natural textures', 'relaxed'] },
-    istanbul:  { mood: 'Spice & Silk',     tags: ['rich textures', 'vibrant', 'layered'] },
-    amsterdam: { mood: 'Nordic Clean',     tags: ['functional', 'understated', 'practical'] },
+    paris:       { mood: 'Parisian Chic',       tags: ['sophisticated', 'effortless', 'layered'] },
+    tokyo:       { mood: 'Urban Minimal',       tags: ['clean', 'structured', 'functional'] },
+    rome:        { mood: 'Golden Hour',         tags: ['warm tones', 'relaxed elegance', 'Italian flair'] },
+    barcelona:   { mood: 'Sun-Soaked Bold',     tags: ['colorful', 'vibrant', 'coastal'] },
+    milan:       { mood: 'Avant-Garde',         tags: ['sharp silhouettes', 'luxury', 'editorial'] },
+    london:      { mood: 'Understated Layer',   tags: ['muted tones', 'functional chic', 'layered'] },
+    seoul:       { mood: 'Clean Contemporary',  tags: ['minimal', 'oversized', 'monochrome'] },
+    bali:        { mood: 'Coastal Ease',        tags: ['breezy', 'natural textures', 'relaxed'] },
+    istanbul:    { mood: 'Spice & Silk',        tags: ['rich textures', 'vibrant', 'layered'] },
+    amsterdam:   { mood: 'Nordic Clean',        tags: ['functional', 'understated', 'practical'] },
+    newyork:     { mood: 'Downtown Edge',       tags: ['sharp', 'urban', 'statement pieces'] },
+    bangkok:     { mood: 'Tropical Street',     tags: ['lightweight', 'vibrant', 'breathable'] },
+    lisbon:      { mood: 'Atlantic Warmth',     tags: ['earthy', 'relaxed', 'sun-kissed'] },
+    dubai:       { mood: 'Desert Luxe',         tags: ['premium', 'structured', 'opulent'] },
+    singapore:   { mood: 'Garden City',         tags: ['crisp', 'functional', 'tropical-modern'] },
+    sydney:      { mood: 'Harbour Breeze',      tags: ['casual', 'coastal', 'sun-ready'] },
   };
 
   // Build style prompts directly for each city (count_per_city each)
