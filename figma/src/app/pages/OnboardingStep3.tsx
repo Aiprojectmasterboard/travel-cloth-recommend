@@ -338,13 +338,20 @@ export function OnboardingStep3() {
           {t("onboarding3.personalizeHint")}
         </p>
 
-        <div className="mb-5 rounded-lg bg-[#F5EFE6] px-4 py-3 flex flex-col gap-1.5">
+        <div className="mb-5 rounded-lg bg-[#F5EFE6] px-4 py-3 flex flex-col gap-2">
           <p
             className="text-[13px] text-[#78716c] flex items-center gap-2"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            <Icon name="photo_camera" size={16} className="text-[#78716c] flex-shrink-0" />
-            {t("onboarding3.photoTip1")}
+            <Icon name="face" size={16} className="text-[#C4613A] flex-shrink-0" />
+            {t("onboarding3.faceVisibleTip")}
+          </p>
+          <p
+            className="text-[13px] text-[#78716c] flex items-center gap-2"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            <Icon name="person" size={16} className="text-[#78716c] flex-shrink-0" />
+            {t("onboarding3.faceNotVisibleTip")}
           </p>
           <p
             className="text-[13px] text-[#78716c] flex items-center gap-2"
@@ -430,17 +437,30 @@ export function OnboardingStep3() {
               )}
             </div>
 
-            {/* Face detection warning */}
+            {/* Face detection result */}
+            {uploadStatus === "done" && !faceWarning && (
+              <div className="px-4 py-3 border-t border-[#E8DDD4] bg-green-50">
+                <div className="flex items-start gap-2">
+                  <Icon name="face" size={18} className="text-green-600 flex-shrink-0 mt-0.5" />
+                  <p
+                    className="text-[13px] text-green-800"
+                    style={{ fontFamily: "var(--font-body)" }}
+                  >
+                    {t("onboarding3.faceDetectedSuccess")}
+                  </p>
+                </div>
+              </div>
+            )}
             {faceWarning && (
               <div className="px-4 py-3 border-t border-[#E8DDD4] bg-amber-50">
                 <div className="flex items-start gap-2 mb-3">
-                  <Icon name="warning" size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                  <Icon name="info" size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
                   <p
                     className="text-[13px] text-amber-800"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
                     {faceWarning === "no_face"
-                      ? t("onboarding3.noFaceWarning")
+                      ? t("onboarding3.noFaceInfo")
                       : t("onboarding3.multipleFacesWarning")}
                   </p>
                 </div>
@@ -450,14 +470,14 @@ export function OnboardingStep3() {
                     className="px-4 py-3 rounded-lg text-[13px] font-medium bg-[#C4613A] text-white hover:bg-[#a8502f] transition-colors cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    {t("onboarding3.reupload")}
+                    {t("onboarding3.reuploadFace")}
                   </button>
                   <button
                     onClick={handleUseDefault}
                     className="px-4 py-3 rounded-lg text-[13px] font-medium border border-[#E8DDD4] text-[#57534e] hover:bg-[#F5EFE6] transition-colors cursor-pointer"
                     style={{ fontFamily: "var(--font-body)" }}
                   >
-                    {t("onboarding3.continueDefault")}
+                    {t("onboarding3.useDefaultModel")}
                   </button>
                 </div>
               </div>

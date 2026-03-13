@@ -3,9 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2025-01-01"
 compatibility_flags = ["nodejs_compat"]
 
-[limits]
-cpu_ms = 300000
-
 [[r2_buckets]]
 binding = "R2"
 bucket_name = "travelcapsule"
