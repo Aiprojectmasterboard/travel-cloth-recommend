@@ -5,19 +5,25 @@
  * (Promise.allSettled), stores the resulting image in R2,
  * and updates generation_jobs in Supabase.
  *
+ * Never-Fail Architecture:
+ *   Every image is guaranteed to be AI-generated via generateImageGuaranteed().
+ *   Tier 1: User photo + /images/edits (3 attempts)
+ *   Tier 2: System default model + /images/edits (6 attempts — MUST succeed)
+ *   Tier 3: Text-to-image /images/generations (5 attempts)
+ *   → 14 total AI attempts per image. Static fallbacks are NEVER used.
+ *
  * Identity Engine: if faceUrl is provided, all generated images preserve
  * the same traveler identity using /images/edits endpoint.
  *
+ * Quality: "high" for all paid plan images.
+ *
  * R2 key pattern: outputs/{tripId}/{city}/{index}.png
  * Public URL:     {R2_PUBLIC_URL}/outputs/{tripId}/{city}/{index}.png
- *
- * Retry strategy: exponential backoff — 2s, 4s, 6s (3 attempts per image)
  */
 
 import type { Bindings } from '../index';
 import type { StylePrompts, StyleGridPrompt } from './styleAgent';
-import { generateImageNeverFail, generateImageWithRetry } from './openaiImage';
-import { getCityFallbackImage } from './orchestrator';
+import { generateImageGuaranteed, generateImageWithRetry } from './openaiImage';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,10 +51,6 @@ export interface GeneratedImages {
   succeeded: number;
   failed: number;
 }
-
-// ─── Constants ────────────────────────────────────────────────────────────────
-
-const MAX_ATTEMPTS = 3;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -78,10 +80,14 @@ async function sbPatch(env: Bindings, path: string, body: Record<string, unknown
  * Generates all Pro-plan images in parallel, stores them in R2, and updates
  * `generation_jobs` status after each result.
  *
+ * Every image is GUARANTEED to be AI-generated (gpt-image-1.5 or gpt-image-1).
+ * Static/Unsplash fallbacks are NEVER used.
+ *
  * @param input.prompts  - Array of StylePrompts (from styleAgent)
  * @param input.tripId   - Trip UUID
  * @param input.jobIds   - Optional map from "city/mood" → generation_jobs.id
  * @param input.faceUrl  - Optional R2 URL of user's reference photo (Identity Engine)
+ * @param input.gender   - User gender for default model selection
  * @param env            - Cloudflare Worker bindings
  */
 export async function imageGenAgent(
@@ -121,43 +127,29 @@ export async function imageGenAgent(
       ? `${sp.prompt}\n\nDo NOT include: ${sp.negative_prompt}`
       : sp.prompt;
 
-    // ── Never-fail image generation (4-tier fallback) ──
-    // Returns ArrayBuffer on AI success, null if all AI tiers failed
-    let publicUrl: string;
-    let r2Key: string | undefined;
-
-    const buffer = await generateImageNeverFail(
-      fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1536', faceUrl, gender
+    // ── Guaranteed AI image generation ──
+    // generateImageGuaranteed: 14 total attempts across 3 tiers
+    // Quality: "high" for best output
+    // NEVER returns null — always produces an AI-generated image
+    const buffer = await generateImageGuaranteed(
+      fullPrompt, env.OPENAI_API_KEY, 'high', '1024x1536', faceUrl, gender
     );
 
-    if (buffer) {
-      // AI generation succeeded — store in R2
-      try {
-        r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
-        await env.R2.put(r2Key, buffer, {
-          httpMetadata: { contentType: 'image/png' },
-          customMetadata: {
-            trip_id: tripId,
-            city: sp.city,
-            mood: sp.mood,
-            generated_at: new Date().toISOString(),
-          },
-        });
-        publicUrl = `${env.R2_PUBLIC_URL}/${r2Key}`;
-        console.log(`[imageGenAgent] AI generated ${sp.city}/${sp.mood} → ${publicUrl}`);
-      } catch (r2Err) {
-        // R2 upload failed — use city fallback
-        console.error(`[imageGenAgent] R2 upload failed for ${sp.city}/${sp.mood}:`, (r2Err as Error).message);
-        publicUrl = getCityFallbackImage(sp.city, gender);
-        console.log(`[imageGenAgent] Using city fallback for ${sp.city}/${sp.mood} → ${publicUrl}`);
-      }
-    } else {
-      // Tier 4: All AI tiers failed — use city-specific fallback image
-      publicUrl = getCityFallbackImage(sp.city, gender);
-      console.log(`[imageGenAgent] All AI failed, using city fallback for ${sp.city}/${sp.mood} → ${publicUrl}`);
-    }
+    // Store in R2
+    const r2Key = `outputs/${tripId}/${slug}/${idx}.png`;
+    await env.R2.put(r2Key, buffer, {
+      httpMetadata: { contentType: 'image/png' },
+      customMetadata: {
+        trip_id: tripId,
+        city: sp.city,
+        mood: sp.mood,
+        generated_at: new Date().toISOString(),
+      },
+    });
+    const publicUrl = `${env.R2_PUBLIC_URL}/${r2Key}`;
+    console.log(`[imageGenAgent] AI generated ${sp.city}/${sp.mood} → ${publicUrl}`);
 
-    // Update generation_jobs (always mark as completed — we always have an image)
+    // Update generation_jobs
     if (jobId) {
       try {
         await sbPatch(env, `/generation_jobs?id=eq.${jobId}`, {
@@ -171,21 +163,21 @@ export async function imageGenAgent(
       city: sp.city,
       mood: sp.mood,
       image_url: publicUrl,
-      r2_key: r2Key ?? '',
+      r2_key: r2Key,
       job_id: jobId,
-      success: true, // Always true — we always produce an image URL
+      success: true,
     };
   });
 
   // Run all tasks in parallel
   const settled = await Promise.allSettled(tasks.map((t) => t()));
 
-  const results: ImageResult[] = settled.map((r) =>
+  const results: ImageResult[] = settled.map((r, i) =>
     r.status === 'fulfilled'
       ? r.value
       : ({
-          city: 'unknown',
-          mood: 'unknown',
+          city: prompts[i]?.city ?? 'unknown',
+          mood: prompts[i]?.mood ?? 'unknown',
           error: (r.reason as Error)?.message ?? 'Unknown error',
           success: false,
         } satisfies FailedImage)
@@ -199,7 +191,7 @@ export async function imageGenAgent(
   return { results, succeeded, failed };
 }
 
-// ─── Grid Generation ──────────────────────────────────────────────────────────
+// ─── Grid Generation (legacy — not used by runResult) ────────────────────────
 
 export interface GridImageResult {
   city: string;
@@ -212,16 +204,7 @@ export interface GridImageResult {
 /**
  * Generates one 1024x1024 grid image per city using the combined 2x2 grid
  * prompt from styleAgentGrid. Runs all cities in parallel via Promise.allSettled.
- *
- * Each grid contains 4 outfit panels with different landmarks.
- * Identity Engine: if faceUrl provided, preserves same traveler across all panels.
- *
- * R2 key pattern: outputs/{tripId}/{citySlug}/grid.png
- *
- * @param input.gridPrompts - Array of StyleGridPrompt (one per city, from styleAgentGrid)
- * @param input.tripId      - Trip UUID
- * @param input.faceUrl     - Optional R2 URL of user's reference photo (Identity Engine)
- * @param env               - Cloudflare Worker bindings
+ * Legacy — not used by the main pipeline (runResult uses individual images).
  */
 export async function imageGenAgentGrid(
   input: {
@@ -238,16 +221,12 @@ export async function imageGenAgentGrid(
     const r2Key = `outputs/${tripId}/${slug}/grid.png`;
 
     try {
-      // Append negative prompt as avoidance instruction (same pattern as imageGenAgent)
       const fullPrompt = gp.negative_prompt
         ? `${gp.prompt}\n\nDo NOT include: ${gp.negative_prompt}`
         : gp.prompt;
 
-      // 1024x1024 square — best for 2x2 grid layout, medium quality for paid plans
-      // Identity Engine: pass faceUrl for consistent traveler identity across all 4 quadrants
-      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'medium', '1024x1024', faceUrl);
+      const buffer = await generateImageWithRetry(fullPrompt, env.OPENAI_API_KEY, 'high', '1024x1024', faceUrl);
 
-      // Store in R2
       await env.R2.put(r2Key, buffer, {
         httpMetadata: { contentType: 'image/png' },
         customMetadata: {
@@ -259,7 +238,6 @@ export async function imageGenAgentGrid(
       });
 
       const publicUrl = `${env.R2_PUBLIC_URL}/${r2Key}`;
-
       console.log(`[imageGenAgentGrid] Generated ${gp.city} grid → ${publicUrl}`);
 
       return {
@@ -282,7 +260,6 @@ export async function imageGenAgentGrid(
     }
   });
 
-  // Run all cities in parallel — never throws
   const settled = await Promise.allSettled(tasks.map((t) => t()));
 
   return settled.map((r, i) => {

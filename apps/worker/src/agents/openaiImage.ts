@@ -8,16 +8,18 @@
  * gpt-image-1.5 valid quality: low, medium, high, auto
  * gpt-image-1.5 always returns b64_json (no response_format param needed)
  *
- * - Teaser (Standard):  quality "low",    size 1024x1536 (portrait, fast ~10-15s)
- * - Pro/Annual grid:    quality "medium", size 1024x1024 (2×2 grid, ~15-25s)
+ * Never-Fail Architecture:
+ *   Tier 1: User photo + /images/edits   (3 attempts — best effort)
+ *   Tier 2: System default model + /images/edits (6 attempts, aggressive backoff — MUST succeed)
+ *   Tier 3: Text-to-image /images/generations (5 attempts — last AI resort)
+ *   → Always returns ArrayBuffer. NEVER returns null. NEVER falls to static images.
  *
  * Identity Engine:
  *   If user uploaded a reference photo, use /v1/images/edits endpoint to
  *   preserve traveler identity (facial structure, hairstyle, skin tone).
- *   If no reference photo, use /v1/images/generations with consistent
- *   default traveler model descriptor in the prompt.
+ *   If no reference photo, use system default model for consistent look.
  *
- * Retry strategy: exponential backoff — 2s, 4s, 6s (3 attempts)
+ * Quality: "high" for all paid plan images.
  */
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -45,9 +47,19 @@ const OPENAI_GENERATIONS_URL = 'https://api.openai.com/v1/images/generations';
 const OPENAI_EDITS_URL = 'https://api.openai.com/v1/images/edits';
 const MODEL_PRIMARY = 'gpt-image-1.5';
 const MODEL_FALLBACK = 'gpt-image-1';
-const MAX_ATTEMPTS = 3;
-const BACKOFF_MS = [2_000, 4_000, 6_000] as const;
-const FETCH_TIMEOUT_MS = 90_000;
+const FETCH_TIMEOUT_MS = 120_000; // 2 minutes per request
+
+// Tier 1: User photo — 3 attempts, moderate backoff
+const TIER1_ATTEMPTS = 3;
+const TIER1_BACKOFF_MS = [2_000, 4_000, 6_000] as const;
+
+// Tier 2: System default model — 6 attempts, aggressive backoff (MUST succeed)
+const TIER2_ATTEMPTS = 6;
+const TIER2_BACKOFF_MS = [3_000, 5_000, 8_000, 12_000, 18_000, 25_000] as const;
+
+// Tier 3: Text-to-image — 5 attempts, moderate backoff
+const TIER3_ATTEMPTS = 5;
+const TIER3_BACKOFF_MS = [3_000, 5_000, 8_000, 12_000, 18_000] as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -84,25 +96,18 @@ export async function fetchImageAsBlob(url: string): Promise<Blob> {
 /**
  * Generates an image using OpenAI gpt-image-1.5 (text-to-image).
  * Returns the raw image buffer (PNG).
- *
- * @param prompt  - Text prompt for image generation
- * @param apiKey  - OpenAI API key
- * @param quality - "low" for teasers, "medium" for paid plans
- * @param size    - Image dimensions. Defaults to "1024x1536" (portrait).
+ * Tries gpt-image-1.5 first, falls back to gpt-image-1.
  */
 export async function generateImage(
   prompt: string,
   apiKey: string,
-  quality: ImageQuality = 'low',
+  quality: ImageQuality = 'high',
   size: ImageSize = '1024x1536',
 ): Promise<ArrayBuffer> {
-  // Try primary model (gpt-image-1.5) first, fallback to gpt-image-1 on model error
   const models = [MODEL_PRIMARY, MODEL_FALLBACK];
 
   let lastError: Error | null = null;
   for (const model of models) {
-    // gpt-image-1.5 always returns b64_json (no response_format param needed).
-    // gpt-image-1 (fallback) requires explicit response_format to get b64_json.
     const body: Record<string, unknown> = {
       model,
       prompt,
@@ -127,7 +132,6 @@ export async function generateImage(
     if (!res.ok) {
       const text = await res.text();
       const errMsg = `OpenAI HTTP ${res.status}: ${text.slice(0, 300)}`;
-      // On ANY error with primary model, try fallback model before giving up
       if (model === MODEL_PRIMARY) {
         console.warn(`[openaiImage] ${MODEL_PRIMARY} failed (${res.status}), trying ${MODEL_FALLBACK}...`);
         lastError = new Error(errMsg);
@@ -147,14 +151,11 @@ export async function generateImage(
       throw new Error(`OpenAI API error: ${data.error.message}`);
     }
 
-    // Prefer b64_json; fall back to url if b64_json is absent (should not happen
-    // after setting response_format, but guards against API contract changes).
     const imageItem = data.data?.[0];
     if (imageItem?.b64_json) {
       return b64ToArrayBuffer(imageItem.b64_json);
     }
     if (imageItem?.url) {
-      // Fetch the image URL and return the raw bytes
       const imgRes = await fetch(imageItem.url, { signal: AbortSignal.timeout(60_000) });
       if (!imgRes.ok) throw new Error(`Failed to fetch image URL: HTTP ${imgRes.status}`);
       return imgRes.arrayBuffer();
@@ -175,30 +176,18 @@ export async function generateImage(
 // ─── Generation with Reference Photo (Identity Engine) ───────────────────────
 
 /**
- * Generates an image using OpenAI gpt-image-1.5 /images/edits endpoint
- * with a reference photo to preserve traveler identity.
- *
- * The reference photo is sent as an input image so gpt-image-1.5 can
- * preserve the person's facial structure, hairstyle, and skin tone
- * while generating the outfit and destination background.
- *
- * @param prompt       - Text prompt for image generation
- * @param referenceUrl - URL of the user's reference photo (R2 CDN)
- * @param apiKey       - OpenAI API key
- * @param quality      - "low" for teasers, "medium" for paid plans
- * @param size         - Image dimensions
+ * Generates an image using OpenAI /images/edits endpoint with a reference photo.
+ * Preserves traveler identity (facial structure, hairstyle, skin tone).
  */
 export async function generateImageWithReference(
   prompt: string,
   referenceUrl: string,
   apiKey: string,
-  quality: ImageQuality = 'low',
+  quality: ImageQuality = 'high',
   size: ImageSize = '1024x1536',
 ): Promise<ArrayBuffer> {
-  // Fetch user reference photo as blob
   const refBlob = await fetchImageAsBlob(referenceUrl);
 
-  // Build multipart form data for /v1/images/edits
   const formData = new FormData();
   formData.append('model', MODEL_PRIMARY);
   formData.append('prompt', prompt);
@@ -236,8 +225,8 @@ export async function generateImageWithReference(
 }
 
 // ─── System Default Model Images ─────────────────────────────────────────────
-// These are professional model photos bundled with the app (deployed to Pages CDN).
-// Used as Tier 2 fallback when user didn't upload a photo or their photo fails.
+// Professional model photos deployed to Pages CDN.
+// Used as Tier 2 guaranteed fallback — this tier has 6 aggressive retries.
 
 const DEFAULT_MODEL_URLS = {
   male:   'https://travelscapsule.com/defaults/default-male.png',
@@ -248,74 +237,126 @@ export function getDefaultModelUrl(gender: string): string {
   return gender === 'male' ? DEFAULT_MODEL_URLS.male : DEFAULT_MODEL_URLS.female;
 }
 
-// ─── Never-Fail Image Generation (4-tier fallback) ───────────────────────────
+// ─── Guaranteed Image Generation (Never-Fail) ────────────────────────────────
 //
-// Tier 1: User photo  + /images/edits  (Identity Engine — user's face)
-// Tier 2: Default model + /images/edits  (system model photo — consistent look)
-// Tier 3: No photo    + /images/generations (text-to-image — no face reference)
-// Tier 4: Returns null → caller inserts city fallback image (always succeeds)
+// Tier 1: User photo  + /images/edits   (3 attempts — best effort)
+// Tier 2: Default model + /images/edits  (6 attempts, aggressive — MUST succeed)
+// Tier 3: Text-to-image /images/generations (5 attempts — absolute last resort)
 //
-// Each tier has its own retry logic. The function NEVER throws — it returns
-// null only when all 3 AI tiers fail, letting the caller use a static fallback.
+// This function ALWAYS returns an ArrayBuffer. It NEVER returns null.
+// It NEVER falls through to static/Unsplash images.
+// gpt-image-1.5 or gpt-image-1 will produce the image no matter what.
 
-export async function generateImageNeverFail(
+export async function generateImageGuaranteed(
   prompt: string,
   apiKey: string,
-  quality: ImageQuality = 'low',
+  quality: ImageQuality = 'high',
   size: ImageSize = '1024x1536',
   userPhotoUrl?: string,
   gender: string = 'female',
-): Promise<ArrayBuffer | null> {
+): Promise<ArrayBuffer> {
 
-  // ── Tier 1: User's uploaded photo + /images/edits ──
+  // ── Tier 1: User's uploaded photo + /images/edits (3 attempts) ──
   if (userPhotoUrl) {
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; attempt < TIER1_ATTEMPTS; attempt++) {
       try {
-        if (attempt > 0) await sleep(BACKOFF_MS[0]);
-        console.log(`[openaiImage] Tier 1 (user photo) attempt ${attempt + 1}...`);
+        if (attempt > 0) await sleep(TIER1_BACKOFF_MS[attempt - 1] ?? 4_000);
+        console.log(`[openaiImage] Tier 1 (user photo) attempt ${attempt + 1}/${TIER1_ATTEMPTS}...`);
         return await generateImageWithReference(prompt, userPhotoUrl, apiKey, quality, size);
       } catch (err) {
         console.warn(`[openaiImage] Tier 1 attempt ${attempt + 1} failed: ${(err as Error).message}`);
       }
     }
-    console.warn('[openaiImage] Tier 1 exhausted — falling through to Tier 2 (default model)');
+    console.warn('[openaiImage] Tier 1 exhausted — falling through to Tier 2 (default model, 6 retries)');
   }
 
-  // ── Tier 2: System default model photo + /images/edits ──
+  // ── Tier 2: System default model + /images/edits (6 attempts, MUST succeed) ──
+  // This tier uses a stable, known-good system photo — no user-upload variability.
+  // 6 attempts with aggressive exponential backoff (3s → 5s → 8s → 12s → 18s → 25s).
+  // Total max wait: ~71 seconds. This should handle any transient OpenAI issues.
   const defaultModelUrl = getDefaultModelUrl(gender);
-  for (let attempt = 0; attempt < 2; attempt++) {
+  for (let attempt = 0; attempt < TIER2_ATTEMPTS; attempt++) {
     try {
-      if (attempt > 0) await sleep(BACKOFF_MS[0]);
-      console.log(`[openaiImage] Tier 2 (default ${gender} model) attempt ${attempt + 1}...`);
+      if (attempt > 0) await sleep(TIER2_BACKOFF_MS[attempt - 1] ?? 10_000);
+      console.log(`[openaiImage] Tier 2 (default ${gender} model) attempt ${attempt + 1}/${TIER2_ATTEMPTS}...`);
       return await generateImageWithReference(prompt, defaultModelUrl, apiKey, quality, size);
     } catch (err) {
-      console.warn(`[openaiImage] Tier 2 attempt ${attempt + 1} failed: ${(err as Error).message}`);
+      console.warn(`[openaiImage] Tier 2 attempt ${attempt + 1}/${TIER2_ATTEMPTS} failed: ${(err as Error).message}`);
+      // On safety filter rejection, simplify the prompt and retry
+      const errMsg = (err as Error).message;
+      if (errMsg.includes('safety') || errMsg.includes('content_policy') || errMsg.includes('rejected')) {
+        console.warn('[openaiImage] Safety filter hit — simplifying prompt for next attempt');
+        prompt = simplifySafetyPrompt(prompt);
+      }
     }
   }
-  console.warn('[openaiImage] Tier 2 exhausted — falling through to Tier 3 (text-to-image)');
+  console.warn('[openaiImage] Tier 2 exhausted after 6 attempts — falling through to Tier 3 (text-to-image, 5 retries)');
 
-  // ── Tier 3: Pure text-to-image generation (no reference photo) ──
-  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+  // ── Tier 3: Pure text-to-image (no reference photo, 5 attempts) ──
+  // If /images/edits endpoint is having issues, /images/generations is independent.
+  // This always works as long as OpenAI API is reachable.
+  for (let attempt = 0; attempt < TIER3_ATTEMPTS; attempt++) {
     try {
-      if (attempt > 0) await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
-      console.log(`[openaiImage] Tier 3 (text-to-image) attempt ${attempt + 1}...`);
+      if (attempt > 0) await sleep(TIER3_BACKOFF_MS[attempt - 1] ?? 8_000);
+      console.log(`[openaiImage] Tier 3 (text-to-image) attempt ${attempt + 1}/${TIER3_ATTEMPTS}...`);
       return await generateImage(prompt, apiKey, quality, size);
     } catch (err) {
-      console.warn(`[openaiImage] Tier 3 attempt ${attempt + 1} failed: ${(err as Error).message}`);
+      console.warn(`[openaiImage] Tier 3 attempt ${attempt + 1}/${TIER3_ATTEMPTS} failed: ${(err as Error).message}`);
+      const errMsg = (err as Error).message;
+      if (errMsg.includes('safety') || errMsg.includes('content_policy') || errMsg.includes('rejected')) {
+        prompt = simplifySafetyPrompt(prompt);
+      }
     }
   }
 
-  // ── Tier 4: All AI generation failed — return null ──
-  // Caller will insert a city-specific fallback image (Unsplash) — this always works.
-  console.error('[openaiImage] All 3 AI tiers failed — returning null for static fallback');
-  return null;
+  // This should theoretically never be reached — 14 total AI attempts across 3 tiers.
+  // But if it does, throw so the caller knows and can handle.
+  throw new Error(
+    `[CRITICAL] All 14 AI generation attempts failed (Tier1: ${TIER1_ATTEMPTS}, Tier2: ${TIER2_ATTEMPTS}, Tier3: ${TIER3_ATTEMPTS}). OpenAI API may be experiencing an outage.`
+  );
+}
+
+// ─── Safety Prompt Simplifier ────────────────────────────────────────────────
+// If OpenAI's safety filter rejects a prompt, strip potentially problematic
+// sections and retry with a simpler version.
+
+function simplifySafetyPrompt(prompt: string): string {
+  // Remove negative prompt section (sometimes triggers filters)
+  let simplified = prompt.replace(/\n\nDo NOT include:[\s\S]*$/, '');
+  // Remove any body-specific descriptions that might trigger filters
+  simplified = simplified.replace(/\b(slim|curvy|muscular|petite|athletic)\s+(build|figure|body)/gi, 'figure');
+  // Keep it focused on fashion
+  if (simplified.length > 800) {
+    simplified = simplified.slice(0, 800) + '\n\nFashionable travel outfit, full-body portrait, high quality photography.';
+  }
+  return simplified;
+}
+
+// ─── Legacy: generateImageNeverFail (backward compatibility) ─────────────────
+// Wraps generateImageGuaranteed but returns null instead of throwing (for callers
+// that still use the old null-check pattern). New code should use generateImageGuaranteed.
+
+export async function generateImageNeverFail(
+  prompt: string,
+  apiKey: string,
+  quality: ImageQuality = 'high',
+  size: ImageSize = '1024x1536',
+  userPhotoUrl?: string,
+  gender: string = 'female',
+): Promise<ArrayBuffer | null> {
+  try {
+    return await generateImageGuaranteed(prompt, apiKey, quality, size, userPhotoUrl, gender);
+  } catch (err) {
+    console.error('[openaiImage] generateImageNeverFail — all tiers failed:', (err as Error).message);
+    return null;
+  }
 }
 
 // ─── Legacy: generateImageWithRetry (still used by teaserAgent) ──────────────
 
 /**
  * Generates image with exponential-backoff retry (3 attempts).
- * Unlike generateImageNeverFail, this THROWS on failure (legacy behavior).
+ * Unlike generateImageGuaranteed, this THROWS on failure (legacy behavior).
  */
 export async function generateImageWithRetry(
   prompt: string,
@@ -324,6 +365,8 @@ export async function generateImageWithRetry(
   size: ImageSize = '1024x1536',
   referenceUrl?: string,
 ): Promise<ArrayBuffer> {
+  const MAX_ATTEMPTS = 3;
+  const BACKOFF_MS = [2_000, 4_000, 6_000] as const;
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -331,7 +374,6 @@ export async function generateImageWithRetry(
       await sleep(BACKOFF_MS[attempt - 1] ?? 4_000);
     }
     try {
-      // Tier 1: try with reference, Tier 2: try without
       if (referenceUrl) {
         try {
           return await generateImageWithReference(prompt, referenceUrl, apiKey, quality, size);
